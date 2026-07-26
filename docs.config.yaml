@@ -1,0 +1,54 @@
+# Assembly manifest for the Volcano developer docs.
+#
+# CI reads this to pull docs from each source repo into content/<dest>/.
+# Each source repo owns its subtree and must follow spec/markdown-format.md.
+# Kept generator-agnostic on purpose — the build tool is not chosen yet.
+
+site:
+  title: Volcano Developer Docs
+  base_url: https://docs.volcano.dev   # placeholder; final host TBD
+
+# Top-level section order. Pages within a section are ordered by the `order`
+# frontmatter field, then alphabetically.
+nav:
+  - get-started
+  - platform
+  - sdk
+  - cli
+  - ai
+
+# Sync sources. `index` names the file mapped to the section landing (_index.md).
+# `include` (glob) narrows what to copy for repos that are not doc-shaped.
+sources:
+  - dest: content/platform
+    repo: Kong/volcano-hosting
+    ref: main
+    path: docs
+    index: README.md
+
+  - dest: content/sdk/js
+    repo: Kong/volcano-sdk-js
+    ref: main
+    path: docs
+    index: README.md
+
+  - dest: content/cli
+    repo: Kong/volcano-cli
+    ref: main
+    path: docs
+    index: cli/overview.md   # no docs/README.md; overview is the landing
+
+  - dest: content/ai/skills
+    repo: Kong/volcano-skills
+    ref: main
+    path: .
+    include:
+      - "*/SKILL.md"         # one skill per dir → <skill-name>.md
+
+  - dest: content/ai/plugins
+    repo: Kong/volcano-agentic-plugins
+    ref: main
+    path: .
+    include:
+      - "README.md"
+      - "plugins/*/README.md"

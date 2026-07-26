@@ -1,0 +1,14 @@
+# Synced from source repos by CI — never edit or commit these here.
+/content/platform/
+/content/sdk/
+/content/cli/
+/content/ai/
+
+# Build output (whichever generator ends up serving this)
+/public/
+/build/
+/dist/
+/.hugo_build.lock
+
+node_modules/
+.DS_Store
