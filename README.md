@@ -9,13 +9,19 @@ cross-surface intro pages.
 
 ```
 source repos (own their docs, follow the contract)
-        │  CI sync — a per-repo subtree copy into content/<section>/
+        │  daily sync — a per-repo subtree copy into content/<section>/,
+        │  committed by the bot (manual escape hatch available)
         ▼
-volcano-docs (this repo: contract + assembly + get-started)
+volcano-docs (this repo: contract + assembly + get-started + synced content)
         │  build — Hugo / Docusaurus / Starlight / Next.js in volcano-web (TBD)
         ▼
 developer docs site
 ```
+
+Sync runs on a **daily schedule** rather than on every merge to `main`, to keep
+commit noise low. Need it sooner? Trigger the **Sync docs** workflow manually
+(`workflow_dispatch`) — optionally scoped to a single section via the `source`
+input. See [`.github/workflows/sync-docs.yml`](.github/workflows/sync-docs.yml).
 
 The serving layer is intentionally **not decided yet**. The markdown format
 ([`spec/markdown-format.md`](spec/markdown-format.md)) uses neutral frontmatter
@@ -38,15 +44,15 @@ The mapping is defined machine-readably in [`docs.config.yaml`](docs.config.yaml
 ## Editing docs
 
 - **Product docs** (platform, sdk, cli, ai): edit them in their source repo,
-  following [`spec/markdown-format.md`](spec/markdown-format.md). CI syncs them
-  here — do not edit `content/platform`, `content/sdk`, `content/cli`, or
-  `content/ai` in this repo; they are gitignored and overwritten on every sync.
+  following [`spec/markdown-format.md`](spec/markdown-format.md). The sync bot
+  commits them here — do not hand-edit `content/platform`, `content/sdk`,
+  `content/cli`, or `content/ai`; they are overwritten on every sync.
 - **Intro pages**: edit [`content/get-started/`](content/get-started) here.
 
 ## Rollout
 
-1. Land the format contract (this repo). ← we are here
+1. Land the format contract + sync job (this repo). ← we are here
 2. Reformat docs in each source repo to match; add the authoring note from
    [`spec/AGENTS.snippet.md`](spec/AGENTS.snippet.md) to each repo's `AGENTS.md`.
-3. Add the sync CI job (reads `docs.config.yaml`).
+3. Set `DOCS_SYNC_TOKEN` (read access to source repos) if any are private.
 4. Pick and wire the generator.

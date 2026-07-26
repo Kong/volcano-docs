@@ -1,8 +1,5 @@
-# Synced from source repos by CI — never edit or commit these here.
-/content/platform/
-/content/sdk/
-/content/cli/
-/content/ai/
+# content/platform, content/sdk, content/cli, content/ai are committed by the
+# sync bot (see .github/workflows/sync-docs.yml) — do not hand-edit them.
 
 # Build output (whichever generator ends up serving this)
 /public/
