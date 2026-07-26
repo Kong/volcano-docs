@@ -17,7 +17,7 @@ nav:
   - cli
   - ai
 
-# Sync sources. `index` names the file mapped to the section landing (_index.md).
+# Sync sources. `index` names the file mapped to the section landing (index.md).
 # `include` (glob) narrows what to copy for repos that are not doc-shaped.
 sources:
   - dest: content/platform

@@ -48,9 +48,9 @@ for i in $(seq 0 $((n - 1))); do
     done
   fi
 
-  # Section landing: map the configured index file to _index.md.
+  # Section landing: map the configured index file to index.md.
   if [ -n "$index" ] && [ -f "$dest/$index" ]; then
-    mv "$dest/$index" "$dest/_index.md"
+    mv "$dest/$index" "$dest/index.md"
   fi
 
   find "$dest" -name .DS_Store -delete

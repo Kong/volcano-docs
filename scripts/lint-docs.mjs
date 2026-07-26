@@ -52,7 +52,7 @@ function checkBody(file, body, offset) {
 
 function lintFile(file) {
   const base = path.basename(file);
-  if (base !== "_index.md" && base !== "README.md" && !KEBAB.test(base)) {
+  if (base !== "index.md" && base !== "README.md" && !KEBAB.test(base)) {
     err(file, "filename is not kebab-case");
   }
   const text = fs.readFileSync(file, "utf8");

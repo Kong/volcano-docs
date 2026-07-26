@@ -10,7 +10,7 @@ Every doc must follow the Volcano docs format
 
 - YAML frontmatter with **`title`** and **`description`** (both required).
 - **No H1 in the body** — the title comes from frontmatter; start at `##`.
-- `kebab-case.md` filenames; `_index.md` for a section landing.
+- `kebab-case.md` filenames; `index.md` (or `README.md`) for a section landing.
 - Every fenced code block declares a language.
 
 CI validates frontmatter against the schema and fails the sync on malformed docs.
