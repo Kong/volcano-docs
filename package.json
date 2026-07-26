@@ -1,0 +1,14 @@
+{
+  "name": "volcano-docs-tooling",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint:docs": "node scripts/lint-docs.mjs",
+    "migrate:docs": "node scripts/migrate-docs.mjs"
+  },
+  "devDependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "js-yaml": "^4.1.0"
+  }
+}

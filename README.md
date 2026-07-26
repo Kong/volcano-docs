@@ -53,9 +53,19 @@ The mapping is defined machine-readably in [`docs.config.yaml`](docs.config.yaml
 
 ## Rollout
 
-1. Land the format contract + sync job (this repo). ← we are here
-2. Reformat docs in each source repo to match; add the authoring note from
-   [`spec/AGENTS.snippet.md`](spec/AGENTS.snippet.md) to each repo's `AGENTS.md`.
+1. Land the format contract + sync job + tooling (this repo). ← we are here
+2. In each source repo: run [`scripts/migrate-docs.mjs`](scripts/migrate-docs.mjs)
+   to reformat `docs/`, add the [`spec/ci-caller.example.yml`](spec/ci-caller.example.yml)
+   lint workflow, and paste [`spec/AGENTS.snippet.md`](spec/AGENTS.snippet.md)
+   into the repo's `AGENTS.md`.
 3. Install the Kong GitHub App on `volcano-docs` and every source repo, and set
    `KONG_GH_APP_ID` + `KONG_GH_APP_PRIVATE_KEY` secrets.
 4. Pick and wire the generator.
+
+## Tooling
+
+- [`scripts/lint-docs.mjs`](scripts/lint-docs.mjs) — validates docs against the
+  contract; run by every source repo via the reusable
+  [`.github/workflows/lint-docs.yml`](.github/workflows/lint-docs.yml).
+- [`scripts/migrate-docs.mjs`](scripts/migrate-docs.mjs) — one-time reformat of a
+  repo's `docs/` (frontmatter, H1 removal, fence languages). Seeds are for review.

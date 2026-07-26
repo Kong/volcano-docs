@@ -1,0 +1,51 @@
+name: Lint docs (reusable)
+
+# Shared docs-format check. Source repos call this from their own PR CI so the
+# rules live in one place. See spec/markdown-format.md.
+#
+# Caller example (put in the source repo, e.g. .github/workflows/lint-docs.yml):
+#
+#   name: Lint docs
+#   on:
+#     pull_request:
+#       paths: ["docs/**"]
+#   jobs:
+#     docs:
+#       uses: Kong/volcano-docs/.github/workflows/lint-docs.yml@main
+#       with:
+#         path: docs
+
+on:
+  workflow_call:
+    inputs:
+      path:
+        description: "Directory to lint (relative to the caller repo root)."
+        type: string
+        default: docs
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout caller repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Checkout docs tooling
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          repository: Kong/volcano-docs
+          path: .volcano-docs-tooling
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+
+      - name: Install tooling deps
+        working-directory: .volcano-docs-tooling
+        run: npm install --no-audit --no-fund
+
+      - name: Lint
+        run: node .volcano-docs-tooling/scripts/lint-docs.mjs "${{ inputs.path }}"

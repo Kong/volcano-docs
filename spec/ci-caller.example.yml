@@ -1,0 +1,14 @@
+# Copy to each source repo as .github/workflows/lint-docs.yml.
+# Runs the shared docs-format check (defined in Kong/volcano-docs) on PRs.
+name: Lint docs
+
+on:
+  pull_request:
+    paths:
+      - "docs/**"
+
+jobs:
+  docs:
+    uses: Kong/volcano-docs/.github/workflows/lint-docs.yml@main
+    with:
+      path: docs
