@@ -70,7 +70,7 @@ v4, App Router with `src/`, ESLint flat config, and Conventional Commits.
 
 ```bash
 make install
-make dev      # http://localhost:4000  (override: make dev PORT=5000)
+make dev      # http://localhost:3030  (override: make dev PORT=5000)
 make build    # production build (also regenerates .source)
 make lint     # eslint
 make check    # lint + build (pre-PR)
