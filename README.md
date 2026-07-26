@@ -21,7 +21,9 @@ developer docs site
 Sync runs on a **daily schedule** rather than on every merge to `main`, to keep
 commit noise low. Need it sooner? Trigger the **Sync docs** workflow manually
 (`workflow_dispatch`) — optionally scoped to a single section via the `source`
-input. See [`.github/workflows/sync-docs.yml`](.github/workflows/sync-docs.yml).
+input. Each run opens a PR that **auto-merges**. Source repos are internal, so
+the job authenticates as the **Kong GitHub App**. See
+[`.github/workflows/sync-docs.yml`](.github/workflows/sync-docs.yml).
 
 The serving layer is intentionally **not decided yet**. The markdown format
 ([`spec/markdown-format.md`](spec/markdown-format.md)) uses neutral frontmatter
@@ -54,5 +56,6 @@ The mapping is defined machine-readably in [`docs.config.yaml`](docs.config.yaml
 1. Land the format contract + sync job (this repo). ← we are here
 2. Reformat docs in each source repo to match; add the authoring note from
    [`spec/AGENTS.snippet.md`](spec/AGENTS.snippet.md) to each repo's `AGENTS.md`.
-3. Set `DOCS_SYNC_TOKEN` (read access to source repos) if any are private.
+3. Install the Kong GitHub App on `volcano-docs` and every source repo, and set
+   `KONG_GH_APP_ID` + `KONG_GH_APP_PRIVATE_KEY` secrets.
 4. Pick and wire the generator.
