@@ -1,12 +1,15 @@
+# Next.js
+/.next/
+/out/
+next-env.d.ts
+
+# Fumadocs MDX generated source
+/.source/
+
 # content/platform, content/sdk, content/cli, content/ai are committed by the
 # sync bot (see .github/workflows/sync-docs.yml) — do not hand-edit them.
 
-# Build output (whichever generator ends up serving this)
-/public/
-/build/
-/dist/
-/.hugo_build.lock
-
+# deps
 node_modules/
-package-lock.json
+
 .DS_Store

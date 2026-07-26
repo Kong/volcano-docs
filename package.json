@@ -1,14 +1,45 @@
 {
-  "name": "volcano-docs-tooling",
+  "name": "volcano-docs",
   "private": true,
-  "type": "module",
+  "packageManager": "pnpm@10.16.1",
+  "engines": {
+    "node": ">=24",
+    "pnpm": ">=10.16"
+  },
   "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "postinstall": "fumadocs-mdx",
+    "prepare": "husky",
     "lint:docs": "node scripts/lint-docs.mjs",
     "migrate:docs": "node scripts/migrate-docs.mjs"
   },
+  "dependencies": {
+    "@types/mdx": "^2.0.14",
+    "fumadocs-core": "^16.12.1",
+    "fumadocs-mdx": "^15.2.0",
+    "fumadocs-ui": "^16.12.1",
+    "next": "16.2.12",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
   "devDependencies": {
+    "@commitlint/cli": "^21.2.1",
+    "@commitlint/config-conventional": "^21.2.0",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^24",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
-    "js-yaml": "^4.1.0"
+    "eslint": "^9",
+    "eslint-config-next": "16.2.12",
+    "husky": "^9.1.7",
+    "js-yaml": "^4.1.0",
+    "postcss": "^8",
+    "tailwindcss": "^4",
+    "typescript": "^5.9.3"
   }
 }

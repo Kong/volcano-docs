@@ -62,6 +62,29 @@ The mapping is defined machine-readably in [`docs.config.yaml`](docs.config.yaml
    `KONG_GH_APP_ID` + `KONG_GH_APP_PRIVATE_KEY` secrets.
 4. Pick and wire the generator.
 
+## Site (Fumadocs)
+
+The site is a [Fumadocs](https://fumadocs.dev) app that reads the assembled
+`content/` tree. Stack and conventions mirror `volcano-web`: pnpm, Node 24, Tailwind
+v4, App Router with `src/`, ESLint flat config, and Conventional Commits.
+
+```bash
+pnpm install
+pnpm dev      # http://localhost:3000
+pnpm build    # production build (also regenerates .source)
+pnpm lint     # eslint
+```
+
+Structure:
+
+- `src/app` — App Router (`layout.tsx`, `(docs)` group, `[[...slug]]` renderer, `api/search`).
+- `src/lib/source.ts` — Fumadocs loader over `content/` (mounted at `/`).
+- `source.config.ts` — Fumadocs MDX config; `.source/` is generated (gitignored).
+- Custom branding/UI is intentionally deferred — this is the default theme.
+
+**Version note:** Fumadocs 16 hard-requires Next 16, so the site is on Next 16 +
+React 19.2 rather than `volcano-web`'s Next 15.5. Every other convention matches.
+
 ## Tooling
 
 - [`scripts/lint-docs.mjs`](scripts/lint-docs.mjs) — validates docs against the
