@@ -69,10 +69,12 @@ The site is a [Fumadocs](https://fumadocs.dev) app that reads the assembled
 v4, App Router with `src/`, ESLint flat config, and Conventional Commits.
 
 ```bash
-pnpm install
-pnpm dev      # http://localhost:3000
-pnpm build    # production build (also regenerates .source)
-pnpm lint     # eslint
+make install
+make dev      # http://localhost:4000  (override: make dev PORT=5000)
+make build    # production build (also regenerates .source)
+make lint     # eslint
+make check    # lint + build (pre-PR)
+make          # list all targets
 ```
 
 Structure:
