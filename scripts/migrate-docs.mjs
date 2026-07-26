@@ -20,7 +20,7 @@ const q = (s) => JSON.stringify(s); // valid YAML double-quoted scalar
 const stripMd = (s) =>
   s
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // links -> text
-    .replace(/[`*_]/g, "")
+    .replace(/[`*]/g, "") // drop code/emphasis markers, but keep _ (identifiers)
     .replace(/\s+/g, " ")
     .trim();
 
@@ -94,7 +94,13 @@ function migrate(file) {
   if (desc.length > 160) {
     const cut = desc.slice(0, 160);
     const sentence = cut.lastIndexOf(". ");
-    desc = sentence > 80 ? cut.slice(0, sentence + 1) : cut.slice(0, 157).trimEnd() + "…";
+    if (sentence > 80) {
+      desc = cut.slice(0, sentence + 1);
+    } else {
+      // truncate at a word boundary, never mid-word
+      const word = cut.slice(0, 157).lastIndexOf(" ");
+      desc = cut.slice(0, word > 0 ? word : 157).trimEnd() + "…";
+    }
   }
 
   // 3. give bare opening fences a language.
