@@ -24,8 +24,8 @@ export default function Layout({ children }: { children: ReactNode }) {
         collapsible: false,
         // The design's search box at the top and pricing/privacy links at the
         // bottom, above Fumadocs' theme toggle.
-        banner: <SearchBanner />,
-        footer: <SidebarFooter />,
+        banner: <SearchBanner key="sidebar-search" />,
+        footer: <SidebarFooter key="sidebar-footer" />,
         // Custom node renderers matching the design; nodes still come from the
         // real page tree (source.ts).
         components: {

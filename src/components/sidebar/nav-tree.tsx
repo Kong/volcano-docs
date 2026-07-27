@@ -59,7 +59,7 @@ export function NavFolder({
   const pathname = usePathname();
 
   let title: ReactNode = (
-    <p className="font-heading text-base font-bold leading-5 tracking-tight text-fg">
+    <p className="font-heading text-base font-bold leading-6 tracking-tight text-fg">
       {item.name}
     </p>
   );
@@ -71,7 +71,7 @@ export function NavFolder({
       <Link
         href={item.index.url}
         data-active={active}
-        className="font-heading text-base font-bold leading-5 tracking-tight text-fg transition-opacity hover:opacity-80"
+        className="block font-heading text-base font-bold leading-6 tracking-tight text-fg transition-opacity hover:opacity-80"
       >
         {item.name}
       </Link>
@@ -80,7 +80,7 @@ export function NavFolder({
 
   return (
     <div className="flex w-full flex-col gap-space-40">
-      <div className="h-5 w-full">{title}</div>
+      <div className="w-full">{title}</div>
       <div className="flex w-full flex-col gap-space-10 pl-space-40">
         <NestedContext.Provider value={true}>{children}</NestedContext.Provider>
       </div>
