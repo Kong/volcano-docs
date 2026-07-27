@@ -48,13 +48,13 @@ const LINK_COLUMNS = [
 
 export function Footer() {
   return (
-    <footer className="relative flex w-full items-start overflow-hidden border-t border-border-subtle bg-surface">
+    <footer className="relative flex w-full flex-wrap items-start overflow-hidden border-t border-border-subtle bg-surface">
       {/* Ambient glow behind the footer, from the design. */}
       <div
         aria-hidden
         className="pointer-events-none absolute left-1/2 top-[270px] h-[168px] w-[1482px] -translate-x-1/2 rounded-full bg-danger-weaker/10 blur-[120px]"
       />
-      <div className="relative flex w-[390px] max-w-full flex-col self-stretch p-space-100">
+      <div className="relative flex w-full min-w-[280px] flex-1 flex-col self-stretch p-space-100">
         <div className="flex w-full flex-col gap-space-60">
           <Logo height={18} />
           <p className="min-w-full font-body text-base italic leading-relaxed text-neutral">
@@ -68,9 +68,9 @@ export function Footer() {
         return (
           <div
             key={column.heading}
-            className="relative flex min-w-0 flex-1 flex-col gap-space-60 self-stretch p-space-100"
+            className="relative flex min-w-[160px] flex-1 flex-col gap-space-60 self-stretch px-space-80 py-space-100"
           >
-            <h3 className="font-heading text-base font-bold text-fg">
+            <h3 className="whitespace-nowrap font-heading text-base font-bold text-fg">
               {column.heading}
             </h3>
             {column.links.map(function renderLink(link) {

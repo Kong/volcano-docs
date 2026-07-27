@@ -1,5 +1,4 @@
 import { FeatureCard } from "./feature-card";
-import { Footer } from "./footer";
 import { Hero } from "./hero";
 import { BotIcon, FlameIcon, TerminalIcon } from "./icons";
 import { IdePlatforms } from "./ide-platforms";
@@ -59,8 +58,6 @@ export function HomePage() {
           variant="danger"
         />
       </div>
-
-      <Footer />
     </div>
   );
 }

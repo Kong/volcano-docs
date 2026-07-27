@@ -129,6 +129,7 @@
     "header header header header header" var(--fd-header-height)
     "sidebar sidebar toc-popover toc toc"
     "sidebar sidebar main toc toc" 1fr
+    "footer footer footer footer footer"
     / minmax(min-content, 1fr) var(--fd-sidebar-col)
       minmax(
         0,
