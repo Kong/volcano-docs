@@ -108,3 +108,33 @@
     color-mix(in srgb, var(--color-danger-weaker) 60%, transparent) 104%
   );
 }
+
+/*
+ * Docs layout grid (design). Overrides Fumadocs' default docs grid so the
+ * header spans a full-width row above both the sidebar and content — giving the
+ * continuous top bar + border from the design. The sidebar is a fixed 275px
+ * column (the design has no desktop collapse). Kept in CSS (not an inline
+ * style) to satisfy the no-inline-styles house rule.
+ */
+@utility docs-grid {
+  display: grid;
+  min-height: 100dvh;
+  overflow-x: clip;
+  --fd-header-height: 3.5rem;
+  --fd-sidebar-width: 275px;
+  --fd-sidebar-col: var(--fd-sidebar-width);
+  --fd-toc-width: 0px;
+  --fd-layout-width: 97rem;
+  grid-template:
+    "header header header header header" var(--fd-header-height)
+    "sidebar sidebar toc-popover toc toc"
+    "sidebar sidebar main toc toc" 1fr
+    / minmax(min-content, 1fr) var(--fd-sidebar-col)
+      minmax(
+        0,
+        calc(
+          var(--fd-layout-width) - var(--fd-sidebar-width) - var(--fd-toc-width)
+        )
+      )
+      var(--fd-toc-width) minmax(min-content, 1fr);
+}

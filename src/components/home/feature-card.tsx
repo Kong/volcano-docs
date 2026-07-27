@@ -30,7 +30,7 @@ export function FeatureCard({
   const body = (
     <>
       {icon && (
-        <div className="flex size-8 items-center justify-center text-fg">
+        <div className="mb-space-30 flex size-8 items-center justify-center text-fg">
           {icon}
         </div>
       )}

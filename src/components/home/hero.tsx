@@ -13,7 +13,7 @@ export function Hero() {
       />
       <div className="relative flex min-w-0 flex-1 flex-col justify-center gap-space-80">
         <div className="flex w-full flex-col gap-space-80">
-          <h1 className="font-heading text-5xl font-bold leading-tight tracking-tight text-fg">
+          <h1 className="font-heading text-5xl font-bold leading-none tracking-tight text-fg">
             Volcano docs
           </h1>
           <p className="w-[530px] max-w-full font-body text-base leading-relaxed text-fg">

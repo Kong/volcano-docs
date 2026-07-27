@@ -16,24 +16,24 @@ export function HomePage() {
     <div className="flex w-full flex-col">
       <Hero />
 
-      {/* Primary feature cards row. */}
-      <div className="flex w-full items-stretch border-b border-border-subtle">
+      {/* Primary feature cards row (fixed height, content top-aligned). */}
+      <div className="flex h-[349px] w-full items-stretch border-b border-border-subtle">
         <FeatureCard
-          icon={<FlameIcon className="size-6" />}
+          icon={<FlameIcon className="size-8" />}
           title="Quick start"
           description={CARD_COPY}
           href="/get-started/quickstart"
           className="border-r border-border-subtle"
         />
         <FeatureCard
-          icon={<TerminalIcon className="size-6" />}
+          icon={<TerminalIcon className="size-8" />}
           title="Volcano CLI"
           description={CARD_COPY}
           href="/cli"
           className="border-r border-border-subtle"
         />
         <FeatureCard
-          icon={<BotIcon className="size-6" />}
+          icon={<BotIcon className="size-8" />}
           title="AI builder"
           description={CARD_COPY}
           href="/ai/skills"
@@ -45,7 +45,7 @@ export function HomePage() {
       <IdePlatforms />
 
       <SectionHeading>Tutorials</SectionHeading>
-      <div className="flex w-full items-stretch border-b border-border-subtle">
+      <div className="flex h-[372px] w-full items-stretch border-b border-border-subtle">
         <FeatureCard
           title="Quick start"
           description={CARD_COPY}
