@@ -76,8 +76,9 @@ function lintFile(file) {
 
 function walk(dir) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-    // internal/ docs are not published and are not subject to the public format.
-    if (e.isDirectory() && e.name === "internal") continue;
+    // internal/ docs are not published; examples/ are reference code (READMEs
+    // carry frontmatter for rendering but aren't held to the prose format).
+    if (e.isDirectory() && (e.name === "internal" || e.name === "examples")) continue;
     const p = path.join(dir, e.name);
     if (e.isDirectory()) walk(p);
     else if (e.name.endsWith(".md")) lintFile(p);
