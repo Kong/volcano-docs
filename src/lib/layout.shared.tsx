@@ -12,5 +12,8 @@ export function baseOptions(): BaseLayoutProps {
     // The design places search in the sidebar (our SearchBanner), so disable
     // Fumadocs' default search trigger to avoid a duplicate search box.
     searchToggle: { enabled: false },
+    // The design uses a three-mode segmented switcher rendered in the sidebar
+    // footer (see SidebarFooter), so disable Fumadocs' default theme toggle.
+    themeSwitch: { enabled: false },
   };
 }
