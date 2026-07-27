@@ -25,6 +25,8 @@ sources:
     ref: main
     path: docs
     index: README.md
+    exclude:
+      - internal   # maintainer/design/ops docs — not for the public site
 
   - dest: content/sdk/js
     repo: Kong/volcano-sdk-js

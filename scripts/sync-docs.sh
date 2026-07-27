@@ -48,6 +48,12 @@ for i in $(seq 0 $((n - 1))); do
     done
   fi
 
+  # Drop excluded paths (e.g. internal maintainer docs) from the synced output.
+  mapfile -t excludes < <(yq -r ".sources[$i].exclude[]? // empty" "$CONFIG")
+  for e in "${excludes[@]}"; do
+    rm -rf "${dest:?}/$e"
+  done
+
   # Section landing: map the configured index file to index.md.
   if [ -n "$index" ] && [ -f "$dest/$index" ]; then
     mv "$dest/$index" "$dest/index.md"

@@ -76,6 +76,8 @@ function lintFile(file) {
 
 function walk(dir) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    // internal/ docs are not published and are not subject to the public format.
+    if (e.isDirectory() && e.name === "internal") continue;
     const p = path.join(dir, e.name);
     if (e.isDirectory()) walk(p);
     else if (e.name.endsWith(".md")) lintFile(p);
