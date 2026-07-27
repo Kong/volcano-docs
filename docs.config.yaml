@@ -23,10 +23,8 @@ sources:
   - dest: content/platform
     repo: Kong/volcano-hosting
     ref: main
-    path: docs
+    path: docs/public   # docs/internal is maintainer-only and never synced
     index: README.md
-    exclude:
-      - internal   # maintainer/design/ops docs — not for the public site
 
   - dest: content/sdk/js
     repo: Kong/volcano-sdk-js
