@@ -6,8 +6,13 @@ next-env.d.ts
 # Fumadocs MDX generated source
 /.source/
 
-# content/platform, content/sdk, content/cli, content/ai are committed by the
-# sync bot (see .github/workflows/sync-docs.yml) — do not hand-edit them.
+# Synced content (pulled from internal source repos by sync-docs.yml).
+# Ignored so a stray/local sync can't publish internal docs; the sync workflow
+# force-adds these deliberately (git add content). Do not hand-edit.
+/content/platform/
+/content/sdk/
+/content/cli/
+/content/ai/
 
 # deps
 node_modules/

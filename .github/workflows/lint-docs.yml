@@ -52,4 +52,7 @@ jobs:
           pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Lint
-        run: node .volcano-docs-tooling/scripts/lint-docs.mjs "${{ inputs.path }}"
+        # Pass the input via env (not inline ${{ }}) to avoid shell injection.
+        env:
+          INPUT_PATH: ${{ inputs.path }}
+        run: node .volcano-docs-tooling/scripts/lint-docs.mjs "$INPUT_PATH"
