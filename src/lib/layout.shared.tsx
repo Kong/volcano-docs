@@ -10,5 +10,8 @@ export function baseOptions(): BaseLayoutProps {
       title: <NavTitle />,
       url: "/",
     },
+    // The design places search in the sidebar (our SearchBanner), so disable
+    // Fumadocs' default search trigger to avoid a duplicate search box.
+    searchToggle: { enabled: false },
   };
 }
