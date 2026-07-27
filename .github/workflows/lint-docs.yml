@@ -33,26 +33,7 @@ jobs:
       - name: Checkout caller repo
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      - name: Checkout docs tooling
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-        with:
-          repository: Kong/volcano-docs
-          path: .volcano-docs-tooling
-
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version: 24
-
-      - name: Install lint tooling
-        working-directory: .volcano-docs-tooling
-        # --ignore-scripts skips the site's postinstall (fumadocs-mdx); lint only
-        # needs js-yaml + ajv, which are installed as normal deps.
-        run: |
-          corepack enable
-          pnpm install --frozen-lockfile --ignore-scripts
-
       - name: Lint
-        # Pass the input via env (not inline ${{ }}) to avoid shell injection.
-        env:
-          INPUT_PATH: ${{ inputs.path }}
-        run: node .volcano-docs-tooling/scripts/lint-docs.mjs "$INPUT_PATH"
+        uses: Kong/volcano-docs/.github/actions/lint-docs@main
+        with:
+          path: ${{ inputs.path }}
