@@ -73,6 +73,16 @@
   --vd-border-subtle: #e5e5e5;
 }
 
+/*
+ * Match Fumadocs' sidebar surface to the design's page surface so the sidebar
+ * and content share one background in both themes (the design is a single dark
+ * surface; in light mode both should be white rather than Fumadocs' default
+ * grey card). Targets the sidebar root by id to win over its bg-fd-card class.
+ */
+#nd-sidebar {
+  background-color: var(--color-surface);
+}
+
 /* Dark theme — the exact Figma design palette. */
 .dark {
   --vd-surface: #0a0a0a;
