@@ -33,6 +33,15 @@ for i in $(seq 0 $((n - 1))); do
     "https://x-access-token:${TOKEN}@github.com/${repo}.git" "$clone"
 
   src="$clone/$path"
+  # A configured source path MUST exist on its ref. Checked before deleting the
+  # destination so we never wipe a section on a bad path. Missing means a typo, a
+  # deleted path, or an unmerged restructure — fail loudly and abort the whole
+  # sync rather than silently keeping stale docs (and auto-merging the other
+  # sources' updates around them).
+  if [ ! -d "$src" ]; then
+    echo "::error::sync source not found: $repo '$path' at $ref" >&2
+    exit 1
+  fi
   rm -rf "$dest"
   mkdir -p "$dest"
 

@@ -12,7 +12,6 @@ next-env.d.ts
 /content/platform/
 /content/sdk/
 /content/cli/
-/content/ai/
 
 # deps
 node_modules/

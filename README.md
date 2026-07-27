@@ -38,8 +38,10 @@ a standalone static site and a route inside `volcano-web` stays open.
 | `content/platform/` | `Kong/volcano-hosting` | `docs/` | Platform concepts + API reference |
 | `content/sdk/js/` | `Kong/volcano-sdk-js` | `docs/` | JavaScript/TypeScript SDK |
 | `content/cli/` | `Kong/volcano-cli` | `docs/` | CLI reference |
-| `content/ai/skills/` | `Kong/volcano-skills` | `*/SKILL.md` | Agent skills |
-| `content/ai/plugins/` | `Kong/volcano-agentic-plugins` | READMEs | IDE / assistant plugins |
+
+> Agent skills (`volcano-skills`) and IDE plugins (`volcano-agentic-plugins`) are
+> **not** synced here — they are agent instruction files, not human docs. A
+> human-facing "AI / IDE integrations" section, if wanted, is curated content.
 
 The mapping is defined machine-readably in [`docs.config.yaml`](docs.config.yaml).
 
@@ -48,7 +50,7 @@ The mapping is defined machine-readably in [`docs.config.yaml`](docs.config.yaml
 - **Product docs** (platform, sdk, cli, ai): edit them in their source repo,
   following [`spec/markdown-format.md`](spec/markdown-format.md). The sync bot
   commits them here — do not hand-edit `content/platform`, `content/sdk`,
-  `content/cli`, or `content/ai`; they are overwritten on every sync.
+  or `content/cli`; they are overwritten on every sync.
 - **Intro pages**: edit [`content/get-started/`](content/get-started) here.
 
 ## Rollout

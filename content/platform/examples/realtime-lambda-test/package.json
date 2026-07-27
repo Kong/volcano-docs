@@ -1,0 +1,16 @@
+{
+  "name": "realtime-lambda-test",
+  "version": "1.0.0",
+  "description": "Lambda function that tests Volcano Realtime capabilities",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@volcano.dev/sdk": "nightly",
+    "centrifuge": "^5.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

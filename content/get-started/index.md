@@ -19,4 +19,3 @@ Then dive into a surface:
 - [Platform](/platform) — how Volcano works, concepts, and API reference.
 - [JavaScript SDK](/sdk/js) — build web and Node apps.
 - [CLI](/cli) — manage projects, functions, databases, and deploys.
-- [AI agents](/ai/skills) — skills and IDE plugins for building on Volcano with assistants.

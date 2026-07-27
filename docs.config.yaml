@@ -15,7 +15,6 @@ nav:
   - platform
   - sdk
   - cli
-  - ai
 
 # Sync sources. `index` names the file mapped to the section landing (index.md).
 # `include` (glob) narrows what to copy for repos that are not doc-shaped.
@@ -36,19 +35,5 @@ sources:
     repo: Kong/volcano-cli
     ref: main
     path: docs
-    index: cli/overview.md   # no docs/README.md; overview is the landing
+    index: README.md
 
-  - dest: content/ai/skills
-    repo: Kong/volcano-skills
-    ref: main
-    path: .
-    include:
-      - "*/SKILL.md"         # one skill per dir → <skill-name>.md
-
-  - dest: content/ai/plugins
-    repo: Kong/volcano-agentic-plugins
-    ref: main
-    path: .
-    include:
-      - "README.md"
-      - "plugins/*/README.md"

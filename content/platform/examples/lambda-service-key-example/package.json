@@ -1,0 +1,19 @@
+{
+  "name": "lambda-service-key-example",
+  "version": "1.0.0",
+  "description": "Volcano Lambda function using service key for admin operations",
+  "main": "index.js",
+  "dependencies": {
+    "@volcano.dev/sdk": "nightly"
+  },
+  "scripts": {
+    "test": "node index.js"
+  },
+  "keywords": [
+    "volcano",
+    "lambda",
+    "admin",
+    "service-key",
+    "serverless"
+  ]
+}

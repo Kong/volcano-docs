@@ -1,0 +1,40 @@
+name: CI
+
+# Site-level validation for every PR (including the scheduled sync's PRs):
+# the docs-format lint, a route-aware link check, and a real Next build.
+# Source-repo format lint cannot catch integration failures (relocated index
+# links, cross-section routes, unserved assets, a broken build) — this can.
+on:
+  pull_request:
+  merge_group:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+
+      - name: Lint docs format
+        run: pnpm lint:docs content
+
+      - name: Check links and routes
+        run: pnpm check:links
+
+      - name: Build
+        run: pnpm build
