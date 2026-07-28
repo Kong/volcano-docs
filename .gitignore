@@ -6,12 +6,11 @@ next-env.d.ts
 # Fumadocs MDX generated source
 /.source/
 
-# Synced content (pulled from internal source repos by sync-docs.yml).
-# Ignored so a stray/local sync can't publish internal docs; the sync workflow
-# force-adds these deliberately (git add content). Do not hand-edit.
-/content/platform/
-/content/sdk/
-/content/cli/
+# Synced content (content/{platform,sdk,cli}, pulled from source repos by
+# sync-docs.yml) is committed, NOT ignored: `volcano cloud frontends deploy`
+# packages the archive from .gitignore, so a tracked-but-ignored tree would be
+# dropped from the deploy. Internal docs are excluded at the source (docs/public
+# only). Do not hand-edit synced content.
 
 # deps
 node_modules/
