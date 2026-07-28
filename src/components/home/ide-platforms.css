@@ -46,6 +46,14 @@
   object-fit: contain;
 }
 
+/* Cursor is an inline monochrome mark: size it like the image marks and drive
+   its fill from a theme token so `currentColor` flips between light and dark. */
+.ide-platform-icon svg {
+  width: var(--size-8);
+  height: var(--size-8);
+  color: var(--text-primary);
+}
+
 .ide-platform-label {
   font-family: var(--system-font);
   font-size: var(--type-meta);
