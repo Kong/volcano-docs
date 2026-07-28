@@ -18,12 +18,11 @@ volcano-docs (this repo: contract + assembly + get-started + synced content)
 developer docs site
 ```
 
-Sync runs on a **daily schedule** rather than on every merge to `main`, to keep
-commit noise low. Need it sooner? Trigger the **Sync docs** workflow manually
-(`workflow_dispatch`) — optionally scoped to a single section via the `source`
-input. Each run opens a PR that **auto-merges**. Source repos are internal, so
-the job authenticates as the **Kong GitHub App**. See
-[`.github/workflows/sync-docs.yml`](.github/workflows/sync-docs.yml).
+Sync and deployment run from **`Kong/volcano-web`** (the internal repo), not
+here — this public repo carries no deploy, sync, domain, or cert plumbing. The
+**Sync docs** workflow authenticates as the **Kong GitHub App**, pulls each
+source subtree, and opens a PR here that **auto-merges**. See
+`volcano-web/.github/workflows/docs-sync.yml`.
 
 The serving layer is intentionally **not decided yet**. The markdown format
 ([`spec/markdown-format.md`](spec/markdown-format.md)) uses neutral frontmatter
@@ -61,7 +60,7 @@ The mapping is defined machine-readably in [`docs.config.yaml`](docs.config.yaml
    lint workflow, and paste [`spec/AGENTS.snippet.md`](spec/AGENTS.snippet.md)
    into the repo's `AGENTS.md`.
 3. Install the Kong GitHub App on `volcano-docs` and every source repo, and set
-   `KONG_GH_APP_ID` + `KONG_GH_APP_PRIVATE_KEY` secrets.
+   `KONG_GH_APP_ID` + `KONG_GH_APP_PRIVATE_KEY` secrets in `volcano-web`.
 4. Pick and wire the generator.
 
 ## Site (Fumadocs)
