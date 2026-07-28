@@ -1,5 +1,7 @@
 "use client";
 
+import "./nav-tree.css";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createContext, useContext, type ReactNode } from "react";
@@ -8,7 +10,8 @@ import { ChevronRightIcon } from "@/components/home/icons";
 
 // Custom sidebar page-tree renderers matching the Figma design. These receive
 // the real page-tree nodes from Fumadocs (driven by source.ts), so the nav
-// stays data-driven — only the presentation is design-specific.
+// stays data-driven — only the presentation is design-specific. Styling lives
+// in nav-tree.css (volcano-web co-located CSS convention).
 
 // Tracks whether a node is nested inside a section (folder). Top-level items
 // (e.g. "Home") show a trailing chevron; nested sub-items do not. Fumadocs'
@@ -27,21 +30,10 @@ export function NavItem({ item }: { item: PageTree.Item }) {
   const nested = useContext(NestedContext);
   const active = isActive(item.url, pathname);
 
-  let stateClass = "bg-surface text-neutral hover:text-fg";
-  if (active) {
-    stateClass = "bg-tint-weakest font-bold text-fg";
-  }
-
   return (
-    <Link
-      href={item.url}
-      data-active={active}
-      className={`flex items-center justify-between gap-space-40 px-space-50 py-space-40 font-body text-sm leading-5 transition-colors ${stateClass}`}
-    >
+    <Link href={item.url} data-active={active} className="nav-item">
       <span>{item.name}</span>
-      {!nested && (
-        <ChevronRightIcon className="size-4 shrink-0 text-primary-text" />
-      )}
+      {!nested && <ChevronRightIcon className="nav-item-chevron" />}
     </Link>
   );
 }
@@ -58,11 +50,7 @@ export function NavFolder({
 }) {
   const pathname = usePathname();
 
-  let title: ReactNode = (
-    <p className="font-heading text-base font-bold leading-6 tracking-tight text-fg">
-      {item.name}
-    </p>
-  );
+  let title: ReactNode = <p className="nav-folder-title">{item.name}</p>;
 
   // If the folder has an index page, make its title a link to it.
   if (item.index) {
@@ -71,7 +59,7 @@ export function NavFolder({
       <Link
         href={item.index.url}
         data-active={active}
-        className="block font-heading text-base font-bold leading-6 tracking-tight text-fg transition-opacity hover:opacity-80"
+        className="nav-folder-title"
       >
         {item.name}
       </Link>
@@ -79,9 +67,9 @@ export function NavFolder({
   }
 
   return (
-    <div className="flex w-full flex-col gap-space-40">
-      <div className="w-full">{title}</div>
-      <div className="flex w-full flex-col gap-space-10 pl-space-40">
+    <div className="nav-folder">
+      <div className="nav-folder-title-row">{title}</div>
+      <div className="nav-folder-children">
         <NestedContext.Provider value={true}>{children}</NestedContext.Provider>
       </div>
     </div>
@@ -91,9 +79,5 @@ export function NavFolder({
 // A separator label between sections.
 export function NavSeparator({ item }: { item: PageTree.Separator }) {
   if (!item.name) return null;
-  return (
-    <p className="px-space-50 pt-space-40 font-heading text-base font-bold tracking-tight text-fg">
-      {item.name}
-    </p>
-  );
+  return <p className="nav-separator">{item.name}</p>;
 }

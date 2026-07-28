@@ -1,0 +1,92 @@
+/* ══════════════════════════════════════════
+   Sidebar nav tree — custom page-tree renderers matching the Figma design
+   (docs-side-menu). Nodes come from the real page tree (source.ts); only the
+   presentation is design-specific.
+   ══════════════════════════════════════════ */
+
+/* ── Leaf nav link (.L2 item) ── */
+.nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-40);
+  padding: var(--space-40) var(--space-50);
+  font-family: var(--system-font);
+  font-size: var(--type-meta);
+  line-height: var(--line-height-tight);
+  background: var(--surface-background);
+  color: var(--text-neutral);
+  text-decoration: none;
+  transition: color var(--system-transition);
+}
+
+.nav-item:hover {
+  color: var(--text-primary);
+}
+
+/* Active item: warm tint background + bold white text (like "Home"). */
+.nav-item[data-active="true"] {
+  background: var(--surface-tint-weak);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+/* Trailing chevron on top-level items only. */
+.nav-item-chevron {
+  width: var(--size-icon);
+  height: var(--size-icon);
+  flex-shrink: 0;
+  color: var(--color-primary-text);
+}
+
+/* ── Section (folder) group ── */
+.nav-folder {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: var(--space-40);
+}
+
+.nav-folder-title-row {
+  width: 100%;
+}
+
+/* Section title — Space Mono bold (Figma ".L2 tittle" layer). */
+.nav-folder-title {
+  font-family: var(--system-mono-font);
+  font-size: var(--type-title);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--tracking-heading-tight);
+  color: var(--text-primary);
+}
+
+/* When the section has an index page its title is a link. */
+a.nav-folder-title {
+  display: block;
+  text-decoration: none;
+  transition: opacity var(--system-transition);
+}
+
+a.nav-folder-title:hover {
+  opacity: 0.8;
+}
+
+/* Indented children list (.L2 item list). */
+.nav-folder-children {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: var(--space-10);
+  padding-left: var(--space-40);
+}
+
+/* ── Separator label between sections ── */
+.nav-separator {
+  padding: var(--space-40) var(--space-50) 0;
+  font-family: var(--system-mono-font);
+  font-size: var(--type-title);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--tracking-heading-tight);
+  color: var(--text-primary);
+}

@@ -1,3 +1,5 @@
+import "./footer.css";
+
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 
@@ -48,37 +50,29 @@ const LINK_COLUMNS = [
 
 export function Footer() {
   return (
-    <footer className="relative flex w-full flex-wrap items-start overflow-hidden border-t border-border-subtle bg-surface">
+    <footer className="home-footer">
       {/* Ambient glow behind the footer, from the design. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute left-1/2 top-[270px] h-[168px] w-[1482px] -translate-x-1/2 rounded-full bg-danger-weaker/10 blur-[120px]"
-      />
-      <div className="relative flex w-full min-w-[280px] flex-1 flex-col self-stretch p-space-100">
-        <div className="flex w-full flex-col gap-space-60">
+      <div aria-hidden className="home-footer-glow" />
+      <div className="home-footer-brand">
+        <div className="home-footer-brand-inner">
           <Logo height={18} />
-          <p className="min-w-full font-body text-base italic leading-relaxed text-neutral">
+          <p className="home-footer-lede">
             Created by{" "}
-            <span className="font-bold text-primary-text underline">Kong</span>{" "}
-            to bring production readiness to the AI world
+            <span className="home-footer-lede-accent">Kong</span> to bring
+            production readiness to the AI world
           </p>
         </div>
       </div>
       {LINK_COLUMNS.map(function renderColumn(column) {
         return (
-          <div
-            key={column.heading}
-            className="relative flex min-w-[160px] flex-1 flex-col gap-space-60 self-stretch px-space-80 py-space-100"
-          >
-            <h3 className="whitespace-nowrap font-heading text-base font-bold text-fg">
-              {column.heading}
-            </h3>
+          <div key={column.heading} className="home-footer-column">
+            <h3 className="home-footer-column-heading">{column.heading}</h3>
             {column.links.map(function renderLink(link) {
               return (
                 <Link
                   key={link.label}
                   href={link.href}
-                  className="font-body text-sm text-neutral transition-colors hover:text-fg"
+                  className="home-footer-link"
                 >
                   {link.label}
                 </Link>

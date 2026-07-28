@@ -1,3 +1,5 @@
+import "./nav-title.css";
+
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 
@@ -6,14 +8,10 @@ import { Logo } from "@/components/logo";
 // Links to the docs base URL so clicking the brand returns home.
 export function NavTitle() {
   return (
-    <Link
-      href="/"
-      aria-label="Volcano Docs home"
-      className="flex shrink-0 items-center gap-space-50 whitespace-nowrap transition-opacity hover:opacity-80"
-    >
+    <Link href="/" aria-label="Volcano Docs home" className="nav-title">
       <Logo height={22} />
-      <span className="font-heading text-lg font-bold leading-6 tracking-tight text-fg">
-        <span className="text-neutral">/</span> Docs
+      <span className="nav-title-label">
+        <span className="nav-title-slash">/</span> Docs
       </span>
     </Link>
   );

@@ -1,0 +1,83 @@
+/* ══════════════════════════════════════════
+   Landing hero (Figma Content_Column): title, intro copy, primary CTA, with an
+   ambient radial glow behind.
+   ══════════════════════════════════════════ */
+
+.hero {
+  position: relative;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: var(--space-80);
+  overflow: hidden;
+  border-bottom: var(--border-divider);
+  padding: var(--space-130) var(--space-100);
+}
+
+.hero-glow {
+  pointer-events: none;
+  position: absolute;
+  left: 50%;
+  top: -231px;
+  height: 896px;
+  width: 1132px;
+  transform: translateX(-50%);
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  /* Heavy blur renders the fill as a soft ellipse; no radius needed. */
+  filter: blur(120px);
+}
+
+.hero-content {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-80);
+}
+
+.hero-copy-stack {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: var(--space-80);
+}
+
+.hero-title {
+  font-family: var(--system-mono-font);
+  font-size: var(--type-display);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+  letter-spacing: var(--tracking-heading);
+  color: var(--text-primary);
+}
+
+.hero-lede {
+  width: 530px;
+  max-width: 100%;
+  font-family: var(--system-font);
+  font-size: var(--type-body);
+  line-height: var(--line-height-relaxed);
+  color: var(--text-primary);
+}
+
+.hero-cta {
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-40);
+  padding: var(--space-30) var(--space-50);
+  background: var(--color-primary);
+  font-family: var(--system-font);
+  font-size: var(--type-meta);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-inverse);
+  text-decoration: none;
+  transition: opacity var(--system-transition);
+}
+
+.hero-cta:hover {
+  opacity: 0.9;
+}

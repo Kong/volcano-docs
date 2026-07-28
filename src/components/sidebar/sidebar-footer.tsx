@@ -1,3 +1,5 @@
+import "./sidebar-footer.css";
+
 import Link from "next/link";
 import { ThemeSwitcher } from "@/components/sidebar/theme-switcher";
 
@@ -12,14 +14,14 @@ const FOOTER_LINKS = [
 
 export function SidebarFooter() {
   return (
-    <div className="flex flex-col gap-space-60 border-t border-border-subtle pt-space-60">
-      <div className="flex flex-col">
+    <div className="sidebar-footer">
+      <div className="sidebar-footer-links">
         {FOOTER_LINKS.map(function renderLink(link) {
           return (
             <Link
               key={link.label}
               href={link.href}
-              className="flex items-center px-space-50 py-space-40 font-body text-sm text-neutral-strong transition-colors hover:text-fg"
+              className="sidebar-footer-link"
             >
               {link.label}
             </Link>

@@ -1,0 +1,15 @@
+/* ══════════════════════════════════════════
+   Volcano logo: multicolor pixel mark (exported asset) + "VOLCANO" wordmark.
+   The wordmark inherits currentColor so it adapts to light/dark themes.
+   ══════════════════════════════════════════ */
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-30);
+  color: var(--text-primary);
+}
+
+.logo-mark {
+  flex-shrink: 0;
+}

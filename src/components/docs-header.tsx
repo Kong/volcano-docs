@@ -1,5 +1,7 @@
 "use client";
 
+import "./docs-header.css";
+
 import { NavTitle } from "@/components/nav-title";
 
 // Full-width docs header from the design: the Volcano brand on the left with a
@@ -8,7 +10,7 @@ import { NavTitle } from "@/components/nav-title";
 // the full-width `header` grid row added by DocsContainer.
 export function DocsHeader() {
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center border-b border-border-subtle bg-surface/80 px-space-100 backdrop-blur-sm [grid-area:header]">
+    <header className="docs-header">
       <NavTitle />
     </header>
   );

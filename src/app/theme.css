@@ -1,0 +1,199 @@
+/*
+ * Volcano docs theme — token architecture mirrored from volcano-web
+ * (libs/ui/src/theme.css): a three-layer system so components reference
+ * semantic tokens, never raw values.
+ *
+ *   Layer 1: Base Units — raw scale values (spacing, palette, type).
+ *   Layer 2: Design Tokens — semantic mapping (intent → base unit).
+ *   Layer 3: Component Variables — per-component, in each component's .css.
+ *
+ * Unlike volcano-web (a light-only app), the docs are dark-first: the
+ * authoritative Figma design (🌋 Volcano docs, "Docs 6") is a dark surface.
+ * Base palette values are theme-neutral; the Layer-2 semantic colors resolve
+ * per theme via --vd-* swap variables. Fumadocs' next-themes toggle applies a
+ * `.dark` class (its default here) and `.light` otherwise, so the :root base
+ * carries the light counterpart and `.dark` carries the exact Figma palette —
+ * matching the original setup while keeping volcano-web's token names/structure.
+ */
+
+:root {
+  /* ══════════════════════════════════════════
+     LAYER 1 — BASE UNITS
+     Raw scale values. Never used directly in components.
+     ══════════════════════════════════════════ */
+
+  /* ── Spacing scale (Figma spacing/space-* tokens) ── */
+  --space-0: 0px;
+  --space-10: 2px;
+  --space-15: 3px;
+  --space-20: 4px;
+  --space-30: 6px;
+  --space-40: 8px;
+  --space-50: 12px;
+  --space-60: 16px;
+  --space-70: 20px;
+  --space-80: 24px;
+  --space-90: 32px;
+  --space-100: 40px;
+  --space-110: 48px;
+  --space-120: 56px;
+  --space-130: 64px;
+
+  /* ── Size scale ── */
+  --size-6: 24px;
+  --size-7: 28px;
+  --size-8: 32px;
+  --size-icon: 16px;
+
+  /* ── Color palette (Figma 🌋 Volcano docs) ── */
+  --color-black: #000000;
+  --color-white: #ffffff;
+
+  /* Lava (brand) — constant across themes. */
+  --color-lava-400: #f48060;
+  --color-lava-500: #f37a58;
+
+  /* Neutral ramp. */
+  --color-neutral-0: #0a0a0a;
+  --color-neutral-900: #171717;
+  --color-neutral-800: #262626;
+  --color-neutral-700: #404040;
+  --color-neutral-400: #a3a3a3;
+  --color-neutral-300: #d4d4d4;
+
+  /* Warm tint (active nav / primary-weakest surfaces). */
+  --color-tint-dark: #352320;
+  --color-tint-darker: #4e3730;
+
+  /* Danger. */
+  --color-danger-strong: #850000;
+
+  /* Light-theme neutral ramp + warm tint (derived counterpart). */
+  --color-light-0: #ffffff;
+  --color-light-50: #f5f5f5;
+  --color-light-200: #e5e5e5;
+  --color-light-500: #737373;
+  --color-light-700: #404040;
+  --color-light-900: #0a0a0a;
+  --color-tint-light: #fdf1ec;
+  --color-tint-light-strong: #fbe3d9;
+  --color-danger-light: #fde4e4;
+
+  /* ── Typography scale ── */
+  --font-family-sans: var(--font-body), "Inter", ui-sans-serif, system-ui,
+    sans-serif;
+  --font-family-mono: var(--font-heading), "Space Mono", ui-monospace, monospace;
+
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-md: 14px;
+  --font-size-base: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 24px;
+  --font-size-2xl: 32px;
+  --font-size-5xl: 48px;
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-xs: 16px;
+  --line-height-tight: 20px;
+  --line-height-snug: 24px;
+  --line-height-relaxed: 26px;
+  --line-height-normal: 32px;
+
+  /*
+   * Heading letter-spacing (Space Mono). The Figma headings track looser than a
+   * blanket -0.025em: large display/section headings at -0.02em (H1 48 → -0.96,
+   * H2 24 → -0.48, header 18 → -0.36) and the 16px titles at -0.015em (→ -0.24).
+   * The header's Figma value is -0.32px; -0.02em (-0.36px at 18px) is within a
+   * sub-pixel of it and reused so all display headings share one token.
+   */
+  --tracking-heading: -0.02em;
+  --tracking-heading-tight: -0.015em;
+  --tracking-none: 0;
+
+  /* ── Shadow scale (Figma drop-shadow effect). ── */
+  --shadow-design: 0px 4px 8px 0px rgba(0, 0, 0, 0.11);
+
+  /* ══════════════════════════════════════════
+     LAYER 2 — DESIGN TOKENS
+     Semantic mapping. Components reference these.
+     Colors resolve per theme via the --vd-* swap variables below.
+     ══════════════════════════════════════════ */
+
+  /* ── Semantic colors (brand, constant). ── */
+  --color-primary: var(--color-lava-500);
+  --color-primary-text: var(--color-lava-400);
+  --color-primary-foreground: var(--color-white);
+
+  /* ── Surfaces (theme-swapped). ── */
+  --surface-background: var(--vd-surface);
+  --surface-raised: var(--vd-surface-raised);
+  --surface-tint-weak: var(--vd-tint-weakest);
+  --surface-primary-weak: var(--vd-primary-weakest);
+  --surface-primary-weaker: var(--vd-primary-weaker);
+  --surface-danger-weak: var(--vd-danger-weaker);
+
+  /* ── Text (theme-swapped). ── */
+  --text-primary: var(--vd-fg);
+  --text-inverse: var(--vd-fg-inverse);
+  --text-neutral: var(--vd-neutral);
+  --text-neutral-strong: var(--vd-neutral-strong);
+
+  /* ── Border (theme-swapped). ── */
+  --border-subtle: var(--vd-border-subtle);
+  --border-width-thin: 1px;
+  --border-divider: var(--border-width-thin) solid var(--border-subtle);
+
+  /* ── Semantic typography (site type scale). One size per role. ── */
+  --type-display: var(--font-size-5xl); /* 48 — page hero title */
+  --type-section: var(--font-size-xl); /* 24 — section titles */
+  --type-subtitle: var(--font-size-lg); /* 18 — header brand */
+  --type-title: var(--font-size-base); /* 16 — card/nav section titles */
+  --type-body: var(--font-size-base); /* 16 — body copy */
+  --type-meta: var(--font-size-md); /* 14 — nav / dense UI text */
+
+  /* ── System defaults all components inherit from. ── */
+  --system-font: var(--font-family-sans);
+  --system-mono-font: var(--font-family-mono);
+  --system-transition: 150ms;
+
+  /*
+   * Light theme (:root base) — derived counterpart to the dark Figma palette,
+   * preserving the brand orange + warm tints. Applies when next-themes sets
+   * `.light` or resolves to light (no `.dark` class present).
+   */
+  --vd-surface: var(--color-light-0);
+  --vd-surface-raised: var(--color-light-50);
+  --vd-tint-weakest: var(--color-tint-light);
+  --vd-primary-weakest: var(--color-tint-light);
+  --vd-primary-weaker: var(--color-tint-light-strong);
+  --vd-danger-weaker: var(--color-danger-light);
+  --vd-fg: var(--color-light-900);
+  --vd-fg-inverse: var(--color-white);
+  --vd-neutral: var(--color-light-500);
+  --vd-neutral-strong: var(--color-light-700);
+  --vd-border-subtle: var(--color-light-200);
+
+  color-scheme: light;
+}
+
+/* Dark theme — the exact Figma design palette (docs default). */
+.dark {
+  --vd-surface: var(--color-neutral-0);
+  --vd-surface-raised: var(--color-neutral-900);
+  --vd-tint-weakest: var(--color-tint-dark);
+  --vd-primary-weakest: var(--color-tint-dark);
+  --vd-primary-weaker: var(--color-tint-darker);
+  --vd-danger-weaker: var(--color-danger-strong);
+  --vd-fg: var(--color-white);
+  --vd-fg-inverse: var(--color-white);
+  --vd-neutral: var(--color-neutral-400);
+  --vd-neutral-strong: var(--color-neutral-300);
+  --vd-border-subtle: var(--color-neutral-800);
+
+  color-scheme: dark;
+}

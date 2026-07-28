@@ -1,3 +1,5 @@
+import "./logo.css";
+
 import Image from "next/image";
 
 // Volcano logo: the multicolor pixel mark (exported asset) + the "VOLCANO"
@@ -15,15 +17,13 @@ export function Logo({ height = 22, className }: LogoProps) {
   const wordmarkHeight = Math.round(height * 0.84);
 
   return (
-    <span
-      className={`flex items-center gap-space-30 text-fg ${className ?? ""}`}
-    >
+    <span className={`logo ${className ?? ""}`}>
       <Image
         src="/design/logo-mark.svg"
         alt="Volcano"
         width={markSize}
         height={markSize}
-        className="shrink-0"
+        className="logo-mark"
         priority
       />
       <svg

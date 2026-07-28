@@ -1,3 +1,5 @@
+import "./feature-card.css";
+
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -21,25 +23,13 @@ export function FeatureCard({
   variant = "primary",
   className,
 }: FeatureCardProps) {
-  let gradient = "feature-gradient";
-  if (variant === "danger") {
-    gradient = "feature-gradient-danger";
-  }
-  const cardClass = `group flex h-full min-w-0 flex-1 flex-col items-start gap-space-30 px-space-100 py-space-70 ${gradient} ${className ?? ""}`;
+  const cardClass = `feature-card feature-card--${variant} ${className ?? ""}`;
 
   const body = (
     <>
-      {icon && (
-        <div className="mb-space-30 flex size-8 items-center justify-center text-fg">
-          {icon}
-        </div>
-      )}
-      <h3 className="font-heading text-base font-bold tracking-tight text-fg">
-        {title}
-      </h3>
-      <p className="min-w-full font-body text-sm leading-normal text-neutral">
-        {description}
-      </p>
+      {icon && <div className="feature-card-icon">{icon}</div>}
+      <h3 className="feature-card-title">{title}</h3>
+      <p className="feature-card-body">{description}</p>
     </>
   );
 

@@ -1,3 +1,5 @@
+import "./ide-platforms.css";
+
 import Image from "next/image";
 import Link from "next/link";
 
@@ -11,29 +13,18 @@ const PLATFORMS = [
 
 export function IdePlatforms() {
   return (
-    <div className="flex w-full items-stretch border-b border-border-subtle">
-      {PLATFORMS.map(function renderPlatform(platform, index) {
-        const isLast = index === PLATFORMS.length - 1;
-        let borderClass = "border-r border-border-subtle";
-        if (isLast) {
-          borderClass = "";
-        }
+    <div className="ide-platforms">
+      {PLATFORMS.map(function renderPlatform(platform) {
         return (
           <Link
             key={platform.name}
             href={platform.href}
-            className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-space-50 bg-surface px-space-90 py-space-80 transition-colors hover:bg-surface-raised ${borderClass}`}
+            className="ide-platform"
           >
-            <span className="flex size-8 items-center justify-center">
-              <Image
-                src={platform.src}
-                alt=""
-                width={32}
-                height={32}
-                className="size-8 object-contain"
-              />
+            <span className="ide-platform-icon">
+              <Image src={platform.src} alt="" width={32} height={32} />
             </span>
-            <span className="font-body text-sm text-fg">{platform.name}</span>
+            <span className="ide-platform-label">{platform.name}</span>
           </Link>
         );
       })}

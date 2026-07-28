@@ -1,5 +1,7 @@
 "use client";
 
+import "./search-banner.css";
+
 import { useEffect, useState } from "react";
 import { useSearchContext } from "fumadocs-ui/contexts/search";
 import { SearchIcon } from "@/components/home/icons";
@@ -30,11 +32,11 @@ export function SearchBanner() {
       type="button"
       onClick={openSearch}
       aria-label="Search docs"
-      className="flex w-full items-center gap-space-40 border border-border-subtle bg-surface px-space-50 py-space-40 text-left font-body text-sm text-neutral transition-colors hover:text-fg"
+      className="search-banner"
     >
-      <SearchIcon className="size-4 shrink-0" />
-      <span className="flex-1">Search docs...</span>
-      <kbd className="shrink-0 font-body text-xs text-neutral">{shortcut}</kbd>
+      <SearchIcon className="search-banner-icon" />
+      <span className="search-banner-label">Search docs...</span>
+      <kbd className="search-banner-kbd">{shortcut}</kbd>
     </button>
   );
 }

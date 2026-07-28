@@ -24,7 +24,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       className={`${inter.variable} ${spaceMono.variable}`}
       suppressHydrationWarning
     >
-      <body className="flex min-h-screen flex-col">
+      <body>
         <RootProvider>{children}</RootProvider>
       </body>
     </html>

@@ -1,0 +1,31 @@
+/* ══════════════════════════════════════════
+   Header brand (Figma Logo + "/ Docs"): logo followed by the docs label on one
+   baseline, never wrapping.
+   ══════════════════════════════════════════ */
+
+.nav-title {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-50);
+  white-space: nowrap;
+  text-decoration: none;
+  transition: opacity var(--system-transition);
+}
+
+.nav-title:hover {
+  opacity: 0.8;
+}
+
+.nav-title-label {
+  font-family: var(--system-mono-font);
+  font-size: var(--type-subtitle);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-snug);
+  letter-spacing: var(--tracking-heading);
+  color: var(--text-primary);
+}
+
+.nav-title-slash {
+  color: var(--text-neutral);
+}

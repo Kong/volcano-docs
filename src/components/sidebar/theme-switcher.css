@@ -1,0 +1,39 @@
+/* ══════════════════════════════════════════
+   Theme switcher (Figma AI builder / Segmented controls): system / dark / light
+   on a warm-tinted container, active option highlighted in brand orange.
+   ══════════════════════════════════════════ */
+
+.theme-switcher {
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  gap: var(--space-30);
+  padding: var(--space-10);
+  border: var(--border-divider);
+  background: var(--surface-primary-weak);
+}
+
+.theme-switcher-option {
+  display: flex;
+  align-items: center;
+  padding: var(--space-10) var(--space-40);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-neutral);
+  transition: color var(--system-transition), background var(--system-transition);
+}
+
+.theme-switcher-option:hover {
+  color: var(--text-primary);
+}
+
+.theme-switcher-option[aria-pressed="true"] {
+  background: var(--surface-background);
+  color: var(--color-primary);
+}
+
+.theme-switcher-icon {
+  width: var(--size-icon);
+  height: var(--size-icon);
+}

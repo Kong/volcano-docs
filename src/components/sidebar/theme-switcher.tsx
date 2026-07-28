@@ -1,5 +1,7 @@
 "use client";
 
+import "./theme-switcher.css";
+
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { Monitor, Moon, Sun } from "lucide-react";
@@ -31,14 +33,9 @@ export function ThemeSwitcher() {
   }
 
   return (
-    <div className="flex w-fit items-center gap-space-30 border border-border-subtle bg-primary-weakest p-space-10">
+    <div className="theme-switcher">
       {MODES.map(function renderMode({ key, label, Icon }) {
         const isActive = active === key;
-
-        let stateClass = "text-neutral hover:text-fg";
-        if (isActive) {
-          stateClass = "bg-surface text-primary";
-        }
 
         function selectMode() {
           setTheme(key);
@@ -51,9 +48,9 @@ export function ThemeSwitcher() {
             aria-label={label}
             aria-pressed={isActive}
             onClick={selectMode}
-            className={`flex items-center px-space-40 py-space-10 transition-colors ${stateClass}`}
+            className="theme-switcher-option"
           >
-            <Icon className="size-4" />
+            <Icon className="theme-switcher-icon" />
           </button>
         );
       })}

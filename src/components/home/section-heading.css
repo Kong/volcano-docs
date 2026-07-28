@@ -1,0 +1,23 @@
+/* ══════════════════════════════════════════
+   Section heading (Figma Content_Column title row): the Space Mono title above
+   the IDE and Tutorials rows.
+   ══════════════════════════════════════════ */
+
+.section-heading {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  justify-content: center;
+  border-bottom: var(--border-divider);
+  background: var(--surface-background);
+  padding: var(--space-100);
+}
+
+.section-heading-title {
+  font-family: var(--system-mono-font);
+  font-size: var(--type-section);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-normal);
+  letter-spacing: var(--tracking-heading);
+  color: var(--text-primary);
+}

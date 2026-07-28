@@ -1,0 +1,53 @@
+/* ══════════════════════════════════════════
+   IDE platforms row (Figma): Claude Code, Codex, Cursor. Equal-width cells with
+   dividers between them.
+   ══════════════════════════════════════════ */
+
+.ide-platforms {
+  display: flex;
+  width: 100%;
+  align-items: stretch;
+  border-bottom: var(--border-divider);
+}
+
+.ide-platform {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-50);
+  padding: var(--space-80) var(--space-90);
+  background: var(--surface-background);
+  text-decoration: none;
+  transition: background var(--system-transition);
+}
+
+.ide-platform:not(:last-child) {
+  border-right: var(--border-divider);
+}
+
+.ide-platform:hover {
+  background: var(--surface-raised);
+}
+
+.ide-platform-icon {
+  display: flex;
+  width: var(--size-8);
+  height: var(--size-8);
+  align-items: center;
+  justify-content: center;
+}
+
+.ide-platform-icon img {
+  width: var(--size-8);
+  height: var(--size-8);
+  object-fit: contain;
+}
+
+.ide-platform-label {
+  font-family: var(--system-font);
+  font-size: var(--type-meta);
+  color: var(--text-primary);
+}

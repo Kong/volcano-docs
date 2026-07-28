@@ -1,0 +1,92 @@
+/* ══════════════════════════════════════════
+   Landing footer (Figma Footer Section): logo/description block + link columns,
+   with an ambient glow behind.
+   ══════════════════════════════════════════ */
+
+.home-footer {
+  position: relative;
+  display: flex;
+  width: 100%;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  overflow: hidden;
+  border-top: var(--border-divider);
+  background: var(--surface-background);
+}
+
+.home-footer-glow {
+  pointer-events: none;
+  position: absolute;
+  left: 50%;
+  top: 270px;
+  height: 168px;
+  width: 1482px;
+  transform: translateX(-50%);
+  background: color-mix(in srgb, var(--surface-danger-weak) 10%, transparent);
+  /* Heavy blur renders the fill as a soft ellipse; no radius needed. */
+  filter: blur(120px);
+}
+
+.home-footer-brand {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-width: 280px;
+  flex: 1;
+  flex-direction: column;
+  align-self: stretch;
+  padding: var(--space-100);
+}
+
+.home-footer-brand-inner {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: var(--space-60);
+}
+
+.home-footer-lede {
+  min-width: 100%;
+  font-family: var(--system-font);
+  font-size: var(--type-body);
+  font-style: italic;
+  line-height: var(--line-height-relaxed);
+  color: var(--text-neutral);
+}
+
+.home-footer-lede-accent {
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary-text);
+  text-decoration: underline;
+}
+
+.home-footer-column {
+  position: relative;
+  display: flex;
+  min-width: 160px;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-60);
+  align-self: stretch;
+  padding: var(--space-100);
+}
+
+.home-footer-column-heading {
+  white-space: nowrap;
+  font-family: var(--system-mono-font);
+  font-size: var(--type-title);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.home-footer-link {
+  font-family: var(--system-font);
+  font-size: var(--type-meta);
+  color: var(--text-neutral);
+  text-decoration: none;
+  transition: color var(--system-transition);
+}
+
+.home-footer-link:hover {
+  color: var(--text-primary);
+}

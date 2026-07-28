@@ -1,0 +1,67 @@
+/* ══════════════════════════════════════════
+   Feature card (Figma Feature Card): gradient background, optional icon, title,
+   body. Whole card is a link when href is set.
+   ══════════════════════════════════════════ */
+
+.feature-card {
+  display: flex;
+  height: 100%;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-30);
+  padding: var(--space-70) var(--space-100);
+  text-decoration: none;
+}
+
+/* Warm primary gradient (default). */
+.feature-card--primary {
+  background-image: linear-gradient(
+    132deg,
+    var(--surface-background) 54%,
+    var(--surface-primary-weak) 100%
+  );
+}
+
+/* Danger-tinted gradient. */
+.feature-card--danger {
+  background-image: linear-gradient(
+    140deg,
+    color-mix(in srgb, var(--surface-background) 60%, transparent) 56%,
+    color-mix(in srgb, var(--surface-danger-weak) 60%, transparent) 104%
+  );
+}
+
+.feature-card-icon {
+  display: flex;
+  width: var(--size-8);
+  height: var(--size-8);
+  margin-bottom: var(--space-30);
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+}
+
+/* Icon glyph fills the 32px wrapper. */
+.feature-card-glyph {
+  width: var(--size-8);
+  height: var(--size-8);
+}
+
+.feature-card-title {
+  font-family: var(--system-mono-font);
+  font-size: var(--type-title);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--tracking-heading-tight);
+  color: var(--text-primary);
+}
+
+.feature-card-body {
+  min-width: 100%;
+  font-family: var(--system-font);
+  font-size: var(--type-meta);
+  line-height: var(--line-height-tight);
+  color: var(--text-neutral);
+}

@@ -22,7 +22,7 @@ export function DocsContainer(props: ComponentProps<"div">) {
     <div id="nd-docs-layout" {...props} className="docs-grid">
       {props.children}
       {isHome && (
-        <div className="[grid-area:footer]">
+        <div className="docs-footer-area">
           <Footer />
         </div>
       )}

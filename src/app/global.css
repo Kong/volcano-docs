@@ -1,3 +1,10 @@
+/*
+ * Fumadocs UI is styled with Tailwind v4 + its own preset, so the Tailwind
+ * build stays in place solely to render Fumadocs' vendored components
+ * (DocsLayout, sidebar viewport, search dialog, page/TOC). Our own components
+ * do NOT use Tailwind utilities — they follow the volcano-web convention of
+ * co-located per-component .css files that reference the tokens in theme.css.
+ */
 @import "tailwindcss";
 @import "fumadocs-ui/css/neutral.css";
 @import "fumadocs-ui/css/preset.css";
@@ -5,128 +12,57 @@
 /* Scan Fumadocs' compiled components for Tailwind v4 class detection. */
 @source "../../node_modules/fumadocs-ui/dist/**/*.js";
 
-/*
- * Volcano docs design tokens, mapped from the Figma design system
- * (🌋 Volcano docs). Registered as Tailwind v4 @theme tokens so they are
- * available as first-class utilities (bg-surface, text-primary, font-heading,
- * py-space-80, …) instead of arbitrary values — see AGENTS.md house style.
- *
- * The Figma design is dark-first. Each color token below points at a
- * theme-swap variable (--vd-*) resolved for light (:root) and dark (.dark)
- * further down, so the landing page adapts to Fumadocs' theme toggle. The dark
- * values are the exact Figma palette; the light values are a derived light
- * counterpart that preserves the brand orange + warm tints.
- */
-@theme inline {
-  /* Fonts (wired via next/font in app/layout.tsx). */
-  --font-heading: var(--font-heading), "Space Mono", ui-monospace, monospace;
-  --font-body: var(--font-body), "Inter", ui-sans-serif, system-ui, sans-serif;
+/* Volcano docs design tokens (volcano-web three-layer architecture). */
+@import "./theme.css";
 
-  /* Background colors. */
-  --color-surface: var(--vd-surface);
-  --color-surface-raised: var(--vd-surface-raised);
-  --color-tint-weakest: var(--vd-tint-weakest);
-  --color-primary-weakest: var(--vd-primary-weakest);
-  --color-primary-weaker: var(--vd-primary-weaker);
-  --color-danger-weaker: var(--vd-danger-weaker);
-
-  /* Foreground / text colors. */
-  --color-fg: var(--vd-fg);
-  --color-fg-inverse: var(--vd-fg-inverse);
-  --color-neutral: var(--vd-neutral);
-  --color-neutral-strong: var(--vd-neutral-strong);
-
-  /* Accent / brand (constant across themes). */
-  --color-primary: #f37a58;
-  --color-primary-text: #f48060;
-
-  /* Borders. */
-  --color-border-subtle: var(--vd-border-subtle);
-
-  /* Spacing scale (Figma spacing/space-* tokens). */
-  --spacing-space-10: 2px;
-  --spacing-space-30: 6px;
-  --spacing-space-40: 8px;
-  --spacing-space-50: 12px;
-  --spacing-space-60: 16px;
-  --spacing-space-70: 20px;
-  --spacing-space-80: 24px;
-  --spacing-space-90: 32px;
-  --spacing-space-100: 40px;
-
-  /* Drop shadow from the design (Effect: 0 4 8 #0000001C). */
-  --shadow-design: 0px 4px 8px 0px rgba(0, 0, 0, 0.11);
-}
-
-/* Light theme (default). Derived counterpart to the dark Figma palette. */
-:root {
-  --vd-surface: #ffffff;
-  --vd-surface-raised: #f5f5f5;
-  --vd-tint-weakest: #fdf1ec;
-  --vd-primary-weakest: #fdf1ec;
-  --vd-primary-weaker: #fbe3d9;
-  --vd-danger-weaker: #fde4e4;
-  --vd-fg: #0a0a0a;
-  --vd-fg-inverse: #ffffff;
-  --vd-neutral: #737373;
-  --vd-neutral-strong: #404040;
-  --vd-border-subtle: #e5e5e5;
+/* App shell: full-height column so the docs grid / footer fill the viewport. */
+body {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
 }
 
 /*
  * Match Fumadocs' sidebar surface to the design's page surface so the sidebar
- * and content share one background in both themes (the design is a single dark
- * surface; in light mode both should be white rather than Fumadocs' default
- * grey card). Targets the sidebar root by id to win over its bg-fd-card class.
+ * and content share one background in both themes. Targets the sidebar root by
+ * id to win over its bg-fd-card class.
  */
 #nd-sidebar {
-  background-color: var(--color-surface);
-}
-
-/* Dark theme — the exact Figma design palette. */
-.dark {
-  --vd-surface: #0a0a0a;
-  --vd-surface-raised: #171717;
-  --vd-tint-weakest: #352320;
-  --vd-primary-weakest: #352320;
-  --vd-primary-weaker: #4e3730;
-  --vd-danger-weaker: #850000;
-  --vd-fg: #ffffff;
-  --vd-fg-inverse: #ffffff;
-  --vd-neutral: #a3a3a3;
-  --vd-neutral-strong: #d4d4d4;
-  --vd-border-subtle: #262626;
+  background-color: var(--surface-background);
 }
 
 /*
- * Feature-card gradients from the design. Expressed as component utilities so
- * the token colors stay in the design-system layer (no arbitrary Tailwind
- * values / inline raw colors in the components — see AGENTS.md).
+ * Sidebar section spacing (design). Fumadocs' SidebarViewport forces its item
+ * container to gap-0.5 (2px) via an `!important` utility inside `@layer
+ * utilities`, collapsing the vertical space between our top-level nav sections.
+ * The design (docs-side-menu) uses space-90 (32px) between section groups and
+ * space-80 (24px) between the top "Home" link region and the first section.
+ *
+ * To win against a layered `!important`, this override must live in the SAME
+ * (or an earlier) cascade layer — an unlayered rule loses to a layered
+ * `!important` regardless of specificity. Hence `@layer utilities`.
  */
-@utility feature-gradient {
-  background-image: linear-gradient(
-    132deg,
-    var(--color-surface) 54%,
-    var(--color-primary-weakest) 100%
-  );
-}
+@layer utilities {
+  #nd-sidebar [data-radix-scroll-area-viewport] > * {
+    gap: var(--space-90) !important;
+  }
 
-@utility feature-gradient-danger {
-  background-image: linear-gradient(
-    140deg,
-    color-mix(in srgb, var(--color-surface) 60%, transparent) 56%,
-    color-mix(in srgb, var(--color-danger-weaker) 60%, transparent) 104%
-  );
+  /*
+   * The top "Home" link is the first sibling; pull the first section closer so
+   * the Home→section region gap is space-80 (24px) rather than the full 32px.
+   */
+  #nd-sidebar [data-radix-scroll-area-viewport] > * > a:first-child {
+    margin-bottom: calc(var(--space-80) - var(--space-90));
+  }
 }
 
 /*
  * Docs layout grid (design). Overrides Fumadocs' default docs grid so the
  * header spans a full-width row above both the sidebar and content — giving the
  * continuous top bar + border from the design. The sidebar is a fixed 275px
- * column (the design has no desktop collapse). Kept in CSS (not an inline
- * style) to satisfy the no-inline-styles house rule.
+ * column (the design has no desktop collapse).
  */
-@utility docs-grid {
+.docs-grid {
   display: grid;
   min-height: 100dvh;
   overflow-x: clip;
@@ -148,4 +84,9 @@
         )
       )
       var(--fd-toc-width) minmax(min-content, 1fr);
+}
+
+/* Home footer occupies the full-width trailing grid row (design full-bleed). */
+.docs-footer-area {
+  grid-area: footer;
 }

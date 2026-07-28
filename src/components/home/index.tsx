@@ -1,3 +1,5 @@
+import "./index.css";
+
 import { FeatureCard } from "./feature-card";
 import { Hero } from "./hero";
 import { BotIcon, FlameIcon, TerminalIcon } from "./icons";
@@ -12,27 +14,25 @@ const CARD_COPY =
 // the sections below are the design-specific content.
 export function HomePage() {
   return (
-    <div className="flex w-full flex-col">
+    <div className="home-page">
       <Hero />
 
       {/* Primary feature cards row (fixed height, content top-aligned). */}
-      <div className="flex h-[349px] w-full items-stretch border-b border-border-subtle">
+      <div className="home-card-row home-card-row--primary">
         <FeatureCard
-          icon={<FlameIcon className="size-8" />}
+          icon={<FlameIcon className="feature-card-glyph" />}
           title="Quick start"
           description={CARD_COPY}
           href="/get-started/quickstart"
-          className="border-r border-border-subtle"
         />
         <FeatureCard
-          icon={<TerminalIcon className="size-8" />}
+          icon={<TerminalIcon className="feature-card-glyph" />}
           title="Volcano CLI"
           description={CARD_COPY}
           href="/cli"
-          className="border-r border-border-subtle"
         />
         <FeatureCard
-          icon={<BotIcon className="size-8" />}
+          icon={<BotIcon className="feature-card-glyph" />}
           title="AI builder"
           description={CARD_COPY}
           href="/ai/skills"
@@ -44,12 +44,11 @@ export function HomePage() {
       <IdePlatforms />
 
       <SectionHeading>Tutorials</SectionHeading>
-      <div className="flex h-[372px] w-full items-stretch border-b border-border-subtle">
+      <div className="home-card-row home-card-row--tutorials">
         <FeatureCard
           title="Quick start"
           description={CARD_COPY}
           href="/get-started/quickstart"
-          className="border-r border-border-subtle"
         />
         <FeatureCard
           title="AI builder"

@@ -1,0 +1,41 @@
+/* ══════════════════════════════════════════
+   Sidebar search box (Figma Input). A bordered input-looking trigger that
+   opens Fumadocs' real search dialog.
+   ══════════════════════════════════════════ */
+
+.search-banner {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: var(--space-40);
+  padding: var(--space-40) var(--space-50);
+  border: var(--border-divider);
+  background: var(--surface-background);
+  text-align: left;
+  font-family: var(--system-font);
+  font-size: var(--type-meta);
+  color: var(--text-neutral);
+  cursor: pointer;
+  transition: color var(--system-transition);
+}
+
+.search-banner:hover {
+  color: var(--text-primary);
+}
+
+.search-banner-icon {
+  width: var(--size-icon);
+  height: var(--size-icon);
+  flex-shrink: 0;
+}
+
+.search-banner-label {
+  flex: 1;
+}
+
+.search-banner-kbd {
+  flex-shrink: 0;
+  font-family: var(--system-font);
+  font-size: var(--font-size-xs);
+  color: var(--text-neutral);
+}

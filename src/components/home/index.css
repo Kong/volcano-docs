@@ -1,0 +1,31 @@
+/* ══════════════════════════════════════════
+   Home page shell (Figma Docs 6 content column): the vertical stack of hero,
+   feature-card rows, section headings, and IDE row.
+   ══════════════════════════════════════════ */
+
+.home-page {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+}
+
+/* Feature-card rows — fixed height, content top-aligned, divider below. */
+.home-card-row {
+  display: flex;
+  width: 100%;
+  align-items: stretch;
+  border-bottom: var(--border-divider);
+}
+
+.home-card-row--primary {
+  height: 349px;
+}
+
+.home-card-row--tutorials {
+  height: 372px;
+}
+
+/* Divider between adjacent cards within a row. */
+.home-card-row > .feature-card:not(:last-child) {
+  border-right: var(--border-divider);
+}
