@@ -15,6 +15,13 @@
 /* Volcano docs design tokens (volcano-web three-layer architecture). */
 @import "./theme.css";
 
+/* Zero border-radius globally — the design uses sharp corners everywhere. */
+:root {
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+}
+
 /* App shell: full-height column so the docs grid / footer fill the viewport. */
 body {
   display: flex;
@@ -32,58 +39,47 @@ body {
 }
 
 /*
- * Sidebar section spacing (design). Fumadocs' SidebarViewport forces its item
- * container to gap-0.5 (2px) via an `!important` utility inside `@layer
- * utilities`, collapsing the vertical space between our top-level nav sections.
- * The design (docs-side-menu) uses space-90 (32px) between section groups and
- * space-80 (24px) between the top "Home" link region and the first section.
- *
- * To win against a layered `!important`, this override must live in the SAME
- * (or an earlier) cascade layer — an unlayered rule loses to a layered
- * `!important` regardless of specificity. Hence `@layer utilities`.
+ * Sidebar section spacing — remove Fumadocs' default gap so our groups control
+ * their own spacing.
  */
 @layer utilities {
   #nd-sidebar [data-radix-scroll-area-viewport] > * {
-    gap: var(--space-90) !important;
-  }
-
-  /*
-   * The top "Home" link is the first sibling; pull the first section closer so
-   * the Home→section region gap is space-80 (24px) rather than the full 32px.
-   */
-  #nd-sidebar [data-radix-scroll-area-viewport] > * > a:first-child {
-    margin-bottom: calc(var(--space-80) - var(--space-90));
+    gap: 0 !important;
   }
 }
 
 /*
- * Docs layout grid (design). Overrides Fumadocs' default docs grid so the
- * header spans a full-width row above both the sidebar and content — giving the
- * continuous top bar + border from the design. The sidebar is a fixed 275px
- * column (the design has no desktop collapse).
+ * Docs layout overrides (design). Fumadocs' default header is mobile-only;
+ * our design has a full-width header bar on desktop. Override the grid to add
+ * a header row and show the header on all screen sizes. Also set sidebar and
+ * TOC column widths.
  */
-.docs-grid {
-  display: grid;
-  min-height: 100dvh;
-  overflow-x: clip;
-  --fd-header-height: 3.5rem;
+#nd-docs-layout {
   --fd-sidebar-width: 275px;
-  --fd-sidebar-col: var(--fd-sidebar-width);
-  --fd-toc-width: 0px;
-  --fd-layout-width: 97rem;
+  --fd-toc-width: 220px;
+  --fd-header-height: 3.5rem;
+  --fd-banner-height: 3.5rem;
   grid-template:
     "header header header header header" var(--fd-header-height)
     "sidebar sidebar toc-popover toc toc"
     "sidebar sidebar main toc toc" 1fr
-    "footer footer footer footer footer"
     / minmax(min-content, 1fr) var(--fd-sidebar-col)
       minmax(
         0,
         calc(
-          var(--fd-layout-width) - var(--fd-sidebar-width) - var(--fd-toc-width)
+          var(--fd-layout-width, 97rem) - var(--fd-sidebar-width) - var(--fd-toc-width)
         )
       )
-      var(--fd-toc-width) minmax(min-content, 1fr);
+      var(--fd-toc-width) minmax(min-content, 1fr) !important;
+}
+
+
+/* Doc page title row: title on the left, copy-page dropdown on the right. */
+.docs-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-60);
 }
 
 /* Home footer occupies the full-width trailing grid row (design full-bleed). */

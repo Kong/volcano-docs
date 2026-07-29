@@ -44,6 +44,8 @@
   --size-7: 28px;
   --size-8: 32px;
   --size-icon: 16px;
+  --size-icon-sm: 12px;
+  --size-icon-xs: 10px;
 
   /* ── Color palette (Figma 🌋 Volcano docs) ── */
   --color-black: #000000;

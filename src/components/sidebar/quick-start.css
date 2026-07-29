@@ -1,0 +1,35 @@
+/* ══════════════════════════════════════════
+   Quick Start links — flat list at the top of the sidebar, below search.
+   Uses Space Mono throughout (matching design). 14px / 20px line-height.
+   ══════════════════════════════════════════ */
+
+.quick-start {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-20);
+  padding-bottom: var(--space-80);
+  border-bottom: var(--border-divider);
+  margin-bottom: var(--space-80);
+}
+
+.quick-start-link {
+  display: flex;
+  align-items: center;
+  padding: var(--space-40) var(--space-50);
+  font-family: var(--system-mono-font);
+  font-size: var(--type-meta);
+  line-height: var(--line-height-tight);
+  color: var(--text-neutral);
+  text-decoration: none;
+  transition: color var(--system-transition);
+}
+
+.quick-start-link:hover {
+  color: var(--text-primary);
+}
+
+.quick-start-link[data-active="true"] {
+  background: var(--surface-tint-weak);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-bold);
+}

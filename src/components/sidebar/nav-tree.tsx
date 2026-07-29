@@ -4,43 +4,48 @@ import "./nav-tree.css";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { createContext, useContext, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import type * as PageTree from "fumadocs-core/page-tree";
+import {
+  SidebarFolder as BaseSidebarFolder,
+  SidebarItem as BaseSidebarItem,
+  SidebarSeparator as BaseSidebarSeparator,
+  useFolder,
+  useFolderDepth,
+} from "fumadocs-ui/components/sidebar/base";
+import {
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from "fumadocs-ui/components/ui/collapsible";
+import { useTreePath } from "fumadocs-ui/contexts/tree";
 import { ChevronRightIcon } from "@/components/home/icons";
-
-// Custom sidebar page-tree renderers matching the Figma design. These receive
-// the real page-tree nodes from Fumadocs (driven by source.ts), so the nav
-// stays data-driven — only the presentation is design-specific. Styling lives
-// in nav-tree.css (volcano-web co-located CSS convention).
-
-// Tracks whether a node is nested inside a section (folder). Top-level items
-// (e.g. "Home") show a trailing chevron; nested sub-items do not. Fumadocs'
-// own depth context isn't exported, so we track nesting ourselves.
-const NestedContext = createContext(false);
 
 function isActive(url: string, pathname: string) {
   return url === pathname;
 }
 
-// A leaf nav link (.L2 item). Neutral text; active item gets the warm tint
-// background + bold white text, like the "Home" item in the design. Top-level
-// items also show a trailing chevron, matching the design's standalone top item.
+// A leaf nav link. The root "/" (Home) is hidden — it's accessed via the logo.
 export function NavItem({ item }: { item: PageTree.Item }) {
   const pathname = usePathname();
-  const nested = useContext(NestedContext);
+  const depth = useFolderDepth();
   const active = isActive(item.url, pathname);
 
+  if (item.url === "/") return null;
+
   return (
-    <Link href={item.url} data-active={active} className="nav-item">
+    <BaseSidebarItem
+      href={item.url}
+      active={active}
+      className="nav-item"
+    >
       <span>{item.name}</span>
-      {!nested && <ChevronRightIcon className="nav-item-chevron" />}
-    </Link>
+      {depth === 0 && <ChevronRightIcon className="nav-item-chevron" width={10} height={10} />}
+    </BaseSidebarItem>
   );
 }
 
-// A section (.L2 tittle) with its indented children (.L2 item list). Section
-// titles use Space Mono bold; the group is always visible, matching the design.
-// Children are marked nested so their items drop the top-level chevron.
+// Depth 0: renders as an uppercase group label with children always visible.
+// Depth 1+: renders as a collapsible section using Fumadocs' SidebarFolder.
 export function NavFolder({
   item,
   children,
@@ -48,36 +53,81 @@ export function NavFolder({
   item: PageTree.Folder;
   children: ReactNode;
 }) {
+  const depth = useFolderDepth();
+
+  if (depth === 0) {
+    return (
+      <div className="nav-group">
+        <p className="nav-group-label">{item.name}</p>
+        <div className="nav-group-children">{children}</div>
+      </div>
+    );
+  }
+
+  const path = useTreePath();
+
+  return (
+    <BaseSidebarFolder
+      collapsible={item.collapsible}
+      active={path.includes(item)}
+      defaultOpen={item.defaultOpen}
+      className="nav-folder"
+    >
+      <NavFolderHeader item={item} />
+      <CollapsibleContent className="nav-folder-children">
+        {children}
+      </CollapsibleContent>
+    </BaseSidebarFolder>
+  );
+}
+
+// Folder header: either a link (if folder has index page) or a plain trigger.
+// Both use Radix CollapsibleTrigger for toggle, with our custom chevron.
+function NavFolderHeader({ item }: { item: PageTree.Folder }) {
   const pathname = usePathname();
+  const folder = useFolder();
+  const open = folder?.open ?? false;
 
-  let title: ReactNode = <p className="nav-folder-title">{item.name}</p>;
-
-  // If the folder has an index page, make its title a link to it.
   if (item.index) {
     const active = isActive(item.index.url, pathname);
-    title = (
-      <Link
-        href={item.index.url}
-        data-active={active}
-        className="nav-folder-title"
-      >
-        {item.name}
-      </Link>
+    return (
+      <div className="nav-folder-title-row">
+        <Link
+          href={item.index.url}
+          data-active={active}
+          className="nav-folder-title nav-folder-title-link"
+        >
+          {item.name}
+        </Link>
+        <CollapsibleTrigger className="nav-folder-toggle" aria-label={open ? "Collapse" : "Expand"}>
+          <ChevronRightIcon
+            width={10}
+            height={10}
+            className={`nav-folder-chevron ${open ? "nav-folder-chevron-open" : ""}`}
+          />
+        </CollapsibleTrigger>
+      </div>
     );
   }
 
   return (
-    <div className="nav-folder">
-      <div className="nav-folder-title-row">{title}</div>
-      <div className="nav-folder-children">
-        <NestedContext.Provider value={true}>{children}</NestedContext.Provider>
-      </div>
-    </div>
+    <CollapsibleTrigger className="nav-folder-title-row">
+      <span className="nav-folder-title">{item.name}</span>
+      <ChevronRightIcon
+        width={10}
+        height={10}
+        className={`nav-folder-chevron ${open ? "nav-folder-chevron-open" : ""}`}
+      />
+    </CollapsibleTrigger>
   );
 }
 
 // A separator label between sections.
 export function NavSeparator({ item }: { item: PageTree.Separator }) {
   if (!item.name) return null;
-  return <p className="nav-separator">{item.name}</p>;
+  return (
+    <BaseSidebarSeparator className="nav-separator">
+      {item.name}
+    </BaseSidebarSeparator>
+  );
 }

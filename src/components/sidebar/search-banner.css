@@ -1,6 +1,7 @@
 /* ══════════════════════════════════════════
    Sidebar search box (Figma Input). A bordered input-looking trigger that
-   opens Fumadocs' real search dialog.
+   opens Fumadocs' real search dialog. Lives in the banner slot (above the
+   scroll viewport) so it stays sticky.
    ══════════════════════════════════════════ */
 
 .search-banner {
@@ -14,6 +15,7 @@
   text-align: left;
   font-family: var(--system-font);
   font-size: var(--type-meta);
+  line-height: var(--line-height-snug);
   color: var(--text-neutral);
   cursor: pointer;
   transition: color var(--system-transition);
