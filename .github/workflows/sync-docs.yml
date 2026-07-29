@@ -1,0 +1,122 @@
+name: Sync docs
+
+# Pulls docs from the internal source repos into content/<section>/ and opens a
+# PR that auto-merges. Designed to run daily (not merge-triggered) to keep commit
+# noise low, but the schedule is currently PAUSED (see `on:` below) — only manual
+# workflow_dispatch runs today.
+#
+# Authenticates as the Kong GitHub App (KONG_GH_APP_ID + KONG_GH_APP_PRIVATE_KEY).
+# The App must be installed on volcano-docs and every source repo in docs.config.yaml.
+
+on:
+  # Scheduled sync is PAUSED until the source repos are ready (hosting #690 /
+  # cli / sdk merged to their default branches). Re-enable by uncommenting.
+  # schedule:
+  #   - cron: "13 6 * * *" # daily ~06:13 UTC (off the top of the hour)
+  workflow_dispatch:
+    inputs:
+      source:
+        description: "Single section dest to sync (e.g. content/cli). Blank = all."
+        required: false
+        default: ""
+
+# No ambient GITHUB_TOKEN use: auth is entirely via the App-minted tokens below.
+permissions: {}
+
+concurrency:
+  group: sync-docs
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      # Read-only token for the internal source repos.
+      - name: Mint source-repo read token
+        id: src-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.KONG_GH_APP_ID }}
+          private-key: ${{ secrets.KONG_GH_APP_PRIVATE_KEY }}
+          owner: Kong
+          repositories: |
+            volcano-hosting
+            volcano-sdk-js
+            volcano-cli
+          permission-contents: read
+
+      # Write token scoped to this repo only, for the branch/PR/merge.
+      - name: Mint docs write token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.KONG_GH_APP_ID }}
+          private-key: ${{ secrets.KONG_GH_APP_PRIVATE_KEY }}
+          owner: Kong
+          repositories: volcano-docs
+          permission-contents: write
+          permission-pull-requests: write
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          # Always branch the sync from the default branch regardless of the
+          # dispatch ref, so a non-default workflow_dispatch ref can't land
+          # unrelated commits on main via the auto-merge below.
+          ref: main
+          # Don't persist the write token in .git/config: the build step below
+          # compiles untrusted MDX from the source repos. The token is supplied
+          # explicitly only for the final push.
+          persist-credentials: false
+
+      - name: Pull docs from source repos
+        env:
+          GH_TOKEN: ${{ steps.src-token.outputs.token }}
+          ONLY: ${{ inputs.source }}
+        run: bash scripts/sync-docs.sh
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Validate synced docs (fail before committing)
+        # Same gate as PR CI: format lint, route-aware link check, real build.
+        # A broken sync fails here and never opens/merges a PR.
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm lint:docs content
+          pnpm check:links
+          pnpm build
+
+      - name: Open PR and auto-merge if changed
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          # content/{platform,sdk,cli} is committed (not gitignored) so the
+          # frontend deploy, which packages from .gitignore, keeps it. Internal
+          # docs are excluded at the source (docs/public only).
+          git add content
+          if git diff --cached --quiet; then
+            echo "No doc changes."
+            exit 0
+          fi
+
+          branch="docs-sync/$(date -u +%Y%m%d-%H%M%S)"
+          title="docs: sync from source repos $(date -u +%F)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git commit -m "$title"
+          # persist-credentials:false on checkout, so push with the token explicitly.
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$branch"
+
+          gh pr create --base main --head "$branch" \
+            --title "$title" \
+            --body "Automated docs sync. Sources: docs.config.yaml."
+          # Arm auto-merge so it lands once any required checks pass; if the repo
+          # has no auto-merge / no required checks, GitHub rejects --auto, so
+          # fall back to an immediate squash.
+          gh pr merge "$branch" --auto --squash --delete-branch \
+            || gh pr merge "$branch" --squash --delete-branch
