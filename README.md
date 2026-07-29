@@ -18,11 +18,13 @@ volcano-docs (this repo: contract + assembly + get-started + synced content)
 developer docs site
 ```
 
-Sync runs on a **daily schedule** rather than on every merge to `main`, to keep
-commit noise low. Need it sooner? Trigger the **Sync docs** workflow manually
-(`workflow_dispatch`) — optionally scoped to a single section via the `source`
-input. Each run opens a PR that **auto-merges**. Source repos are internal, so
-the job authenticates as the **Kong GitHub App**. See
+Sync is designed to run on a **daily schedule** rather than on every merge to
+`main`, to keep commit noise low — but the schedule is **currently paused**
+(until the source repos land on their default branches), so the active trigger
+today is a **manual** run of the **Sync docs** workflow (`workflow_dispatch`),
+optionally scoped to a single section via the `source` input. Each run opens a
+PR that **auto-merges**. Source repos are internal, so the job authenticates as
+the **Kong GitHub App**. See
 [`.github/workflows/sync-docs.yml`](.github/workflows/sync-docs.yml).
 
 The serving layer is intentionally **not decided yet**. The markdown format
