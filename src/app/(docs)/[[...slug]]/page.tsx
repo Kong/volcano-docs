@@ -35,7 +35,7 @@ export default async function Page(props: PageProps) {
     <DocsPage toc={page.data.toc} full={page.data.full}>
       <div className="docs-title-row">
         <DocsTitle>{page.data.title}</DocsTitle>
-        <CopyPageDropdown slug={params.slug!} title={page.data.title} />
+        <CopyPageDropdown slug={params.slug!} />
       </div>
       <DocsDescription>{page.data.description}</DocsDescription>
       <DocsBody>

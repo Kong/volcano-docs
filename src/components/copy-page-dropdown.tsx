@@ -10,22 +10,27 @@ import {
 } from "fumadocs-ui/components/ui/popover";
 import { Copy, ChevronDown, Bot, Sparkles, Terminal, Box } from "lucide-react";
 
-interface CopyPageDropdownProps {
+type CopyPageDropdownProps = {
   slug: string[];
-  title: string;
-}
+};
 
-const BASE_URL = "https://docs.volcano.dev";
-
+// Derive the page URL from the current origin rather than a hardcoded host, so
+// the AI-tool links point at whatever environment (prod/staging/local) is being
+// viewed instead of always deep-linking to production.
 function getPageUrl(slug: string[]) {
-  return `${BASE_URL}/${slug.join("/")}`;
+  return `${window.location.origin}/${slug.join("/")}`;
 }
 
 function getLlmApiUrl(slug: string[]) {
   return `/api/llm/${slug.join("/")}`;
 }
 
-export function CopyPageDropdown({ slug, title }: CopyPageDropdownProps) {
+function triggerLabel(copied: boolean) {
+  if (copied) return "Copied!";
+  return "Copy page";
+}
+
+export function CopyPageDropdown({ slug }: CopyPageDropdownProps) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -42,25 +47,25 @@ export function CopyPageDropdown({ slug, title }: CopyPageDropdownProps) {
 
   function openInChatGPT() {
     const url = `https://chatgpt.com/?q=${encodeURIComponent(`Read this documentation page and help me understand it: ${getPageUrl(slug)}`)}`;
-    window.open(url, "_blank");
+    window.open(url, "_blank", "noopener,noreferrer");
     setOpen(false);
   }
 
   function openInClaude() {
     const url = `https://claude.ai/new?q=${encodeURIComponent(`Read this documentation page and help me understand it: ${getPageUrl(slug)}`)}`;
-    window.open(url, "_blank");
+    window.open(url, "_blank", "noopener,noreferrer");
     setOpen(false);
   }
 
   function openInCodex() {
     const url = `https://chatgpt.com/codex?q=${encodeURIComponent(`Review this documentation: ${getPageUrl(slug)}`)}`;
-    window.open(url, "_blank");
+    window.open(url, "_blank", "noopener,noreferrer");
     setOpen(false);
   }
 
   function openInCursor() {
     const url = `https://cursor.com/docs?url=${encodeURIComponent(getPageUrl(slug))}`;
-    window.open(url, "_blank");
+    window.open(url, "_blank", "noopener,noreferrer");
     setOpen(false);
   }
 
@@ -68,10 +73,23 @@ export function CopyPageDropdown({ slug, title }: CopyPageDropdownProps) {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger className="copy-page-trigger">
         <Copy className="copy-page-trigger-icon" />
-        <span>{copied ? "Copied!" : "Copy page"}</span>
+        <span>{triggerLabel(copied)}</span>
         <ChevronDown className="copy-page-trigger-chevron" />
       </PopoverTrigger>
       <PopoverContent align="end" className="copy-page-menu">
+        <button
+          type="button"
+          onClick={copyForLlm}
+          className="copy-page-item"
+        >
+          <Copy className="copy-page-item-icon" />
+          <span className="copy-page-item-text">
+            <span className="copy-page-item-title">Copy page</span>
+            <span className="copy-page-item-desc">
+              Copy as Markdown for LLMs
+            </span>
+          </span>
+        </button>
         <button
           type="button"
           onClick={openInChatGPT}
