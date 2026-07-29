@@ -4,14 +4,13 @@ import "./nav-tree.css";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { createContext, use, type ReactNode } from "react";
 import type * as PageTree from "fumadocs-core/page-tree";
 import {
   SidebarFolder as BaseSidebarFolder,
   SidebarItem as BaseSidebarItem,
   SidebarSeparator as BaseSidebarSeparator,
   useFolder,
-  useFolderDepth,
 } from "fumadocs-ui/components/sidebar/base";
 import {
   CollapsibleTrigger,
@@ -20,6 +19,17 @@ import {
 import { useTreePath } from "fumadocs-ui/contexts/tree";
 import { ChevronRightIcon } from "@/components/home/icons";
 
+// Fumadocs only tracks folder depth through its own SidebarFolder, but our
+// top-level groups render as plain <div> labels (no SidebarFolder), so its
+// useFolderDepth() would stay 0 for every descendant and nested folders would
+// never reach the collapsible branch. We track depth ourselves and bump it
+// around each folder's children so nested folders collapse as intended.
+const NavDepthContext = createContext(0);
+
+function useNavDepth() {
+  return use(NavDepthContext);
+}
+
 function isActive(url: string, pathname: string) {
   return url === pathname;
 }
@@ -27,7 +37,7 @@ function isActive(url: string, pathname: string) {
 // A leaf nav link. The root "/" (Home) is hidden — it's accessed via the logo.
 export function NavItem({ item }: { item: PageTree.Item }) {
   const pathname = usePathname();
-  const depth = useFolderDepth();
+  const depth = useNavDepth();
   const active = isActive(item.url, pathname);
 
   if (item.url === "/") return null;
@@ -39,7 +49,7 @@ export function NavItem({ item }: { item: PageTree.Item }) {
       className="nav-item"
     >
       <span>{item.name}</span>
-      {depth === 0 && <ChevronRightIcon className="nav-item-chevron" width={10} height={10} />}
+      {depth === 0 && <ChevronRightIcon className="nav-item-chevron" />}
     </BaseSidebarItem>
   );
 }
@@ -53,31 +63,34 @@ export function NavFolder({
   item: PageTree.Folder;
   children: ReactNode;
 }) {
-  const depth = useFolderDepth();
+  const depth = useNavDepth();
+  const path = useTreePath();
 
   if (depth === 0) {
     return (
-      <div className="nav-group">
-        <p className="nav-group-label">{item.name}</p>
-        <div className="nav-group-children">{children}</div>
-      </div>
+      <NavDepthContext value={depth + 1}>
+        <div className="nav-group">
+          <p className="nav-group-label">{item.name}</p>
+          <div className="nav-group-children">{children}</div>
+        </div>
+      </NavDepthContext>
     );
   }
 
-  const path = useTreePath();
-
   return (
-    <BaseSidebarFolder
-      collapsible={item.collapsible}
-      active={path.includes(item)}
-      defaultOpen={item.defaultOpen}
-      className="nav-folder"
-    >
-      <NavFolderHeader item={item} />
-      <CollapsibleContent className="nav-folder-children">
-        {children}
-      </CollapsibleContent>
-    </BaseSidebarFolder>
+    <NavDepthContext value={depth + 1}>
+      <BaseSidebarFolder
+        collapsible={item.collapsible}
+        active={path.includes(item)}
+        defaultOpen={item.defaultOpen}
+        className="nav-folder"
+      >
+        <NavFolderHeader item={item} />
+        <CollapsibleContent className="nav-folder-children">
+          {children}
+        </CollapsibleContent>
+      </BaseSidebarFolder>
+    </NavDepthContext>
   );
 }
 
@@ -101,8 +114,6 @@ function NavFolderHeader({ item }: { item: PageTree.Folder }) {
         </Link>
         <CollapsibleTrigger className="nav-folder-toggle" aria-label={open ? "Collapse" : "Expand"}>
           <ChevronRightIcon
-            width={10}
-            height={10}
             className={`nav-folder-chevron ${open ? "nav-folder-chevron-open" : ""}`}
           />
         </CollapsibleTrigger>
@@ -114,8 +125,6 @@ function NavFolderHeader({ item }: { item: PageTree.Folder }) {
     <CollapsibleTrigger className="nav-folder-title-row">
       <span className="nav-folder-title">{item.name}</span>
       <ChevronRightIcon
-        width={10}
-        height={10}
         className={`nav-folder-chevron ${open ? "nav-folder-chevron-open" : ""}`}
       />
     </CollapsibleTrigger>
