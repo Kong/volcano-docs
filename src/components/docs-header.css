@@ -1,6 +1,7 @@
 /* ══════════════════════════════════════════
-   Docs header (Figma Header Container): full-width brand bar with a continuous
-   bottom border spanning the whole page. Occupies the grid `header` row.
+   Docs header: full-width brand bar with the Volcano logo on the left and
+   theme switcher on the right. Spans the header grid area set by Fumadocs'
+   docs layout container.
    ══════════════════════════════════════════ */
 
 .docs-header {
@@ -9,8 +10,9 @@
   z-index: 30;
   grid-area: header;
   display: flex;
-  height: 56px;
+  height: var(--fd-header-height, 3.5rem);
   align-items: center;
+  justify-content: space-between;
   padding: 0 var(--space-100);
   border-bottom: var(--border-divider);
   background: color-mix(in srgb, var(--surface-background) 80%, transparent);

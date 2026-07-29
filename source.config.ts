@@ -33,8 +33,27 @@ function remarkCodeLangAlias() {
   return walk;
 }
 
+// Rehype plugin: replace <script> elements in rendered HTML with <template> to
+// suppress React's dev-mode "script tag inside component" console warning.
+// Script tags appear in HTML code examples and are harmless (rendered as text
+// inside <code>), but React flags them regardless.
+function rehypeScriptToTemplate() {
+  function walk(node: { tagName?: string; children?: unknown[] }) {
+    if (node.tagName === "script") {
+      node.tagName = "template";
+    }
+    if (node.children) {
+      for (const child of node.children) {
+        if (child && typeof child === "object") walk(child as typeof node);
+      }
+    }
+  }
+  return walk;
+}
+
 export default defineConfig({
   mdxOptions: {
     remarkPlugins: [remarkCodeLangAlias],
+    rehypePlugins: [rehypeScriptToTemplate],
   },
 });

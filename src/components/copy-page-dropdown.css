@@ -1,0 +1,90 @@
+/* ══════════════════════════════════════════
+   Copy Page dropdown — trigger button + popover menu for copying page
+   content and opening in AI tools.
+   ══════════════════════════════════════════ */
+
+.copy-page-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-30);
+  padding: var(--space-20) var(--space-40);
+  border: var(--border-divider);
+  background: var(--surface-background);
+  font-family: var(--system-mono-font);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-tight);
+  color: var(--text-neutral);
+  cursor: pointer;
+  transition: color var(--system-transition);
+}
+
+.copy-page-trigger:hover {
+  color: var(--text-primary);
+}
+
+.copy-page-trigger-icon {
+  width: var(--size-icon);
+  height: var(--size-icon);
+  flex-shrink: 0;
+}
+
+.copy-page-trigger-chevron {
+  width: var(--size-icon-xs);
+  height: var(--size-icon-xs);
+  flex-shrink: 0;
+}
+
+.copy-page-menu {
+  display: flex;
+  flex-direction: column;
+  min-width: 260px;
+  padding: var(--space-20);
+  border: var(--border-divider);
+  background: var(--surface-background);
+  box-shadow: var(--shadow-design);
+}
+
+.copy-page-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-50);
+  padding: var(--space-50);
+  border: none;
+  background: none;
+  text-align: left;
+  text-decoration: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background var(--system-transition);
+}
+
+.copy-page-item:hover {
+  background: var(--surface-tint-weak);
+}
+
+.copy-page-item-icon {
+  width: var(--size-icon);
+  height: var(--size-icon);
+  flex-shrink: 0;
+  color: var(--text-neutral);
+}
+
+.copy-page-item-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-10);
+}
+
+.copy-page-item-title {
+  font-family: var(--system-font);
+  font-size: var(--type-meta);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.copy-page-item-desc {
+  font-family: var(--system-font);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-xs);
+  color: var(--text-neutral);
+}

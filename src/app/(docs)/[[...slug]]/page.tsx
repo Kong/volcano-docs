@@ -9,6 +9,7 @@ import { notFound } from "next/navigation";
 import defaultMdxComponents from "fumadocs-ui/mdx";
 import type { Metadata } from "next";
 import { HomePage } from "@/components/home";
+import { CopyPageDropdown } from "@/components/copy-page-dropdown";
 
 type PageProps = { params: Promise<{ slug?: string[] }> };
 
@@ -32,7 +33,10 @@ export default async function Page(props: PageProps) {
   const MDXContent = page.data.body;
   return (
     <DocsPage toc={page.data.toc} full={page.data.full}>
-      <DocsTitle>{page.data.title}</DocsTitle>
+      <div className="docs-title-row">
+        <DocsTitle>{page.data.title}</DocsTitle>
+        <CopyPageDropdown slug={params.slug!} />
+      </div>
       <DocsDescription>{page.data.description}</DocsDescription>
       <DocsBody>
         <MDXContent components={{ ...defaultMdxComponents }} />

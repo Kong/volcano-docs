@@ -1,12 +1,9 @@
 import "./sidebar-footer.css";
 
 import Link from "next/link";
-import { ThemeSwitcher } from "@/components/sidebar/theme-switcher";
 
-// Sidebar footer from the design: the "Volcano Pricing" / "Privacy Policy"
-// links, then the theme switcher segmented control below them. Rendered as the
-// sidebar `footer` slot (Fumadocs' own theme toggle is disabled in favor of
-// the design's three-mode switcher here).
+// Sidebar footer: "Volcano Pricing" / "Privacy Policy" links. The theme
+// switcher has moved to the top-right of the header (DocsHeader).
 const FOOTER_LINKS = [
   { label: "Volcano Pricing", href: "https://volcano.dev/pricing" },
   { label: "Privacy Policy", href: "https://volcano.dev/privacy" },
@@ -28,7 +25,6 @@ export function SidebarFooter() {
           );
         })}
       </div>
-      <ThemeSwitcher />
     </div>
   );
 }
