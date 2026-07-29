@@ -24,7 +24,7 @@ Sync is designed to run on a **daily schedule** rather than on every merge to
 today is a **manual** run of the **Sync docs** workflow (`workflow_dispatch`),
 optionally scoped to a single section via the `source` input. Each run opens a
 PR that **auto-merges**. Source repos are internal, so the job authenticates as
-the **Kong GitHub App**. See
+the **Volcano GitHub App**. See
 [`.github/workflows/sync-docs.yml`](.github/workflows/sync-docs.yml).
 
 The serving layer is intentionally **not decided yet**. The markdown format
@@ -62,8 +62,8 @@ The mapping is defined machine-readably in [`docs.config.yaml`](docs.config.yaml
    to reformat `docs/`, add the [`spec/ci-caller.example.yml`](spec/ci-caller.example.yml)
    lint workflow, and paste [`spec/AGENTS.snippet.md`](spec/AGENTS.snippet.md)
    into the repo's `AGENTS.md`.
-3. Install the Kong GitHub App on `volcano-docs` and every source repo, and set
-   `KONG_GH_APP_ID` + `KONG_GH_APP_PRIVATE_KEY` secrets.
+3. Install the Volcano GitHub App on `volcano-docs` and every source repo, and
+   set the `VOLCANO_APP_ID` variable + `VOLCANO_APP_KEY` secret.
 4. Pick and wire the generator.
 
 ## Site (Fumadocs)
