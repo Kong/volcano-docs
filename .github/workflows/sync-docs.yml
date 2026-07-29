@@ -5,7 +5,7 @@ name: Sync docs
 # noise low, but the schedule is currently PAUSED (see `on:` below) — only manual
 # workflow_dispatch runs today.
 #
-# Authenticates as the Kong GitHub App (KONG_GH_APP_ID + KONG_GH_APP_PRIVATE_KEY).
+# Authenticates as the Volcano GitHub App (vars.VOLCANO_APP_ID + secrets.VOLCANO_APP_KEY).
 # The App must be installed on volcano-docs and every source repo in docs.config.yaml.
 
 on:
@@ -36,8 +36,8 @@ jobs:
         id: src-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
-          app-id: ${{ secrets.KONG_GH_APP_ID }}
-          private-key: ${{ secrets.KONG_GH_APP_PRIVATE_KEY }}
+          app-id: ${{ vars.VOLCANO_APP_ID }}
+          private-key: ${{ secrets.VOLCANO_APP_KEY }}
           owner: Kong
           repositories: |
             volcano-hosting
@@ -50,8 +50,8 @@ jobs:
         id: app-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
-          app-id: ${{ secrets.KONG_GH_APP_ID }}
-          private-key: ${{ secrets.KONG_GH_APP_PRIVATE_KEY }}
+          app-id: ${{ vars.VOLCANO_APP_ID }}
+          private-key: ${{ secrets.VOLCANO_APP_KEY }}
           owner: Kong
           repositories: volcano-docs
           permission-contents: write
