@@ -66,9 +66,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           token: ${{ steps.app-token.outputs.token }}
-          # Always branch the sync from the default branch regardless of the
-          # dispatch ref, so a non-default workflow_dispatch ref can't land
-          # unrelated commits on main via the auto-merge below.
+          # Pin the checkout to the default branch. The triggers (schedule /
+          # repository_dispatch) already run only default-branch workflow code,
+          # so this is defense-in-depth: it keeps the synced content and the
+          # auto-merge below anchored to main even if a future trigger change
+          # reintroduces a caller-selectable ref.
           ref: main
           # Don't persist the write token in .git/config: the build step below
           # compiles untrusted MDX from the source repos. The token is supplied
