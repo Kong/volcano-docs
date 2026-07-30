@@ -70,6 +70,15 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/functions" \
 
 Cloud deploys install Node.js, Python, and Ruby dependencies during the function compile build. Upload source and manifests such as `package.json`, `requirements.txt`, or `Gemfile`; do not upload installed dependency directories such as `node_modules`, `python_deps`, `.venv`, or `vendor`.
 
+Python dependencies are staged outside application source and exposed to the
+build through `PYTHONPATH` and `PATH`. The build command therefore does not see
+installed packages copied into its source tree, and application source wins
+publish-time file collisions.
+
+The top-level path `.volcano-dependencies` is reserved for dependency staging.
+An uploaded function containing that path is accepted asynchronously, then its
+compile build fails with a reserved-path validation error.
+
 Direct API clients may upload ZIP or `tar.gz`; the API stores a normalized `tar.gz` source archive. Uploaded source archives cannot contain symlink entries. The API enforces `SOURCE_ARCHIVE_SIZE_LIMIT_MB` on uploaded and normalized source archives. The CLI uploads `tar.gz` and does not enforce its own source archive size limit.
 
 After dependencies are installed and the final Lambda image is built, the publish build rejects images larger than `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB`.

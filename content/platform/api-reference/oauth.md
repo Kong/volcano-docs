@@ -13,6 +13,12 @@ Volcano supports OAuth 2.0 authentication with major identity providers:
 - Microsoft (Azure AD / Personal accounts)
 - Apple Sign In
 
+Before upgrading an existing redirect-based integration, register every callback
+URL in the project's `allowed_redirect_urls`. Authorization and in-flight
+callbacks fail closed when the allowlist is empty or the exact scheme, host,
+port, path, and query do not match. Flows that omit `redirect_url` and receive
+the token response as JSON are unchanged.
+
 ## Endpoints
 
 ### Public OAuth flow
@@ -29,19 +35,29 @@ Redirects user to OAuth provider for authorization.
 - `project_id` - UUID of your project
 - `provider` - One of: `google`, `github`, `microsoft`, `apple`
 
-**Query Parameters (Optional):**
-- `redirect_url` - URL to redirect after OAuth completes
-- `link_user_id` - User ID if linking to existing account (internal use)
+**Query Parameters:**
+
+- `anon_key` - Project anon key (required)
+- `redirect_url` - URL to redirect to after OAuth completes. Must exactly
+  match an entry in the project's `allowed_redirect_urls`, including the query
+  string (see [Managed hosted pages](../authentication/managed-hosted-pages.md)),
+  or be the project's own managed hosted-auth page URL. Omit `redirect_url` to
+  get the token response as JSON from the callback instead of a redirect.
+- `client_state` - Optional application nonce that is echoed after the callback
+- `response_mode` - Set to `code` to return a short-lived code to the registered
+  `redirect_url`, then exchange it at `POST /auth/oauth/exchange`
 
 **Response:** `307 Temporary Redirect` to OAuth provider
 
 **Errors:**
 - `404` - OAuth provider not configured
 - `400` - OAuth provider is disabled
+- `400` - `redirect_url` is not registered in `allowed_redirect_urls`
 
 **Example:**
 ```bash
-curl -i http://localhost:8000/auth/oauth/google/authorize
+curl -i \
+  'http://localhost:8000/auth/oauth/google/authorize?anon_key=<anon_key>&redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fcallback&response_mode=code'
 ```
 
 ---
@@ -64,8 +80,10 @@ OAuth provider calls this endpoint after user authorization.
 - `error` - Error code if authorization failed
 
 **Response:**
-- `200 OK` - Existing user signed in
-- `201 Created` - New user created
+- `303 See Other` - Registered browser redirect with a single-use `code` and
+  optional application `state`; no session tokens are placed in the URL
+- `200 OK` - Existing user signed in when `redirect_url` was omitted
+- `201 Created` - New user signed in when `redirect_url` was omitted
 
 **Response Body:**
 ```json
@@ -93,7 +111,30 @@ OAuth provider calls this endpoint after user authorization.
 **Errors:**
 - `400` - Missing/invalid code or state
 - `400` - State parameter expired (10 min timeout)
+- `400` - the redirect URL stored with this flow is no longer registered in
+  `allowed_redirect_urls` (re-checked at callback time, in case the allowlist
+  changed after authorization started)
 - `409` - Email already exists (requires linking)
+
+---
+
+#### Exchange callback code
+
+```http
+POST /auth/oauth/exchange
+Authorization: Bearer {anon_key}
+Content-Type: application/json
+
+{
+  "code": "{callback_code}",
+  "redirect_url": "https://yourapp.com/auth/callback"
+}
+```
+
+Atomically consumes the short-lived callback code and returns the
+`AuthTokenResponse` shown above. The project and exact redirect URL must match
+the authorization request. A replay, expired code, or redirect mismatch returns
+`400 Bad Request`.
 
 ---
 
@@ -146,6 +187,10 @@ Link OAuth provider to current authenticated user.
 **Path Parameters:**
 - `provider` - Provider to link: `google`, `github`, `microsoft`, `apple`
 
+**Query Parameters (Optional):**
+- `redirect_url` - URL to redirect to after linking completes. Same
+  `allowed_redirect_urls` requirement as the authorize endpoint above.
+
 **Headers:**
 - `Authorization` - Bearer token (user's access token)
 
@@ -163,6 +208,7 @@ User should be redirected to `authorization_url`. After authorization, provider 
 - `404` - OAuth provider not configured
 - `409` - Provider already linked
 - `400` - Provider is disabled
+- `400` - `redirect_url` is not registered in `allowed_redirect_urls`
 
 ---
 
@@ -494,4 +540,3 @@ See complete examples:
 - [Authentication Overview](./authentication.md)
 - [Email/Password Auth](./auth-endpoints.md)
 - [Anon Keys](./auth-endpoints.md#anon-keys)
-

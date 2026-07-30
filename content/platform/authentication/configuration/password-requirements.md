@@ -10,16 +10,13 @@ password reset, anonymous-account conversion, and password changes.
 
 - Minimum length: 15 Unicode characters by default
 - Maximum length: 128 Unicode characters
-- Compatibility writer limit: 72 raw UTF-8 bytes until the Argon2id write cutover
 - Unicode passwords are normalized to NFC and counted by code point
 - The complete password is validated and hashed; it is never silently truncated
 - Common and known-compromised passwords are rejected
 - Sign-in and password-reset endpoints are rate limited by the backend
 
-The password reader accepts Argon2id and established cost-10 bcrypt credentials.
-Password writes remain bcrypt for the compatibility deployment; Argon2id writes
-are enabled only after every serving replica has the dual-format reader, which
-keeps rolling deployment and rollback safe.
+New passwords are hashed with Argon2id. Existing bcrypt credentials remain
+readable for compatibility with accounts created before the Argon2id migration.
 
 Known-compromised checks use a padded k-anonymous request: only the first five
 characters of a SHA-1 digest are sent to the breach service. Plaintext passwords
@@ -37,7 +34,6 @@ the effective backend policy:
     "effective_min_length": 15,
     "min_configurable_length": 15,
     "max_length": 128,
-    "max_bytes": 72,
     "require_uppercase": false,
     "require_lowercase": false,
     "require_numbers": false,
@@ -47,9 +43,8 @@ the effective backend policy:
 }
 ```
 
-Applications should render and validate settings from `password_policy`, including
-both `max_length` and the temporary raw-input `max_bytes` compatibility bound,
-instead of duplicating policy constants. `effective_min_length` and the
+Applications should render and validate settings from `password_policy` instead
+of duplicating policy constants. `effective_min_length`, `max_length`, and the
 `require_*` fields describe the rules currently enforced, while
 `min_configurable_length` is the lowest value an administrator may choose.
 Client-side validation is useful feedback, but the backend remains authoritative
@@ -59,7 +54,7 @@ and may reject a password that appears in the compromised-password corpus.
 
 **Setting:** `min_password_length`  
 **Default:** 15
-**Range:** 15-72 during the bcrypt compatibility deployment
+**Range:** 15-128
 
 ```json
 {"min_password_length": 20}

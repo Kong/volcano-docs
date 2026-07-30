@@ -3,12 +3,12 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useVolcano } from '../../lib/useVolcano';
+import { useVolcano, validatePasswordAgainstPolicy } from '../../lib/useVolcano';
 import ConfigPrompt from '../../components/ConfigPrompt';
 
 export default function AuthPage() {
   const router = useRouter();
-  const { volcano, configured, loading: sdkLoading, reload } = useVolcano();
+  const { volcano, configured, loading: sdkLoading, passwordPolicy, passwordPolicyError, reload } = useVolcano();
   const [mode, setMode] = useState<'signin' | 'signup'>('signup');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -52,6 +52,20 @@ export default function AuthPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!volcano) return;
+
+    if (mode === 'signup') {
+      if (!passwordPolicy) {
+        setMessage(passwordPolicyError || 'Password policy is temporarily unavailable');
+        setMessageType('error');
+        return;
+      }
+      const passwordValidationError = validatePasswordAgainstPolicy(password, passwordPolicy);
+      if (passwordValidationError) {
+        setMessage(passwordValidationError);
+        setMessageType('error');
+        return;
+      }
+    }
 
     setLoading(true);
     setMessage('');
@@ -163,7 +177,10 @@ export default function AuthPage() {
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Min. 6 characters"
+              placeholder={mode === 'signup'
+                ? (passwordPolicy ? `${passwordPolicy.effective_min_length}-${passwordPolicy.max_length} characters` : 'Password policy unavailable')
+                : 'Your password'}
+              disabled={mode === 'signup' && !passwordPolicy}
               required
             />
           </div>
@@ -181,7 +198,11 @@ export default function AuthPage() {
             </div>
           )}
 
-          <button type="submit" disabled={loading} style={{ width: '100%', marginTop: '10px' }}>
+          <button
+            type="submit"
+            disabled={loading || (mode === 'signup' && !passwordPolicy)}
+            style={{ width: '100%', marginTop: '10px' }}
+          >
             {loading ? (
               <>
                 <span className="loading"></span> Processing...
@@ -203,4 +224,3 @@ export default function AuthPage() {
     </div>
   );
 }
-

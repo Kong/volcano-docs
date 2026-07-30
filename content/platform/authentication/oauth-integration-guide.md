@@ -51,7 +51,8 @@ When Google redirects back to your callback URL, Volcano automatically:
 1. Exchanges authorization code for access token
 2. Fetches user info from Google
 3. Creates/signs in user
-4. Returns Volcano access_token + refresh_token
+4. Redirects with a short-lived, single-use Volcano authorization code
+5. Your client exchanges the code for a Volcano access_token + refresh_token
 
 ---
 
@@ -781,7 +782,6 @@ Can sign in with:
 - Check troubleshooting guide
 - Review security audit
 - Open an issue on GitHub
-
 
 
 

@@ -80,6 +80,11 @@ auth.uid() = owner_id
 auth.uid() = owner_id
 ```
 
+Object visibility changes always require ownership. When a bucket has one or
+more `UPDATE` policies, the owner must also satisfy one of them. Service roles
+bypass this check. Use an `UPDATE` policy with the definition `false` to reserve
+visibility changes for a trusted backend.
+
 ### Authenticated users
 
 Any signed-in user can perform the operation:

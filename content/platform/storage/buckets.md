@@ -226,7 +226,9 @@ console.log(file.public_url);
 // https://api.yourapp.com/public/{projectId}/assets/logo.png
 ```
 
-Public and private files can coexist in the same bucket. Only the file owner (or a service key) can change file visibility.
+Public and private files can coexist in the same bucket. Only the file owner
+(or a service key) can change file visibility. If the bucket defines `UPDATE`
+policies, the owner must also satisfy one of them.
 
 ## File size limits
 

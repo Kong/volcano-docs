@@ -97,26 +97,41 @@ See the [frontend example](../examples/frontend-auth-nextjs/README.md) for compl
 ```javascript
 // 1. Start OAuth flow
 function signInWithGoogle() {
-  // Get authorization URL from your backend
-  fetch(`/api/auth/oauth/google/authorize`)
-    .then(response => {
-      // Backend returns 302 redirect or authorization_url
-      window.location.href = response.url;
-    });
+  const callbackUrl = 'https://yourapp.com/auth/callback';
+  const nonce = crypto.randomUUID();
+  sessionStorage.setItem('oauth_state', nonce);
+  const authorizeUrl = new URL(
+    'https://api.volcano.dev/auth/oauth/google/authorize'
+  );
+  authorizeUrl.searchParams.set('anon_key', anonKey);
+  authorizeUrl.searchParams.set('redirect_url', callbackUrl);
+  authorizeUrl.searchParams.set('client_state', nonce);
+  authorizeUrl.searchParams.set('response_mode', 'code');
+  window.location.assign(authorizeUrl);
 }
 
-// 2. Handle callback
-// When user is redirected back to /auth/callback?code=...&state=...
-// Your backend handles this automatically and returns tokens
-
-// 3. Store tokens
-function handleCallback() {
+// 2. Handle the Volcano callback
+async function handleCallback() {
   const urlParams = new URLSearchParams(window.location.search);
   const code = urlParams.get('code');
   const state = urlParams.get('state');
-  
-  // The callback endpoint processes this and returns tokens
-  // Store them and redirect user to your app
+  if (state !== sessionStorage.getItem('oauth_state')) {
+    throw new Error('OAuth state mismatch');
+  }
+  sessionStorage.removeItem('oauth_state');
+  const response = await fetch('https://api.volcano.dev/auth/oauth/exchange', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${anonKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      code,
+      redirect_url: 'https://yourapp.com/auth/callback',
+    }),
+  });
+  const session = await response.json();
+  // Store the returned session using your normal secure session handling.
 }
 ```
 
@@ -130,7 +145,9 @@ function handleCallback() {
 GET /auth/oauth/{provider}/authorize
 ```
 
-Redirects user to OAuth provider for authorization.
+Redirects user to the OAuth provider. Set `response_mode=code`, along with a
+registered `redirect_url` and optional `client_state` nonce, for the
+authorization-code callback flow.
 
 **Providers:** `google`, `github`, `microsoft`, `apple`
 
@@ -146,7 +163,22 @@ GET /auth/oauth/{provider}/callback?code={code}&state={state}
 
 Handles OAuth provider callback. Automatically called by OAuth provider.
 
-**Response:** `201 Created` (new user) or `200 OK` (existing user)
+**Browser response:** A flow started with `response_mode=code` receives `303 See
+Other` to the registered app URL with a short-lived, single-use `code`. Session
+tokens are not included in that callback URL. Flows that omit `response_mode`
+retain the established session-fragment response for compatibility.
+
+Exchange that code with the same project anon key and exact redirect URL:
+
+```http
+POST /auth/oauth/exchange
+Authorization: Bearer {anon_key}
+Content-Type: application/json
+
+{"code":"...","redirect_url":"https://yourapp.com/auth/callback"}
+```
+
+The exchange response is:
 
 ```json
 {
@@ -559,4 +591,3 @@ See the [OAuth example application](../examples/frontend-auth-nextjs/README.md) 
 - [Email/Password Authentication](./quickstart.md)
 - [Anonymous Users](./anonymous-users.md)
 - [Security checklist](../guides/security-checklist.md)
-
