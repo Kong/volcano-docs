@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useVolcano, VolcanoUser } from '../../lib/useVolcano';
+import { useVolcano, validatePasswordAgainstPolicy, VolcanoUser } from '../../lib/useVolcano';
 import ConfigPrompt from '../../components/ConfigPrompt';
 
 interface MetadataField {
@@ -13,7 +13,7 @@ interface MetadataField {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { volcano, configured, loading: sdkLoading, reload } = useVolcano();
+  const { volcano, configured, loading: sdkLoading, passwordPolicy, passwordPolicyError, reload } = useVolcano();
   const [user, setUser] = useState<VolcanoUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [updatePassword, setUpdatePassword] = useState('');
@@ -84,6 +84,20 @@ export default function DashboardPage() {
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!volcano) return;
+
+    if (updatePassword) {
+      if (!passwordPolicy) {
+        setMessage(passwordPolicyError || 'Password policy is temporarily unavailable');
+        setMessageType('error');
+        return;
+      }
+      const passwordValidationError = validatePasswordAgainstPolicy(updatePassword, passwordPolicy);
+      if (passwordValidationError) {
+        setMessage(passwordValidationError);
+        setMessageType('error');
+        return;
+      }
+    }
 
     setLoading(true);
     setMessage('');
@@ -330,7 +344,8 @@ export default function DashboardPage() {
               id="updatePassword"
               value={updatePassword}
               onChange={(e) => setUpdatePassword(e.target.value)}
-              placeholder="New password (min. 6 characters)"
+              placeholder={passwordPolicy ? `${passwordPolicy.effective_min_length}-${passwordPolicy.max_length} characters` : 'Password policy unavailable'}
+              disabled={!passwordPolicy}
             />
           </div>
 
@@ -426,4 +441,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-

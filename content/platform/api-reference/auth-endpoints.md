@@ -29,27 +29,22 @@ Content-Type: application/json
 ```
 
 **Response:** 201 Created
+
 ```json
 {
-  "access_token": "eyJhbGc...",
-  "token_type": "bearer",
-  "expires_in": 3600,
-  "refresh_token": "f4e3d2c1...",
-  "user": {
-    "id": "uuid",
-    "email": "user@example.com",
-    "user_metadata": {"name": "John Doe"},
-    "status": "active",
-    "created_at": "2024-01-01T00:00:00Z"
-  }
+  "confirmation_required": true,
+  "message": "If the account was created, a confirmation email has been sent. Confirm your email, then sign in."
 }
 ```
 
+Signup is session-less. Call `POST /auth/signin` after confirmation to create
+a session. Existing emails receive the same acknowledgement.
+
 **Errors:**
+
 - `400` - Invalid email/password format
 - `401` - Invalid, tampered, revoked, or wrong-project anon key
 - `403` - Signups disabled or anon key lacks `auth.signup` permission
-- `409` - Email already exists
 - `429` - Rate limit exceeded
 
 ---
@@ -69,9 +64,13 @@ Authorization: Bearer <anon_key>
 }
 ```
 
-**Response:** 200 OK (same as signup)
+**Response:** 200 OK
+
+The response contains an access token, refresh token, and user unless the
+request uses eligible cookie session storage.
 
 **Errors:**
+
 - `400` - Missing email/password
 - `401` - Invalid credentials, invalid/tampered/revoked anon key, or account banned/deleted
 - `403` - Anon key lacks `auth.signin` permission
@@ -87,6 +86,7 @@ Authorization: Bearer <anon_key>
 ```
 
 **Request:**
+
 ```json
 {
   "refresh_token": "f4e3d2c1..."
@@ -94,17 +94,22 @@ Authorization: Bearer <anon_key>
 ```
 
 **Response:** 200 OK
+
 ```json
 {
-  "access_token": "eyJhbGc...",  // New token
+  "access_token": "eyJhbGc...",
   "token_type": "bearer",
   "expires_in": 3600,
-  "refresh_token": "f4e3d2c1...",  // Same token
-  "user": {...}
+  "refresh_token": "f4e3d2c1...",
+  "user": {
+    "id": "uuid",
+    "email": "user@example.com"
+  }
 }
 ```
 
 **Errors:**
+
 - `401` - Invalid/expired refresh token, session timeout, invalid/tampered/revoked anon key
 - `403` - Anon key lacks `auth.refresh` permission
 
@@ -125,6 +130,38 @@ Authorization: Bearer <anon_key>
 ```
 
 **Response:** 204 No Content
+
+### Use HttpOnly cookie sessions
+
+Use cookie mode when your browser app and the Volcano API share a schemeful
+site, such as `app.example.com` and `api.example.com`. Configure the app's
+exact origin in auth CORS, enable credentials, and send browser requests with
+credentials:
+
+```js
+const response = await fetch('https://api.example.com/auth/signin', {
+  method: 'POST',
+  credentials: 'include',
+  headers: {
+    Authorization: `Bearer ${anonKey}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    email: 'user@example.com',
+    password: 'correct-horse-battery-staple',
+    session_mode: 'cookie',
+  }),
+});
+const session = await response.json();
+```
+
+The API stores the refresh token in a project-scoped HttpOnly cookie and omits
+it from the response. Refresh and logout with `credentials: 'include'` and
+`{"session_mode":"cookie"}`; logout returns `204` even when the cookie is
+missing or expired.
+
+Wildcard CORS entries and cross-site origins do not qualify for cookie mode.
+Those clients continue to receive and send `refresh_token` in JSON.
 
 ---
 
@@ -342,6 +379,10 @@ Authorization: Bearer <access_token>
 ```
 
 **Response:** 200 OK (updated user object)
+
+`user_metadata` is merged by key. Existing keys that are not included in the
+request remain unchanged. Set a key to `null` to remove it.
+Merging is shallow: a nested object replaces the stored value for that top-level key.
 
 **Errors:**
 - `400` - Password doesn't meet requirements or in password history
@@ -647,7 +688,7 @@ Authorization: Bearer <platform_token>
 ```
 
 **Validation rules:**
-- `min_password_length` must be between 15 and 72 Unicode characters during the bcrypt compatibility deployment
+- `min_password_length` must be between 15 and 128 Unicode characters
 - `require_email_confirmation=true` requires `email_enabled=true`
 - `email_enabled=false` is rejected while `require_email_confirmation=true`
 - `post_auth_redirect_url` and `post_logout_redirect_url` must be present in `allowed_redirect_urls`

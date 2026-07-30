@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useVolcano } from '../../lib/useVolcano';
+import { useVolcano, validatePasswordAgainstPolicy } from '../../lib/useVolcano';
 import ConfigPrompt from '../../components/ConfigPrompt';
 
 export default function PasswordResetPage() {
-  const { volcano, configured, loading: sdkLoading, reload } = useVolcano();
+  const { volcano, configured, loading: sdkLoading, passwordPolicy, passwordPolicyError, reload } = useVolcano();
   const [step, setStep] = useState<'request' | 'reset'>('request');
   const [email, setEmail] = useState('');
   const [token, setToken] = useState('');
@@ -70,8 +70,15 @@ export default function PasswordResetPage() {
       return;
     }
 
-    if (newPassword.length < 6) {
-      setMessage('Password must be at least 6 characters');
+    if (!passwordPolicy) {
+      setMessage(passwordPolicyError || 'Password policy is temporarily unavailable');
+      setMessageType('error');
+      return;
+    }
+
+    const passwordValidationError = validatePasswordAgainstPolicy(newPassword, passwordPolicy);
+    if (passwordValidationError) {
+      setMessage(passwordValidationError);
       setMessageType('error');
       return;
     }
@@ -216,12 +223,13 @@ export default function PasswordResetPage() {
                 id="newPassword"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Min. 6 characters"
+                placeholder={passwordPolicy ? `${passwordPolicy.effective_min_length}-${passwordPolicy.max_length} characters` : 'Password policy unavailable'}
+                disabled={!passwordPolicy}
                 required
               />
             </div>
 
-            <button type="submit" disabled={loading} style={{ width: '100%' }}>
+            <button type="submit" disabled={loading || !passwordPolicy} style={{ width: '100%' }}>
               {loading ? 'Resetting...' : '🔐 Reset Password'}
             </button>
           </form>
@@ -230,4 +238,3 @@ export default function PasswordResetPage() {
     </div>
   );
 }
-

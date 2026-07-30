@@ -165,7 +165,14 @@ console.log(data.publicUrl);
 // This URL can be shared anywhere - no SDK needed!
 ```
 
-Public and private files can coexist in the same bucket. Only the file owner (or a service key) can change visibility.
+Public and private files can coexist in the same bucket. Only the file owner
+(or a service key) can change visibility. Configured `UPDATE` policies also
+apply to owner visibility changes.
+
+Authenticated downloads use `Cache-Control: private, no-store`.
+Public downloads can be cached by browsers and shared caches for up to five
+minutes. Visibility changes and deletions can therefore take up to five minutes
+to propagate to clients that already cached the file.
 
 ## SDK methods
 

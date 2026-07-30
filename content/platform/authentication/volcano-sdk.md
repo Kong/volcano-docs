@@ -287,6 +287,10 @@ const { user, error } = await volcano.auth.updateUser({
 });
 ```
 
+Metadata updates merge the supplied keys into the current user metadata.
+Existing keys that are not supplied remain unchanged.
+Merging is shallow: a nested object replaces the stored value for that top-level key.
+
 ---
 
 #### Refresh session

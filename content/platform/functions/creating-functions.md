@@ -137,6 +137,10 @@ This is useful for shared utilities without requiring each function to duplicate
 
 Cloud deployments upload source plus dependency manifests. Volcano installs dependencies during the function compile build using the selected runtime. Do not include installed dependency directories in cloud uploads.
 
+Do not include the top-level `.volcano-dependencies` path. Volcano reserves it
+for dependency staging, and the asynchronous compile build fails when uploaded
+source contains it.
+
 A common Node.js layout looks like:
 
 ```text

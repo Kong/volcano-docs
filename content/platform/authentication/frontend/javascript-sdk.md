@@ -194,7 +194,9 @@ const { user } = await volcano.auth.updateUser({
 
 **Parameters:**
 - `password` (optional) - New password
-- `metadata` (optional) - Updated user data
+- `metadata` (optional) - User data keys to merge into the existing metadata
+  (omitted keys remain unchanged; set a key to `null` to remove it; merging is
+  shallow, so nested objects replace the stored value for that top-level key)
 
 **Errors:**
 - Password doesn't meet requirements → 400
@@ -379,4 +381,3 @@ See `examples/frontend-integration/simple-auth.html` for a complete working exam
 ## See Also
 
 - [Examples](../../examples/frontend-auth-nextjs/README.md) - Complete working examples
-

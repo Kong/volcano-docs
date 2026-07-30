@@ -34,14 +34,48 @@ them with `volcano variables …` or the [declarative config](../projects/config
 
 ## Custom domains
 
-Bring your own domain and attach it to a frontend:
+Custom domains are a **PRO** feature and use **bring-your-own-certificate
+(BYOC)** TLS: you supply the certificate and private key, and Volcano serves
+your domain with them. Volcano does not issue the certificate for you.
+
+Attaching a custom domain takes two steps — attach the domain (with your cert),
+then point DNS at your frontend:
 
 ```bash
-volcano cloud frontends domain create my-site --domain app.example.com
+# 1. Attach the domain with your PEM certificate + unencrypted private key
+#    (--chain is optional; include it if your CA requires the issuing chain).
+volcano cloud frontends domain create my-site \
+  --domain app.example.com \
+  --cert  ./fullchain-leaf.pem \
+  --key   ./privkey.pem \
+  --chain ./chain.pem
+
+# 2. Check status and the frontend's default URL.
 volcano cloud frontends domain get my-site
 ```
 
-Volcano provisions the certificate and rotates it without downtime.
+You can also attach a custom domain declaratively — see
+[`custom_domain` in the configuration reference](../projects/configuration.md).
+
+### Point DNS at your frontend
+
+Create a `CNAME` record for your domain pointing at the frontend's **default
+Volcano URL** (the `<frontend-id>.frontends.<region-domain>` host shown by
+`volcano cloud frontends get`). That host is stable for the life of the
+frontend — it does not change across redeploys.
+
+```text
+app.example.com.  CNAME  <frontend-id>.frontends.volcano.dev.
+```
+
+The domain becomes `active` once Volcano finishes attaching your certificate.
+That status does not confirm your DNS is live — verify separately (for
+example `dig CNAME app.example.com`).
+
+To rotate the certificate later, update it through the declarative
+[`custom_domain` config](../projects/configuration.md) and re-apply; the
+rotation is zero-downtime. Re-running `domain create` for a domain that's
+already attached is a no-op and won't replace the certificate.
 
 ## Next
 

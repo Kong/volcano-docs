@@ -3,12 +3,12 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useVolcano, VolcanoUser } from '../../lib/useVolcano';
+import { useVolcano, validatePasswordAgainstPolicy, VolcanoUser } from '../../lib/useVolcano';
 import ConfigPrompt from '../../components/ConfigPrompt';
 
 export default function AnonymousPage() {
   const router = useRouter();
-  const { volcano, configured, loading: sdkLoading, reload } = useVolcano();
+  const { volcano, configured, loading: sdkLoading, passwordPolicy, passwordPolicyError, reload } = useVolcano();
   const [step, setStep] = useState(1);
   const [user, setUser] = useState<VolcanoUser | null>(null);
   const [anonName, setAnonName] = useState('');
@@ -88,8 +88,15 @@ export default function AnonymousPage() {
       return;
     }
 
-    if (convertPassword.length < 6) {
-      setMessage('Password must be at least 6 characters');
+    if (!passwordPolicy) {
+      setMessage(passwordPolicyError || 'Password policy is temporarily unavailable');
+      setMessageType('error');
+      return;
+    }
+
+    const passwordValidationError = validatePasswordAgainstPolicy(convertPassword, passwordPolicy);
+    if (passwordValidationError) {
+      setMessage(passwordValidationError);
       setMessageType('error');
       return;
     }
@@ -242,7 +249,8 @@ export default function AnonymousPage() {
                 id="convertPassword"
                 value={convertPassword}
                 onChange={(e) => setConvertPassword(e.target.value)}
-                placeholder="Min. 6 characters"
+                placeholder={passwordPolicy ? `${passwordPolicy.effective_min_length}-${passwordPolicy.max_length} characters` : 'Password policy unavailable'}
+                disabled={!passwordPolicy}
                 required
               />
             </div>
@@ -258,7 +266,7 @@ export default function AnonymousPage() {
               />
             </div>
 
-            <button onClick={convertToAuthenticated} disabled={loading} style={{ width: '100%' }}>
+            <button onClick={convertToAuthenticated} disabled={loading || !passwordPolicy} style={{ width: '100%' }}>
               {loading ? 'Converting...' : '🎉 Create Permanent Account'}
             </button>
 

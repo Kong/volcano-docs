@@ -53,18 +53,57 @@ ready:
 volcano cloud frontends redeploy my-site
 ```
 
+Volcano controls the Next.js build ID, including when an application defines
+`generateBuildId`. Redeploying the same frontend with identical source, build
+variables, app path, architecture, and build toolchain keeps the same opaque
+build ID and `_next/static` asset URLs. Changing any of those build inputs
+changes the ID. Build IDs are scoped to the project and frontend; do not use
+them as release identifiers.
+
+Each generated frontend runtime image must fit the configured
+`LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB`. Volcano checks an uncompressed upper
+bound—the exact pinned Lambda base-image layers plus the generated application
+layer—before publishing. A server, image-optimizer, or warmer image over the
+limit fails the asynchronous deployment. Remove unused production dependencies
+or large generated files from the frontend bundle to reduce its size.
+
 ## 4. Add a custom domain
 
+Custom domains are **PRO** and use **bring-your-own-certificate (BYOC)** TLS —
+supply your own PEM certificate and unencrypted private key (`--chain` is
+optional):
+
 ```bash
-volcano cloud frontends domain create my-site --domain app.example.com
-volcano cloud frontends domain get my-site      # follow DNS/verification status
+volcano cloud frontends domain create my-site \
+  --domain app.example.com \
+  --cert  ./fullchain-leaf.pem \
+  --key   ./privkey.pem \
+  --chain ./chain.pem
+volcano cloud frontends domain get my-site      # status + the default URL to point DNS at
 ```
+
+Then create a `CNAME` for your domain pointing at the frontend's default
+Volcano URL (`<frontend-id>.frontends.<region-domain>`, from `domain get` /
+`frontends get`). That host is stable across redeploys:
+
+```text
+app.example.com.  CNAME  <frontend-id>.frontends.volcano.dev.
+```
+
+The domain goes `active` once Volcano finishes attaching your certificate —
+that status doesn't confirm DNS is live, so verify it separately. See
+[custom domains](overview.md#custom-domains) for rotation and other details.
 
 ## 5. View logs
 
 ```bash
 volcano cloud frontends logs my-site
 ```
+
+Build logs show the selected Node.js and package-manager versions, dependency
+installation, Next.js detection, the build command, and Next.js/OpenNext
+output. Validation failures include an actionable message. Platform
+orchestration and infrastructure diagnostics stay in operator logs.
 
 ## Next
 

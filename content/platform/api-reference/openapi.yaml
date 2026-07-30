@@ -1189,6 +1189,26 @@ paths:
         - $ref: '#/components/parameters/ProjectId'
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/EndingBefore'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Search'
+        - name: created_after
+          in: query
+          required: false
+          description: Restrict results to attempts created at or after this timestamp.
+          schema:
+            type: string
+            format: date-time
+        - name: resource_type
+          in: query
+          required: false
+          description: |
+            Restrict the feed to a single resource type. Omit to return both
+            Function and Frontend deployments.
+          schema:
+            type: string
+            enum: [function, frontend]
       responses:
         '200':
           description: Successful response
@@ -1198,6 +1218,74 @@ paths:
                 $ref: '#/components/schemas/PaginatedProjectDeployments'
         '400':
           description: Bad request - invalid identifier
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized - invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - project ownership required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /projects/{id}/deployments/summary:
+    get:
+      tags:
+        - Projects
+      summary: Summarize deployments in a project
+      description: |
+        Summarizes deployment attempts for one comparable resource pipeline.
+        Success rate uses conclusive outcomes only: active and deleted attempts
+        are successful; failed and degraded attempts are failures; in-progress
+        and superseded attempts are excluded. Median build duration includes
+        completed, non-superseded attempts with recorded CodeBuild work,
+        including failed builds.
+      operationId: summarizeProjectDeployments
+      security:
+        - UserToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - name: search
+          in: query
+          required: false
+          description: Restrict the summary to resource names containing this value.
+          schema:
+            type: string
+        - name: resource_type
+          in: query
+          required: true
+          description: Restrict the summary to one comparable deployment pipeline.
+          schema:
+            type: string
+            enum: [function, frontend]
+        - name: created_after
+          in: query
+          required: false
+          description: Restrict results to attempts created at or after this timestamp.
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectDeploymentSummary'
+        '400':
+          description: Bad request - invalid identifier or filter
           content:
             application/json:
               schema:
@@ -3857,7 +3945,13 @@ paths:
       tags:
         - Authentication
       summary: Sign in an auth user
-      description: Authenticate with email and password. Requires anon key. Project is identified via the anon key.
+      description: |
+        Authenticate with email and password. Requires an anon key.
+
+        Set `session_mode` to `cookie` to request HttpOnly refresh-token
+        storage. Cookie mode is honored only for an exact, credentialed CORS
+        origin on the same schemeful site as this API. Otherwise the response
+        retains the refresh token in its body.
       operationId: authSignin
       security:
         - AnonKey: []
@@ -3875,6 +3969,9 @@ paths:
                   type: string
                 password:
                   type: string
+                session_mode:
+                  type: string
+                  enum: [cookie]
       responses:
         '200':
           description: Signin successful
@@ -3896,21 +3993,29 @@ paths:
       tags:
         - Authentication
       summary: Refresh access token
-      description: Get a new access token using refresh token. Requires anon key. Project is identified via the anon key.
+      description: |
+        Get a new access token using a refresh token. Requires an anon key.
+
+        Send `refresh_token` in the body for the default flow. An eligible
+        cookie-mode browser request may instead send `session_mode: cookie`
+        with an empty token or omit the request body; the API reads and resets
+        the project's HttpOnly cookie and omits `refresh_token` from the
+        response.
       operationId: authRefresh
       security:
         - AnonKey: []
       requestBody:
-        required: true
+        required: false
         content:
           application/json:
             schema:
               type: object
-              required:
-                - refresh_token
               properties:
                 refresh_token:
                   type: string
+                session_mode:
+                  type: string
+                  enum: [cookie]
       responses:
         '200':
           description: Token refreshed
@@ -3935,21 +4040,27 @@ paths:
       tags:
         - Authentication
       summary: Logout (revoke refresh token)
-      description: Invalidate a refresh token. Requires anon key. Project is identified via the anon key.
+      description: |
+        Invalidate a refresh token. Requires an anon key.
+
+        Send `refresh_token` for the default flow. An eligible cookie-mode
+        browser request may instead send `session_mode: cookie` with an empty
+        token; logout remains idempotent when the cookie is missing or expired.
       operationId: authLogout
       security:
         - AnonKey: []
       requestBody:
-        required: true
+        required: false
         content:
           application/json:
             schema:
               type: object
-              required:
-                - refresh_token
               properties:
                 refresh_token:
                   type: string
+                session_mode:
+                  type: string
+                  enum: [cookie]
       responses:
         '204':
           description: Logged out successfully
@@ -4504,6 +4615,10 @@ paths:
                 user_metadata:
                   type: object
                   additionalProperties: true
+                  description: |
+                    Metadata keys to merge into the current user metadata.
+                    Omitted keys remain unchanged; set a key to null to remove it.
+                    Merging is shallow; nested objects replace the stored value for that top-level key.
       responses:
         '200':
           description: Profile updated
@@ -5796,16 +5911,36 @@ paths:
           schema:
             type: string
           description: |
-            URL to redirect to after the OAuth flow (optional). The session
-            tokens are appended to this URL's fragment on success. If the URL
-            carries a `vh_state` query parameter (the client SDK's one-time
-            nonce), it is moved into the fragment as `state` so the SDK can bind
-            the returned session to the flow it initiated (login-CSRF defense).
+            URL to redirect to after the OAuth flow (optional). Must exactly
+            match an entry in the project's `allowed_redirect_urls`, including
+            its query string, or be the project's own managed hosted-auth page
+            URL.
+        - name: client_state
+          in: query
+          schema:
+            type: string
+            maxLength: 255
+          description: |
+            Optional application nonce. It is stored with the server-generated
+            provider state and echoed to redirect_url as `state`.
+        - name: response_mode
+          in: query
+          schema:
+            type: string
+            enum: [code]
+          description: |
+            Set to `code` to receive a short-lived authorization code at
+            redirect_url, then use POST /auth/oauth/exchange to obtain the
+            session. `redirect_url` is required in this mode. When omitted, the
+            established session-fragment response is retained for compatibility
+            with existing clients.
       responses:
         '307':
           description: Redirect to OAuth provider
         '400':
-          description: OAuth provider is disabled for this project
+          description: |
+            OAuth provider is disabled for this project, or `redirect_url` is
+            not registered in `allowed_redirect_urls`
         '404':
           description: OAuth provider not configured
   /auth/oauth/{provider}/callback:
@@ -5840,19 +5975,68 @@ paths:
             type: string
       responses:
         '200':
-          description: Existing user signed in
+          description: Existing user signed in (when redirect_url was omitted)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthTokenResponse'
         '201':
-          description: New user created and signed in
+          description: New user created and signed in (when redirect_url was omitted)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthTokenResponse'
+        '400':
+          description: |
+            Missing/invalid code or state, the state parameter expired, or the
+            flow's stored redirect_url is no longer registered in
+            allowed_redirect_urls (re-checked at callback time)
         '409':
           description: Email already exists (requires linking)
+        '303':
+          description: |
+            Redirect to the exact registered redirect_url. Flows that requested
+            response_mode=code receive a short-lived, single-use `code` and
+            optional application `state`; compatibility flows receive the
+            established session fragment.
+  /auth/oauth/exchange:
+    post:
+      tags:
+        - OAuth Authentication
+      summary: Exchange OAuth authorization code
+      description: |
+        Atomically consumes a short-lived callback code and returns the user's
+        session. The request must use the same project anon key and exact
+        redirect_url that initiated the flow.
+      operationId: authOAuthExchange
+      security:
+        - AnonKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, redirect_url]
+              properties:
+                code:
+                  type: string
+                redirect_url:
+                  type: string
+                  format: uri
+      responses:
+        '200':
+          description: Authorization code consumed and session created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenResponse'
+        '400':
+          description: Invalid, expired, consumed, or redirect-mismatched code
+        '401':
+          description: Missing or invalid project anon key
+        '429':
+          description: Too many exchange attempts from this client
   /auth/device/authorize:
     post:
       tags:
@@ -6078,6 +6262,30 @@ paths:
           schema:
             type: string
             enum: [google, github, microsoft, apple]
+        - name: redirect_url
+          in: query
+          schema:
+            type: string
+          description: |
+            URL to redirect to after linking completes (optional). Same
+            allowed_redirect_urls requirement as GET /auth/oauth/{provider}/authorize.
+        - name: client_state
+          in: query
+          schema:
+            type: string
+            maxLength: 255
+          description: |
+            Optional application nonce echoed to redirect_url as `state`.
+        - name: response_mode
+          in: query
+          schema:
+            type: string
+            enum: [code]
+          description: |
+            Set to `code` to receive a short-lived authorization code at
+            redirect_url. `redirect_url` is required in this mode. When
+            omitted, the established session-fragment response is retained for
+            compatibility with existing clients.
       responses:
         '200':
           description: Authorization URL generated
@@ -6088,6 +6296,12 @@ paths:
                 properties:
                   authorization_url:
                     type: string
+        '400':
+          description: redirect_url is not registered in allowed_redirect_urls
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Not authenticated
           content:
@@ -7464,6 +7678,7 @@ paths:
       summary: Update file visibility (public/private)
       description: |
         Change whether a file is publicly accessible. Only the file owner or a service key can change visibility.
+        If the bucket defines UPDATE policies, the owner must also satisfy one of them.
 
         - Public files can be downloaded with just an anon key (no user authentication required)
         - Private files (default) require authentication and must pass policy checks
@@ -7494,7 +7709,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/StorageObject'
         '403':
-          description: Only file owner or service key can change visibility
+          description: Not the file owner or denied by the bucket's UPDATE policies
         '404':
           description: Object not found
   # ============================================================================
@@ -8103,6 +8318,8 @@ components:
       $ref: ./components/common/schemas.yaml#/components/schemas/ProjectDeployment
     ProjectDeploymentResource:
       $ref: ./components/common/schemas.yaml#/components/schemas/ProjectDeploymentResource
+    ProjectDeploymentSummary:
+      $ref: ./components/common/schemas.yaml#/components/schemas/ProjectDeploymentSummary
     ProjectUsageResponse:
       $ref: ./components/common/schemas.yaml#/components/schemas/ProjectUsageResponse
     RealtimeConfig:

@@ -324,6 +324,8 @@ if (!error) {
 - **Service key**: Has admin access to all files
 
 Other users cannot change a file's visibility, even if they can read or write the file.
+If the bucket defines `UPDATE` policies, the file owner must also satisfy one
+of them. Service keys bypass policy checks.
 
 ### Public vs private download
 

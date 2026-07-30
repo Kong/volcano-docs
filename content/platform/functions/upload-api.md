@@ -218,7 +218,8 @@ After upload, the cloud compile build installs dependencies from manifests such 
 2. **Include handler file** - e.g., `index.js` for `index.handler`
 3. **Include dependency manifests/lockfiles** - Do not include installed dependency directories for cloud deploys
 4. **No symlink entries** - Uploaded source archives cannot contain symlinks. Safe symlinks created during the cloud build, such as package-manager workspace links, are materialized before publish.
-5. **Valid archive structure** - The archive must be readable by Volcano
+5. **No top-level `.volcano-dependencies` path** - Volcano reserves it for dependency staging. An upload containing it is accepted asynchronously, then fails during the compile build.
+6. **Valid archive structure** - The archive must be readable by Volcano
 
 ## Direct Upload Layout Inference
 
@@ -313,5 +314,4 @@ If one function fails before its workflow starts, successful functions are left 
 **Simpler** - Standard file upload
 **Works with standard tooling** - Any client that can send multipart form data can upload functions
 **Browser compatible** - Works with `<input type="file">`  
-
 
