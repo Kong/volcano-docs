@@ -1,24 +1,30 @@
 name: Sync docs
 
 # Pulls docs from the internal source repos into content/<section>/ and opens a
-# PR that auto-merges. Designed to run daily (not merge-triggered) to keep commit
-# noise low, but the schedule is currently PAUSED (see `on:` below) — only manual
-# workflow_dispatch runs today.
+# PR that auto-merges. Runs daily (not merge-triggered) to keep commit noise low.
+#
+# Default-branch-ONLY triggers by design: schedule and repository_dispatch both
+# always execute this file + scripts from the default branch, so no feature
+# branch can inject exfiltration code that runs with the App-minted read token.
+# workflow_dispatch is deliberately NOT used — it runs a caller-chosen ref's
+# YAML/scripts with secrets, which lets any write collaborator read the full
+# source repos (a confused-deputy path). Change the sync by merging to the
+# default branch (gated by branch protection), not by dispatching a branch.
+#
+# Manual on-demand run (always uses default-branch code):
+#   gh api repos/Kong/volcano-docs/dispatches -f event_type=sync-docs
+# Single section only:
+#   gh api repos/Kong/volcano-docs/dispatches -f event_type=sync-docs \
+#     -f 'client_payload[source]=content/cli'
 #
 # Authenticates as the Volcano GitHub App (vars.VOLCANO_APP_ID + secrets.VOLCANO_APP_KEY).
 # The App must be installed on volcano-docs and every source repo in docs.config.yaml.
 
 on:
-  # Scheduled sync is PAUSED until the source repos are ready (hosting #690 /
-  # cli / sdk merged to their default branches). Re-enable by uncommenting.
-  # schedule:
-  #   - cron: "13 6 * * *" # daily ~06:13 UTC (off the top of the hour)
-  workflow_dispatch:
-    inputs:
-      source:
-        description: "Single section dest to sync (e.g. content/cli). Blank = all."
-        required: false
-        default: ""
+  schedule:
+    - cron: "13 6 * * *" # daily ~06:13 UTC (off the top of the hour)
+  repository_dispatch:
+    types: [sync-docs]
 
 # No ambient GITHUB_TOKEN use: auth is entirely via the App-minted tokens below.
 permissions: {}
@@ -72,7 +78,8 @@ jobs:
       - name: Pull docs from source repos
         env:
           GH_TOKEN: ${{ steps.src-token.outputs.token }}
-          ONLY: ${{ inputs.source }}
+          # Empty on schedule (syncs all); set via client_payload on manual dispatch.
+          ONLY: ${{ github.event.client_payload.source }}
         run: bash scripts/sync-docs.sh
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
