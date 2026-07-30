@@ -174,7 +174,8 @@ event.__volcano_auth = {
   user_id: 'abc-123...',      // ← From user's JWT!
   email: 'user@example.com',  // ← From user's JWT!
   role: 'authenticated',      // ← From user's JWT!
-  project_id: 'project-uuid'
+  project_id: 'project-uuid',
+  access_token: 'eyJhbGci...'  // The caller's access token
 };
 
 // 3. Build application_name with auth from event (simplified format)
@@ -606,10 +607,11 @@ claims := validateAccessToken(token)
 // 2. Inject into event payload
 if claims.Type == "auth_user" {
     payload["__volcano_auth"] = map[string]interface{}{
-        "user_id":    claims.UserID,    // ← From JWT!
-        "email":      claims.Email,      // ← From JWT!
-        "role":       claims.Role,       // ← From JWT!
-        "project_id": projectID,
+        "user_id":      claims.UserID,   // ← From JWT!
+        "email":        claims.Email,    // ← From JWT!
+        "role":         claims.Role,     // ← From JWT!
+        "project_id":   projectID,
+        "access_token": tokenString,     // The caller's access token
     }
 }
 
@@ -630,7 +632,8 @@ exports.handler = async (event) => {
   //     user_id: 'abc-123...',
   //     email: 'user@example.com',
   //     role: 'authenticated',
-  //     project_id: 'project-uuid'
+  //     project_id: 'project-uuid',
+  //     access_token: 'eyJhbGci...'
   //   }
   // }
   

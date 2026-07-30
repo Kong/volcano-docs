@@ -55,8 +55,8 @@ When you query your Volcano database, **your identity is automatically passed to
 │    - Creates:        │
 │      application_    │
 │      name=volcano_   │
-│      auth:user_id:   │
-│      email:role:...  │
+│      user_access:    │
+│      user_id         │
 └──────────┬───────────┘
            │
            ↓

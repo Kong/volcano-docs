@@ -68,7 +68,8 @@ Function receives:
     "user_id": "uuid",
     "email": "user@example.com",
     "project_id": "project-uuid",
-    "role": "authenticated"  // or "anonymous" for anonymous users
+    "role": "authenticated",  // or "anonymous" for anonymous users
+    "access_token": "eyJhbGci..."  // the caller's access token, e.g. to forward to the Volcano SDK/API
   }
 }
 ```
@@ -234,7 +235,8 @@ event.__volcano_auth = {
   user_id: "uuid",           // Unique user ID (same for anonymous → authenticated conversion)
   email: "user@example.com", // User's email (or internal format for anonymous)
   project_id: "uuid",        // Project the user belongs to
-  role: "authenticated"      // "authenticated" or "anonymous"
+  role: "authenticated",     // "authenticated" or "anonymous"
+  access_token: "eyJhbGci..." // The caller's access token
 }
 ```
 

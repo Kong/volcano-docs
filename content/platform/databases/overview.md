@@ -90,6 +90,11 @@ Direct connections:
 - Work with ORMs (Sequelize, Prisma, TypeORM)
 - Can include user identity for RLS enforcement
 
+> **Note:** The example above uses `DATABASE_URL` as-is, which carries
+> `application_name=volcano_full_access` (admin access, bypasses RLS) by default. To
+> scope a query to the invoking user under RLS, rewrite `application_name` to
+> `volcano_user_access:{user_id}` before connecting — see [Direct connection](direct-connection.md#authentication--user-impersonation).
+
 See [Direct connection](direct-connection.md) for details.
 
 ## Quick example
@@ -134,6 +139,10 @@ exports.handler = async (event) => {
   };
 };
 ```
+
+> **Note:** `DATABASE_URL` carries `application_name=volcano_full_access` (admin access, bypasses
+> RLS) by default, as used above. To scope a query to the invoking user under RLS, rewrite
+> `application_name` to `volcano_user_access:{user_id}` — see [Direct connection](direct-connection.md#authentication--user-impersonation).
 
 ## Auth helpers
 

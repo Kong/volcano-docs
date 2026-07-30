@@ -157,6 +157,8 @@ Response fields:
 - `updated_at`
 
 Notes:
+- When the frontend has no custom domain configured, returns `200` with a JSON `null` body (the empty state), not `404`.
+- Returns `404` only when the frontend itself does not exist.
 - `verification_records[]` is usually empty for BYOC because certificate ownership/validation comes from the uploaded cert.
 - `required_routing_record` contains the DNS record that should route traffic to Volcano (currently `CNAME`).
 - `effective_urls[]` always includes the default Volcano frontend URL; it also includes the custom domain URL once active.

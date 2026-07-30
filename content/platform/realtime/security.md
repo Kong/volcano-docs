@@ -268,7 +268,7 @@ CREATE POLICY "room_messages" ON messages
   FOR SELECT USING (
     room_id IN (
       SELECT room_id FROM room_members 
-      WHERE user_id = current_setting('request.jwt.claim.sub', true)::uuid
+      WHERE user_id = auth.uid()
     )
   );
 ```
