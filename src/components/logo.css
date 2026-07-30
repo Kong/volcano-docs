@@ -12,4 +12,103 @@
 
 .logo-mark {
   flex-shrink: 0;
+  transition: filter var(--system-transition) ease;
+}
+
+/* ── Hover eruption (ported from volcano-web) ──────────────────────────
+   Lava particles pop from the crater (top-center of the mark) while the
+   logo is hovered, and the mark rumbles with a warm glow. */
+
+.logo-erupt-particles {
+  --logo-erupt-color: var(--color-primary);
+  --logo-erupt-color-alt: var(--color-primary-text);
+
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.logo-mark-wrap {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.logo-erupt-particle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--space-15);
+  height: var(--space-15);
+  background: var(--logo-erupt-color);
+  opacity: 0;
+}
+
+.logo-erupt-particle:nth-child(even) {
+  background: var(--logo-erupt-color-alt);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .logo:hover .logo-mark {
+    filter: drop-shadow(0 0 var(--space-20) var(--color-primary));
+    animation: logo-erupt-rumble 0.24s ease-in-out infinite;
+  }
+
+  .logo:hover .logo-erupt-particle {
+    animation: logo-erupt-pop 0.9s ease-out infinite;
+  }
+
+  .logo:hover .logo-erupt-particle:nth-child(1) {
+    --logo-erupt-dx: -5px;
+    animation-delay: 0s;
+  }
+
+  .logo:hover .logo-erupt-particle:nth-child(2) {
+    --logo-erupt-dx: 4px;
+    animation-delay: 0.18s;
+  }
+
+  .logo:hover .logo-erupt-particle:nth-child(3) {
+    --logo-erupt-dx: -2px;
+    animation-delay: 0.34s;
+  }
+
+  .logo:hover .logo-erupt-particle:nth-child(4) {
+    --logo-erupt-dx: 6px;
+    animation-delay: 0.5s;
+  }
+}
+
+@keyframes logo-erupt-pop {
+  0% {
+    transform: translate(0, var(--space-10)) scale(1);
+    opacity: 0;
+  }
+
+  15% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(var(--logo-erupt-dx, 0), -13px) scale(0.3);
+    opacity: 0;
+  }
+}
+
+@keyframes logo-erupt-rumble {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-0.5px);
+  }
+
+  75% {
+    transform: translateX(0.5px);
+  }
 }

@@ -12,20 +12,30 @@ type LogoProps = {
   className?: string;
 };
 
+// Lava particles that erupt from the crater on hover (matches volcano-web).
+const ERUPT_PARTICLES = ["a", "b", "c", "d"];
+
 export function Logo({ height = 22, className }: LogoProps) {
   const markSize = height;
   const wordmarkHeight = Math.round(height * 0.84);
 
   return (
     <span className={`logo ${className ?? ""}`}>
-      <Image
-        src="/design/logo-mark.svg"
-        alt="Volcano"
-        width={markSize}
-        height={markSize}
-        className="logo-mark"
-        priority
-      />
+      <span className="logo-mark-wrap">
+        <Image
+          src="/design/logo-mark.svg"
+          alt="Volcano"
+          width={markSize}
+          height={markSize}
+          className="logo-mark"
+          priority
+        />
+        <span className="logo-erupt-particles" aria-hidden="true">
+          {ERUPT_PARTICLES.map((id) => (
+            <span key={id} className="logo-erupt-particle" />
+          ))}
+        </span>
+      </span>
       <svg
         viewBox="0 0 139.556 18.5467"
         fill="none"
