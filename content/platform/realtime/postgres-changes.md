@@ -136,7 +136,7 @@ CREATE TABLE messages (
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "users_own_messages" ON messages
-  FOR SELECT USING (user_id = current_setting('request.jwt.claim.sub', true)::uuid);
+  FOR SELECT USING (user_id = auth.uid());
 ```
 
 With this policy:
@@ -151,7 +151,7 @@ CREATE POLICY "room_members" ON messages
   FOR SELECT USING (
     room_id IN (
       SELECT room_id FROM room_members 
-      WHERE user_id = current_setting('request.jwt.claim.sub', true)::uuid
+      WHERE user_id = auth.uid()
     )
   );
 ```

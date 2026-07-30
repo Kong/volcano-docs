@@ -190,7 +190,9 @@ Content-Type: application/json
   "__volcano_auth": {
     "user_id": "uuid",
     "email": "user@example.com",
-    "role": "authenticated"
+    "project_id": "project-uuid",
+    "role": "authenticated",
+    "access_token": "eyJhbGci..."
   }
 }
 ```

@@ -187,11 +187,11 @@ exports.handler = async (event) => {
 
   const { user_id } = event.__volcano_auth;
 
-  // Connect with user identity for RLS
-  const client = new Client({
-    connectionString: process.env.DATABASE_URL,
-    application_name: `volcano_user:${user_id}`
-  });
+  // Connect with user identity for RLS. DATABASE_URL defaults to
+  // application_name=volcano_full_access (bypasses RLS), so replace it.
+  const url = new URL(process.env.DATABASE_URL);
+  url.searchParams.set('application_name', `volcano_user_access:${user_id}`);
+  const client = new Client({ connectionString: url.toString() });
 
   await client.connect();
 

@@ -310,6 +310,12 @@ See [Environment Variables](environment-variables.md) for details.
 
 ## Using databases
 
+> **Note:** `DATABASE_URL` carries `application_name=volcano_full_access` (admin access, bypasses
+> row-level security) by default. The examples below use it as-is for simplicity. To scope a query
+> to the invoking user under RLS, rewrite `application_name` to `volcano_user_access:{user_id}`
+> before connecting — see
+> [Direct connection](../databases/direct-connection.md#authentication--user-impersonation).
+
 ### Node.js
 ```javascript
 const { Pool } = require('pg');

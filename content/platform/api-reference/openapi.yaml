@@ -2572,11 +2572,15 @@ paths:
         - $ref: '#/components/parameters/FrontendId'
       responses:
         '200':
-          description: Frontend custom domain status
+          description: |
+            Frontend custom domain status, or null when the frontend has no
+            custom domain configured (the common empty state).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FrontendCustomDomainResponse'
+                nullable: true
+                allOf:
+                  - $ref: '#/components/schemas/FrontendCustomDomainResponse'
         '400':
           description: Bad request - invalid identifier
           content:
@@ -2596,7 +2600,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '404':
-          description: Frontend or custom domain not found
+          description: Frontend not found
           content:
             application/json:
               schema:

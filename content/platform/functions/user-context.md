@@ -25,7 +25,8 @@ exports.handler = async (event) => {
   //   user_id: "550e8400-e29b-41d4-a716-446655440000",
   //   email: "user@example.com",
   //   project_id: "123e4567-e89b-12d3-a456-426614174000",
-  //   role: "authenticated"
+  //   role: "authenticated",
+  //   access_token: "eyJhbGci..."
   // }
 };
 ```
@@ -38,6 +39,7 @@ exports.handler = async (event) => {
 | `email` | string | User's email (or internal format for anonymous users) |
 | `project_id` | string (UUID) | The project this user belongs to |
 | `role` | string | User type: `"authenticated"` or `"anonymous"` |
+| `access_token` | string | The caller's access token — forward it to the Volcano SDK/API to make calls as this user |
 
 ## Checking if User is Authenticated
 
@@ -95,7 +97,8 @@ Users who signed up with email/password or OAuth:
   user_id: "550e8400-e29b-41d4-a716-446655440000",
   email: "user@example.com",
   project_id: "123e4567-e89b-12d3-a456-426614174000",
-  role: "authenticated"
+  role: "authenticated",
+  access_token: "eyJhbGci..."
 }
 ```
 
@@ -108,7 +111,8 @@ Guest users created via `signUpAnonymous()`:
   user_id: "660f9511-f39c-52e5-b827-557766551111",
   email: "anon-1234567890@anonymous.volcano.internal",
   project_id: "123e4567-e89b-12d3-a456-426614174000",
-  role: "anonymous"
+  role: "anonymous",
+  access_token: "eyJhbGci..."
 }
 ```
 
@@ -184,26 +188,40 @@ exports.handler = async (event) => {
 
 ### Row-Level Security (RLS)
 
-Set PostgreSQL session variables to enable automatic RLS filtering:
+`process.env.DATABASE_URL` carries `application_name=volcano_full_access` (admin, bypasses RLS) by
+default. To enforce RLS for the invoking user, rewrite `application_name` to
+`volcano_user_access:{user_id}` before connecting — pgproxy then sets the session
+variables (`request.jwt_sub`, `request.jwt_email`, `request.jwt_role`) that back
+`auth.uid()`/`auth.email()`/`auth.role()` automatically on every query. See
+[Direct connection](../databases/direct-connection.md#authentication--user-impersonation)
+for pooling and other client details.
 
 ```javascript
 const { Pool } = require('pg');
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+// One pool per auth user — the RLS identity is fixed at connection startup.
+// In production, bound this cache (e.g. LRU with idle eviction).
+const poolsByUser = new Map();
+function poolForUser(userId) {
+  let pool = poolsByUser.get(userId);
+  if (!pool) {
+    const url = new URL(process.env.DATABASE_URL);
+    url.searchParams.set('application_name', `volcano_user_access:${userId}`);
+    pool = new Pool({ connectionString: url.toString(), max: 5 });
+    poolsByUser.set(userId, pool);
+  }
+  return pool;
+}
 
 exports.handler = async (event) => {
   if (!event.__volcano_auth) {
     return { statusCode: 401, body: 'Unauthorized' };
   }
 
-  const { user_id, email, role } = event.__volcano_auth;
-  const client = await pool.connect();
+  const { user_id } = event.__volcano_auth;
+  const client = await poolForUser(user_id).connect();
 
   try {
-    // Set session variables for RLS
-    await client.query('SET request.jwt.claim.sub = $1', [user_id]);
-    await client.query('SET request.jwt.claim.email = $1', [email]);
-    await client.query('SET request.jwt.claim.role = $1', [role]);
-
     // Query automatically filtered by RLS policies
     const result = await client.query('SELECT * FROM posts');
 
@@ -340,7 +358,21 @@ const { project_id, user_id } = event.__volcano_auth;
 
 ```javascript
 const { Pool } = require('pg');
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+// One pool per auth user — the RLS identity is fixed at connection startup
+// by application_name, so a shared pool can't switch users per request.
+// In production, bound this cache (e.g. LRU with idle eviction).
+const poolsByUser = new Map();
+function poolForUser(userId) {
+  let pool = poolsByUser.get(userId);
+  if (!pool) {
+    const url = new URL(process.env.DATABASE_URL);
+    url.searchParams.set('application_name', `volcano_user_access:${userId}`);
+    pool = new Pool({ connectionString: url.toString(), max: 5 });
+    poolsByUser.set(userId, pool);
+  }
+  return pool;
+}
 
 exports.handler = async (event) => {
   // 1. Validate authentication
@@ -351,18 +383,15 @@ exports.handler = async (event) => {
     };
   }
 
-  const { user_id, email, role } = event.__volcano_auth;
+  const { user_id, role } = event.__volcano_auth;
   console.log(`Request from user ${user_id} (${role})`);
 
-  // 2. Connect to database
-  const client = await pool.connect();
+  // 2. Get a connection from this user's pool — it started up as
+  //    volcano_user_access:{user_id}, so RLS is already in effect.
+  const client = await poolForUser(user_id).connect();
 
   try {
-    // 3. Set RLS context
-    await client.query('SET request.jwt.claim.sub = $1', [user_id]);
-    await client.query('SET request.jwt.claim.role = $1', [role]);
-
-    // 4. Process request based on action
+    // 3. Process request based on action
     const { action, data } = event;
 
     switch (action) {

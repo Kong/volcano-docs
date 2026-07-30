@@ -126,16 +126,20 @@ CREATE POLICY "users_own_posts" ON posts
   USING (user_id = auth.uid());
 ```
 
-Functions automatically set the user context:
+Connect with the user's identity to enable this automatically — `DATABASE_URL` defaults to
+`application_name=volcano_full_access` (bypasses RLS), so rewrite it to
+`volcano_user_access:{user_id}` before connecting:
 
 ```javascript
 // In your Lambda function
 const { user_id } = event.__volcano_auth;
 
-// Set PostgreSQL session
-await client.query('SET request.jwt.claim.sub = $1', [user_id]);
+const url = new URL(process.env.DATABASE_URL);
+url.searchParams.set('application_name', `volcano_user_access:${user_id}`);
+const client = new Client({ connectionString: url.toString() });
+await client.connect();
 
-// Now RLS policies work automatically
+// pgproxy sets the session variables auth.uid() reads, so RLS policies work automatically
 const posts = await client.query('SELECT * FROM posts');
 // Only returns current user's posts
 ```

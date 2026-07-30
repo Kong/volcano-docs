@@ -103,32 +103,27 @@ SELECT
 
 ## How They Work
 
-**Automatic (Recommended):**
+The helpers read PostgreSQL session variables (`request.jwt_sub`, `request.jwt_email`,
+`request.jwt_role`) that **pgproxy** sets automatically — there's no manual `SET` for your
+function code to run.
 
-When you use Volcano's database connections, user context is automatically set based on the authenticated user from your function:
+`process.env.DATABASE_URL` defaults to `application_name=volcano_full_access` (admin, no role
+switch, RLS bypassed) and pgproxy does not populate these variables for it, so `auth.uid()`
+returns `NULL` on that connection regardless of who invoked the function. To get a real user
+identity, rewrite `application_name` to `volcano_user_access:{user_id}` before connecting:
 
 ```javascript
-// No manual setup needed!
 const { Pool } = require('pg');
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
-});
+const url = new URL(process.env.DATABASE_URL);
+url.searchParams.set('application_name', `volcano_user_access:${user_id}`);
+const pool = new Pool({ connectionString: url.toString() });
 
-// auth.uid() automatically returns the current user
+// pgproxy sets request.jwt_sub etc. per request, so auth.uid() returns user_id
 const result = await pool.query('SELECT * FROM posts WHERE user_id = auth.uid()');
 ```
 
-**Manual (Advanced):**
-
-If you need to manually set user context:
-
-```javascript
-await client.query('SET request.jwt_sub = $1', [user_id]);
-await client.query('SET request.jwt_email = $1', [email]);
-await client.query('SET request.jwt_role = $1', [role]);
-```
-
-The auth helpers read these session variables to return the current user's information.
+See [Direct connection](direct-connection.md#authentication--user-impersonation) for pooling and
+other client details.
 
 ## Manual Installation
 
