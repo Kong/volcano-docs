@@ -52,25 +52,21 @@ Volcano provisions Neon under the hood, but the API never returns Neon credentia
 
 ## Using in Functions
 
-**Automatic (Recommended):**
+Volcano doesn't set `DATABASE_URL` (or any variable) automatically. Set it yourself as a project variable using the connection string from `GET /databases/{id}`:
 
-Volcano sets `DATABASE_URL` automatically:
+```bash
+curl -X POST https://api.volcano.dev/projects/PROJECT_ID/variables \
+  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -d '{"name":"DATABASE_URL","value":"postgresql://..."}'
+```
+
+Then reference it in your function:
 
 ```javascript
 const { Pool } = require('pg');
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL
 });
-```
-
-**Manual:**
-
-Set as environment variable:
-
-```bash
-curl -X POST https://api.volcano.dev/projects/PROJECT_ID/variables \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
-  -d '{"name":"DATABASE_URL","value":"postgresql://..."}'
 ```
 
 ## Direct Connection

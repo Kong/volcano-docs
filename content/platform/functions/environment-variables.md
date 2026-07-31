@@ -97,17 +97,6 @@ curl -X DELETE https://api.volcano.dev/projects/PROJECT_ID/variables/API_KEY \
   -H "Authorization: Bearer PLATFORM_TOKEN"
 ```
 
-## Automatic Variables
-
-Volcano automatically provides:
-
-**DATABASE_URL** - Set when you create a database
-
-```javascript
-process.env.DATABASE_URL
-// postgresql://user:pass@host:5432/db
-```
-
 ## Common Variables
 
 ```bash
@@ -120,7 +109,7 @@ API_BASE_URL=https://api.example.com
 WEBHOOK_URL=https://hooks.example.com
 
 # Database
-DATABASE_URL=postgresql://...  # Auto-set by Volcano
+DATABASE_URL=postgresql://...  # Set this yourself from GET /databases/{id}
 
 # Feature Flags
 FEATURE_NEW_UI=true
@@ -148,6 +137,6 @@ For maximum security, use AWS Secrets Manager in your functions.
 ## See Also
 
 - [Creating Functions](creating-functions.md)
-- [Databases](../databases/creating-databases.md) - DATABASE_URL auto-set
+- [Databases](../databases/creating-databases.md) - set DATABASE_URL as a project variable
 
 

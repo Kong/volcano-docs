@@ -31,34 +31,34 @@ your-project/
 
 ### Cloud Deployment
 
-To deploy migrations to your cloud database:
+To deploy migrations to your cloud database, use `volcano cloud databases migration up`:
 
 ```bash
 # Deploy all migrations to a specific database
-volcano migrations deploy -d mydb
+volcano cloud databases migration up --all -d mydb
 
 # Deploy a specific migration
-volcano migrations deploy -d mydb -f 001_create_users
+volcano cloud databases migration up -d mydb -f 001_create_users
 
 # Deploy using full path
-volcano migrations deploy -d mydb -f volcano/migrations/001_create_users.sql
+volcano cloud databases migration up -d mydb -f volcano/migrations/001_create_users.sql
 ```
 
-The `-d` (or `--database`) flag is **required**. It specifies which database to run migrations against.
+The `-d` (or `--database`) flag is **required**, and you must pass either `--all`/`-a` or `-f`/`--file`.
 
 ### Local Development
 
-In local development mode, use the `local` command. When you run `volcano start`, a default database named `app` is created automatically:
+For local development, use the top-level `volcano migrations deploy` command. When you run `volcano start`, a default database named `app` is created automatically:
 
 ```bash
 # Deploy all migrations to the default "app" database
-volcano local migrations deploy -d app
+volcano migrations deploy --all -d app
 
 # Deploy a specific migration
-volcano local migrations deploy -d app -f 001_create_users
+volcano migrations deploy -d app -f 001_create_users
 ```
 
-The `-d` (or `--database`) flag is **required** for local development as well. This allows you to create multiple databases in local mode if needed.
+The `-d` (or `--database`) flag is **required** for local development as well, along with `--all`/`-a` or `-f`/`--file`. This allows you to create multiple databases in local mode if needed.
 
 ## Requirements
 
@@ -84,15 +84,15 @@ Common error scenarios:
 
 ```bash
 # Database doesn't exist
-$ volcano migrations deploy -d nonexistent
+$ volcano cloud databases migration up --all -d nonexistent
 Error: Failed to get database 'nonexistent': HTTP 404: database not found
 
 # Database not ready
-$ volcano migrations deploy -d mydb
+$ volcano cloud databases migration up --all -d mydb
 Error: Database 'mydb' is not active (status: provisioning)
 
 # Migration not found
-$ volcano migrations deploy -d mydb -f missing_migration
+$ volcano cloud databases migration up -d mydb -f missing_migration
 Error: Migration 'missing_migration' not found in volcano/migrations/
 Available migrations: 001_create_users.sql, 002_add_posts.sql
 ```
