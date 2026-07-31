@@ -122,7 +122,14 @@ Response:
 
 ### Use in a function
 
-The `DATABASE_URL` environment variable is automatically set in all your functions:
+Set the connection string as a project variable, then reference it from your function. Volcano doesn't auto-set any variables, so create it explicitly:
+
+```bash
+curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/variables" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "DATABASE_URL", "value": "<connection_string from GET /databases/{id}>"}'
+```
 
 ```javascript
 const { Pool } = require('pg');

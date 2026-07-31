@@ -152,13 +152,7 @@ The invocation HTTP status code and headers come directly from your function res
 
 ## Environment variables
 
-Functions automatically receive these environment variables:
-
-| Variable | Description |
-|----------|-------------|
-| `DATABASE_URL` | Connection string for your project's database (if one exists) |
-
-You can add custom environment variables through the API. See [Environment variables](environment-variables.md).
+Volcano doesn't set any environment variables automatically — add them through the API, including `DATABASE_URL` for your project's database connection string. See [Environment variables](environment-variables.md).
 
 ```javascript
 // Access environment variables in your function

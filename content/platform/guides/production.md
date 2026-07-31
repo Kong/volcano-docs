@@ -40,8 +40,8 @@ Never hard-code secrets in source. See [environment variables](../functions/envi
 ## Databases and migrations
 
 ```bash
-volcano databases create app
-volcano migrations deploy                 # apply schema changes
+volcano cloud databases create app
+volcano cloud databases migration up --all -d app   # apply schema changes
 ```
 
 Protect data with [row-level security](../databases/row-level-security.md) before

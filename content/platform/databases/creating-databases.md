@@ -153,11 +153,11 @@ The username and password are Volcano-managed client credentials. The password s
 
 ## Using the Connection String
 
-**In functions** (automatic):
+**In functions:** set `connection_string` as a project variable (e.g. `DATABASE_URL`) — Volcano doesn't set it automatically:
 ```javascript
 const { Pool } = require('pg');
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL  // Auto-set
+  connectionString: process.env.DATABASE_URL
 });
 ```
 
