@@ -113,6 +113,7 @@ Paginated list:
 | `409` | Conflict — duplicate resource or incompatible resource state |
 | `429` | Too many requests — rate limited |
 | `500` | Internal server error |
+| `503` | Service unavailable — a required backend is unavailable |
 
 ## Pagination
 
@@ -234,6 +235,16 @@ See [Frontend Endpoints](frontend-endpoints.md) for details.
 | `GET` | `/databases/versions` | List PostgreSQL versions |
 
 See [Databases](databases.md) for details.
+
+### Project locks
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/locks/{key}/lease` | Acquire a project lease |
+| `PATCH` | `/locks/{key}/lease` | Renew the owned lease |
+| `DELETE` | `/locks/{key}/lease` | Release the owned lease |
+
+These endpoints accept service-role keys only. See [Project locks](locks.md).
 
 ### Authentication
 
