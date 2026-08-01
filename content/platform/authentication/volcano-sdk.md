@@ -65,6 +65,7 @@ const result = await volcano.functions.invoke('get-data', {
 | Query Builder | `.from().select().eq()` syntax for database queries |
 | Direct PostgreSQL access | Query databases directly from the browser |
 | Automatic RLS | Row-level security enforced on all queries |
+| Project locks | Renewable backend leases through `volcano.locks` |
 | Universal | Works in browser and Lambda environments |
 
 ---
@@ -91,6 +92,23 @@ const volcano = new VolcanoAuth({
   accessToken: event.__volcano_auth.access_token
 });
 ```
+
+For project locks, initialize the SDK with a service-role key carrying
+`locks.manage` (or a full-access service-role key):
+
+```javascript
+const volcano = new VolcanoAuth({
+  apiUrl: process.env.VOLCANO_API_URL,
+  anonKey: process.env.ANON_KEY,
+  accessToken: process.env.SERVICE_ROLE_KEY
+});
+
+await volcano.locks.withLock('leader', { ttl: 30 }, async ({ signal }) => {
+  await runLeaderTask({ signal });
+});
+```
+
+See [Project locks with JavaScript](../locks/javascript-sdk.md).
 
 ---
 

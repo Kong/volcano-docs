@@ -162,6 +162,20 @@ for deletion to finish before creating the resource again.
 {"error": "function is still provisioning, please try again in a few seconds"}
 ```
 
+### Project lock errors
+
+Project lock errors include stable codes:
+
+```json
+{"error":"Lock is held","code":"lock_held"}
+```
+
+- `lock_held` (`409`) — another live lease owns the key.
+- `lock_ownership_lost` (`409`) — the lease expired or another token owns it.
+- `lock_rate_limited` (`429`) — the project exceeded its lock operation limit.
+- `lock_service_unavailable` (`503`) — ownership could not be decided. Fail
+  closed and retry; do not continue as leader.
+
 ## Error Handling
 
 ### JavaScript/TypeScript

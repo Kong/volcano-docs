@@ -315,6 +315,26 @@ for (const post of posts) {
 }
 ```
 
+### Single-Leader Work
+
+```javascript
+const result = await volcano.locks.withLock(
+  'data-migration',
+  { ttl: 30 },
+  async ({ signal }) => migrateData({ signal })
+);
+
+if (result.error) {
+  throw result.error;
+}
+if (!result.acquired) {
+  return { skipped: true };
+}
+```
+
+Use a service-role key with `locks.manage`. The callback must stop when its
+abort signal fires because a lease cannot forcibly stop stale work.
+
 ---
 
 ## Security Best Practices

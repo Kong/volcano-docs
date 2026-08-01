@@ -67,6 +67,14 @@ S3-backed file storage with RLS-style access control policies.
 | [Policies](storage/policies.md) | RLS-style access control |
 | [Buckets](storage/buckets.md) | Creating and managing buckets |
 
+### Project locks
+
+Renewable leases so only one backend worker runs a task at a time.
+
+| Guide | Description |
+|-------|-------------|
+| [JavaScript SDK](locks/javascript-sdk.md) | Coordinate backend workers with renewable project leases |
+
 ### Realtime
 
 Live updates over WebSockets: Postgres changes, presence, and broadcast.
@@ -125,6 +133,7 @@ Complete REST API documentation for all Volcano endpoints.
 | [Functions](api-reference/functions.md) | Function deployment and invocation |
 | [Databases](api-reference/databases.md) | Database provisioning endpoints |
 | [Storage](api-reference/storage.md) | Storage bucket and object endpoints |
+| [Project locks](api-reference/locks.md) | Backend lease endpoints |
 | [Errors](api-reference/errors.md) | Error codes and handling |
 
 ## Guides

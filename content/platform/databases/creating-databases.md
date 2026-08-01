@@ -185,16 +185,24 @@ See [Auth Helpers](auth-helpers.md) for usage.
 
 ## Multiple Databases
 
-All databases in a project share infrastructure:
+A project can hold several databases, and each one is fully isolated: it gets its
+own compute, its own storage, and its own connection strings.
 
 ```text
 Project "my-app"
-  ├─ Database: my_app_main
-  ├─ Database: my_app_analytics
-  └─ Database: my_app_staging
+  ├─ Database: my_app_main       (own compute + storage)
+  ├─ Database: my_app_analytics  (own compute + storage)
+  └─ Database: my_app_staging    (own compute + storage)
 ```
 
-This is cost-effective (shared infrastructure).
+Because nothing is shared between them, a query load spike on one database does
+not affect the others, and each scales independently within the compute size you
+pick for it. There is no cross-database querying — a connection to one database
+cannot read another's tables.
+
+Each database counts against your plan's database limit, and each is billed on
+its own compute usage. Creating a database with a name already used in the same
+project returns `409 Conflict`; names are compared case-insensitively.
 
 ## List Databases
 
