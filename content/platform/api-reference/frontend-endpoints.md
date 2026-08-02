@@ -50,7 +50,8 @@ Deployment availability and concurrency:
 
 Build environment:
 - Project variables stored through the variables API are resolved before the frontend build.
-- All project variables are available to the build. Variables other than `NEXT_PUBLIC_*` are also available to the deployed frontend runtime.
+- Project variables are available to the build, except names the build itself reserves, which it drops with a warning in the build log. See [Environment Variables](../functions/environment-variables.md#names-reserved-during-builds).
+- Variables other than `NEXT_PUBLIC_*` are also available to the deployed frontend runtime.
 - Next.js inlines `NEXT_PUBLIC_*` values into the client bundle, so those values are excluded from the server runtime. Changing one requires a redeploy.
 - For monorepos, `app_root` selects the Next.js app inside the uploaded archive. Redeploys reuse the frontend's stored `app_root`.
 

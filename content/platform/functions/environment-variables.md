@@ -9,7 +9,7 @@ Share configuration across all functions and frontends in a project.
 
 Variables are key-value pairs injected into your deployed functions and frontend server runtimes as environment variables.
 
-Project variables are also made available during cloud build/compile jobs so dependency installers and build commands can read configuration such as package registry URLs or tokens. Today there is no separate build-only variable store. For Next.js frontends, `NEXT_PUBLIC_*` variables are the exception: Next.js inlines them into the client bundle during the build, and Volcano excludes them from the server runtime environment.
+Project variables are also made available during cloud build/compile jobs so dependency installers and build commands can read configuration such as package registry URLs or tokens. Today there is no separate build-only variable store, and a few names are reserved by the build itself (see [Names reserved during builds](#names-reserved-during-builds)). For Next.js frontends, `NEXT_PUBLIC_*` variables are the exception: Next.js inlines them into the client bundle during the build, and Volcano excludes them from the server runtime environment.
 
 For private npm registry access, prefer `NODE_AUTH_TOKEN` together with `NPM_CONFIG_REGISTRY` when needed. `NPM_TOKEN` is accepted, but npm does not use it by itself unless your project includes an `.npmrc` that maps it into an auth token entry.
 
@@ -34,6 +34,42 @@ curl -X POST https://api.volcano.dev/projects/PROJECT_ID/variables \
 - Must start with a letter or underscore
 - Can contain only letters, digits, and underscores
 - Maximum length: 256 characters
+
+### Names reserved during builds
+
+The build that compiles your function or frontend uses environment variables of its
+own to locate your source, select a runtime, and reach the registry it publishes to.
+A project variable that collides with one of those names is dropped from the build
+environment and the build log says so:
+
+```text
+warning: ignoring reserved build env var SOURCE_URL
+```
+
+The variable is still stored and still delivered to your deployed function and
+frontend server runtimes; only the build does not see it. Names AWS Lambda reserves
+for itself, such as `AWS_REGION`, cannot be used as runtime environment variables at
+all.
+
+| Reserved | Examples |
+| --- | --- |
+| Build inputs | `SOURCE_URL`, `SOURCE_BUCKET`, `SOURCE_KEY`, `SOURCE_VERSION`, `SOURCE_SHA256`, `OUTPUT_BUNDLE_URL`, `PROJECT_ID`, `FUNCTION_ID`, `FRONTEND_ID`, `DEPLOYMENT_ID`, `RUNTIME`, `HANDLER`, `TARGET_ARCH` |
+| Interpreter and loader hooks | `PATH`, `HOME`, `SHELL`, `NODE_OPTIONS`, `NODE_PATH`, `NODE_ENV`, `PYTHONPATH`, `LD_PRELOAD`, `LD_LIBRARY_PATH` |
+| Whole prefixes | `AWS_`, `CODEBUILD_`, `GITHUB_`, `DOCKER_`, `VOLCANO_`, `NPM_CONFIG_`, `YARN_`, `PIP_`, `BUNDLE_`, `COREPACK_` |
+
+Registry credentials are the exception. They match a reserved prefix but are passed
+through so private registries keep working:
+
+- Both function and frontend builds: `NODE_AUTH_TOKEN`, `NPM_TOKEN`,
+  `NPM_CONFIG_REGISTRY`, `npm_config_registry`, `YARN_NPM_AUTH_TOKEN`,
+  `YARN_NPM_REGISTRY_SERVER`.
+- Function builds only: `PIP_INDEX_URL`, `PIP_EXTRA_INDEX_URL`, `PIP_TRUSTED_HOST`,
+  `BUNDLE_GEMS__…`. Frontend builds are Node-only and reject these.
+
+For frontend server runtimes, Volcano also owns the cache and revalidation wiring
+(`CACHE_*`, `FRONTEND_REVALIDATION_*`, `MAX_REVALIDATE_CONCURRENCY`) and sets those
+values itself, so a project variable of the same name does not take effect there
+either.
 
 ## Using in Functions and Frontends
 
