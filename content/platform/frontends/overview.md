@@ -26,6 +26,37 @@ Next.js is supported today (`framework: nextjs`), including static export and
 server-side rendering. For a monorepo, point Volcano at the app with `app_root`
 (for example `apps/web`).
 
+## Compression
+
+Responses are compressed automatically — no plugin or middleware needed. Send
+an `Accept-Encoding` header and you get the best encoding you accept:
+
+```bash
+curl -sI -H 'Accept-Encoding: br, gzip' https://your-site.frontends.volcano.dev/ | grep -i content-encoding
+# content-encoding: br
+```
+
+Static assets are compressed at the edge with Brotli or gzip. Server-rendered
+pages and API routes are compressed by the runtime, which also supports
+`deflate`. Both prefer Brotli, and both honour quality values: a coding you
+refuse with `q=0` is never sent, and a response you accept no coding for arrives
+uncompressed.
+
+A route that sets its own `Content-Encoding` keeps it. Those bytes are shipped
+exactly as the route wrote them, never compressed a second time:
+
+```js
+// pages/api/report.js
+export default function handler(req, res) {
+  res.setHeader("Content-Encoding", "gzip");
+  res.status(200).send(gzipSync(Buffer.from(report)));
+}
+```
+
+Compressed **request** bodies are passed through untouched too, so a route that
+accepts `Content-Encoding: gzip` reads the compressed bytes and decodes them
+itself.
+
 ## Variables
 
 All project variables are available to the **build**. Variables prefixed with
