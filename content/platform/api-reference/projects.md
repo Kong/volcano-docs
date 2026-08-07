@@ -15,8 +15,19 @@ Authorization: Bearer <platform_token>
 ```
 
 **Query Parameters:**
+
 - `page` - Page number (default: 1)
 - `limit` - Items per page (default: 10, max: 100)
+- `cursor` - Opaque `next_cursor` value for forward pagination
+- `ending_before` - Opaque `prev_cursor` value for backward pagination
+- `offset` - Rows to skip after a cursor anchor for hybrid page jumps
+- `search` - Case-insensitive project name search (max 256 characters)
+
+Requests without pagination parameters use offset mode. Supplying `limit`
+without `page`, or supplying either cursor parameter, uses cursor mode. Do not
+combine `page` with `cursor` or `ending_before`.
+
+The endpoint excludes projects whose status is `deleting` or `deleted`.
 
 **Response:**
 ```json
@@ -36,6 +47,17 @@ Authorization: Bearer <platform_token>
   "has_more": false
 }
 ```
+
+To continue in cursor mode, send the returned cursor with the same `limit` and
+`search` values:
+
+```http
+GET /projects?limit=10&search=my-app&cursor=<next_cursor>
+Authorization: Bearer <platform_token>
+```
+
+Cursor responses include `next_cursor` and `prev_cursor` when another page
+exists in that direction. They also include the filtered `total`.
 
 ## Get Project
 
@@ -135,7 +157,10 @@ Authorization: Bearer <platform_token>
 
 **Response:** 202 Accepted
 
-Project deletion is asynchronous. After the request is accepted, `GET /projects/{id}` and `GET /projects` show `status: "deleting"` while cleanup is running. When cleanup finishes, the project no longer appears in lists and `GET /projects/{id}` returns `404`.
+Project deletion is asynchronous. After the request is accepted, the project is
+removed from `GET /projects`. `GET /projects/{id}` continues to show
+`status: "deleting"` while cleanup runs. When cleanup finishes,
+`GET /projects/{id}` returns `404`.
 
 **Warning:** Deletes all frontends, functions, databases, auth users, tokens, and variables in the project.
 
@@ -251,7 +276,3 @@ Returns the current-month total, the lifetime (all-time) total, and recent daily
 - [Functions API](functions.md)
 - [Databases API](databases.md)
 - [Auth Endpoints](auth-endpoints.md)
-
-
-
-
