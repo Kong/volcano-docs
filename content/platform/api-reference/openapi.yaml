@@ -401,12 +401,25 @@ paths:
       tags:
         - Projects
       summary: List all projects for authenticated user
+      description: |
+        Returns projects that are not deleting or deleted, newest first.
+        Supports two mutually exclusive pagination modes. Offset mode uses
+        `page` and `limit`. Cursor mode uses `cursor` or `ending_before` with
+        `limit`, returns `next_cursor`/`prev_cursor`, and supports a bounded
+        `offset` past the cursor anchor. Supplying `limit` without `page`
+        selects cursor mode. `search` applies a case-insensitive project-name
+        filter in either mode. Sending `page` with `cursor` or `ending_before`,
+        or sending both cursor directions, returns 400.
       operationId: listProjects
       security:
         - UserToken: []
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/EndingBefore'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Search'
       responses:
         '200':
           description: Successful response
@@ -414,6 +427,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedProjects'
+        '400':
+          description: Invalid or conflicting pagination parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     post:
       tags:
         - Projects
@@ -523,8 +542,10 @@ paths:
         - Projects
       summary: Delete a project
       description: |
-        Starts asynchronous project deletion. The project remains visible with `status: deleting`
-        until cleanup finishes, then it returns 404 and no longer appears in project lists.
+        Starts asynchronous project deletion. The project remains available from
+        `GET /projects/{id}` with `status: deleting` until cleanup finishes, but is
+        removed from project lists as soon as deletion starts. After cleanup it
+        returns 404.
       operationId: deleteProject
       security:
         - UserToken: []
