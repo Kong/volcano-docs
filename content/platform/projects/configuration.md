@@ -66,6 +66,8 @@ auth:
   signup:
     enable_signup: true
     enable_anonymous_signins: false
+    allowed_email_domains: []                 # empty = any domain may sign up
+    allowed_email_domains_mode: signup        # signup | signup_and_signin | disabled
   rate_limits:                              # per hour
     signup: 100
     signin: 100
@@ -195,6 +197,14 @@ regenerate, test email, redeploy).
   detach-and-recreate: the new domain serves after provisioning/verification.
 - **Hosted pages are upsert-only.** There is no delete API for hosted pages,
   so pages omitted from `managed_pages.pages` are left untouched.
+- **`auth.signup.allowed_email_domains` replaces the stored list** when
+  declared. `[]` removes the restriction; omitting the key keeps the current
+  allowlist. Entries are normalized to bare lowercase domains, so
+  `["@Acme.com"]` is stored as `["acme.com"]`. `allowed_email_domains_mode`
+  follows the same rule — omit it to keep the stored mode. Declaring
+  `signup_and_signin`, or narrowing the list while it is already set, signs out
+  every account whose domain the list no longer admits. See
+  [Email domain allowlist](../authentication/configuration/email-domain-allowlist.md).
 
 ## Coverage warnings: skipped and missing
 

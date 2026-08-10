@@ -34,6 +34,8 @@ Customize authentication settings per project.
 - [cors_allowed_origins](cors.md#origins) - Whitelist domains
 
 **Access Control:**
+- [enable_signup](provider-separation.md#layer-2-master-signup-toggle) - Allow/block public signups
+- [allowed_email_domains](email-domain-allowlist.md) - Restrict signups, and optionally sign-ins, to specific email domains
 
 ## Get Configuration
 

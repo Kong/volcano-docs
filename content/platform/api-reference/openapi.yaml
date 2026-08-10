@@ -2422,7 +2422,7 @@ paths:
         22.x or 24.x. The Node.js runtime is inferred from
         `package.json` `engines.node`; if omitted, Volcano uses Node.js 22.x.
         The selected Node.js family must also satisfy the installed Next.js package's
-        `engines.node` constraint. Volcano tests Next 15.5.22 (`^18.18.0 || ^19.8.0 || >=20.0.0`) and Next 16.3.0 (`>=20.9.0`).
+        `engines.node` constraint. Volcano tests Next 15.5.23 (`^18.18.0 || ^19.8.0 || >=20.0.0`) and Next 16.3.0 (`>=20.9.0`).
         Source archive size is enforced by the API with `SOURCE_ARCHIVE_SIZE_LIMIT_MB`; the CLI
         does not apply its own source archive size limit. After the final Lambda container images are
         built, the publish build enforces `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB` before pushing.
@@ -4102,7 +4102,10 @@ paths:
             Unauthorized - Invalid, tampered, revoked, or wrong-project anon key
         '403':
           description: |
-            Forbidden - Signups disabled or anon key lacks signup permission
+            Forbidden - Signups disabled, anon key lacks signup permission, or the
+            email domain is not in `allowed_email_domains`. The internal
+            `anonymous.volcano.internal` domain is reserved for anonymous
+            accounts and is refused whatever the project allows.
         '429':
           description: Rate limit exceeded
         '503':
@@ -4156,7 +4159,11 @@ paths:
           description: "Unauthorized - Invalid credentials, invalid/tampered/revoked anon key,\nor account banned/deleted\n"
         '403':
           description: |
-            Forbidden - Anon key lacks signin permission
+            Forbidden - Anon key lacks signin permission, or the email domain is
+            not in `allowed_email_domains` while `allowed_email_domains_mode` is
+            `signup_and_signin`. The domain is taken from the account's canonical
+            email (its primary identity), which is not necessarily the address in
+            the request.
         '429':
           description: Rate limit exceeded
   /auth/refresh:
@@ -4196,6 +4203,15 @@ paths:
                 $ref: '#/components/schemas/AuthTokenResponse'
         '401':
           description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: |
+            The account's email domain is not in `allowed_email_domains` while
+            `allowed_email_domains_mode` is `signup_and_signin`, so the session
+            cannot be extended
           content:
             application/json:
               schema:
@@ -4505,6 +4521,9 @@ paths:
                     $ref: '#/components/schemas/AuthUser'
         '400':
           description: Not an anonymous user
+        '403':
+          description: |
+            The chosen email domain is not in `allowed_email_domains`
         '409':
           description: Email already in use
         '503':
@@ -4556,6 +4575,13 @@ paths:
                 $ref: '#/components/schemas/Error'
         '401':
           description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: |
+            The requested email domain is not in `allowed_email_domains`
           content:
             application/json:
               schema:
@@ -4612,6 +4638,15 @@ paths:
                 $ref: '#/components/schemas/Error'
         '401':
           description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: |
+            The pending email domain is no longer in `allowed_email_domains`.
+            Re-checked here because the allowlist can narrow between the request
+            and the confirmation.
           content:
             application/json:
               schema:
@@ -4936,7 +4971,8 @@ paths:
       description: |
         Promotes the given method to the account's primary sign-in method. The
         account's canonical email is re-derived from the promoted method's identity.
-        Refused for password stubs and converted anonymous methods.
+        Refused for password stubs and converted anonymous methods, and for an
+        identity whose domain is outside the project's `allowed_email_domains`.
       operationId: authPromoteMethod
       security:
         - AuthUserAccessToken: []
@@ -4963,6 +4999,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '401':
           description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The promoted identity's email domain is not in the project's allowed_email_domains
           content:
             application/json:
               schema:
@@ -6190,6 +6232,11 @@ paths:
             Missing/invalid code or state, the state parameter expired, or the
             flow's stored redirect_url is no longer registered in
             allowed_redirect_urls (re-checked at callback time)
+        '403':
+          description: |
+            The provider's email domain is not in `allowed_email_domains`. Creating
+            an account is refused under `signup` and `signup_and_signin`; signing in
+            an already-linked account is refused under `signup_and_signin`.
         '409':
           description: Email already exists (requires linking)
         '303':
@@ -6234,6 +6281,12 @@ paths:
           description: Invalid, expired, consumed, or redirect-mismatched code
         '401':
           description: Missing or invalid project anon key
+        '403':
+          description: |
+            Email confirmation is now required, or the account's email domain is not
+            in `allowed_email_domains` while `allowed_email_domains_mode` is
+            `signup_and_signin`. Both are re-checked here because the code outlives
+            the callback that issued it.
         '429':
           description: Too many exchange attempts from this client
   /auth/device/authorize:
@@ -6323,6 +6376,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OAuthErrorResponse'
+        '403':
+          description: |
+            `access_denied` - the approving account's email domain is not in
+            `allowed_email_domains` while `allowed_email_domains_mode` is
+            `signup_and_signin`. Re-checked here because approval and redemption
+            are separate requests.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthErrorResponse'
   /auth/device/verify:
     post:
       tags:
@@ -6402,7 +6465,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/PlatformExchangeResponse'
         '403':
-          description: Exchange not allowed for this session/client/project
+          description: |
+            Exchange not allowed for this session/client/project, or the
+            account's email domain is not in `allowed_email_domains` while
+            `allowed_email_domains_mode` is `signup_and_signin`. The domain is
+            re-checked here because the minted platform token outlives the
+            session it is exchanged from.
           content:
             application/json:
               schema:
