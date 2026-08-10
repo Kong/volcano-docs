@@ -149,6 +149,58 @@ curl -X PUT https://api.volcano.dev/projects/{PROJECT_ID}/auth/config \
 
 ---
 
+## Restricting signups to specific email domains
+
+`allowed_email_domains` limits which email domains can own an account in the
+project. Empty (the default) allows any domain.
+`allowed_email_domains_mode` decides how far the list reaches: `signup` (the
+default) gates account creation only, `signup_and_signin` also refuses to sign
+in an existing account outside the list, and `disabled` keeps the list without
+enforcing it.
+
+```bash
+curl -X PUT https://api.volcano.dev/projects/{PROJECT_ID}/auth/config \
+  -H "Authorization: Bearer {PLATFORM_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "allowed_email_domains": ["domain1.com", "domain2.com"],
+    "allowed_email_domains_mode": "signup"
+  }'
+```
+
+Or in `volcano-config.yaml`:
+
+```yaml
+auth:
+  signup:
+    allowed_email_domains:
+      - domain1.com
+      - domain2.com
+    allowed_email_domains_mode: signup
+```
+
+Once set, `403 Forbidden` with `email domain is not allowed for this project`
+is returned by:
+
+- `POST /auth/signup`
+- the OAuth/SSO callback, when it would create or take over an account for that
+  address, or attach it to an account that does not own it yet
+- `POST /auth/user/convert-anonymous`
+- `POST /auth/user/change-email` and `POST /auth/user/confirm-email-change` (so
+  an existing user cannot move onto a rejected domain)
+
+Under `signup_and_signin` the same `403` also comes back from `POST /auth/signin`,
+`POST /auth/refresh`, the OAuth callback for an already-linked account, and the
+device-code token exchange; saving that mode signs out the accounts it excludes.
+
+Matching is exact and case-insensitive on the domain part, so listing
+`domain1.com` does **not** allow `mail.domain1.com`. Existing accounts are never
+deleted, and `[]` removes the restriction. See
+[Email Domain Allowlist](configuration/email-domain-allowlist.md) for the
+matching rules, entry format, and troubleshooting.
+
+---
+
 ## API Reference
 
 ### Get Authentication Methods
@@ -543,6 +595,21 @@ curl -X PUT .../oauth/configs/google -d '{"enabled": true}'
 
 ```bash
 curl -X PUT .../auth/config -d '{"enable_anonymous_signins": true}'
+```
+
+---
+
+### "email domain is not allowed for this project"
+
+**Cause:** the address is outside `allowed_email_domains`. On sign-in rather than
+signup, the project is also in `allowed_email_domains_mode: signup_and_signin`
+
+**Solution:** add the domain, clear the list, or move the mode back to `signup`
+so existing accounts can still sign in
+
+```bash
+curl -X PUT .../auth/config -d '{"allowed_email_domains": ["domain1.com"]}'
+curl -X PUT .../auth/config -d '{"allowed_email_domains_mode": "signup"}'
 ```
 
 ---

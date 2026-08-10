@@ -114,6 +114,10 @@ OAuth provider calls this endpoint after user authorization.
 - `400` - the redirect URL stored with this flow is no longer registered in
   `allowed_redirect_urls` (re-checked at callback time, in case the allowlist
   changed after authorization started)
+- `403` - the provider's email domain is not in `allowed_email_domains`. Creating
+  an account is refused under `signup` and `signup_and_signin`; signing in an
+  already-linked account is refused under `signup_and_signin`. See
+  [Email Domain Allowlist](../authentication/configuration/email-domain-allowlist.md)
 - `409` - Email already exists (requires linking)
 
 ---
@@ -135,6 +139,9 @@ Atomically consumes the short-lived callback code and returns the
 `AuthTokenResponse` shown above. The project and exact redirect URL must match
 the authorization request. A replay, expired code, or redirect mismatch returns
 `400 Bad Request`.
+
+The code outlives the callback that issued it, so email confirmation and the
+email domain policy are both re-checked here: either returns `403 Forbidden`.
 
 ---
 

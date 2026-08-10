@@ -44,7 +44,7 @@ a session. Existing emails receive the same acknowledgement.
 
 - `400` - Invalid email/password format
 - `401` - Invalid, tampered, revoked, or wrong-project anon key
-- `403` - Signups disabled or anon key lacks `auth.signup` permission
+- `403` - Signups disabled, email domain not in `allowed_email_domains`, or anon key lacks `auth.signup` permission. `anonymous.volcano.internal` is reserved for anonymous accounts and is always refused
 - `429` - Rate limit exceeded
 
 ---
@@ -73,7 +73,10 @@ request uses eligible cookie session storage.
 
 - `400` - Missing email/password
 - `401` - Invalid credentials, invalid/tampered/revoked anon key, or account banned/deleted
-- `403` - Anon key lacks `auth.signin` permission
+- `403` - Anon key lacks `auth.signin` permission, or the email domain is not in
+  `allowed_email_domains` while `allowed_email_domains_mode` is
+  `signup_and_signin`. The domain is taken from the account's canonical email —
+  its primary identity — which is not necessarily the address you sign in with
 - `429` - Rate limit exceeded
 
 ---
@@ -111,7 +114,9 @@ Authorization: Bearer <anon_key>
 **Errors:**
 
 - `401` - Invalid/expired refresh token, session timeout, invalid/tampered/revoked anon key
-- `403` - Anon key lacks `auth.refresh` permission
+- `403` - Anon key lacks `auth.refresh` permission, or the email domain is not in
+  `allowed_email_domains` while `allowed_email_domains_mode` is
+  `signup_and_signin`
 
 ---
 
@@ -427,6 +432,7 @@ triggers a confirmation email.
 
 **Errors:**
 - `400` - User is already authenticated (not anonymous)
+- `403` - Email domain not in `allowed_email_domains`
 - `409` - Email already in use
 
 ---
@@ -683,6 +689,8 @@ Authorization: Bearer <platform_token>
   "require_email_confirmation": true,
   "cors_enabled": true,
   "cors_allowed_origins": ["https://myapp.com"],
+  "allowed_email_domains": ["domain1.com", "domain2.com"],
+  "allowed_email_domains_mode": "signup",
   "device_verification_url": "https://myapp.com/device"
 }
 ```
@@ -692,6 +700,13 @@ Authorization: Bearer <platform_token>
 - `require_email_confirmation=true` requires `email_enabled=true`
 - `email_enabled=false` is rejected while `require_email_confirmation=true`
 - `post_auth_redirect_url` and `post_logout_redirect_url` must be present in `allowed_redirect_urls`
+- `allowed_email_domains` entries must be bare domains (`domain1.com`, not
+  `user@domain1.com` or `localhost`), max 100. They are stored lowercased and
+  replace the previous list; `[]` removes the restriction. See
+  [Email Domain Allowlist](../authentication/configuration/email-domain-allowlist.md).
+- `allowed_email_domains_mode` must be `disabled`, `signup` (default), or
+  `signup_and_signin`. `signup_and_signin` also blocks sign-in for accounts
+  outside the list and deletes their sessions when the config is saved.
 - `device_verification_url`, when set, must be a valid http/https URL. It overrides
   where device-code (CLI) logins send users to approve; the `user_code` is appended
   automatically. Unlike the redirect URLs it is **not** tied to `allowed_redirect_urls`.

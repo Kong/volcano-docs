@@ -130,6 +130,8 @@ const { user, session } = await volcano.auth.signIn({
 
 Password requirements are configurable. See [Password requirements](configuration/password-requirements.md).
 
+Signups can be limited to specific email domains, across every method below. See [Email domain allowlist](configuration/email-domain-allowlist.md).
+
 ### OAuth providers
 
 Users can sign in with their existing accounts from supported providers:
