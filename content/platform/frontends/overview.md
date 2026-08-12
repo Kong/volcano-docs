@@ -57,6 +57,23 @@ Compressed **request** bodies are passed through untouched too, so a route that
 accepts `Content-Encoding: gzip` reads the compressed bytes and decodes them
 itself.
 
+## Platform error pages
+
+When Volcano cannot route or serve a frontend request, browsers receive a
+self-contained HTML error page. The status code identifies the failure:
+
+| Status | Meaning |
+| --- | --- |
+| `403` | Project traffic is disabled. |
+| `404` | No deployed frontend matches the address. |
+| `429` | The project reached a rate or monthly request limit. |
+| `502` | The deployed frontend is temporarily unreachable. |
+| `503` | A platform dependency is temporarily unavailable. |
+
+The page may include a reference ID for support. `502` and `503` pages link to
+the platform status page. Clients that prefer `application/json` receive a JSON
+error response instead; `Accept` quality values are honored.
+
 ## Variables
 
 All project variables are available to the **build**. Variables prefixed with

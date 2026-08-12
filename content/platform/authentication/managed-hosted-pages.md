@@ -31,7 +31,9 @@ Hosted pages are served from:
 - `GET /projects/{projectId}/auth/hosted?action=device&user_code=<user_code>&anon_key=<anon_key>` (managed device approval deep link)
 - `GET /projects/{projectId}/auth/hosted/reset-password` (dedicated reset-password page)
 
-The endpoint only serves HTML (`Accept: text/html`) and applies strict security headers.
+The endpoint only serves HTML (`Accept: text/html`) and applies strict security
+headers. Invalid or unavailable hosted pages return a branded HTML error page
+with the original HTTP error status.
 
 To start managed auth from your app, redirect users to:
 
