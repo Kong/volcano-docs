@@ -110,3 +110,4 @@ orchestration and infrastructure diagnostics stay in operator logs.
 - [Frontends overview](overview.md) — how builds, variables, and domains fit together.
 - [Environment variables](../functions/environment-variables.md) — build vs runtime.
 - [Frontend API reference](../api-reference/frontend-endpoints.md) — deploy over HTTP.
+- [Deploy from GitHub](../projects/git-deploy.md) — redeploy on every push instead of running the CLI.
