@@ -406,4 +406,5 @@ This permanently removes the function.
 |-------|-------------|
 | [Invoking functions](invoking-functions.md) | Call your deployed functions |
 | [Function logs](logs.md) | View function execution logs |
+| [Deploy from GitHub](../projects/git-deploy.md) | Deploy `volcano/functions/` automatically on every push |
 | [Examples](../examples/README.md) | Complete working examples |

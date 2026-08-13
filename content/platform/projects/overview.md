@@ -158,6 +158,7 @@ When you delete a project, Volcano:
 | Guide | Description |
 |-------|-------------|
 | [Creating projects](creating-projects.md) | Detailed project creation guide |
+| [Importing from Vercel](import-vercel.md) | Run a read-only production preflight for a Vercel project |
 | [Functions overview](../functions/overview.md) | Deploy serverless functions |
 | [Databases overview](../databases/overview.md) | Provision PostgreSQL databases |
 | [Authentication overview](../authentication/overview.md) | Add user authentication |
