@@ -23,6 +23,22 @@ concurrently.
 Latest-wins queueing applies to cloud deployments. Local mode executes
 deployments synchronously and returns `409 Conflict` for overlap.
 
+### Regional runtime repair
+
+After propagation retries, Volcano treats a regional runtime as missing only
+when its invocation path receives a provider-confirmed not-found response for
+the Lambda or Function URL. Volcano first verifies that the same deployment is
+still serving and that the region is still expected, then queues durable repair
+of that immutable generation. Repair does not rebuild source, create a new
+deployment, or change what `active` and `degraded` mean.
+
+Volcano does not repair application errors, ambiguous provider failures such as
+timeouts, throttling, or network errors, user deletion, regional convergence,
+or resources removed by a non-preserved staging purge. The invocation that
+detects drift can still fail while repair runs; Volcano does not replay it in
+another region. Repair is request-driven and does not proactively audit idle
+functions.
+
 ## Best Practices
 
 ### DO: Exclude Installed Dependencies
@@ -197,4 +213,3 @@ exports.handler = async (event) => {
 **Respect the configured upload limit** - split or reduce bundles if needed
 
 Following these practices ensures fast, reliable deployments!
-
