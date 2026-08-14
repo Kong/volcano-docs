@@ -53,6 +53,21 @@ ready:
 volcano cloud frontends redeploy my-site
 ```
 
+### Regional runtime repair
+
+After propagation retries, Volcano treats a regional runtime as missing only
+when the frontend proxy receives a provider-confirmed not-found response for
+the Lambda or Function URL. Volcano first verifies that the same deployment is
+still serving and that the region is still expected, then queues durable repair
+of that immutable generation. Repair does not rebuild source, create a new
+deployment, or change what `active` and `degraded` mean.
+
+Volcano does not repair application errors, ambiguous provider failures such as
+timeouts, throttling, or network errors, user deletion, regional convergence,
+or resources removed by a non-preserved staging purge. The request that detects
+drift can still fail while repair runs; Volcano does not replay it in another
+region. Repair is request-driven and does not proactively audit idle frontends.
+
 Volcano controls the Next.js build ID, including when an application defines
 `generateBuildId`. Redeploying the same frontend with identical source, build
 variables, app path, architecture, and build toolchain keeps the same opaque

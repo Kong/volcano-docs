@@ -5508,6 +5508,15 @@ paths:
         - $ref: '#/components/parameters/EndingBefore'
         - $ref: '#/components/parameters/Offset'
         - $ref: '#/components/parameters/Search'
+        - name: status
+          in: query
+          required: false
+          description: >-
+            Filter by effective status. `banned` returns only currently-banned
+            users; an expired temporary ban lists as `active`.
+          schema:
+            type: string
+            enum: [active, banned]
       responses:
         '200':
           description: Successful response
@@ -5515,6 +5524,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedAuthUsers'
+        '400':
+          description: Invalid status or pagination parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /projects/{id}/auth/users/{userId}:
     get:
       tags:
