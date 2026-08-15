@@ -1,11 +1,12 @@
 ---
 title: "Import a Vercel project"
-description: "Connect Vercel and run a read-only production preflight for a new Volcano project."
+description: "Connect Vercel, preflight a production project, and start a Volcano migration."
 ---
 
-Run a preflight before moving a Vercel-hosted Next.js application to Volcano.
-Preflight inventories the source and reports what Volcano can reproduce. It does
-not create a project or change either platform.
+Move an importable Vercel production project into a new Volcano project. Start
+with a preflight, then create an asynchronous import run from its fingerprint.
+The migration copies eligible configuration and deploys a new Volcano frontend;
+it does not modify Vercel or cut over traffic.
 
 This preview is currently available in staging. Set the API base URL before
 running the examples:
@@ -75,7 +76,7 @@ production values as manual input.
 curl --request POST "$VOLCANO_API_URL/imports/vercel/preflight" \
   --header "Authorization: Bearer $PLATFORM_TOKEN" \
   --header "Content-Type: application/json" \
-  --data @- <<JSON
+  --data @- <<JSON | tee preflight.json
 {
   "connection_id": "$CONNECTION_ID",
   "source_id": "$SOURCE_ID",
@@ -86,9 +87,9 @@ curl --request POST "$VOLCANO_API_URL/imports/vercel/preflight" \
 JSON
 ```
 
-A report can contain all four disposition classes. Automatic actions are ready
-for a future importer. Manual findings need input, deferred findings describe
-later Volcano capabilities, and unsupported findings block a correct import.
+A report can contain all four disposition classes. The migration performs
+automatic actions. Manual findings need input, deferred findings describe later
+Volcano capabilities, and unsupported findings block a correct import.
 
 ```json
 {
@@ -217,13 +218,121 @@ later Volcano capabilities, and unsupported findings block a correct import.
 }
 ```
 
+Save that response as `preflight.json`. You can start only when `readiness` is
+`importable` and `blocking` is `0`.
+
+## Start the migration
+
+Use a new idempotency key for each distinct import request. Reuse the same key
+only when retrying the same request after a network failure.
+
+```bash
+export IMPORT_KEY="$(uuidgen | tr '[:upper:]' '[:lower:]')"
+
+curl --include --request POST "$VOLCANO_API_URL/imports/vercel/runs" \
+  --header "Authorization: Bearer $PLATFORM_TOKEN" \
+  --header "Content-Type: application/json" \
+  --header "Idempotency-Key: $IMPORT_KEY" \
+  --data @- <<JSON
+{
+  "connection_id": "$CONNECTION_ID",
+  "source_id": "$SOURCE_ID",
+  "project_name": "example-store-import",
+  "target": "production",
+  "confirm_environment_variable_read": true,
+  "preflight_fingerprint": "$(jq -r '.fingerprint' preflight.json)"
+}
+JSON
+```
+
+The request returns `202 Accepted` and a status URL in `Location`:
+
+```http
+HTTP/1.1 202 Accepted
+Location: /imports/vercel/runs/10000000-0000-0000-0000-000000000001
+Content-Type: application/json
+
+{
+  "id": "10000000-0000-0000-0000-000000000001",
+  "provider": "vercel",
+  "source_id": "prj_example",
+  "destination_project_name": "example-store-import",
+  "resource": {
+    "type": "project",
+    "id": "20000000-0000-0000-0000-000000000002",
+    "name": "example-store-import"
+  },
+  "deployment": {
+    "id": "30000000-0000-0000-0000-000000000003"
+  },
+  "status": "pending",
+  "created_at": "2026-08-06T12:05:00Z",
+  "updated_at": "2026-08-06T12:05:00Z"
+}
+```
+
+## Check migration status
+
+Poll the `Location` path until the run reaches a terminal state:
+
+```bash
+curl "$VOLCANO_API_URL/imports/vercel/runs/10000000-0000-0000-0000-000000000001" \
+  --header "Authorization: Bearer $PLATFORM_TOKEN"
+```
+
+`pending` means the project configuration committed and the Git deployment is
+waiting. `running` means the Git deployment worker or one of its child
+deployments is running. `succeeded` means every recorded child deployment
+succeeded. `superseded` means the import configured the project, but a newer Git
+deployment replaced the import deployment. Check the destination project's
+latest deployment. `failed` means the Git deployment or a child deployment
+reached a terminal failure and includes `error_code` and `error_message`. Use
+`resource` for the destination project and `deployment` to correlate the Git
+deployment run. A successful import leaves the Vercel project, deployment,
+domains, DNS, and traffic unchanged.
+
+If the source changes between preflight and start, Volcano returns `409` with
+`import_preflight_stale`:
+
+```json
+{
+  "error": "the preflight report is stale",
+  "code": "import_preflight_stale"
+}
+```
+
+Run preflight again, use its new fingerprint, and start with a fresh
+`Idempotency-Key`.
+
+Other start errors identify the next action:
+
+| Status | Code | Action |
+| --- | --- | --- |
+| `403` | `provider_permission_required` | Grant the requested Vercel or GitHub permission. |
+| `403` | `project_admission_denied` | Resolve the account plan, region, or project-cap restriction. |
+| `409` | `provider_reconnect_required` | Reconnect the provider, then run preflight again. |
+| `409` | `import_destination_conflict` | Choose a different `project_name`. |
+| `409` | `idempotency_key_reused` | Retry with a fresh `Idempotency-Key`. |
+| `422` | `import_source_not_importable` | Resolve the blocking preflight findings, then run preflight again. |
+| `429` | `provider_rate_limited` | Wait for the active request or provider limit to clear, then retry with the same idempotency key. |
+| `503` | `provider_unavailable` | Retry with the same idempotency key after the provider or integration recovers. |
+
+## What migrates
+
+Volcano copies readable production variables and the linked production GitHub
+source. It does not copy secrets or integration-managed variables. Preview
+deployments and variables, custom domains, and DNS remain deferred or blocking
+until their respective migration and cutover steps are available.
+
 Volcano proposes the same GitHub repository recorded by Vercel. It does not let
 preflight substitute an unrelated repository. The GitHub action is automatic
 only when the current production deployment came from that repository and
 branch, and the Volcano GitHub App can access it. Preflight blocks while Vercel
 has conflicting production aliases or a production rollout is still changing.
-Until Volcano can inspect the repository manifest, preflight also requires you
-to verify that the production source uses Next.js 15 or 16.
+Volcano inspects the exact commit and root used by the promoted production
+deployment. An exact Next.js 15 or 16 dependency verifies without a lockfile;
+a version range requires supported lockfile evidence. Missing, malformed, or
+unsupported dependency or lockfile evidence blocks the import.
 
 ## Review permissions and limits
 
