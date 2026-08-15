@@ -458,6 +458,154 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /imports/{provider}/runs:
+    post:
+      tags:
+        - Project Imports
+      summary: Start a Vercel project import
+      description: Creates a Volcano project from an importable production preflight report. Retrying the same request with the same Idempotency-Key returns the existing run.
+      operationId: startProjectImport
+      security:
+        - UserToken: []
+        - AuthUserAccessToken: []
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ImportProvider'
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 255
+            pattern: '^[!-~]+$'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectImportStartRequest'
+      responses:
+        '202':
+          description: Import run accepted
+          headers:
+            Location:
+              required: true
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectImportRun'
+        '400':
+          description: Invalid request or idempotency key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Provider permission or project admission denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Connection or provider source not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Preflight is stale, idempotency key was reused, or destination conflicts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Source is not importable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Provider rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Failed to start the import
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Provider unavailable or integration not configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /imports/{provider}/runs/{runId}:
+    get:
+      tags:
+        - Project Imports
+      summary: Get a project import run
+      operationId: getProjectImportRun
+      security:
+        - UserToken: []
+        - AuthUserAccessToken: []
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ImportProvider'
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Import run status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectImportRun'
+        '400':
+          description: Invalid import run ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Import run not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Failed to get the import run
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /user/git/connect:
     post:
       tags:
@@ -2812,7 +2960,7 @@ paths:
         22.x or 24.x. The Node.js runtime is inferred from
         `package.json` `engines.node`; if omitted, Volcano uses Node.js 22.x.
         The selected Node.js family must also satisfy the installed Next.js package's
-        `engines.node` constraint. Volcano tests Next 15.5.23 (`^18.18.0 || ^19.8.0 || >=20.0.0`) and Next 16.3.0 (`>=20.9.0`).
+        `engines.node` constraint. Volcano tests Next 15.5.23 (`^18.18.0 || ^19.8.0 || >=20.0.0`) and Next 16.3.1 (`>=20.9.0`).
         Source archive size is enforced by the API with `SOURCE_ARCHIVE_SIZE_LIMIT_MB`; the CLI
         does not apply its own source archive size limit. After the final Lambda container images are
         built, the publish build enforces `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB` before pushing.
@@ -9111,6 +9259,81 @@ components:
         - source_id
         - project_name
         - target
+    ProjectImportStartRequest:
+      type: object
+      properties:
+        connection_id:
+          type: string
+          format: uuid
+        source_id:
+          type: string
+          minLength: 1
+          maxLength: 255
+        project_name:
+          type: string
+          maxLength: 255
+          pattern: '^[A-Za-z0-9_-]+$'
+        target:
+          $ref: '#/components/schemas/ProjectImportTarget'
+        confirm_environment_variable_read:
+          type: boolean
+          enum: [true]
+        preflight_fingerprint:
+          type: string
+          pattern: '^sha256:[0-9a-f]{64}$'
+      required:
+        - connection_id
+        - source_id
+        - project_name
+        - target
+        - confirm_environment_variable_read
+        - preflight_fingerprint
+    ProjectImportRunStatus:
+      type: string
+      enum: [pending, running, succeeded, failed, superseded]
+      x-enum-varnames:
+        - ProjectImportRunStatusPending
+        - ProjectImportRunStatusRunning
+        - ProjectImportRunStatusSucceeded
+        - ProjectImportRunStatusFailed
+        - ProjectImportRunStatusSuperseded
+    ProjectImportRun:
+      type: object
+      properties:
+        id:
+          type: string
+        provider:
+          $ref: '#/components/schemas/ImportProvider'
+        source_id:
+          type: string
+        destination_project_name:
+          type: string
+        resource:
+          $ref: '#/components/schemas/ResourceReference'
+        deployment:
+          $ref: '#/components/schemas/DeploymentReference'
+        status:
+          $ref: '#/components/schemas/ProjectImportRunStatus'
+        error_code:
+          type: string
+        error_message:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - provider
+        - source_id
+        - destination_project_name
+        - resource
+        - deployment
+        - status
+        - created_at
+        - updated_at
     ProjectImportDestination:
       type: object
       properties:
@@ -9696,6 +9919,10 @@ components:
       $ref: ./components/common/schemas.yaml#/components/schemas/ProjectConfigVariable
     ProjectHealthResource:
       $ref: ./components/common/schemas.yaml#/components/schemas/ProjectHealthResource
+    ResourceReference:
+      $ref: ./components/common/schemas.yaml#/components/schemas/ResourceReference
+    DeploymentReference:
+      $ref: ./components/common/schemas.yaml#/components/schemas/DeploymentReference
     ProjectHealthScope:
       $ref: ./components/common/schemas.yaml#/components/schemas/ProjectHealthScope
     ProjectHealthResponse:

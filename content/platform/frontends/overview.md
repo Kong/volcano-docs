@@ -57,6 +57,81 @@ Compressed **request** bodies are passed through untouched too, so a route that
 accepts `Content-Encoding: gzip` reads the compressed bytes and decodes them
 itself.
 
+## Caching
+
+Volcano serves your site through a CDN. Static assets, optimized images, and
+pages Next.js built ahead of time are held at the edge, so repeat visitors are
+answered without reaching your runtime. Check any response with `X-Cache`:
+
+```bash
+curl -sI https://your-site.frontends.volcano.dev/pricing | grep -i -e x-cache -e cache-control
+# cache-control: s-maxage=31536000
+# x-cache: Hit from cloudfront
+```
+
+**Your app decides what is shared.** The edge stores nothing that does not ask
+to be stored, so Next.js's own rendering choice is the whole contract:
+
+| Route | What Next.js sends | At the edge |
+| --- | --- | --- |
+| Prerendered at build | `s-maxage=31536000` | Cached |
+| `export const revalidate = 60` | `s-maxage=60` | Cached for 60 seconds |
+| `export const dynamic = 'force-dynamic'` | `no-store` | Never cached |
+| Reads cookies, headers, or search params | `no-store` | Never cached |
+
+So a page that is always a `Miss` is a page your app is rendering per request.
+If you expected it to be cached, make it static — the usual cause is a dynamic
+API called in the page or in a layout above it, which opts the whole route out.
+
+**Cached pages are never more than a minute behind your app.** A page your app
+can replace at any moment cannot also be trusted for a year, so the edge checks
+back with your runtime at least every 60 seconds and serves what it already has
+while nothing has changed. Anything that changes what a page renders —
+[`revalidatePath()`, `revalidateTag()`](https://nextjs.org/docs/app/guides/incremental-static-regeneration),
+or a redeploy — reaches visitors within that window:
+
+```js
+// app/api/publish/route.js
+import { revalidatePath } from "next/cache";
+
+export async function POST() {
+  revalidatePath("/blog"); // live for everyone within a minute
+  return Response.json({ revalidated: true });
+}
+```
+
+A response that sets a cookie is never shared, whatever its `Cache-Control`
+says. Neither is one whose `Vary` names a header the CDN does not key on: only
+`Accept-Encoding` and the App Router's own routing headers are, so
+`Vary: Accept-Language` or `Vary: Origin` on a cacheable response takes it out
+of the shared cache rather than risk serving one visitor's copy to the next.
+Read those headers in the page instead and Next.js will render per request.
+
+A prefetch and a full page load of the same URL are cached separately, as are
+the same page requested on two different domains.
+
+**Middleware turns caching off for the routes it matches.** Middleware runs in
+your runtime, so a page answered from the edge would skip it — a route gated on
+a cookie would be served to the next visitor without one. Rather than guess
+which middleware is a security check, Volcano keeps every matched route out of
+the shared cache:
+
+```js
+// middleware.js — /dashboard is never cached, everything else still is
+export const config = { matcher: ["/dashboard/:path*"] };
+```
+
+Narrow the `matcher` to the routes that need it. Middleware declared without a
+`matcher` runs on every request, which leaves nothing cacheable. If you use
+middleware only to rewrite or add headers, moving that logic into
+[`next.config.js` rewrites](https://nextjs.org/docs/app/api-reference/config/next-config-js/rewrites)
+or into the page itself keeps the route at the edge.
+
+Redeploying clears your frontend's cached pages, so a new build takes over
+without waiting for anything to expire. It cannot clear a browser's copy, which
+is why Next.js puts a build hash in the filename of every asset it expects to
+change.
+
 ## Platform error pages
 
 When Volcano cannot route or serve a frontend request, browsers receive a
