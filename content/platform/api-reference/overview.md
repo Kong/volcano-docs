@@ -187,6 +187,7 @@ CLI Version Gating.
 | `POST` | `/projects` | Create a project |
 | `GET` | `/projects` | List projects |
 | `GET` | `/projects/{id}` | Get a project |
+| `GET` | `/deployments` | List deployments across every project you own |
 | `PATCH` | `/projects/{id}` | Update project name/region policy |
 | `DELETE` | `/projects/{id}` | Delete a project |
 
