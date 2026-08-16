@@ -1834,6 +1834,108 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /deployments:
+    get:
+      tags:
+        - Projects
+      summary: List deployments across a user's projects
+      description: |
+        Lists Function and Frontend deployment attempts across every project the
+        user owns, newest first. Pass `project_id` to narrow the feed to a single
+        project.
+
+        Scope is project **ownership** (`projects.user_id`). `owner_id` names
+        whose deployments to return, not who started them — the actor is
+        `initiated_by_user_id`, which this endpoint does not filter on.
+
+        With a user token the scope is always the authenticated user: `owner_id`
+        may be omitted, or set to that same user, but naming anyone else is
+        refused with 403. Service callers on the management API must pass it,
+        since they have no authenticated user.
+
+        The owner is not checked for existence: an id with no projects returns an
+        empty page rather than `404`. Unlike `/users/{id}/usage`, this endpoint is
+        polled to detect an event, so a caller needs `404` to keep meaning "this
+        route is not served here" — which is how a consumer notices it is running
+        against an older release. A mistyped owner therefore reads as "nothing
+        deployed"; callers that need to tell those apart should verify the user
+        through `GET /users/{id}` first.
+
+        Ordering is selectable. The default is the feed order — most recent
+        attempt first. `completed_at.asc` orders by completion, oldest first, and
+        considers only attempts that finished; combined with `limit=1` and a
+        `status` filter it answers "when did this user first succeed" in one
+        bounded query.
+
+        Both pagination modes are supported, selected exactly as
+        `/projects/{id}/deployments` selects them: `cursor`/`ending_before` (or a
+        `limit` with no `page`) uses keyset pagination; otherwise `page`/`limit`
+        offset pagination. `page` with a cursor, and `cursor` with
+        `ending_before`, are rejected.
+
+        A cursor is bound to every filter *and* to `order`, so changing any of
+        them mid-pagination rejects the cursor rather than silently skipping or
+        repeating rows. The keyset position is `(created_at, id)` for
+        `created_at.desc` and `(completed_at, id)` for `completed_at.asc`.
+      operationId: listDeployments
+      security:
+        - UserToken: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/EndingBefore'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/DeploymentOwnerId'
+        - name: project_id
+          in: query
+          required: false
+          description: Restrict the feed to a single project owned by the user.
+          schema:
+            type: string
+            format: uuid
+        - name: created_after
+          in: query
+          required: false
+          description: Restrict results to attempts created at or after this timestamp.
+          schema:
+            type: string
+            format: date-time
+        - $ref: '#/components/parameters/DeploymentResourceType'
+        - $ref: '#/components/parameters/DeploymentStatus'
+        - $ref: '#/components/parameters/DeploymentOperation'
+        - $ref: '#/components/parameters/DeploymentOrder'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjectDeployments'
+        '400':
+          description: Bad request - invalid filter or pagination
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized - invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - owner_id names a different user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /projects/{id}/deployments:
     get:
       tags:
@@ -8980,6 +9082,16 @@ components:
       schema:
         type: string
         format: uuid
+    DeploymentOperation:
+      $ref: ./components/common/parameters.yaml#/components/parameters/DeploymentOperation
+    DeploymentOwnerId:
+      $ref: ./components/common/parameters.yaml#/components/parameters/DeploymentOwnerId
+    DeploymentOrder:
+      $ref: ./components/common/parameters.yaml#/components/parameters/DeploymentOrder
+    DeploymentResourceType:
+      $ref: ./components/common/parameters.yaml#/components/parameters/DeploymentResourceType
+    DeploymentStatus:
+      $ref: ./components/common/parameters.yaml#/components/parameters/DeploymentStatus
     Offset:
       $ref: ./components/common/parameters.yaml#/components/parameters/Offset
     Page:

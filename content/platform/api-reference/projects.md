@@ -214,6 +214,66 @@ changing anything.
 - The request body is capped at **4 MiB** (hosted pages, template bodies, and
   TLS PEMs fit comfortably; larger bodies are rejected with 400).
 
+## Query Project Runtime Metrics
+
+```http
+POST /projects/{id}/metrics/query
+Authorization: Bearer <platform_token>
+Content-Type: application/json
+
+{
+  "time_range": {"window": "1h"},
+  "queries": [
+    {"id": "requests", "metric": "request_count"},
+    {"id": "availability_by_region", "metric": "availability", "group_by": "region"}
+  ]
+}
+```
+
+Query up to 10 named metrics over a trailing `30m`, `1h`, `24h`, or `7d` window.
+Supported metrics are `request_count`, `server_error_count`, `availability`, and `p95_latency`.
+Group results by `region` or `resource_type` when needed.
+
+**Response:**
+
+```json
+{
+  "observed_at": "2026-07-10T12:00:00Z",
+  "fresh_through": "2026-07-10T11:58:00Z",
+  "window": {
+    "from": "2026-07-10T11:00:00Z",
+    "to": "2026-07-10T12:00:00Z"
+  },
+  "results": [
+    {
+      "id": "requests",
+      "metric": "request_count",
+      "unit": "count",
+      "data_status": "partial",
+      "values": [{"dimensions": {}, "value": 1842}]
+    },
+    {
+      "id": "availability_by_region",
+      "metric": "availability",
+      "unit": "ratio",
+      "data_status": "partial",
+      "values": [
+        {"dimensions": {"region": "us-east-1"}, "value": 0.998},
+        {"dimensions": {"region": "us-west-2"}, "value": 0.995}
+      ]
+    }
+  ]
+}
+```
+
+Use each result's `data_status` when presenting the values:
+
+- `complete` means the requested window was evaluated from all available data.
+- `partial` means the durable values are available, but the newest live samples may be missing. Use `fresh_through` to show the data boundary and retry before treating the window as complete.
+- `no_data` means no samples were found for that result.
+
+The endpoint returns `503` when no metrics backend can serve the query.
+
 ## Get Project Usage
 
 ```http
