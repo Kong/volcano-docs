@@ -40,7 +40,7 @@ curl -X POST https://api.volcano.dev/projects \
 **Fields:**
 - `id` - Unique project identifier (use in all API calls)
 - `status` - `active`, `provisioning`, or `failed`
-- `aws_application_name` - Internal AWS resource name
+- `aws_application_name` - Internal resource name
 
 Save the `id` - you'll need it for all project operations.
 

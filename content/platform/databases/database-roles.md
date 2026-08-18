@@ -47,7 +47,7 @@ const result = await client.query('SELECT * FROM posts');
 Volcano automatically selects the correct role based on authentication:
 
 ```javascript
-// In your Lambda function
+// In your function
 exports.handler = async (event) => {
   // If event.__volcano_auth exists → uses 'authenticated' role
   // If no auth → uses 'anon' role

@@ -148,7 +148,7 @@ curl -X DELETE "https://api.volcano.dev/projects/proj_abc123" \
 When you delete a project, Volcano:
 
 1. Deletes all function code from storage
-2. Removes all Lambda functions from AWS
+2. Removes all deployed functions from every region
 3. Terminates all database instances
 4. Deletes all auth users and sessions
 5. Revokes all API keys

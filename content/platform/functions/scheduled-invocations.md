@@ -1,9 +1,9 @@
 ---
 title: "Scheduled Function Invocations"
-description: "Scheduled invocations let a function run automatically on a cron schedule without creating per-function AWS schedules."
+description: "Scheduled invocations let a function run automatically on a cron schedule without creating per-function infrastructure."
 ---
 
-Scheduled invocations let a function run automatically on a cron schedule without creating per-function AWS schedules. Volcano stores schedules centrally and regional workers invoke the deployed Lambda in each allowed region.
+Scheduled invocations let a function run automatically on a cron schedule without creating per-function infrastructure. Volcano stores schedules centrally and regional workers invoke the deployed function in each allowed region.
 
 ## Create A Scheduler
 
@@ -44,6 +44,6 @@ volcano functions schedulers disable my-function <scheduler-id>
 volcano functions schedulers delete my-function <scheduler-id>
 ```
 
-Schedulers are disabled or removed when their target function is deleted. When project region policy shrinks, scheduler rows for removed regions are disabled so stale regional workers cannot keep invoking removed Lambda functions.
+Schedulers are disabled or removed when their target function is deleted. When project region policy shrinks, scheduler rows for removed regions are disabled so stale regional workers cannot keep invoking removed functions.
 
 Scheduled invocations deliver your configured payload as the function event. Volcano also injects `__volcano_schedule` with `scheduler_id`, `run_id`, `job_id`, `project_id`, `target_id`, `job_type`, and `region` so functions can distinguish manual and scheduled invocations.

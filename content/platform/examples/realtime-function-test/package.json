@@ -1,7 +1,7 @@
 {
-  "name": "realtime-lambda-test",
+  "name": "realtime-function-test",
   "version": "1.0.0",
-  "description": "Lambda function that tests Volcano Realtime capabilities",
+  "description": "Volcano function that tests Volcano Realtime capabilities",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"

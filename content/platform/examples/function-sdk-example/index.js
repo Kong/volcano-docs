@@ -1,7 +1,7 @@
 /**
- * Lambda Example: Using @volcano.dev/sdk in Lambda Functions
+ * Example: Using @volcano.dev/sdk inside a Volcano function
  * 
- * This example shows how to use the Volcano SDK in Lambda functions:
+ * This example shows how to use the Volcano SDK in a function:
  * - Clean, expressive query builder syntax
  * - Automatic RLS enforcement using user's token
  * - No manual connection management
@@ -11,7 +11,7 @@
 const { VolcanoAuth } = require('@volcano.dev/sdk');
 
 /**
- * Lambda handler - Query database using SDK with user authentication
+ * Handler - Query database using SDK with user authentication
  */
 exports.handler = async (event) => {
 	// 1. Get user's auth context from Volcano

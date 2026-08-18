@@ -1,7 +1,7 @@
 /**
- * Lambda Function: Realtime Test
+ * Function: Realtime Test
  * 
- * This Lambda function tests Volcano Realtime capabilities:
+ * This function tests Volcano Realtime capabilities:
  * 1. Connects to realtime server
  * 2. Subscribes to postgres changes
  * 3. Creates a record and verifies the change event is received
@@ -90,7 +90,7 @@ exports.handler = async (event, context) => {
     // Test 2: Broadcast Channel Subscription
     // ==========================
     try {
-      const broadcastChannel = realtime.channel('test-lambda-broadcast');
+      const broadcastChannel = realtime.channel('test-function-broadcast');
       
       await Promise.race([
         broadcastChannel.subscribe(),
@@ -104,7 +104,7 @@ exports.handler = async (event, context) => {
       });
 
       // Test sending a message
-      await broadcastChannel.send({ event: 'test', from: 'lambda', timestamp: Date.now() });
+      await broadcastChannel.send({ event: 'test', from: 'function', timestamp: Date.now() });
       addResult('Broadcast Send', true, {
         message: 'Successfully sent broadcast message',
       });
@@ -120,7 +120,7 @@ exports.handler = async (event, context) => {
     // Test 3: Presence Channel
     // ==========================
     try {
-      const presenceChannel = realtime.channel('test-lambda-presence', { type: 'presence' });
+      const presenceChannel = realtime.channel('test-function-presence', { type: 'presence' });
       
       await Promise.race([
         presenceChannel.subscribe(),
@@ -132,7 +132,7 @@ exports.handler = async (event, context) => {
       // Track presence
       await presenceChannel.track({ 
         status: 'testing',
-        function: 'realtime-lambda-test',
+        function: 'realtime-function-test',
         userId: user.id,
       });
 
@@ -195,7 +195,7 @@ exports.handler = async (event, context) => {
       });
 
       // Insert a record for this user
-      const testData = `Lambda test at ${new Date().toISOString()}`;
+      const testData = `Function test at ${new Date().toISOString()}`;
       await db.query(
         'INSERT INTO realtime_test (user_id, data) VALUES ($1, $2)',
         [user.id, testData]

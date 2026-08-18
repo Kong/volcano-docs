@@ -7,7 +7,7 @@ Provision PostgreSQL databases.
 
 ## List Available Regions
 
-Get the list of available AWS regions for database provisioning:
+Get the list of available regions for database provisioning:
 
 ```bash
 curl https://api.volcano.dev/databases/regions
@@ -75,7 +75,7 @@ curl -X POST https://api.volcano.dev/projects/PROJECT_ID/databases \
 
 **Request Body:**
 - `name` (required): Database name (lowercase, underscores)
-- `region` (optional): AWS region ID (from `/databases/regions`)
+- `region` (optional): Region ID (from `/databases/regions`)
 - `pg_version` (optional): PostgreSQL version (from `/databases/postgres-versions`)
 - `database_type` (optional): Compute size tier (default: `volcano-db-xs`)
 
@@ -149,7 +149,7 @@ When status is `active`, includes `connection_string`:
 ```
 
 Use this `connection_string` to connect from your functions or applications.
-The username and password are Volcano-managed client credentials. The password starts with `vpg_`; Neon credentials are never returned by the API.
+The username and password are Volcano-managed client credentials. The password starts with `vpg_`; internal credentials are never returned by the API.
 
 ## Using the Connection String
 
@@ -238,7 +238,7 @@ curl -X POST https://api.volcano.dev/projects/PROJECT_ID/databases/DB_ID/reset-p
 ```
 
 Update your functions' DATABASE_URL with the new connection string.
-The old Volcano password stops working after reset. The internal Neon owner password is not rotated and is never exposed to clients.
+The old Volcano password stops working after reset. The internal owner password is not rotated and is never exposed to clients.
 
 ## See Also
 

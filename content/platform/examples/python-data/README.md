@@ -1,11 +1,11 @@
 ---
 title: "Python Data Processing Example"
-description: "A Lambda function that processes data arrays and demonstrates environment variable usage."
+description: "A function that processes data arrays and demonstrates environment variable usage."
 ---
 
 # Python Data Processing Example
 
-A Lambda function that processes data arrays and demonstrates environment variable usage.
+A function that processes data arrays and demonstrates environment variable usage.
 
 ## Deploy
 

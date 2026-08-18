@@ -8,7 +8,7 @@
  * string whose `application_name` is `volcano_user_access:{userId}`. Every
  * connection in that pool starts up scoped to that user, so queries are
  * RLS-filtered without any per-request SET. Pools are reused across invocations
- * while the Lambda container is warm.
+ * while the execution environment is warm.
  */
 
 const { Pool } = require('pg');
@@ -39,7 +39,7 @@ function poolForUser(userId) {
 }
 
 /**
- * Lambda handler - invoked per request
+ * Handler - invoked per request
  */
 exports.handler = async (event) => {
 	// 1. Check authentication (from user's JWT token)

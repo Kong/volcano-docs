@@ -66,7 +66,16 @@ answered without reaching your runtime. Check any response with `X-Cache`:
 ```bash
 curl -sI https://your-site.frontends.volcano.dev/pricing | grep -i -e x-cache -e cache-control
 # cache-control: s-maxage=31536000
-# x-cache: Hit from cloudfront
+# x-cache: Hit from volcano
+```
+
+Every response also says which build and region answered. Your app's own headers
+are served as written, and Volcano's internal ones are never returned:
+
+```bash
+curl -sI https://your-site.frontends.volcano.dev/pricing | grep -i x-volcano
+# x-volcano-version: staging-abc1234
+# x-volcano-region: us-east-1
 ```
 
 **Your app decides what is shared.** The edge stores nothing that does not ask

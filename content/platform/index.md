@@ -38,7 +38,7 @@ Serverless PostgreSQL with built-in authentication and row-level security.
 | [Quick start](databases/quick-start.md) | Set up a database in 5 minutes |
 | [Query Builder API](databases/query-builder-api.md) | Query from the browser with the SDK |
 | [REST API](databases/rest-api.md) | HTTP endpoints for database operations |
-| [Direct connection](databases/direct-connection.md) | Connect from Lambda with user impersonation |
+| [Direct connection](databases/direct-connection.md) | Connect from a function with user impersonation |
 | [Row-level security](databases/row-level-security.md) | Secure data with policies |
 | [Auth helpers](databases/auth-helpers.md) | SQL functions for user context |
 
@@ -58,7 +58,7 @@ User authentication with email/password, OAuth providers, and anonymous users.
 
 ### Storage
 
-S3-backed file storage with RLS-style access control policies.
+Durable object storage with RLS-style access control policies.
 
 | Guide | Description |
 |-------|-------------|
@@ -155,7 +155,7 @@ Working code examples in the [examples/](examples/README.md) directory:
 - **nodejs-hello/** — Simple Node.js function
 - **python-data/** — Python data processing
 - **frontend-auth-nextjs/** — Next.js frontend with authentication
-- **lambda-sdk-example/** — Using the SDK in Lambda functions
+- **function-sdk-example/** — Using the SDK inside a function
 - **realtime-chat/** — Real-time chat with presence tracking
 
 ## Getting help

@@ -1,9 +1,9 @@
 ---
 title: "Database Authentication Flow - Complete Guide"
-description: "How authentication works in client-side (browser) vs server-side (Lambda) scenarios."
+description: "How authentication works in client-side (browser) vs server-side (function) scenarios."
 ---
 
-How authentication works in client-side (browser) vs server-side (Lambda) scenarios.
+How authentication works in client-side (browser) vs server-side (function) scenarios.
 
 ---
 
@@ -124,11 +124,11 @@ const { data, error } = await volcano.from('posts').select('*');
 
 ---
 
-## Server-Side (Lambda) - Event Context
+## Server-Side (Function) - Event Context
 
 ### How It Works
 
-In Lambda functions, the auth context comes in `event.__volcano_auth` and you pass it to the database!
+In functions, the auth context comes in `event.__volcano_auth` and you pass it to the database!
 
 ### Using Standard pg Library (Recommended)
 
@@ -294,7 +294,7 @@ function App() {
 
 ---
 
-### Server-Side Lambda Function
+### Server-Side Function
 
 ```javascript
 const { VolcanoAuth } = require('@volcano.dev/sdk');
@@ -363,8 +363,8 @@ exports.handler = async (event) => {
 **How user identity flows to database:**
 
 ```text
-Browser                    Volcano                    Lambda
-────────                   ───────                    ──────
+Browser                    Volcano                    Function
+────────                   ───────                    ────────
 
 User signs in         →    Validates credentials →    N/A
 Gets access token          Creates JWT with user_id
@@ -414,13 +414,13 @@ Authorization: Bearer {access_token_from_localStorage}
                       ↑ Automatically added by SDK
 ```
 
-### Server-Side (Lambda)
+### Server-Side (Function)
 
 **Session Storage:** event.__volcano_auth (per-request)
 
 **Code:**
 ```javascript
-// Lambda receives auth in event
+// The function receives auth in the event
 const { Client } = require('pg');
 
 const auth = event.__volcano_auth;
@@ -615,11 +615,11 @@ if claims.Type == "auth_user" {
     }
 }
 
-// 3. Invoke Lambda with augmented payload
-lambda.Invoke(functionName, payload)
+// 3. Invoke the function with the augmented payload
+invoke(functionName, payload)
 ```
 
-### Lambda Receives It
+### The Function Receives It
 
 ```javascript
 exports.handler = async (event) => {
@@ -665,7 +665,7 @@ await volcano.initialize();
 const { data } = await volcano.from('posts').select('*');
 ```
 
-### Server-Side (Lambda)
+### Server-Side (Function)
 
 **Q:** How do I get user's identity?  
 **A:** From `event.__volcano_auth`
@@ -699,7 +699,7 @@ Volcano extracts user_id, email, role from token
   ↓
 Volcano creates event.__volcano_auth
   ↓
-Lambda receives it
+The function receives it
   ↓
 SDK passes to database
 ```

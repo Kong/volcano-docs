@@ -53,5 +53,5 @@ Deployment count includes every matching attempt. Success rate uses only
 conclusive outcomes: `active` and `deleted` are successes, while `failed` and
 `degraded` are failures. In-progress and `superseded` attempts are excluded from
 the rate. Median build duration uses completed, non-superseded attempts with
-recorded CodeBuild work. Failed builds are included when they recorded a
+recorded build work. Failed builds are included when they recorded a
 duration.

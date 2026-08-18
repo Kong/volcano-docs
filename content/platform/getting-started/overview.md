@@ -18,11 +18,11 @@ Volcano is a serverless backend platform. It provides three core services: funct
 │                       Volcano API                            │
 ├─────────────────┬──────────────────┬────────────────────────┤
 │    Functions    │    Databases     │    Authentication      │
-│   (AWS Lambda)  │   (PostgreSQL)   │   (JWT + Sessions)     │
+│  (Serverless)   │   (PostgreSQL)   │   (JWT + Sessions)     │
 └─────────────────┴──────────────────┴────────────────────────┘
 ```
 
-Your application makes API calls to Volcano. Volcano manages the underlying infrastructure—Lambda functions, PostgreSQL databases, and user sessions—so you can focus on building your product.
+Your application makes API calls to Volcano. Volcano manages the underlying infrastructure—serverless functions, PostgreSQL databases, and user sessions—so you can focus on building your product.
 
 ## Core concepts
 
@@ -39,7 +39,7 @@ Most applications need one project. You might create multiple projects to separa
 
 ### Functions
 
-Functions are serverless code that runs on AWS Lambda. You write the code, upload it to Volcano, and invoke it via HTTP. Volcano handles provisioning, scaling, and execution.
+Functions are serverless code that runs on demand. You write the code, upload it to Volcano, and invoke it via HTTP. Volcano handles provisioning, scaling, and execution.
 
 Supported runtimes:
 - Node.js (22.x, 24.x)
@@ -55,12 +55,12 @@ Functions can access databases, user context, and environment variables. They're
 
 ### Databases
 
-Databases are serverless PostgreSQL instances powered by Neon. They auto-scale based on usage and pause when idle to save costs.
+Databases are serverless PostgreSQL instances. They auto-scale based on usage and pause when idle to save costs.
 
 You can access databases two ways:
 
 1. **Query Builder / REST API** — Make HTTP requests from browsers or servers
-2. **Direct connection** — Connect from Lambda functions with standard PostgreSQL clients
+2. **Direct connection** — Connect from your functions with standard PostgreSQL clients
 
 Databases include built-in support for row-level security (RLS). Combined with authentication, you can write policies that automatically filter data based on the current user.
 

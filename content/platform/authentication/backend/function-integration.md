@@ -207,5 +207,5 @@ process.env.DATABASE_URL  // Your database connection string
 
 - [Row-Level Security](../../databases/row-level-security.md) - Secure data at database level
 - [Auth Helpers](../../databases/auth-helpers.md) - Using auth.uid(), auth.email()
-- [Examples](../../examples/lambda-sdk-example/README.md) - Complete working examples
+- [Examples](../../examples/function-sdk-example/README.md) - Complete working examples
 

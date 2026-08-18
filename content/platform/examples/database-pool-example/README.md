@@ -9,7 +9,7 @@ Production-ready example showing how to use connection pooling with Volcano SDK 
 
 ## Features
 
-- ✅ Connection pool reused across Lambda invocations
+- ✅ Connection pool reused across invocations
 - ✅ Automatic auth context injection per request
 - ✅ Row-Level Security automatically enforced
 - ✅ 10-50x faster than creating new connections
@@ -92,7 +92,7 @@ const volcano = new VolcanoAuth({
 // Sign in
 await volcano.auth.signIn({ email, password });
 
-// Get posts (calls Lambda which queries database)
+// Get posts (calls the function, which queries the database)
 const result = await volcano.functions.invoke('get-posts-function-id', {
   action: 'get_posts',
   filter: 'recent'
@@ -121,7 +121,7 @@ await volcano.functions.invoke('get-posts-function-id', {
 **Simple Pattern (createClient):**
 - Learning/prototyping
 - Low-traffic apps (<100 requests/day)
-- Simple Lambda functions
+- Simple functions
 
 **Pool Pattern (createPool):**
 - Production apps

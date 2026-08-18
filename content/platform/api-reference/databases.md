@@ -51,7 +51,7 @@ Authorization: Bearer <platform_token>
 }
 ```
 
-**Note:** `connection_string` is only shown when `status` is `active`. Use this connection string to connect from your functions or applications. It contains Volcano-managed per-database client credentials (`volcano_client_{database_id}` with a `vpg_` password); Neon credentials are never returned and will not authenticate through pgproxy.
+**Note:** `connection_string` is only shown when `status` is `active`. Use this connection string to connect from your functions or applications. It contains Volcano-managed per-database client credentials (`volcano_client_{database_id}` with a `vpg_` password); internal credentials are never returned and will not authenticate through pgproxy.
 
 ## Create Database
 
@@ -104,7 +104,7 @@ Authorization: Bearer <platform_token>
 ```
 
 Update your `DATABASE_URL` environment variable with the new connection string.
-The previous Volcano password stops working after reset. Reset does not expose or rotate the internal Neon owner password.
+The previous Volcano password stops working after reset. Reset does not expose or rotate the internal owner password.
 
 ## Database Query API
 

@@ -17,7 +17,7 @@ Multipart form fields:
 
 Size limits:
 - `SOURCE_ARCHIVE_SIZE_LIMIT_MB` is enforced by the API for uploaded and normalized source archives.
-- `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB` is enforced by the publish build for the final Lambda container images.
+- `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB` is enforced by the publish build for the final container images.
 - The CLI uploads `tar.gz` and does not enforce its own source archive size limit.
 
 Example monorepo upload:

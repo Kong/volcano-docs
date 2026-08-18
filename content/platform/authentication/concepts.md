@@ -131,7 +131,7 @@ Connect with the user's identity to enable this automatically — `DATABASE_URL`
 `volcano_user_access:{user_id}` before connecting:
 
 ```javascript
-// In your Lambda function
+// In your function
 const { user_id } = event.__volcano_auth;
 
 const url = new URL(process.env.DATABASE_URL);

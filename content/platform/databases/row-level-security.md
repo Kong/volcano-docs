@@ -80,7 +80,7 @@ CREATE POLICY "users_own_posts" ON posts
 
 ## Using in Functions
 
-When you connect to your database from Lambda functions, Volcano automatically handles user context:
+When you connect to your database from your functions, Volcano automatically handles user context:
 
 ```javascript
 const { Pool } = require('pg');
@@ -232,7 +232,7 @@ USING (
 
 - [Database Roles](database-roles.md) - Understanding anon vs authenticated roles
 - [Auth Helpers](auth-helpers.md) - auth.uid(), auth.email(), auth.role()
-- [Lambda Integration](../authentication/backend/lambda-integration.md) - Using RLS in functions
+- [Function Integration](../authentication/backend/function-integration.md) - Using RLS in functions
 - Examples - Complete RLS examples
 
 

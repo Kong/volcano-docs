@@ -163,12 +163,15 @@ Retry-After: 60
 
 Wait until the `Retry-After` period has passed before making more requests.
 
-Function invocation responses also include:
+Every response says which build and region answered:
 
 ```text
 X-Volcano-Version: <version>                  # production
 X-Volcano-Version: <env>-<version>            # non-production (e.g. staging-xyz)
+X-Volcano-Region: us-east-1                   # the region that served the request
 ```
+
+Volcano's internal headers are never returned.
 
 ## CLI version gating
 

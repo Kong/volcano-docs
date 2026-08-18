@@ -1,7 +1,7 @@
 {
-  "name": "lambda-sdk-example",
+  "name": "function-service-key-example",
   "version": "1.0.0",
-  "description": "Volcano Lambda function using @volcano.dev/sdk",
+  "description": "Volcano function using service key for admin operations",
   "main": "index.js",
   "dependencies": {
     "@volcano.dev/sdk": "nightly"
@@ -11,8 +11,9 @@
   },
   "keywords": [
     "volcano",
-    "lambda",
-    "sdk",
+    "function",
+    "admin",
+    "service-key",
     "serverless"
   ]
 }

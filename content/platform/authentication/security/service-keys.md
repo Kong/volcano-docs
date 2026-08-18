@@ -109,7 +109,7 @@ SERVICE_KEY=vk_live_eyJhbGciOiJIUzI1NiIs...
 ```
 
 ```javascript
-// Lambda function or backend server
+// Volcano function or backend server
 const serviceKey = process.env.SERVICE_KEY;
 ```
 

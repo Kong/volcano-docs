@@ -1,11 +1,11 @@
 ---
 title: "Node.js Hello World Example"
-description: "This is a simple Lambda function that demonstrates the Volcano Hosting platform."
+description: "This is a simple function that demonstrates the Volcano Hosting platform."
 ---
 
 # Node.js Hello World Example
 
-This is a simple Lambda function that demonstrates the Volcano Hosting platform.
+This is a simple function that demonstrates the Volcano Hosting platform.
 
 ## Deploy
 

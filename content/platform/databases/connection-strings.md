@@ -48,7 +48,7 @@ postgresql://volcano_client_11111111-1111-1111-1111-111111111111:vpg_abc123@data
 - `port` - 5432 (standard PostgreSQL port)
 - `database` - Your database name
 
-Volcano provisions Neon under the hood, but the API never returns Neon credentials. Neon owner passwords do not authenticate through pgproxy.
+These are the only credentials the API returns; the internal owner credentials are never exposed and do not authenticate through pgproxy.
 
 ## Using in Functions
 
@@ -138,7 +138,7 @@ curl -X POST https://api.volcano.dev/projects/PROJECT_ID/databases/DB_ID/reset-p
   -H "Authorization: Bearer PLATFORM_TOKEN"
 ```
 
-Rotates the Volcano-managed client password and returns a new connection string. The old password stops authenticating through pgproxy. Internal Neon credentials are not reset or exposed.
+Rotates the Volcano-managed client password and returns a new connection string. The old password stops authenticating through pgproxy. Internal credentials are not reset or exposed.
 
 ## See Also
 

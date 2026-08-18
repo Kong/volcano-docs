@@ -220,7 +220,7 @@ interface StorageObject {
   owner_id?: string;    // User who uploaded the file
   size: number;         // Size in bytes
   mime_type: string;    // MIME type
-  etag?: string;        // S3 ETag for caching
+  etag?: string;        // Entity tag for caching
   metadata?: object;    // Custom metadata
   created_at: string;   // ISO timestamp
   updated_at: string;   // ISO timestamp
@@ -381,7 +381,7 @@ const shareUrl = data.publicUrl;
 
 - **No authentication required** - Works in any browser, can be embedded anywhere
 - **Only for public files** - Returns 403 for files with `is_public: false`
-- **All requests go through Volcano** - No direct S3 access, all security enforced
+- **All requests go through Volcano** - No direct access to the underlying store, all security enforced
 - **Project isolation** - Each project has separate namespacing
 
 ## Error handling
@@ -584,7 +584,7 @@ if (!error) {
 | Maximum part size | 25MB |
 | Default part size | 25MB |
 | Maximum parts | 10,000 |
-| Maximum file size | Limited by plan storage quota (S3 supports up to 5TB) |
+| Maximum file size | Limited by plan storage quota (up to 5TB per object) |
 | Session expiry | 7 days |
 
 ### When to use resumable uploads

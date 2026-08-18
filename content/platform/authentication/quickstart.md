@@ -135,7 +135,7 @@ const result = await volcano.functions.invoke('my-function', {
 In your function, access the user's identity through `event.__volcano_auth`:
 
 ```javascript
-// Lambda function
+// Volcano function
 exports.handler = async (event) => {
   // Check if user is authenticated
   if (!event.__volcano_auth) {
@@ -175,7 +175,7 @@ const { data, error } = await volcano
 console.log('My posts:', data);
 ```
 
-### From a Lambda function
+### From a function
 
 ```javascript
 const { Client } = require('pg');

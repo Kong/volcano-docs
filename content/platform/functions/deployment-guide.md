@@ -27,8 +27,8 @@ deployments synchronously and returns `409 Conflict` for overlap.
 
 After propagation retries, Volcano treats a regional runtime as missing only
 when its invocation path receives a provider-confirmed not-found response for
-the Lambda or Function URL. Volcano first verifies that the same deployment is
-still serving and that the region is still expected, then queues durable repair
+the deployed runtime or its invocation URL. Volcano first verifies that the same
+deployment is still serving and that the region is still expected, then queues durable repair
 of that immutable generation. Repair does not rebuild source, create a new
 deployment, or change what `active` and `degraded` mean.
 
@@ -55,9 +55,9 @@ zip -r function.zip . -x "node_modules/*" -x "python_deps/*" -x "vendor/*" -x ".
 
 Volcano installs Node.js, Python, and Ruby dependencies during the cloud compile build from manifests such as `package.json`, `requirements.txt`, and `Gemfile`.
 
-Cloud deployments enforce two separate limits: `SOURCE_ARCHIVE_SIZE_LIMIT_MB` for uploaded source archives, and `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB` for the final Lambda container image produced by the publish build.
+Cloud deployments enforce two separate limits: `SOURCE_ARCHIVE_SIZE_LIMIT_MB` for uploaded source archives, and `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB` for the final container image produced by the publish build.
 
-`SOURCE_ARCHIVE_SIZE_LIMIT_MB` is enforced by the API only. The CLI does not enforce a local source archive size limit, so server-side limit changes do not require users to update the CLI. `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB` is enforced in the cloud publish build after the final Lambda image is built and before it is pushed.
+`SOURCE_ARCHIVE_SIZE_LIMIT_MB` is enforced by the API only. The CLI does not enforce a local source archive size limit, so server-side limit changes do not require users to update the CLI. `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB` is enforced in the cloud publish build after the final image is built and before it is pushed.
 
 ### DO: Keep Build Inputs Focused
 
@@ -178,7 +178,7 @@ cd dist && zip function.zip index.js
 1. **Tree-shaking**: Use esbuild or webpack to remove unused code
 2. **Minification**: Compress your JavaScript
 3. **External dependencies**: Bundle only the dependencies you need
-4. **Avoid large files**: Store data in S3, not in function code
+4. **Avoid large files**: Store data in Volcano Storage, not in function code
 5. **Development dependencies**: Don't include test files or dev tools
 
 ## Example: Real-World API

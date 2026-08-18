@@ -202,7 +202,7 @@ zip -r function.zip main.rb Gemfile Gemfile.lock
 
 > **Note:** Upload focused source bundles. Include generated runtime output if your handler needs it, such as `dist/` or `build/`, but exclude installed dependency directories, dependency caches, and files that are only useful during development.
 
-Cloud uploads are limited by `SOURCE_ARCHIVE_SIZE_LIMIT_MB`, and that limit is enforced by the API only. The CLI does not reject function archives based on local file or archive size. After the cloud build installs dependencies, the publish build rejects final Lambda container images larger than `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB`.
+Cloud uploads are limited by `SOURCE_ARCHIVE_SIZE_LIMIT_MB`, and that limit is enforced by the API only. The CLI does not reject function archives based on local file or archive size. After the cloud build installs dependencies, the publish build rejects final container images larger than `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB`.
 
 `functions deploy --all` uploads functions in API batches of up to 100 functions. Larger projects are split into multiple batch requests automatically by the CLI.
 

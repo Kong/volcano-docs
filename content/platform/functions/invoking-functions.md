@@ -125,9 +125,15 @@ Function receives exactly this (plus `__volcano_auth` if using auth token).
 // HTTP status code, headers, and body come from the function return value.
 ```
 
-Every successful function invocation response includes the `X-Volcano-Version` header.
-- In `production`: `X-Volcano-Version: <version>`
-- In non-production environments: `X-Volcano-Version: <env>-<version>` (example: `staging-xyz`)
+Every invocation response says which build and region answered:
+
+- `X-Volcano-Version`: `<version>` in `production`, `<env>-<version>` elsewhere (example: `staging-xyz`)
+- `X-Volcano-Region`: the region your function ran in (example: `us-east-1`)
+
+Those two and `X-Volcano-Health` are set by the platform: a response header your
+function returns under one of those names is dropped rather than forwarded, as
+are Volcano's own internal headers. Every other header you return is forwarded
+as written.
 
 ## Handling responses
 

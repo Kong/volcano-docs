@@ -201,7 +201,7 @@ You may upload either ZIP or `tar.gz` source archives. The Volcano CLI always up
 
 Function uploads must fit within `SOURCE_ARCHIVE_SIZE_LIMIT_MB`. This source archive limit is enforced by the API only, both before storage and after ZIP-to-`tar.gz` normalization. The CLI does not enforce this limit locally.
 
-After upload, the cloud compile build installs dependencies from manifests such as `package.json`, `requirements.txt`, and `Gemfile`. The publish build then checks the final Lambda container image against `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB` before pushing it.
+After upload, the cloud compile build installs dependencies from manifests such as `package.json`, `requirements.txt`, and `Gemfile`. The publish build then checks the final container image against `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB` before pushing it.
 
 **Recommendations**:
 
@@ -283,7 +283,7 @@ Your source archive exceeds `SOURCE_ARCHIVE_SIZE_LIMIT_MB`. Common solutions:
 
 ### "Lambda target container image is too large"
 
-The cloud publish build created a final Lambda image larger than `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB`. Remove unnecessary runtime files, reduce dependency size, or split the function into smaller functions.
+The cloud publish build created a final container image larger than `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB`. Remove unnecessary runtime files, reduce dependency size, or split the function into smaller functions.
 
 ## Updating a Function
 

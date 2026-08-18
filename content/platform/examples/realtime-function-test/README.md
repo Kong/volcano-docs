@@ -1,11 +1,11 @@
 ---
-title: "Realtime Lambda Test"
-description: "This example demonstrates how to test Volcano Realtime capabilities from within a Lambda function."
+title: "Realtime Function Test"
+description: "This example demonstrates how to test Volcano Realtime capabilities from within a function."
 ---
 
-# Realtime Lambda Test
+# Realtime Function Test
 
-This example demonstrates how to test Volcano Realtime capabilities from within a Lambda function.
+This example demonstrates how to test Volcano Realtime capabilities from within a function.
 
 ## What This Tests
 
@@ -31,7 +31,7 @@ This is critical for multi-tenant applications where data isolation is essential
 
 ```bash
 # From this example's directory
-cd realtime-lambda-test
+cd realtime-function-test
 npm install
 zip -r function.zip .
 
