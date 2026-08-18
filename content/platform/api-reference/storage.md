@@ -466,7 +466,7 @@ Content-Type: application/json
 - Files are **private by default** when uploaded
 - Public files can be downloaded with just an anon key (no user authentication)
 - Private files require authentication and must pass policy checks
-- All downloads (public and private) go through the Volcano API - no direct S3 access
+- All downloads (public and private) go through the Volcano API - there is no direct access to the underlying store
 
 ## Error responses
 
@@ -585,7 +585,7 @@ Content-Type: application/json
 **Notes:**
 - Sessions expire after 7 days
 - Subject to INSERT policy checks
-- Part size is automatically adjusted to meet S3 requirements
+- Part size is automatically adjusted to meet storage requirements
 
 ### Get upload session status
 

@@ -1,15 +1,15 @@
 ---
 title: "Storage"
-description: "Volcano Storage provides S3-compatible file storage with RLS-style access control policies."
+description: "Volcano Storage provides durable object storage with RLS-style access control policies."
 ---
 
-Volcano Storage provides S3-compatible file storage with RLS-style access control policies. Store user files, images, documents, and any binary data with automatic per-user isolation.
+Volcano Storage provides durable object storage with RLS-style access control policies. Store user files, images, documents, and any binary data with automatic per-user isolation.
 
 ## Features
 
 | Feature | Description |
 |---------|-------------|
-| S3-backed | Files stored in AWS S3 with high durability |
+| Durable | Files are stored redundantly and served through the Volcano API |
 | RLS policies | Fine-grained access control per object |
 | Per-project | Each project has isolated storage namespaces |
 | Buckets | Organize files into logical buckets |

@@ -1,9 +1,9 @@
 ---
 title: "Functions"
-description: "Functions are serverless code that runs on AWS Lambda. You write the code, deploy it to Volcano, and invoke it via HTTP."
+description: "Functions are serverless code that runs on demand. You write the code, deploy it to Volcano, and invoke it via HTTP."
 ---
 
-Functions are serverless code that runs on AWS Lambda. You write the code, deploy it to Volcano, and invoke it via HTTP. Volcano handles provisioning, scaling, and execution.
+Functions are serverless code that runs on demand. You write the code, deploy it to Volcano, and invoke it via HTTP. Volcano handles provisioning, scaling, and execution.
 
 ## How functions work
 
@@ -55,9 +55,9 @@ The CLI packages cloud function sources as `tar.gz` archives and also automatica
 - shared files/directories whose names start with `_`
 - dependency manifests such as `package.json`, `requirements.txt`, and `Gemfile`
 
-Cloud deploys install dependencies during the function compile build. Do not upload `node_modules`, `python_deps`, or `vendor` to the cloud API. Local mode does not run CodeBuild, so it still expects dependencies to be installed locally.
+Cloud deploys install dependencies during the function compile build. Do not upload `node_modules`, `python_deps`, or `vendor` to the cloud API. Local mode does not run the cloud build, so it still expects dependencies to be installed locally.
 
-Function and frontend source archives are limited by `SOURCE_ARCHIVE_SIZE_LIMIT_MB`, which is enforced by the API. The CLI does not apply its own source archive size limit. Final Lambda container images are limited by `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB`, which is enforced in the cloud publish build before images are pushed.
+Function and frontend source archives are limited by `SOURCE_ARCHIVE_SIZE_LIMIT_MB`, which is enforced by the API. The CLI does not apply its own source archive size limit. Final container images are limited by `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB`, which is enforced in the cloud publish build before images are pushed.
 
 See [Creating functions](creating-functions.md) for concrete layout examples.
 
@@ -86,7 +86,7 @@ while cleanup runs, then the function disappears from `get` and `list` results.
 | Python | python3.14, python3.13, python3.12, python3.11, python3.10 | `main.handler` |
 | Ruby | ruby4.0, ruby3.4, ruby3.3 | `main.handler` |
 
-The handler is the function that Lambda calls when your code runs. For Node.js, `index.handler` means the `handler` export in `index.js`. You can customize this when deploying.
+The handler is the entry point Volcano calls when your code runs. For Node.js, `index.handler` means the `handler` export in `index.js`. You can customize this when deploying.
 
 ## Quick example
 
@@ -148,7 +148,7 @@ Response:
 }
 ```
 
-The invocation HTTP status code and headers come directly from your function response, and Volcano adds `X-Volcano-Version` to invoked function responses (`production`: `VERSION`, non-production: `ENV-VERSION`).
+The invocation HTTP status code and headers come directly from your function response, and Volcano adds `X-Volcano-Version` (`production`: `VERSION`, non-production: `ENV-VERSION`) and `X-Volcano-Region`. See [Invoking functions](invoking-functions.md#response-format) for the headers Volcano owns and does not forward.
 
 ## Environment variables
 

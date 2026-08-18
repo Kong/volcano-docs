@@ -47,9 +47,9 @@ warning: ignoring reserved build env var SOURCE_URL
 ```
 
 The variable is still stored and still delivered to your deployed function and
-frontend server runtimes; only the build does not see it. Names AWS Lambda reserves
-for itself, such as `AWS_REGION`, cannot be used as runtime environment variables at
-all.
+frontend server runtimes; only the build does not see it. Names the function runtime
+reserves for itself, such as `AWS_REGION`, cannot be used as runtime environment
+variables at all.
 
 | Reserved | Examples |
 | --- | --- |
@@ -168,7 +168,7 @@ Do store:
 - Configuration
 - Feature flags
 
-For maximum security, use AWS Secrets Manager in your functions.
+For maximum security, fetch secrets from a dedicated secrets manager inside your functions.
 
 ## See Also
 

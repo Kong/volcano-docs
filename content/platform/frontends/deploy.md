@@ -57,8 +57,8 @@ volcano cloud frontends redeploy my-site
 
 After propagation retries, Volcano treats a regional runtime as missing only
 when the frontend proxy receives a provider-confirmed not-found response for
-the Lambda or Function URL. Volcano first verifies that the same deployment is
-still serving and that the region is still expected, then queues durable repair
+the deployed runtime or its invocation URL. Volcano first verifies that the same
+deployment is still serving and that the region is still expected, then queues durable repair
 of that immutable generation. Repair does not rebuild source, create a new
 deployment, or change what `active` and `degraded` mean.
 
@@ -77,7 +77,7 @@ them as release identifiers.
 
 Each generated frontend runtime image must fit the configured
 `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB`. Volcano checks an uncompressed upper
-bound—the exact pinned Lambda base-image layers plus the generated application
+bound—the exact pinned base-image layers plus the generated application
 layer—before publishing. A server, image-optimizer, or warmer image over the
 limit fails the asynchronous deployment. Remove unused production dependencies
 or large generated files from the frontend bundle to reduce its size.

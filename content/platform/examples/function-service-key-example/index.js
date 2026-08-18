@@ -1,9 +1,9 @@
 /**
- * Lambda Example: Using Service Key for Admin Operations
+ * Example: Using a Service Key for Admin Operations
  * 
  * ⚠️ CRITICAL SECURITY WARNING ⚠️
  * Service keys BYPASS Row-Level Security and grant admin access to ALL data.
- * - ONLY use in backend Lambda functions
+ * - ONLY use in backend functions
  * - NEVER expose in frontend code
  * - NEVER commit to git
  * - Store in environment variables only
@@ -18,7 +18,7 @@
 const { VolcanoAuth } = require('@volcano.dev/sdk');
 
 /**
- * Lambda handler - Admin operations with service key
+ * Handler - Admin operations with service key
  */
 exports.handler = async (event) => {
 	// Initialize SDK with SERVICE KEY (admin access)

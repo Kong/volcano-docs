@@ -1,11 +1,11 @@
 ---
-title: "Lambda with Volcano SDK Example"
-description: "This example shows how to use the @volcano.dev/sdk in AWS Lambda functions for clean, expressive database queries with automatic Row-Level Security."
+title: "Volcano SDK in a Function"
+description: "This example shows how to use the @volcano.dev/sdk inside a Volcano function for clean, expressive database queries with automatic Row-Level Security."
 ---
 
-# Lambda with Volcano SDK Example
+# Volcano SDK in a Function
 
-This example shows how to use the **@volcano.dev/sdk** in AWS Lambda functions for clean, expressive database queries with automatic Row-Level Security.
+This example shows how to use the **@volcano.dev/sdk** inside a Volcano function for clean, expressive database queries with automatic Row-Level Security.
 
 ## Features
 
@@ -25,7 +25,7 @@ npm install @volcano.dev/sdk
 
 ### 2. Set Environment Variables
 
-Configure these in your Lambda function:
+Configure these in your function:
 
 ```bash
 VOLCANO_API_URL=https://your-volcano-instance.com
@@ -39,7 +39,7 @@ DATABASE_NAME=your_database_name
 
 ```bash
 # Using Volcano CLI
-volcano deploy --function lambda-sdk-example
+volcano deploy --function function-sdk-example
 ```
 
 ## Usage
@@ -57,8 +57,8 @@ const volcano = new VolcanoAuth({
 // Sign in user
 await volcano.auth.signIn({ email, password });
 
-// Call Lambda function
-const response = await fetch('https://your-lambda-url.com', {
+// Call the function
+const response = await fetch('https://your-function-url.com', {
   method: 'POST',
   headers: {
     'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
@@ -173,9 +173,9 @@ const { session } = await volcano.auth.signIn({ email, password });
 // session.access_token is the JWT
 ```
 
-### 2. Lambda Receives Auth Context
+### 2. The Function Receives Auth Context
 
-Volcano automatically injects `event.__volcano_auth` into your Lambda:
+Volcano automatically injects `event.__volcano_auth` into your function:
 
 ```javascript
 {

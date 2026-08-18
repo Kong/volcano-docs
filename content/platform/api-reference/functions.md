@@ -81,7 +81,7 @@ compile build fails with a reserved-path validation error.
 
 Direct API clients may upload ZIP or `tar.gz`; the API stores a normalized `tar.gz` source archive. Uploaded source archives cannot contain symlink entries. The API enforces `SOURCE_ARCHIVE_SIZE_LIMIT_MB` on uploaded and normalized source archives. The CLI uploads `tar.gz` and does not enforce its own source archive size limit.
 
-After dependencies are installed and the final Lambda image is built, the publish build rejects images larger than `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB`.
+After dependencies are installed and the final image is built, the publish build rejects images larger than `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB`.
 
 For direct API uploads, Volcano generates `.volcano/function-build.json` automatically. It infers `function_root` from the single runtime entry file (`index.js`/`index.mjs`, `main.py`, or `main.rb`), or from the only top-level directory when the archive has one. It infers `install_root` from the closest dependency manifest directory that contains the function root, otherwise it uses the function root.
 
@@ -204,8 +204,10 @@ Content-Type: application/json
 }
 ```
 
-The HTTP status code and headers are forwarded from the function response.  
-All successful function invocations include `X-Volcano-Version` (`<version>` in production, `<env>-<version>` in non-production environments).
+The HTTP status code and headers are forwarded from the function response, except
+for the platform-owned ones (`X-Volcano-Version`, `X-Volcano-Region`,
+`X-Volcano-Health`) and Volcano's internal headers, which are dropped.  
+All successful function invocations include `X-Volcano-Version` (`<version>` in production, `<env>-<version>` in non-production environments) and `X-Volcano-Region`.
 
 ## Resolve Function Name
 

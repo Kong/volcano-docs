@@ -793,7 +793,7 @@ A: Yes! Row-Level Security is automatically enforced on all queries.
 A: No! The REST API handles SQL generation for you.
 
 **Q: Can I do complex queries with JOINs?**  
-A: For complex queries, use Lambda functions with direct SQL instead.
+A: For complex queries, use functions with direct SQL instead.
 
 **Q: How fast is it?**  
 A: Very fast! Direct connection to your database with connection pooling.

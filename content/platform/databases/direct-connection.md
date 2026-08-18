@@ -1,9 +1,9 @@
 ---
 title: "Direct PostgreSQL Connection"
-description: "Connect directly to your Volcano PostgreSQL database from Lambda functions, Node.js servers, or any PostgreSQL client."
+description: "Connect directly to your Volcano PostgreSQL database from functions, Node.js servers, or any PostgreSQL client."
 ---
 
-Connect directly to your Volcano PostgreSQL database from Lambda functions, Node.js servers, or any PostgreSQL client.
+Connect directly to your Volcano PostgreSQL database from functions, Node.js servers, or any PostgreSQL client.
 
 ## Overview
 
@@ -15,7 +15,7 @@ No PostgreSQL driver needed
 Works from browser
 See [Query Builder API Guide](query-builder-api.md)
 
-### 2. Direct Connection (Lambda/Server)
+### 2. Direct Connection (Function/Server)
 Native PostgreSQL protocol
 Full SQL power
 Any PostgreSQL client/ORM
@@ -113,15 +113,15 @@ curl https://api.volcano.dev/projects/PROJECT_ID/databases/DATABASE_NAME \
 ```
 
 This is your **base connection string** with full admin access (for DDL/migrations). To impersonate a user, change the `application_name` from `volcano_full_access` to `volcano_user_access` and add the user ID.
-The password is Volcano-managed and starts with `vpg_`. Neon owner credentials are internal and will not authenticate through pgproxy.
+The password is Volcano-managed and starts with `vpg_`. The internal owner credentials are not exposed and will not authenticate through pgproxy.
 
 ---
 
-## Lambda Functions (Recommended)
+## Functions (Recommended)
 
 ### From event.__volcano_auth
 
-**When users invoke your Lambda with their access token**, Volcano automatically creates `event.__volcano_auth`:
+**When users invoke your function with their access token**, Volcano automatically creates `event.__volcano_auth`:
 
 ```javascript
 const { Client } = require('pg');
@@ -168,7 +168,7 @@ exports.handler = async (event) => {
 **How it works:**
 1. User calls function with their access token
 2. Volcano validates JWT and creates `event.__volcano_auth`
-3. Lambda builds connection string with user's identity
+3. The function builds a connection string with the user's identity
 4. pgproxy receives and sets session variables
 5. `auth.uid()` returns the user's ID
 6. RLS filters data to that user
@@ -629,9 +629,9 @@ postgres://volcano_client_11111111-1111-1111-1111-111111111111:vpg_password@data
 - Connection pooling
 - Works with any client
 
-### Direct to Neon
+### Direct to the underlying instance
 
-Direct Neon credentials are internal to Volcano and are not returned by the API. Use the pgproxy connection string returned by Volcano instead.
+The underlying instance's credentials are internal to Volcano and are not returned by the API. Use the pgproxy connection string returned by Volcano instead.
 
 ---
 
@@ -684,7 +684,7 @@ const client = new Client({
 
 ### Safe Patterns
 
-**Using event.__volcano_auth (Lambda):**
+**Using event.__volcano_auth (function):**
 ```javascript
 const auth = event.__volcano_auth;  // ← Created by Volcano, trusted
 const appName = `volcano_user_access:${auth.user_id}`;
@@ -832,7 +832,7 @@ await verifyAuthContext('test-user-uuid', 'project-uuid');
 
 ---
 
-## Complete Lambda Example
+## Complete Function Example
 
 ```javascript
 const { Pool } = require('pg');
@@ -858,7 +858,7 @@ function poolForUser(userId) {
 }
 
 /**
- * Lambda handler that queries as the authenticated user
+ * Handler that queries as the authenticated user
  */
 exports.handler = async (event) => {
   // 1. Extract auth context (from user's JWT token)
@@ -1012,7 +1012,7 @@ The proxy looks up email and role from the database, making this more secure.
 
 **Methods:**
 
-1. **Lambda (Recommended):**
+1. **Volcano function (Recommended):**
    ```javascript
    const auth = event.__volcano_auth;
    const appName = `volcano_user_access:${auth.user_id}`;

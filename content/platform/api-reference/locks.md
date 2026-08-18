@@ -124,8 +124,8 @@ is already absent.
   `Retry-After` reports the remaining seconds in that fixed-minute window. Every
   request counts, including reads, force releases, and a retry that reuses
   `X-Volcano-Request-Id`.
-- Lock operations fail closed with `503` when the control-plane DynamoDB region
-  is unavailable.
+- Lock operations fail closed with `503` when the control-plane region backing
+  them is unavailable.
 
 ### Planning around the request quota
 
@@ -166,10 +166,9 @@ leave gaps. Release, force release, and expiry do not reset the sequence.
 
 ## Lease guarantees
 
-DynamoDB conditional writes serialize lease ownership in one control-plane
-region. The lease alone cannot stop a process after expiry, so renew
-continuously, stop work when renewal fails, and use `fencing_token` when stale
-writes would be unsafe.
+Conditional writes serialize lease ownership in one control-plane region. The
+lease alone cannot stop a process after expiry, so renew continuously, stop work
+when renewal fails, and use `fencing_token` when stale writes would be unsafe.
 
 `X-Volcano-Request-Id` correlates one logical HTTP operation across client and
 server logs. Generate a new UUID for each acquire, renew, or release, and reuse

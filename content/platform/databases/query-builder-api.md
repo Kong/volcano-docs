@@ -772,11 +772,11 @@ const { data } = await volcano.from('posts').select('*');
 - Limited to simple queries
 - No JOINs or subqueries
 
-### Use Direct SQL (Lambda)
+### Use Direct SQL (functions)
 
-**Complex queries (Lambda functions)**
+**Complex queries (in a function)**
 ```javascript
-// Use standard pg library in Lambda
+// Use the standard pg library inside your function
 const { Client } = require('pg');
 
 exports.handler = async (event) => {
@@ -806,7 +806,7 @@ exports.handler = async (event) => {
 - Better performance
 
 **Cons:**
-- Requires Lambda function
+- Requires a function
 - Need to know SQL
 
 ---
@@ -885,7 +885,7 @@ if (error) {
 Volcano REST API currently has:
 
 **Not Yet Supported:**
-- JOINs (use direct SQL in Lambda instead)
+- JOINs (use direct SQL in a function instead)
 - OR filters (only AND supported)
 - Nested selects
 - Aggregations (COUNT, SUM, AVG)
@@ -901,10 +901,10 @@ Volcano REST API currently has:
 
 **Workaround for Advanced Queries:**
 
-For complex queries not supported by the query builder, use Lambda functions with direct SQL:
+For complex queries not supported by the query builder, use functions with direct SQL:
 
 ```javascript
-// Create Lambda function with complex query
+// Create a function with a complex query
 const { Client } = require('pg');
 
 exports.handler = async (event) => {
@@ -939,7 +939,7 @@ const result = await volcano.functions.invoke('get-popular-posts', {});
 
 ## See Also
 
-- **[Direct Connection](direct-connection.md)** - Lambda/server with native PostgreSQL & auth impersonation
+- **[Direct Connection](direct-connection.md)** - Function/server with native PostgreSQL & auth impersonation
 - **[Authentication Flow](authentication-flow.md)** - How auth works (client & server)
 - [REST API Reference](rest-api.md) - Low-level REST API documentation
 - [Row-Level Security](row-level-security.md) - How RLS works

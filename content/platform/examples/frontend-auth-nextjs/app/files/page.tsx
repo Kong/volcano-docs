@@ -547,7 +547,7 @@ export default function FilesPage() {
         <div style={{ marginTop: '30px', padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '12px' }}>
           <h3 style={{ marginBottom: '10px' }}>About Volcano Storage</h3>
           <ul style={{ marginLeft: '20px', color: '#666', fontSize: '14px', lineHeight: '1.8' }}>
-            <li>Files are stored securely in S3-compatible storage</li>
+            <li>Files are stored securely in Volcano Storage</li>
             <li>Access is controlled by RLS-style policies</li>
             <li>Each user can only access their own files by default</li>
             <li>Maximum file size depends on your plan limits</li>

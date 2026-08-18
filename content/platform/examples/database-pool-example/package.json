@@ -1,7 +1,7 @@
 {
   "name": "volcano-database-pool-example",
   "version": "1.0.0",
-  "description": "Production example showing connection pooling for Lambda functions",
+  "description": "Production example showing connection pooling for Volcano functions",
   "main": "index.js",
   "dependencies": {
     "pg": "^8.11.3"

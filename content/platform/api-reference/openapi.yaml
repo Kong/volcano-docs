@@ -1213,7 +1213,7 @@ paths:
         - Projects
       summary: Get the project logo image
       description: |
-        Returns the raw logo image stored in the project's S3 folder. This
+        Returns the raw logo image stored in the project's storage folder. This
         endpoint is unauthenticated so the asset can be rendered directly in an
         `<img>` tag; project IDs are unguessable UUIDs and logos are
         non-sensitive branding. The `Project.logo_url` field exposes a versioned
@@ -1257,8 +1257,8 @@ paths:
         - Projects
       summary: Upload or replace the project logo
       description: |
-        Uploads an image as the project's logo, storing it in the project's S3
-        folder. Accepts PNG, JPEG, GIF, WebP, or SVG up to 2 MB. Replaces any
+        Uploads an image as the project's logo, storing it in the project's
+        storage folder. Accepts PNG, JPEG, GIF, WebP, or SVG up to 2 MB. Replaces any
         existing logo. Returns the updated project, whose `logo_url` reflects
         the new logo.
       operationId: uploadProjectLogo
@@ -1321,7 +1321,7 @@ paths:
         - Projects
       summary: Remove the project logo
       description: |
-        Deletes the project logo from the project's S3 folder and clears its
+        Deletes the project logo from the project's storage folder and clears its
         record. Returns the updated project with no `logo_url`.
       operationId: deleteProjectLogo
       security:
@@ -2014,7 +2014,7 @@ paths:
         Success rate uses conclusive outcomes only: active and deleted attempts
         are successful; failed and degraded attempts are failures; in-progress
         and superseded attempts are excluded. Median build duration includes
-        completed, non-superseded attempts with recorded CodeBuild work,
+        completed, non-superseded attempts with recorded build work,
         including failed builds.
       operationId: summarizeProjectDeployments
       security:
@@ -2171,7 +2171,7 @@ paths:
         dependency directories. Volcano installs Node.js, Python, and Ruby dependencies during the
         function compile build.
         Source archive size is enforced by the API with `SOURCE_ARCHIVE_SIZE_LIMIT_MB`; the CLI
-        does not apply its own source archive size limit. After the final Lambda container image is
+        does not apply its own source archive size limit. After the final container image is
         built, the publish build enforces `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB` before pushing.
         Uploaded source archives cannot contain symlink entries. Safe symlinks created during
         the cloud build are materialized before publish.
@@ -2433,6 +2433,10 @@ paths:
               description: Volcano API/runtime version that served this invocation (`<version>` in production, `<env>-<version>` in non-production)
               schema:
                 type: string
+            X-Volcano-Region:
+              description: Region the function ran in (for example `us-east-1`)
+              schema:
+                type: string
           content:
             application/json:
               schema:
@@ -2442,6 +2446,10 @@ paths:
           headers:
             X-Volcano-Version:
               description: Volcano API/runtime version that served this invocation (`<version>` in production, `<env>-<version>` in non-production)
+              schema:
+                type: string
+            X-Volcano-Region:
+              description: Region the function ran in (for example `us-east-1`)
               schema:
                 type: string
           content:
@@ -2780,7 +2788,7 @@ paths:
         for each uploaded and normalized source archive. The server records a shared
         deployment batch ID for the resulting function deployments. Each function deployment runs its own
         compile/publish workflow concurrently, and each publish build enforces `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB`
-        for the final Lambda container image.
+        for the final container image.
         One batch request can include up to 100 functions. Submit multiple batch requests for larger projects.
         If one function fails before its workflow starts, already-started function deployments are left
         running and the failed function is reported in the `failed` array. Failed new functions are deleted;
@@ -3064,7 +3072,7 @@ paths:
         The selected Node.js family must also satisfy the installed Next.js package's
         `engines.node` constraint. Volcano tests Next 15.5.23 (`^18.18.0 || ^19.8.0 || >=20.0.0`) and Next 16.3.1 (`>=20.9.0`).
         Source archive size is enforced by the API with `SOURCE_ARCHIVE_SIZE_LIMIT_MB`; the CLI
-        does not apply its own source archive size limit. After the final Lambda container images are
+        does not apply its own source archive size limit. After the final container images are
         built, the publish build enforces `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB` before pushing.
         This operation is limited by plan-based frontend deployment quotas (`FREE_FRONTEND_DEPLOYMENTS`, `PRO_FRONTEND_DEPLOYMENTS`).
         Each project can contain up to 10,000 frontends regardless of plan.
@@ -3759,13 +3767,13 @@ paths:
         - Databases
       summary: Delete a database
       description: |
-        Deletes a database and its backing Neon project. When the Neon project is
+        Deletes a database and the instance backing it. When the instance is
         removed synchronously the database row is deleted and the response is
-        `204`. If the Neon project cannot be deleted right away, the database row
+        `204`. If the instance cannot be deleted right away, the database row
         is retained (status `deleting`) and its teardown is handed to the
-        background reconciler, which retries the Neon deletion and removes the row
-        once Neon is gone; in that case the response is `202`. The database row is
-        never dropped while its Neon project still exists, so a Neon project is
+        background reconciler, which retries the deletion and removes the row
+        once the instance is gone; in that case the response is `202`. The database row is
+        never dropped while its instance still exists, so an instance is
         never orphaned without a record to retry from.
       operationId: deleteDatabase
       security:
@@ -3775,10 +3783,10 @@ paths:
         - $ref: '#/components/parameters/DatabaseName'
       responses:
         '204':
-          description: Database deleted (Neon project removed synchronously)
+          description: Database deleted (backing instance removed synchronously)
         '202':
           description: |
-            Deletion accepted and in progress. The Neon project could not be
+            Deletion accepted and in progress. The backing instance could not be
             removed synchronously, so the database is marked `deleting` and torn
             down asynchronously by the reconciler.
           content:
@@ -3799,7 +3807,7 @@ paths:
       summary: Reset database password
       description: |
         Rotates the Volcano-managed PostgreSQL password used by clients when connecting
-        through pgproxy. This does not rotate or expose the internal Neon owner password.
+        through pgproxy. This does not rotate or expose the internal owner password.
         The returned password and connection string are the only client credentials that
         will authenticate through pgproxy after reset.
       operationId: resetDatabasePassword
@@ -4008,7 +4016,7 @@ paths:
         - Simple data retrieval
         - Filtered searches with sorting and pagination
 
-        **Note:** For complex queries (JOINs, CTEs), use Lambda functions with direct SQL
+        **Note:** For complex queries (JOINs, CTEs), use functions with direct SQL
       operationId: queryDatabaseSelect
       security:
         - AuthUserAccessToken: []
@@ -4478,14 +4486,14 @@ paths:
     get:
       tags:
         - Databases
-      summary: List platform-supported AWS-backed regions for database provisioning
+      summary: List platform-supported regions for database provisioning
       operationId: listDatabaseRegions
       description: |
-        Returns the AWS-backed Neon regions enabled for this platform environment.
+        Returns the regions enabled for database provisioning in this platform environment.
         This is a public endpoint that doesn't require authentication.
       responses:
         '200':
-          description: List of platform-supported AWS-backed regions
+          description: List of platform-supported regions
           content:
             application/json:
               schema:
@@ -4556,11 +4564,11 @@ paths:
     get:
       tags:
         - Functions
-      summary: List available AWS regions for function deployment
+      summary: List available regions for function deployment
       operationId: listFunctionRegions
       security: []
       description: |
-        Returns the configured AWS regions where functions can be deployed, each annotated
+        Returns the configured regions where functions can be deployed, each annotated
         with a human-readable label and country flag emoji for use in UI pickers.
         This is a public endpoint that doesn't require authentication.
       responses:
@@ -8917,7 +8925,7 @@ paths:
 
         - Public files can be downloaded with just an anon key (no user authentication required)
         - Private files (default) require authentication and must pass policy checks
-        - All downloads go through the Volcano API - there is no direct S3 access
+        - All downloads go through the Volcano API - there is no direct access to the underlying store
       operationId: updateStorageObjectVisibility
       security:
         - ServiceRoleKey: []

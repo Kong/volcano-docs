@@ -462,5 +462,5 @@ exports.handler = async (event) => {
 - [Invoking Functions](invoking-functions.md) - How to call your functions
 - [Anonymous Users](../authentication/anonymous-users.md) - Guest user authentication
 - [Row-Level Security](../databases/row-level-security.md) - Database-level permissions
-- [Lambda Integration](../authentication/backend/lambda-integration.md) - Auth integration details
+- [Function Integration](../authentication/backend/function-integration.md) - Auth integration details
 

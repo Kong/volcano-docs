@@ -34,15 +34,15 @@ volcano.database('your_database_name');
 **Parameters:**
 - `apiUrl` - Your Volcano API URL
 - `anonKey` - Your anon key (Project Settings → Authentication) - contains project ID
-- `accessToken` (optional) - Access token for server-side use (Lambda functions)
+- `accessToken` (optional) - Access token for server-side use (functions)
 - `refreshToken` (optional) - Refresh token for server-side use
 
-**Server-side Usage (Lambda):**
+**Server-side Usage (functions):**
 ```javascript
 const volcano = new VolcanoAuth({
   apiUrl: process.env.VOLCANO_API_URL,
   anonKey: process.env.ANON_KEY,
-  accessToken: event.__volcano_auth.access_token  // User's token from Lambda event
+  accessToken: event.__volcano_auth.access_token  // User's token from the function event
 });
 ```
 
@@ -54,7 +54,7 @@ const volcano = new VolcanoAuth({
 **New in v1.1.0:**
 - Package published as `@volcano.dev/sdk`
 - Added Query Builder database query API
-- Universal support (browser and Lambda)
+- Universal support (browser and server-side)
 
 ## Methods
 

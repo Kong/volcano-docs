@@ -329,7 +329,7 @@ You now have a fully functional database with automatic security.
 
 Same as REST API - create via API or dashboard.
 
-### Step 2: Create a Lambda Function
+### Step 2: Create a Function
 
 ```javascript
 const { Client } = require('pg');
@@ -393,15 +393,15 @@ await volcano.auth.signIn({
   password: 'password' 
 });
 
-// Call Lambda function (auth automatically passed in event.__volcano_auth)
+// Call the function (auth automatically passed in event.__volcano_auth)
 const result = await volcano.functions.invoke('get-posts', {});
 console.log('Posts:', result.posts);
 ```
 
-**How auth flows to Lambda:**
+**How auth flows to your function:**
 1. User's access token sent with `invoke()` call
 2. Volcano validates token and creates `event.__volcano_auth`
-3. Lambda uses `event.__volcano_auth` to build connection string
+3. The function uses `event.__volcano_auth` to build connection string
 4. pgproxy receives auth and sets `auth.uid()`
 
 ---
@@ -410,7 +410,7 @@ console.log('Posts:', result.posts);
 
 | Feature | REST API | Direct SQL |
 |---------|----------|------------|
-| **Where** | Browser, Mobile | Lambda Functions |
+| **Where** | Browser, Mobile | Functions |
 | **Requires SQL** | No | Yes |
 | **Complexity** | Simple CRUD | Any query |
 | JOINs | Not supported | Full support |
@@ -430,6 +430,6 @@ console.log('Posts:', result.posts);
 |-------|-------------|
 | [REST API](rest-api.md) | Complete REST API documentation |
 | [Row-level security](row-level-security.md) | Secure your data |
-| [Connection strings](connection-strings.md) | Using databases in Lambda functions |
+| [Connection strings](connection-strings.md) | Using databases in your functions |
 | [Auth helpers](auth-helpers.md) | Database helper functions |
 | [Creating databases](creating-databases.md) | Database management |

@@ -1,9 +1,9 @@
 ---
 title: "Databases"
-description: "Serverless PostgreSQL databases powered by Neon that auto-scale, pause when idle, and support row-level security."
+description: "Serverless PostgreSQL databases that auto-scale, pause when idle, and support row-level security."
 ---
 
-Volcano provides serverless PostgreSQL databases powered by Neon. Databases auto-scale based on usage, pause when idle, and include built-in support for row-level security.
+Volcano provides serverless PostgreSQL databases. They auto-scale based on usage, pause when idle, and include built-in support for row-level security.
 
 ## Features
 
@@ -12,7 +12,7 @@ Volcano provides serverless PostgreSQL databases powered by Neon. Databases auto
 | Serverless | Auto-scales compute based on demand, pauses when idle |
 | PostgreSQL | Full PostgreSQL compatibility (versions 14, 15, 16) |
 | Query Builder | Query from browsers without writing SQL |
-| Direct connection | Connect from Lambda with standard PostgreSQL clients |
+| Direct connection | Connect from your functions with standard PostgreSQL clients |
 | Row-level security | Automatic data isolation per user |
 | Auth helpers | Built-in functions for user context (`auth.uid()`, `auth.email()`) |
 | Multiple databases | Create multiple databases per project |
@@ -54,9 +54,9 @@ The Query Builder:
 
 See [Query Builder API](query-builder-api.md) for the complete reference.
 
-### Direct connection (Lambda functions)
+### Direct connection (functions)
 
-Connect directly to PostgreSQL from your Lambda functions using any PostgreSQL client:
+Connect directly to PostgreSQL from your functions using any PostgreSQL client:
 
 ```javascript
 const { Client } = require('pg');
@@ -268,7 +268,7 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/databases" \
 | [Creating databases](creating-databases.md) | Database provisioning options |
 | [Query Builder API](query-builder-api.md) | Complete SDK query reference |
 | [REST API](rest-api.md) | HTTP endpoints for queries |
-| [Direct connection](direct-connection.md) | Connect from Lambda functions |
+| [Direct connection](direct-connection.md) | Connect from your functions |
 | [Row-level security](row-level-security.md) | Secure data per user |
 | [Auth helpers](auth-helpers.md) | SQL functions for user context |
 | [Connection strings](connection-strings.md) | Connection details and pooling |

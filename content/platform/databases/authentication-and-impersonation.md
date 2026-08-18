@@ -328,10 +328,10 @@ const { data, error } = await volcano.from('posts').select('*');
 
 ### For Platform Admin Operations
 
-If you need to access ALL data (bypassing RLS), use **platform tokens** with direct SQL in Lambda:
+If you need to access ALL data (bypassing RLS), use **platform tokens** with direct SQL in a function:
 
 ```javascript
-// Lambda function with platform token (not auth user token)
+// Function with a platform token (not an auth user token)
 exports.handler = async (event) => {
   // Connect with service_role (bypasses RLS)
   const db = new Client({
@@ -512,11 +512,11 @@ This is by design for security. To access different data:
 
 ### Q: What if I want admin access to all data?
 
-**A: Use platform tokens with direct SQL in Lambda functions.**
+**A: Use platform tokens with direct SQL in your functions.**
 
 The query builder/REST API is for **user-level access** with RLS enforcement.
 
-For admin operations that need to see all data, use Lambda functions with direct database connections using the service role.
+For admin operations that need to see all data, use functions with direct database connections using the service role.
 
 ### Q: How does the query builder enforce security?
 

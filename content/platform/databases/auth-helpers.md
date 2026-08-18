@@ -160,7 +160,7 @@ RESET request.jwt_role;
 ## See Also
 
 - [Row-Level Security](row-level-security.md) - Using helpers in RLS policies
-- [Lambda Integration](../authentication/backend/lambda-integration.md) - Setting session variables
+- [Function Integration](../authentication/backend/function-integration.md) - Setting session variables
 - Examples - Complete SQL file
 
 

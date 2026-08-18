@@ -5,7 +5,7 @@ from datetime import datetime
 
 def handler(event, context):
     """
-    Example Python Lambda function for Volcano Hosting
+    Example Python function for Volcano Hosting
     Processes data and returns a response
     """
     print(f"Event received: {json.dumps(event)}")

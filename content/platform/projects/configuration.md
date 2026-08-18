@@ -31,7 +31,7 @@ version: 1
 project:
   name: my-app                              # optional rename
   all_regions: false
-  selected_regions: [us-east-1, us-west-2]  # bare AWS names; subset requires PRO
+  selected_regions: [us-east-1, us-west-2]  # bare region names; subset requires PRO
 
 databases:                                  # must already exist; assertion-only
   - name: appdb                             # required, matches deployed database

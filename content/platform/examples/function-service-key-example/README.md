@@ -1,16 +1,16 @@
 ---
-title: "Lambda with Service Key Example"
+title: "Function with Service Key Example"
 description: "CRITICAL SECURITY WARNING"
 ---
 
-# Lambda with Service Key Example
+# Function with Service Key Example
 
 ⚠️ **CRITICAL SECURITY WARNING** ⚠️
 
 Service keys **BYPASS Row-Level Security** and grant admin access to ALL data from ALL users.
 
 **DO:**
-- ✅ Use ONLY in backend Lambda functions
+- ✅ Use ONLY in backend functions
 - ✅ Store in environment variables
 - ✅ Use for admin operations (analytics, moderation, bulk updates)
 - ✅ Audit all service key usage
@@ -62,7 +62,7 @@ DATABASE_NAME=your_database_name  # ← From Databases page
 ### 4. Deploy to Volcano
 
 ```bash
-volcano deploy --function lambda-service-key-example
+volcano deploy --function function-service-key-example
 ```
 
 ---
@@ -73,7 +73,7 @@ volcano deploy --function lambda-service-key-example
 
 ```javascript
 // Call from admin dashboard or cron job
-const response = await fetch('https://your-lambda-url.com', {
+const response = await fetch('https://your-function-url.com', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -108,7 +108,7 @@ console.log(analytics);
 
 ```javascript
 // Flag inappropriate posts
-const response = await fetch('https://your-lambda-url.com', {
+const response = await fetch('https://your-function-url.com', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -131,7 +131,7 @@ const result = await response.json();
 
 ```javascript
 // Update all draft posts to published
-const response = await fetch('https://your-lambda-url.com', {
+const response = await fetch('https://your-function-url.com', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -153,7 +153,7 @@ const result = await response.json();
 
 ```javascript
 // Backup all data
-const response = await fetch('https://your-lambda-url.com', {
+const response = await fetch('https://your-function-url.com', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -175,7 +175,7 @@ const { export: data } = await response.json();
 
 ```javascript
 // Dry run first (see what would be deleted)
-const dryRun = await fetch('https://your-lambda-url.com', {
+const dryRun = await fetch('https://your-function-url.com', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -189,7 +189,7 @@ const { would_delete } = await dryRun.json();
 console.log(`Would delete ${would_delete} posts`);
 
 // Actually delete
-const result = await fetch('https://your-lambda-url.com', {
+const result = await fetch('https://your-function-url.com', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -474,6 +474,6 @@ CREATE POLICY "Users can view own posts"
 ## Learn More
 
 - [Service Keys Documentation](../../authentication/security/service-keys.md)
-- [Lambda SDK Example](../lambda-sdk-example/README.md) - User authentication
+- [Function SDK Example](../function-sdk-example/README.md) - User authentication
 - [Row-Level Security](../../databases/row-level-security.md)
 - [Security Best Practices](../../authentication/security/anon-keys.md)

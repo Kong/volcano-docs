@@ -66,7 +66,7 @@ const result = await volcano.functions.invoke('get-data', {
 | Direct PostgreSQL access | Query databases directly from the browser |
 | Automatic RLS | Row-level security enforced on all queries |
 | Project locks | Renewable backend leases through `volcano.locks` |
-| Universal | Works in browser and Lambda environments |
+| Universal | Works in browser and server-side environments |
 
 ---
 
@@ -78,14 +78,14 @@ const result = await volcano.functions.invoke('get-data', {
 const volcano = new VolcanoAuth({
   apiUrl: string,       // Volcano API URL
   anonKey: string,      // Your project's anon key (contains project ID)
-  accessToken?: string, // Optional: for server-side use (Lambda)
+  accessToken?: string, // Optional: for server-side use (functions)
   refreshToken?: string // Optional: for server-side use
 });
 ```
 
-**Server-side (Lambda) Usage:**
+**Server-side (function) Usage:**
 ```javascript
-// Use accessToken from event.__volcano_auth for Lambda functions
+// Use accessToken from event.__volcano_auth inside your functions
 const volcano = new VolcanoAuth({
   apiUrl: process.env.VOLCANO_API_URL,
   anonKey: process.env.ANON_KEY,
