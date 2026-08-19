@@ -109,12 +109,29 @@ export async function POST() {
 }
 ```
 
-A response that sets a cookie is never shared, whatever its `Cache-Control`
-says. Neither is one whose `Vary` names a header the CDN does not key on: only
-`Accept-Encoding` and the App Router's own routing headers are, so
-`Vary: Accept-Language` or `Vary: Origin` on a cacheable response takes it out
-of the shared cache rather than risk serving one visitor's copy to the next.
-Read those headers in the page instead and Next.js will render per request.
+**Signed-in pages are not shared.** The CDN does not key on cookies or
+credentials, so anything that depends on them is held out of the shared cache
+rather than handed to the next visitor. Four things take a response out of it,
+whatever its `Cache-Control` says:
+
+- it sets a cookie;
+- it answers a request that carried an `Authorization` header;
+- its `Vary` names a header the CDN does not key on — only `Accept-Encoding` and
+  the App Router's own routing headers are, so `Vary: Cookie` or
+  `Vary: Accept-Language` takes it out;
+- its route is matched by middleware (see below).
+
+A page that reads the session cookie is already rendered per request, so it is
+never stored to begin with. The one way to defeat all of this is to set
+`Cache-Control: public` or `s-maxage` yourself on a page whose content depends
+on who is asking — that is your app telling the CDN the opposite, for a request
+it cannot tell apart from anyone else's.
+
+Each rule acts on a response, not on the route that produced it. Ask that same
+URL without an `Authorization` header and the answer is stored under whatever
+your app declared, and a later request that does carry a token can be served
+that copy for up to a minute — the CDN cannot tell the two apart. So on a route
+whose answer depends on who is asking, do not declare it shareable.
 
 A prefetch and a full page load of the same URL are cached separately, as are
 the same page requested on two different domains.
@@ -140,6 +157,10 @@ Redeploying clears your frontend's cached pages, so a new build takes over
 without waiting for anything to expire. It cannot clear a browser's copy, which
 is why Next.js puts a build hash in the filename of every asset it expects to
 change.
+
+Local mode puts no CDN in front of your app — every request reaches it — so
+`X-Cache` and everything above only applies once deployed. A page that is
+cached wrongly will look fine locally.
 
 ## Platform error pages
 
