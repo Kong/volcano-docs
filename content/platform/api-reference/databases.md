@@ -106,6 +106,187 @@ Authorization: Bearer <platform_token>
 Update your `DATABASE_URL` environment variable with the new connection string.
 The previous Volcano password stops working after reset. Reset does not expose or rotate the internal owner password.
 
+## Branches
+
+A branch is a copy-on-write fork of a database. See
+[Branching](../databases/branching.md) for the concepts; this section is the
+endpoint reference.
+
+### List Branches
+
+```http
+GET /projects/{projectId}/databases/{databaseName}/branches
+Authorization: Bearer <platform_token>
+```
+
+**Response:**
+```json
+{
+  "data": [
+    {
+      "id": "9b1f0f4c-2b8e-4f43-9a71-1f6c2f0f2c31",
+      "database_id": "abc-123-456-789",
+      "project_id": "11111111-1111-1111-1111-111111111111",
+      "name": "feature_checkout",
+      "status": "active",
+      "ttl_seconds": 86400,
+      "expires_at": "2024-01-02T00:00:00Z",
+      "storage_bytes": 536870912,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:05Z"
+    }
+  ]
+}
+```
+
+Every branch is listed, including those still provisioning and those that
+failed, since each still holds a name. Connection strings are omitted — fetch a
+single branch to get its connection string.
+
+### Create Branch
+
+```http
+POST /projects/{projectId}/databases/{databaseName}/branches
+Authorization: Bearer <platform_token>
+Content-Type: application/json
+```
+
+**Request:**
+```json
+{
+  "name": "feature_checkout",
+  "ttl_seconds": 86400
+}
+```
+
+**Response:** `202 Accepted`, with the branch in `provisioning` and no
+connection string. Poll [Get Branch](#get-branch) until it reports `active`.
+
+`ttl_seconds` is between `3600` and `2592000` (one hour to 30 days) and defaults
+to seven days. Names are lowercase letters, numbers, and underscores, up to 64
+characters, unique within the parent database.
+
+| Status | Meaning |
+|---|---|
+| `400` | Invalid name or lifetime |
+| `403` | Branch allowance reached, or branching is not on this plan |
+| `404` | Project or database not found |
+| `409` | Name already exists, or the database cannot be branched right now |
+| `503` | Branching is temporarily unavailable |
+
+**Limit:** 10 branches per database on Free, 25 on Pro. Branches in every state
+count, including those still provisioning.
+
+### Get Branch
+
+```http
+GET /projects/{projectId}/databases/{databaseName}/branches/{branchName}
+Authorization: Bearer <platform_token>
+```
+
+**Response:**
+```json
+{
+  "id": "9b1f0f4c-2b8e-4f43-9a71-1f6c2f0f2c31",
+  "database_id": "abc-123-456-789",
+  "project_id": "11111111-1111-1111-1111-111111111111",
+  "name": "feature_checkout",
+  "status": "active",
+  "connection_string": "postgresql://volcano_client_9b1f0f4c-2b8e-4f43-9a71-1f6c2f0f2c31:vpg_xyz789@database.volcano.dev:5432/main_db?sslmode=require&application_name=volcano_full_access",
+  "ttl_seconds": 86400,
+  "expires_at": "2024-01-02T00:00:00Z",
+  "storage_bytes": 536870912,
+  "created_at": "2024-01-01T00:00:00Z",
+  "updated_at": "2024-01-01T00:00:05Z"
+}
+```
+
+`connection_string` is present only while the branch is `active`. It carries the
+branch's own username and password; `application_name` selects the access mode
+exactly as it does for the parent. `storage_bytes` is the branch's divergence
+from its parent, not its apparent size.
+
+### Extend Branch
+
+```http
+PATCH /projects/{projectId}/databases/{databaseName}/branches/{branchName}
+Authorization: Bearer <platform_token>
+Content-Type: application/json
+```
+
+**Request:**
+```json
+{
+  "ttl_seconds": 604800
+}
+```
+
+Replaces the branch's lifetime and restarts the countdown from now. The new
+duration is remembered, so a later reset re-arms the same lifetime.
+
+### Reset Branch
+
+```http
+POST /projects/{projectId}/databases/{databaseName}/branches/{branchName}/reset
+Authorization: Bearer <platform_token>
+```
+
+Discards everything written on the branch and re-forks it from the parent as it
+is now. The branch keeps its name and connection string, and its lifetime is
+re-armed. It does not serve connections for the duration of the reset.
+
+Returns `202` with the branch in `provisioning`; the rewind runs in the
+background. Poll the branch until it reports `active` before connecting again.
+
+Returns `409` if the branch is not active or a reset is already in progress.
+
+### Rotate Branch Password
+
+```http
+POST /projects/{projectId}/databases/{databaseName}/branches/{branchName}/reset-password
+Authorization: Bearer <platform_token>
+```
+
+Issues a new password and invalidates the previous connection string. Existing
+connections are not interrupted. The parent database's credentials are
+untouched.
+
+### Delete Branch
+
+```http
+DELETE /projects/{projectId}/databases/{databaseName}/branches/{branchName}
+Authorization: Bearer <platform_token>
+```
+
+**Response:** `202 Accepted`
+
+```json
+{
+  "status": "deleting",
+  "message": "branch deletion in progress"
+}
+```
+
+The branch stops accepting connections at once; its fork and its row are removed
+by a background job. Deleting a branch that is still provisioning is allowed and
+stops the build. Deleting a branch that is already gone succeeds.
+
+### Query a Branch
+
+Every `/query/*` verb has a branch-targeted twin:
+
+```http
+POST /databases/{databaseName}/branches/{branchName}/query/select
+Authorization: Bearer <service_key or auth_user_access_token>
+Content-Type: application/json
+```
+
+The request and response bodies are identical to the parent routes documented
+under [Database Query API](#database-query-api). The same tokens work — service
+keys and end-user tokens are project-scoped — and anonymous keys are rejected on
+a branch just as they are on a parent. A branch that does not exist answers
+`404`, indistinguishable from a database that does not exist.
+
 ## Database Query API
 
 **Query databases directly via REST API** - no SQL required!
@@ -300,6 +481,11 @@ Authorization: Bearer <platform_token>
 **Response:**
 ```json
 {
+  "current_storage_bytes": 1610612736,
+  "current_storage_mb": 1536.0,
+  "branches": [
+    { "id": "9b1f0f4c-2b8e-4f43-9a71-1f6c2f0f2c31", "name": "feature_checkout", "storage_bytes": 536870912 }
+  ],
   "storage_bytes": 12345678,
   "data_written_bytes": 9876543,
   "data_transfer_bytes": 5432109,
@@ -309,6 +495,13 @@ Authorization: Bearer <platform_token>
   "granularity": "hourly"
 }
 ```
+
+`current_storage_bytes` is the on-disk size right now: the database itself plus
+every branch's divergence from it. This is the figure your storage allowance is
+enforced against, and `branches` breaks it down, most expensive first. A branch
+is charged only for what it has written since it was forked, so shared pages are
+never counted twice. `storage_bytes` is the historical synthetic storage figure
+from the consumption API and is unrelated.
 
 ---
 
@@ -358,5 +551,6 @@ Returns the database's current top queries from `pg_stat_statements`, ranked by 
 ## See Also
 
 - [Creating Databases](../databases/creating-databases.md)
+- [Branching](../databases/branching.md)
 - [Connection Strings](../databases/connection-strings.md)
 - [Row-Level Security](../databases/row-level-security.md)
