@@ -29,6 +29,8 @@ tags:
     description: Environment variable management
   - name: Databases
     description: Serverless PostgreSQL database provisioning and management
+  - name: Database Branches
+    description: Short-lived forks of a database for development and testing
   - name: Database Queries
     description: REST API for querying databases (SELECT, INSERT, UPDATE, DELETE)
   - name: Authentication
@@ -3800,6 +3802,338 @@ paths:
                   message:
                     type: string
                     example: database deletion in progress
+  /projects/{id}/databases/{databaseName}/branches:
+    get:
+      tags:
+        - Database Branches
+      summary: List a database's branches
+      description: |
+        Returns every branch of the database, including those still provisioning
+        and those that failed, since each still holds a name.
+
+        Connection strings are omitted. Fetch a single branch to get its
+        connection string.
+      operationId: listDatabaseBranches
+      security:
+        - UserToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/DatabaseName'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseBranchList'
+        '404':
+          description: Project or database not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Branching is temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags:
+        - Database Branches
+      summary: Create a branch of a database
+      description: |
+        Forks the database into a new branch. The branch starts as an exact copy
+        of the parent's data and diverges from there.
+
+        Provisioning is asynchronous: the response is `202` with the branch in
+        `provisioning` and no connection string. Poll the branch until it reports
+        `active`, at which point it carries its own connection string.
+
+        Retrying a create with a name that already exists returns `409` rather
+        than a second branch, so a retried request cannot silently consume two
+        slots of the branch allowance.
+      operationId: createDatabaseBranch
+      security:
+        - UserToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/DatabaseName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDatabaseBranchRequest'
+      responses:
+        '202':
+          description: Branch accepted and provisioning
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseBranch'
+        '400':
+          description: Invalid branch name or lifetime
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: |
+            The database has reached its branch allowance, or the owner's plan
+            does not include branching.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Project or database not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: |
+            A branch of that name already exists on this database, or the
+            database cannot be branched right now because it is still
+            provisioning, failed, or being deleted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Branching is temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /projects/{id}/databases/{databaseName}/branches/{branchName}:
+    get:
+      tags:
+        - Database Branches
+      summary: Get a branch
+      description: |
+        Returns the branch, including its connection string once it is `active`.
+        Poll this after creating a branch to learn when it is connectable.
+      operationId: getDatabaseBranch
+      security:
+        - UserToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/DatabaseName'
+        - $ref: '#/components/parameters/BranchName'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseBranch'
+        '404':
+          description: Project, database, or branch not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Branching is temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      tags:
+        - Database Branches
+      summary: Extend a branch's lifetime
+      description: |
+        Replaces the branch's lifetime and restarts the countdown from now, so a
+        branch you are still working on is not swept mid-session. The new
+        duration is remembered, so a later reset re-arms the same lifetime.
+      operationId: updateDatabaseBranch
+      security:
+        - UserToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/DatabaseName'
+        - $ref: '#/components/parameters/BranchName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDatabaseBranchRequest'
+      responses:
+        '200':
+          description: Lifetime updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseBranch'
+        '400':
+          description: Requested lifetime is outside the allowed range
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Project, database, or branch not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The branch is being deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Branching is temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags:
+        - Database Branches
+      summary: Delete a branch
+      description: |
+        Marks the branch for teardown and returns immediately. The branch stops
+        accepting connections at once; its fork and its row are removed by a
+        background job, so a provider outage cannot leave the call hanging or the
+        branch half-deleted.
+
+        Deleting a branch that is still provisioning is allowed and stops the
+        build. Deleting a branch that is already gone succeeds.
+      operationId: deleteDatabaseBranch
+      security:
+        - UserToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/DatabaseName'
+        - $ref: '#/components/parameters/BranchName'
+      responses:
+        '202':
+          description: Deletion accepted and in progress
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: deleting
+                  message:
+                    type: string
+                    example: branch deletion in progress
+                required:
+                  - status
+                  - message
+        '404':
+          description: Project, database, or branch not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Branching is temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /projects/{id}/databases/{databaseName}/branches/{branchName}/reset:
+    post:
+      tags:
+        - Database Branches
+      summary: Reset a branch to its parent's current state
+      description: |
+        Discards everything written on the branch and re-forks it from the
+        parent as it is now.
+
+        Returns immediately with the branch in `provisioning`. The rewind runs in
+        the background; poll the branch until it reports `active` before
+        connecting again.
+
+        The branch keeps its name and its connection string, so anything holding
+        that string keeps working once it is active again, and its lifetime is
+        re-armed to the duration it was created with. The branch does not serve
+        connections for the duration of the reset.
+      operationId: resetDatabaseBranch
+      security:
+        - UserToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/DatabaseName'
+        - $ref: '#/components/parameters/BranchName'
+      responses:
+        '202':
+          description: Branch reset accepted; the branch is provisioning
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseBranch'
+        '404':
+          description: Project, database, or branch not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: |
+            The branch is not active, or a reset is already in progress.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Branching is temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /projects/{id}/databases/{databaseName}/branches/{branchName}/reset-password:
+    post:
+      tags:
+        - Database Branches
+      summary: Rotate a branch's password
+      description: |
+        Issues a new password for the branch and invalidates the previous
+        connection string. Existing connections are not interrupted; new ones
+        must use the returned string.
+
+        The parent database's credentials are untouched.
+      operationId: resetDatabaseBranchPassword
+      security:
+        - UserToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/DatabaseName'
+        - $ref: '#/components/parameters/BranchName'
+      responses:
+        '200':
+          description: Password rotated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseBranch'
+        '404':
+          description: Project, database, or branch not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The branch is not active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Branching is temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /projects/{id}/databases/{databaseName}/reset-password:
     post:
       tags:
@@ -3964,17 +4298,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      additionalProperties: true
-                    description: Result rows of the probe query
-                  count:
-                    type: integer
-                    description: Number of rows returned
+                $ref: '#/components/schemas/DatabaseQueryResult'
               example:
                 data:
                   - "?column?": 1
@@ -4027,119 +4351,14 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - table
-              properties:
-                table:
-                  type: string
-                  description: Table name to query
-                  example: posts
-                select:
-                  type: array
-                  items:
-                    type: string
-                  description: Columns to select (omit for *)
-                  example: ["id", "title", "content", "created_at"]
-                filters:
-                  type: array
-                  items:
-                    type: object
-                    required:
-                      - column
-                      - operator
-                      - value
-                    properties:
-                      column:
-                        type: string
-                        example: status
-                      operator:
-                        type: string
-                        enum: [eq, neq, gt, gte, lt, lte, like, ilike, is, in]
-                        example: eq
-                        description: |
-                          Filter operators:
-                          - eq: equals (=)
-                          - neq: not equals (<>)
-                          - gt: greater than (>)
-                          - gte: greater than or equal (>=)
-                          - lt: less than (<)
-                          - lte: less than or equal (<=)
-                          - like: pattern match (LIKE)
-                          - ilike: case-insensitive pattern match (ILIKE)
-                          - is: IS NULL / IS NOT NULL
-                          - in: IN array
-                      value:
-                        oneOf:
-                          - type: string
-                            nullable: true
-                          - type: number
-                          - type: boolean
-                          - type: array
-                            description: Array of values for IN (...) queries
-                            items:
-                              oneOf:
-                                - type: string
-                                - type: number
-                                - type: boolean
-                        example: published
-                  description: WHERE conditions (combined with AND)
-                  example:
-                    - column: status
-                      operator: eq
-                      value: published
-                    - column: views
-                      operator: gt
-                      value: 100
-                order:
-                  type: array
-                  items:
-                    type: object
-                    required:
-                      - column
-                    properties:
-                      column:
-                        type: string
-                        example: created_at
-                      ascending:
-                        type: boolean
-                        default: true
-                        example: false
-                      nulls_first:
-                        type: boolean
-                        default: false
-                  description: ORDER BY clauses
-                  example:
-                    - column: created_at
-                      ascending: false
-                limit:
-                  type: integer
-                  minimum: 1
-                  maximum: 1000
-                  description: Maximum rows to return
-                  example: 10
-                offset:
-                  type: integer
-                  minimum: 0
-                  description: Number of rows to skip (for pagination)
-                  example: 0
+              $ref: '#/components/schemas/DatabaseSelectRequest'
       responses:
         '200':
           description: Query successful
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      additionalProperties: true
-                    description: Array of result rows (automatically filtered by RLS)
-                  count:
-                    type: integer
-                    description: Number of rows returned
+                $ref: '#/components/schemas/DatabaseQueryResult'
               example:
                 data:
                   - id: "uuid-123"
@@ -4180,7 +4399,15 @@ paths:
       tags:
         - Database Queries
       summary: Insert data into database (REST API)
-      description: "Insert new rows into your database using REST API.\n\n**Authentication:** Requires auth user access token\n\n**Auto-set user_id:** If your table has a trigger using `auth.uid()`,\nuser_id will be automatically set to the authenticated user\n\n**Security:** Row-Level Security policies are enforced\n"
+      description: |
+        Insert new rows into your database using REST API.
+
+        **Authentication:** Requires auth user access token
+
+        **Auto-set user_id:** If your table has a trigger using `auth.uid()`,
+        user_id will be automatically set to the authenticated user
+
+        **Security:** Row-Level Security policies are enforced
       operationId: queryDatabaseInsert
       security:
         - AuthUserAccessToken: []
@@ -4191,39 +4418,14 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - table
-                - values
-              properties:
-                table:
-                  type: string
-                  description: Table name
-                  example: posts
-                values:
-                  type: object
-                  additionalProperties: true
-                  description: Column values to insert
-                  example:
-                    title: "My New Post"
-                    content: "This is the content"
-                    status: "draft"
+              $ref: '#/components/schemas/DatabaseInsertRequest'
       responses:
         '200':
           description: Insert successful
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      additionalProperties: true
-                    description: Inserted row(s) with all columns
-                  count:
-                    type: integer
+                $ref: '#/components/schemas/DatabaseQueryResult'
               example:
                 data:
                   - id: "uuid-123"
@@ -4246,7 +4448,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '403':
-          description: Access denied - database does not belong to this project
+          description: Access denied
           content:
             application/json:
               schema:
@@ -4284,67 +4486,14 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - table
-                - values
-                - filters
-              properties:
-                table:
-                  type: string
-                  description: Table name
-                  example: posts
-                values:
-                  type: object
-                  additionalProperties: true
-                  description: Column values to update
-                  example:
-                    title: "Updated Title"
-                    status: "published"
-                filters:
-                  type: array
-                  minItems: 1
-                  items:
-                    type: object
-                    required:
-                      - column
-                      - operator
-                      - value
-                    properties:
-                      column:
-                        type: string
-                      operator:
-                        type: string
-                        enum: [eq, neq, gt, gte, lt, lte, like, ilike, is, in]
-                      value:
-                        oneOf:
-                          - type: string
-                          - type: number
-                          - type: boolean
-                  description: |
-                    WHERE conditions for which rows to update. At least one filter
-                    is required; a filterless update is rejected to avoid rewriting
-                    every row.
-                  example:
-                    - column: id
-                      operator: eq
-                      value: "post-uuid"
+              $ref: '#/components/schemas/DatabaseUpdateRequest'
       responses:
         '200':
           description: Update successful
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      additionalProperties: true
-                    description: Updated row(s). Empty if RLS blocked the update.
-                  count:
-                    type: integer
+                $ref: '#/components/schemas/DatabaseQueryResult'
               example:
                 data:
                   - id: "post-uuid"
@@ -4365,7 +4514,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '403':
-          description: Access denied - database does not belong to this project
+          description: Access denied
           content:
             application/json:
               schema:
@@ -4401,56 +4550,14 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - table
-                - filters
-              properties:
-                table:
-                  type: string
-                  description: Table name
-                  example: posts
-                filters:
-                  type: array
-                  minItems: 1
-                  items:
-                    type: object
-                    required:
-                      - column
-                      - operator
-                      - value
-                    properties:
-                      column:
-                        type: string
-                      operator:
-                        type: string
-                        enum: [eq, neq, gt, gte, lt, lte, like, ilike, is, in]
-                      value:
-                        oneOf:
-                          - type: string
-                          - type: number
-                          - type: boolean
-                  description: WHERE conditions (required for safety)
-                  example:
-                    - column: id
-                      operator: eq
-                      value: "post-uuid"
+              $ref: '#/components/schemas/DatabaseDeleteRequest'
       responses:
         '200':
           description: Delete successful
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      additionalProperties: true
-                    description: Deleted row(s). Empty if RLS blocked the delete.
-                  count:
-                    type: integer
+                $ref: '#/components/schemas/DatabaseQueryResult'
               example:
                 data:
                   - id: "post-uuid"
@@ -4469,13 +4576,355 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '403':
-          description: Access denied - database does not belong to this project
+          description: Access denied
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '404':
           description: Database not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          $ref: '#/components/responses/DatabaseQueryCapExceeded'
+  /databases/{databaseName}/branches/{branchName}/query/ping:
+    post:
+      tags:
+        - Database Queries
+      summary: Database connectivity probe (REST API)
+      description: |
+        Connectivity probe that runs a fixed `SELECT 1` through pgproxy, using the
+        same authentication, status/bandwidth gating, and metering as the other
+        `/query/*` endpoints.
+
+        Unlike those endpoints, ping takes **no request body** and performs **no
+        table-name validation**, so it works on any database — including a freshly
+        provisioned, empty one. It is a real committed round-trip through pgproxy,
+        so a `200` means the database is reachable and queryable. Used by the
+        dashboard's database connection test.
+
+        **Branch-targeted.** Runs against the named branch instead of the parent
+        database, using the branch's own credentials. The branch must be `active`
+        and unexpired. Nothing about this request can reach the parent's data.
+      operationId: queryDatabaseBranchPing
+      security:
+        - AuthUserAccessToken: []
+      parameters:
+        - $ref: '#/components/parameters/DatabaseName'
+        - $ref: '#/components/parameters/BranchName'
+      responses:
+        '200':
+          description: Database is reachable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseQueryResult'
+              example:
+                data:
+                  - "?column?": 1
+                count: 1
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Database or branch not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          $ref: '#/components/responses/DatabaseQueryCapExceeded'
+  /databases/{databaseName}/branches/{branchName}/query/select:
+    post:
+      tags:
+        - Database Queries
+      summary: Query database with SELECT (REST API)
+      description: |
+        Query your database using a simple REST API - no SQL required!
+
+        **Authentication:** Requires auth user access token (from signup/signin)
+
+        **Row-Level Security:** Automatically enforced - you see only data you have access to
+
+        **Use Cases:**
+        - Query from browser/mobile apps
+        - Simple data retrieval
+        - Filtered searches with sorting and pagination
+
+        **Note:** For complex queries (JOINs, CTEs), use Lambda functions with direct SQL
+
+        **Branch-targeted.** Runs against the named branch instead of the parent
+        database, using the branch's own credentials. The branch must be `active`
+        and unexpired. Nothing about this request can reach the parent's data.
+      operationId: queryDatabaseBranchSelect
+      security:
+        - AuthUserAccessToken: []
+      parameters:
+        - $ref: '#/components/parameters/DatabaseName'
+        - $ref: '#/components/parameters/BranchName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatabaseSelectRequest'
+      responses:
+        '200':
+          description: Query successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseQueryResult'
+              example:
+                data:
+                  - id: "uuid-123"
+                    title: "My Post"
+                    content: "Post content"
+                    status: "published"
+                    views: 150
+                    created_at: "2026-01-13T10:00:00Z"
+                count: 1
+        '400':
+          description: Invalid query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Database or branch not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          $ref: '#/components/responses/DatabaseQueryCapExceeded'
+  /databases/{databaseName}/branches/{branchName}/query/insert:
+    post:
+      tags:
+        - Database Queries
+      summary: Insert data into database (REST API)
+      description: |
+        Insert new rows into your database using REST API.
+
+        **Authentication:** Requires auth user access token
+
+        **Auto-set user_id:** If your table has a trigger using `auth.uid()`,
+        user_id will be automatically set to the authenticated user
+
+        **Security:** Row-Level Security policies are enforced
+
+        **Branch-targeted.** Runs against the named branch instead of the parent
+        database, using the branch's own credentials. The branch must be `active`
+        and unexpired. Nothing about this request can reach the parent's data.
+      operationId: queryDatabaseBranchInsert
+      security:
+        - AuthUserAccessToken: []
+      parameters:
+        - $ref: '#/components/parameters/DatabaseName'
+        - $ref: '#/components/parameters/BranchName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatabaseInsertRequest'
+      responses:
+        '200':
+          description: Insert successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseQueryResult'
+              example:
+                data:
+                  - id: "uuid-123"
+                    title: "My New Post"
+                    content: "This is the content"
+                    status: "draft"
+                    user_id: "user-uuid"
+                    created_at: "2026-01-13T10:00:00Z"
+                count: 1
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Database or branch not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          $ref: '#/components/responses/DatabaseQueryCapExceeded'
+  /databases/{databaseName}/branches/{branchName}/query/update:
+    post:
+      tags:
+        - Database Queries
+      summary: Update data in database (REST API)
+      description: |
+        Update existing rows in your database using REST API.
+
+        **Security:** Row-Level Security ensures you can only update data you have access to
+
+        **Safety:** Requires at least one filter to prevent accidental mass updates. A
+        request with no `filters` is rejected with `400` (mirrors delete). This matters
+        for service-key queries, which run with full access and bypass RLS.
+
+        **Note:** If RLS blocks the update, an empty result is returned (not an error)
+
+        **Branch-targeted.** Runs against the named branch instead of the parent
+        database, using the branch's own credentials. The branch must be `active`
+        and unexpired. Nothing about this request can reach the parent's data.
+      operationId: queryDatabaseBranchUpdate
+      security:
+        - AuthUserAccessToken: []
+      parameters:
+        - $ref: '#/components/parameters/DatabaseName'
+        - $ref: '#/components/parameters/BranchName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatabaseUpdateRequest'
+      responses:
+        '200':
+          description: Update successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseQueryResult'
+              example:
+                data:
+                  - id: "post-uuid"
+                    title: "Updated Title"
+                    status: "published"
+                    updated_at: "2026-01-13T10:05:00Z"
+                count: 1
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Database or branch not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          $ref: '#/components/responses/DatabaseQueryCapExceeded'
+  /databases/{databaseName}/branches/{branchName}/query/delete:
+    post:
+      tags:
+        - Database Queries
+      summary: Delete data from database (REST API)
+      description: |
+        Delete rows from your database using REST API.
+
+        **Safety:** Requires at least one filter to prevent accidental mass deletions
+
+        **Security:** Row-Level Security ensures you can only delete data you have access to
+
+        **Note:** If RLS blocks the delete, an empty result is returned (not an error)
+
+        **Branch-targeted.** Runs against the named branch instead of the parent
+        database, using the branch's own credentials. The branch must be `active`
+        and unexpired. Nothing about this request can reach the parent's data.
+      operationId: queryDatabaseBranchDelete
+      security:
+        - AuthUserAccessToken: []
+      parameters:
+        - $ref: '#/components/parameters/DatabaseName'
+        - $ref: '#/components/parameters/BranchName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatabaseDeleteRequest'
+      responses:
+        '200':
+          description: Delete successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseQueryResult'
+              example:
+                data:
+                  - id: "post-uuid"
+                    title: "Deleted Post"
+                count: 1
+        '400':
+          description: Invalid request or missing filters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Database or branch not found
           content:
             application/json:
               schema:
@@ -9046,6 +9495,8 @@ components:
     UserToken:
       $ref: ./components/common/security-schemes.yaml#/components/securitySchemes/UserToken
   parameters:
+    BranchName:
+      $ref: ./components/common/parameters.yaml#/components/parameters/BranchName
     BucketName:
       $ref: ./components/common/parameters.yaml#/components/parameters/BucketName
     Cursor:
@@ -9179,6 +9630,8 @@ components:
       $ref: ./components/common/schemas.yaml#/components/schemas/BatchFunctionDeployResponse
     CompleteUploadSessionResponse:
       $ref: ./components/common/schemas.yaml#/components/schemas/CompleteUploadSessionResponse
+    CreateDatabaseBranchRequest:
+      $ref: ./components/common/schemas.yaml#/components/schemas/CreateDatabaseBranchRequest
     CreateDatabaseRequest:
       $ref: ./components/common/schemas.yaml#/components/schemas/CreateDatabaseRequest
     CreateEmailTemplateRequest:
@@ -9203,10 +9656,28 @@ components:
       $ref: ./components/common/schemas.yaml#/components/schemas/CreateVariableRequest
     Database:
       $ref: ./components/common/schemas.yaml#/components/schemas/Database
+    DatabaseBranch:
+      $ref: ./components/common/schemas.yaml#/components/schemas/DatabaseBranch
+    DatabaseBranchList:
+      $ref: ./components/common/schemas.yaml#/components/schemas/DatabaseBranchList
+    DatabaseBranchStorage:
+      $ref: ./components/common/schemas.yaml#/components/schemas/DatabaseBranchStorage
+    DatabaseSelectRequest:
+      $ref: ./components/common/schemas.yaml#/components/schemas/DatabaseSelectRequest
+    DatabaseInsertRequest:
+      $ref: ./components/common/schemas.yaml#/components/schemas/DatabaseInsertRequest
+    DatabaseUpdateRequest:
+      $ref: ./components/common/schemas.yaml#/components/schemas/DatabaseUpdateRequest
+    DatabaseDeleteRequest:
+      $ref: ./components/common/schemas.yaml#/components/schemas/DatabaseDeleteRequest
+    DatabaseQueryResult:
+      $ref: ./components/common/schemas.yaml#/components/schemas/DatabaseQueryResult
     DatabaseStats:
       $ref: ./components/common/schemas.yaml#/components/schemas/DatabaseStats
     DatabaseQueryPerformanceResponse:
       $ref: ./components/common/schemas.yaml#/components/schemas/DatabaseQueryPerformanceResponse
+    UpdateDatabaseBranchRequest:
+      $ref: ./components/common/schemas.yaml#/components/schemas/UpdateDatabaseBranchRequest
     DeviceAuthorizationResponse:
       $ref: ./components/common/schemas.yaml#/components/schemas/DeviceAuthorizationResponse
     EmailTemplate:
