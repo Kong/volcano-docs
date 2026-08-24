@@ -6,6 +6,9 @@ next-env.d.ts
 # Fumadocs MDX generated source
 /.source/
 
+# Generated at build time by scripts/emit-search-index.mjs (see build script)
+/public/search-index.json
+
 # Synced content (content/{platform,sdk,cli}, pulled from source repos by
 # sync-docs.yml) is committed, NOT ignored: `volcano cloud frontends deploy`
 # packages the archive from .gitignore, so a tracked-but-ignored tree would be

@@ -55,5 +55,9 @@ export default defineConfig({
   mdxOptions: {
     remarkPlugins: [remarkCodeLangAlias],
     rehypePlugins: [rehypeScriptToTemplate],
+    // Table cells index one document per cell, bloating the export without useful matches.
+    remarkStructureOptions: {
+      types: ["heading", "paragraph", "blockquote"],
+    },
   },
 });
