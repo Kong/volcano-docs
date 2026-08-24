@@ -1,6 +1,15 @@
 import { source } from "@/lib/source";
 import { createFromSource } from "fumadocs-core/search/server";
 
-// Not served at runtime; scripts/emit-search-index.mjs copies its build output to public/.
+const search = createFromSource(source);
+
+function getHandler() {
+  if (process.env.NODE_ENV === "development") {
+    return search.GET;
+  }
+  return search.staticGET;
+}
+
+// Production only uses this route to emit the index copied into public/.
 export const revalidate = false;
-export const { staticGET: GET } = createFromSource(source);
+export const GET = getHandler();

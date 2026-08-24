@@ -1,6 +1,7 @@
 import "./global.css";
 import { RootProvider } from "fumadocs-ui/provider/next";
 import { Inter, Space_Mono } from "next/font/google";
+import type { DefaultSearchDialogProps } from "fumadocs-ui/components/dialog/search-default";
 import type { ReactNode } from "react";
 
 // Design system fonts: Inter for body copy, Space Mono for headings/logo.
@@ -17,6 +18,13 @@ const spaceMono = Space_Mono({
   display: "swap",
 });
 
+function searchOptions(): Partial<DefaultSearchDialogProps> {
+  if (process.env.NODE_ENV === "development") {
+    return { api: "/api/search" };
+  }
+  return { type: "static", api: "/search-index.json" };
+}
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
@@ -25,7 +33,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       suppressHydrationWarning
     >
       <body>
-        <RootProvider search={{ options: { type: "static", api: "/search-index.json" } }}>
+        <RootProvider search={{ options: searchOptions() }}>
           {children}
         </RootProvider>
       </body>

@@ -15,7 +15,7 @@ const expectedUrl = "/get-started/what-is-volcano";
 const expectedText = "managed PostgreSQL";
 
 const layoutSource = fs.readFileSync(path.join("src", "app", "layout.tsx"), "utf8");
-const configuredApi = layoutSource.match(/api:\s*"([^"]+)"/)?.[1];
+const configuredApi = layoutSource.match(/type:\s*"static",\s*api:\s*"([^"]+)"/)?.[1];
 if (!configuredApi) {
   console.error("check-search-index: no static search `api` path found in src/app/layout.tsx.");
   process.exit(1);
