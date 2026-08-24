@@ -1,4 +1,6 @@
 import { source } from "@/lib/source";
 import { createFromSource } from "fumadocs-core/search/server";
 
-export const { GET } = createFromSource(source);
+// Prebuilt at build time; the Orama index build is too slow to run per request.
+export const revalidate = false;
+export const { staticGET: GET } = createFromSource(source);

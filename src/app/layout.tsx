@@ -25,7 +25,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       suppressHydrationWarning
     >
       <body>
-        <RootProvider>{children}</RootProvider>
+        <RootProvider search={{ options: { type: "static" } }}>{children}</RootProvider>
       </body>
     </html>
   );
