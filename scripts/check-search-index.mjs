@@ -10,7 +10,9 @@ import path from "node:path";
 import { oramaStaticClient } from "fumadocs-core/search/client/orama-static";
 
 const RAW_SIZE_CEILING = 10_000_000;
-const searchTerm = "deploy";
+const searchTerm = "browser-friendly";
+const expectedUrl = "/get-started/what-is-volcano";
+const expectedText = "managed PostgreSQL";
 
 const layoutSource = fs.readFileSync(path.join("src", "app", "layout.tsx"), "utf8");
 const configuredApi = layoutSource.match(/api:\s*"([^"]+)"/)?.[1];
@@ -50,8 +52,16 @@ try {
     console.error(`check-search-index: query "${searchTerm}" returned no results.`);
     process.exit(1);
   }
-  if (!results.some((r) => r.type === "text")) {
-    console.error(`check-search-index: query "${searchTerm}" matched no body text.`);
+  const bodyMatch = results.some(
+    (result) =>
+      result.type === "text" &&
+      result.url === expectedUrl &&
+      result.content.includes(expectedText),
+  );
+  if (!bodyMatch) {
+    console.error(
+      `check-search-index: query "${searchTerm}" did not match body text at ${expectedUrl}.`,
+    );
     process.exit(1);
   }
   console.log(`check-search-index: query "${searchTerm}" returned ${results.length} result(s)`);
