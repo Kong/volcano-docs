@@ -1,6 +1,6 @@
 import { source } from "@/lib/source";
 import { createFromSource } from "fumadocs-core/search/server";
 
-// Prebuilt at build time; the Orama index build is too slow to run per request.
+// Not served at runtime; scripts/emit-search-index.mjs copies its build output to public/.
 export const revalidate = false;
 export const { staticGET: GET } = createFromSource(source);

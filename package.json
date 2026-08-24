@@ -8,14 +8,15 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && node scripts/emit-search-index.mjs",
     "start": "next start",
     "lint": "eslint .",
     "postinstall": "fumadocs-mdx",
     "prepare": "husky",
     "lint:docs": "node scripts/lint-docs.mjs",
     "check:links": "node scripts/check-links.mjs content public",
-    "verify": "node src/lib/relative-md-href.test.mjs && node scripts/lint-docs.mjs content && node scripts/check-links.mjs content public && next build",
+    "check:search-index": "node scripts/check-search-index.mjs",
+    "verify": "node src/lib/relative-md-href.test.mjs && node scripts/lint-docs.mjs content && node scripts/check-links.mjs content public && pnpm build && node scripts/check-search-index.mjs",
     "migrate:docs": "node scripts/migrate-docs.mjs"
   },
   "dependencies": {
