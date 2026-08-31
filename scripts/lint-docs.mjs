@@ -8,11 +8,14 @@ import url from "node:url";
 import yaml from "js-yaml";
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
+import { markdownLinks, routePath } from "./markdown-links.mjs";
 
 const here = path.dirname(url.fileURLToPath(import.meta.url));
 const schema = JSON.parse(
   fs.readFileSync(path.join(here, "..", "spec", "frontmatter.schema.json"), "utf8"),
 );
+const config = yaml.load(fs.readFileSync(path.join(here, "..", "docs.config.yaml"), "utf8"));
+const siteSections = new Set(config.nav);
 const ajv = new Ajv({ allErrors: true });
 addFormats(ajv);
 const validate = ajv.compile(schema);
@@ -48,6 +51,16 @@ function checkBody(file, body, offset) {
     }
     if (!inFence && /^# /.test(line)) err(file, `H1 in body at line ${offset + i + 1}; move it to the frontmatter title`);
   });
+
+  for (const link of markdownLinks(body)) {
+    if (!link.url.startsWith("/")) continue;
+    const route = routePath(link.url);
+    if (route === "/") continue;
+    const section = route.split("/", 2)[1];
+    if (!siteSections.has(section)) {
+      err(file, `site-absolute link must start with a docs section at line ${offset + link.line}: ${link.url}`);
+    }
+  }
 }
 
 function lintFile(file) {
