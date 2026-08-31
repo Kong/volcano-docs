@@ -111,6 +111,69 @@ if (error) {
 }
 ```
 
+### Concurrent Session Changes
+
+The SDK coordinates concurrent refresh attempts for the same session. If a sign-in, sign-out, or
+other auth operation replaces that session before a refresh can commit, the SDK keeps the newer
+session and does not replay the original request under it.
+
+`AuthRefreshDiscardedError` identifies a successful refresh result that the SDK discarded, or a
+request that detected the replacement before starting refresh. If the old refresh request itself
+fails, its original refresh or request error may be returned instead; the newer session is still
+preserved.
+
+Handle a discarded successful result with `AuthRefreshDiscardedError.is`:
+
+```javascript
+import { AuthRefreshDiscardedError, AuthSessionChangedError, VolcanoAuth } from '@volcano.dev/sdk';
+
+const volcano = new VolcanoAuth({
+  apiUrl: 'https://api.volcano.dev',
+  anonKey: process.env.VOLCANO_ANON_KEY,
+});
+
+const { user, error } = await volcano.auth.getUser();
+
+if (AuthRefreshDiscardedError.is(error)) {
+  // Auth state changed while this request was pending. Read the current state
+  // or ask the user to retry; do not automatically replay a mutation.
+  const { data } = await volcano.auth.getSession();
+  console.log('Current session:', data.session);
+} else if (AuthSessionChangedError.is(error)) {
+  // The user response belongs to a session that was replaced while the
+  // request was pending.
+  const { data } = await volcano.auth.getSession();
+  console.log('Current session:', data.session);
+} else if (error) {
+  console.error('Unable to load the user:', error.message);
+} else {
+  console.log('Signed in as:', user.email);
+}
+```
+
+`getUser()` and other auth operations return `AuthSessionChangedError` when a newer logical session
+wins before their result can be committed. Treat the current session as authoritative instead of
+reporting the stale transition as successful. This includes `signOut()` when a concurrent refresh
+rotates the refresh token; the rotated session remains current:
+
+```javascript
+import { AuthSessionChangedError } from '@volcano.dev/sdk';
+
+const { user, error } = await volcano.auth.signIn({
+  email: 'alice@example.com',
+  password: process.env.VOLCANO_PASSWORD,
+});
+
+if (AuthSessionChangedError.is(error)) {
+  const { data } = await volcano.auth.getSession();
+  console.log('Another auth operation established:', data.session);
+} else if (error) {
+  console.error('Sign-in failed:', error.message);
+} else {
+  console.log('Signed in as:', user.email);
+}
+```
+
 ## Database Errors
 
 ### Query Errors

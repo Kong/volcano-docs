@@ -111,6 +111,7 @@ Deploy static and server-rendered sites (Next.js) with build/runtime variables a
 | Guide | Description |
 |-------|-------------|
 | [Deploy from GitHub](projects/git-deploy.md) | Connect a repo and deploy on every push to the production branch |
+| [Export your source to GitHub](projects/export-to-git.md) | Initialize an empty repository with a project's stored source and deploy it from Git |
 | [Configuration manifest](projects/configuration.md) | Declarative `volcano-config.yaml` reference (config deploy/pull) |
 
 ### CLI

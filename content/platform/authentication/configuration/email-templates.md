@@ -77,10 +77,11 @@ curl -X PUT https://api.volcano.dev/projects/PROJECT_ID/auth/config \
 
 ### Custom Template Bodies
 
-Override entire template (HTML + text):
+Every project starts with one row per template type, so overriding a template
+(HTML + text) is an update:
 
 ```http
-POST /projects/{projectId}/email-templates
+PUT /projects/{projectId}/email-templates/confirmation
 Authorization: Bearer <platform_token>
 Content-Type: application/json
 ```
@@ -88,7 +89,6 @@ Content-Type: application/json
 **Request:**
 ```json
 {
-  "template_type": "confirmation",
   "subject": "Welcome to MyApp!",
   "html_body": "<!DOCTYPE html>...",
   "text_body": "Plain text version..."
@@ -245,6 +245,9 @@ If you didn't sign up, ignore this email.
 ## Managing Templates
 
 ### Create Template
+
+Only needed for a type the project has no row for — a project created with all
+four types answers `409` here, so use the update below instead.
 
 ```bash
 curl -X POST https://api.volcano.dev/projects/PROJECT_ID/email-templates \

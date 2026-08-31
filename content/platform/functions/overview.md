@@ -55,7 +55,7 @@ The CLI packages cloud function sources as `tar.gz` archives and also automatica
 - shared files/directories whose names start with `_`
 - dependency manifests such as `package.json`, `requirements.txt`, and `Gemfile`
 
-Cloud deploys install dependencies during the function compile build. Do not upload `node_modules`, `python_deps`, or `vendor` to the cloud API. Local mode does not run the cloud build, so it still expects dependencies to be installed locally.
+Cloud deploys install dependencies during the function compile build. Do not upload `node_modules`, `python_deps`, or `vendor` to the cloud API. Local mode installs them too, from the same manifests, so you deploy the same sources either way.
 
 Function and frontend source archives are limited by `SOURCE_ARCHIVE_SIZE_LIMIT_MB`, which is enforced by the API. The CLI does not apply its own source archive size limit. Final container images are limited by `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB`, which is enforced in the cloud publish build before images are pushed.
 

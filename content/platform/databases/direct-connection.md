@@ -714,6 +714,51 @@ const appName = `volcano_user_access:${claims.user_id}`;
 
 ---
 
+## Error Codes
+
+A statement that PostgreSQL refuses comes back with its own SQLSTATE, so you can
+branch on the failure instead of matching on message text:
+
+```javascript
+const { Client } = require('pg');
+
+try {
+  await client.query('INSERT INTO posts (id, title) VALUES ($1, $2)', [id, title]);
+} catch (err) {
+  if (err.code === '23505') {
+    return { status: 409, error: 'That post already exists' };
+  }
+  if (err.code === '40001') {
+    return retry();  // serialization failure, safe to try again
+  }
+  throw err;
+}
+```
+
+The codes you are most likely to handle:
+
+| SQLSTATE | Meaning | Typical response |
+|----------|---------|------------------|
+| `23505` | Unique constraint violation | 409, or upsert instead |
+| `23503` | Foreign key violation | 400, referenced row is missing |
+| `23502` | Not-null violation | 400, required field omitted |
+| `42501` | Insufficient privilege, including a write a row-level security policy rejected | 403 |
+| `42P01` | Undefined table | 400, check the name and your migrations |
+| `40001` | Serialization failure | Retry the transaction |
+
+Errors that Volcano itself raises, rather than PostgreSQL, are the exception:
+
+| SQLSTATE | Meaning |
+|----------|---------|
+| `53400` | The account is over its billing-cycle database request allowance |
+| `25006` | The database is over its storage allowance; writes are blocked |
+| `57P03` | The platform is briefly unable to accept connections — retry |
+
+Anything else Volcano refuses (an unsupported operation, a failed connection)
+arrives with no SQLSTATE at all.
+
+---
+
 ## Troubleshooting
 
 ### Problem: auth.uid() returns NULL

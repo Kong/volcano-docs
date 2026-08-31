@@ -470,6 +470,12 @@ if (!error) {
 
 For full control over the upload process (parallel uploads, custom retry logic):
 
+Keep the session's credentials stable until it completes or is aborted. Sessions
+created with a user access token remain bound to that user. Sessions created with
+an anon key remain bound to that exact key. If you regenerate, revoke, or replace
+the anon key, subsequent part upload, status, completion, and abort requests return
+`404`; create a new upload session with the replacement key.
+
 #### 1. Create upload session
 
 ```javascript

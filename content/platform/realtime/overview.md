@@ -133,6 +133,21 @@ const channel = realtime.channel('schema:table', { type: 'postgres' });
 
 Receive real-time notifications when database rows are inserted, updated, or deleted. Filtered by Row Level Security policies.
 
+## Disable Realtime features
+
+Update the project Realtime configuration:
+
+```bash
+curl -X PUT "$VOLCANO_API_URL/projects/$PROJECT_ID/realtime/config" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"postgres_changes_enabled":false}'
+```
+
+- Setting `postgres_changes_enabled` to `false` closes active connections subscribed to Postgres Changes across all server instances. Broadcast and Presence connections stay open. Volcano removes the project database listeners and generated notification triggers.
+- Setting `enabled` to `false` closes all active Realtime connections for the project across all server instances.
+- New connections or subscriptions are rejected while their feature is disabled. Clients can connect again after you enable it.
+
 ## Project isolation
 
 **You never need to specify a project ID.** The project is automatically determined from your anon key:

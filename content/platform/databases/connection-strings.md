@@ -138,7 +138,7 @@ curl -X POST https://api.volcano.dev/projects/PROJECT_ID/databases/DB_ID/reset-p
   -H "Authorization: Bearer PLATFORM_TOKEN"
 ```
 
-Rotates the Volcano-managed client password and returns a new connection string. The old password stops authenticating through pgproxy. Internal credentials are not reset or exposed.
+Rotates the Volcano-managed client password and returns a new connection string. Within a few seconds the old password stops authenticating through pgproxy. Connections already open keep working until they close, so anything still holding the old string has to be pointed at the new one to reconnect. Internal credentials are not reset or exposed.
 
 ## See Also
 

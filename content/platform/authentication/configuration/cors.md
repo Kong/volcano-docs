@@ -55,11 +55,24 @@ List of origins that can call your auth endpoints.
 **Wildcard subdomains:**
 ```json
 {
+  "cors_allow_credentials": false,
   "cors_allowed_origins": [
-    "https://*.myapp.com"  // Matches app.myapp.com, api.myapp.com, etc.
+    "https://*.myapp.com"
   ]
 }
 ```
+
+This pattern matches one leftmost label, such as `app.myapp.com` or
+`api.myapp.com`.
+
+Use `"*"` with `cors_allow_credentials: false` to allow every valid browser
+origin. Prefer explicit origins or a one-label wildcard in production.
+
+Wildcard origins cannot be combined with `cors_allow_credentials: true`.
+Credentialed requests require exact origins so the browser can safely send
+cookies and other credentials. If an existing project has both settings
+configured, replace the wildcard with exact origins or disable credentials in
+the same update before changing other auth settings.
 
 ## How It Works
 
@@ -91,10 +104,10 @@ Allowed: https://myapp.com
 Blocked: http://myapp.com  (different protocol)
 ```
 
-**Case sensitive:**
+**Hostnames are case-insensitive:**
 ```text
 Allowed: https://myapp.com
-Blocked: https://MyApp.com  (different case)
+Allowed: https://MyApp.com
 ```
 
 **Exact match:**
@@ -136,7 +149,7 @@ curl -X PUT https://api.volcano.dev/projects/PROJECT_ID/auth/config \
 - Add your domain to `cors_allowed_origins`
 - Check protocol (HTTP vs HTTPS)
 - Check for typos
-- No trailing slashes
+- Configure an origin only; paths, query strings, and fragments are rejected
 
 **Preflight requests failing:**
 - Browser sends OPTIONS request first
@@ -147,7 +160,3 @@ curl -X PUT https://api.volcano.dev/projects/PROJECT_ID/auth/config \
 
 - [Anon Keys](../security/anon-keys.md) - First layer of security
 - [Configuration Overview](overview.md)
-
-
-
-

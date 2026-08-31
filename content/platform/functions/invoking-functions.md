@@ -5,7 +5,66 @@ description: "Call your deployed functions."
 
 Call your deployed functions.
 
-## Two ways to consume a function
+## Choose an invocation mode
+
+Every function has an invocation contract:
+
+- `rpc` (default) preserves the existing Volcano contract. The DNS endpoint and
+  direct API endpoint accept `POST`, the request body is `{ "payload": ... }`,
+  and Volcano authentication is required.
+- `http` turns the DNS endpoint into an HTTP handler. It accepts `GET`, `HEAD`,
+  `POST`, `PUT`, `PATCH`, and `DELETE` on nested paths and passes the HTTP request
+  shape to your function.
+
+HTTP mode has a separate `http_auth_mode`:
+
+- `volcano` (default) requires an auth-user token, service key, or permitted anon key.
+- `none` skips Volcano authentication so third-party webhooks can reach the
+  function. It is valid only when `is_public` is also `true`; your function must
+  verify the provider's signature or application credential.
+
+Configure an existing function with the management API:
+
+```bash
+curl -X PATCH "https://api.volcano.dev/projects/$PROJECT_ID/functions/$FUNC_ID" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "is_public": true,
+    "invocation_mode": "http",
+    "http_auth_mode": "none",
+    "openapi_spec": {
+      "openapi": "3.1.0",
+      "info": {"title": "Payment webhook", "version": "1.0.0"},
+      "paths": {"/webhooks/payments": {"post": {}}}
+    }
+  }'
+```
+
+`openapi_spec` is optional descriptive metadata. Volcano validates that it is
+an OpenAPI 3.0 or 3.1 JSON document and limits it to 256 KiB; it does not use the
+document to route or validate runtime requests.
+
+### Roll back HTTP mode
+
+Invocation metadata is control-plane configuration, so switching back does not
+redeploy or replace the function runtime. Patch the function back to `rpc`; Volcano
+atomically restores `http_auth_mode: volcano` and clears `openapi_spec`. Making
+the function private at the same time closes anon-key access as well:
+
+```bash
+curl -X PATCH "https://api.volcano.dev/projects/$PROJECT_ID/functions/$FUNC_ID" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"is_public":false,"invocation_mode":"rpc"}'
+```
+
+After the update, the DNS endpoint again accepts only `POST /` with the
+`{"payload": ...}` RPC envelope and Volcano authentication. Existing RPC
+functions require no migration action: a missing metadata row resolves to the
+same RPC/Volcano defaults.
+
+## Two ways to consume an RPC function
 
 You can invoke a function in either of these ways:
 
@@ -48,6 +107,86 @@ Function receives:
   // No __volcano_auth (admin operation)
 }
 ```
+
+## HTTP mode request event
+
+HTTP-mode functions receive this event instead of the RPC payload:
+
+```json
+{
+  "version": "1.0",
+  "method": "POST",
+  "path": "/webhooks/payments",
+  "raw_query_string": "attempt=one&attempt=two",
+  "headers": {
+    "Content-Type": ["application/json"],
+    "Provider-Signature": ["signature"]
+  },
+  "query": {
+    "attempt": ["one", "two"]
+  },
+  "body": "{\"event\":\"payment.succeeded\"}",
+  "is_base64_encoded": false,
+  "request_context": {
+    "host": "FUNCTION_ID.functions.volcano.dev",
+    "source_ip": "203.0.113.10",
+    "protocol": "HTTP/1.1"
+  }
+}
+```
+
+Header and query values are arrays so repeated values are preserved. For text
+requests, `body` contains the exact UTF-8 request text. Binary requests put the
+base64-encoded bytes in `body` and set `is_base64_encoded: true`. HTTP request
+bodies are limited to 2 MiB. Volcano
+also rejects a request if headers, query parameters, body encoding, and trusted
+auth context make the final invocation event exceed 6 MiB.
+
+In `http_auth_mode: volcano`, platform credential headers are removed before
+the event reaches the function; authenticated-user context remains available as
+`event.__volcano_auth`. In `http_auth_mode: none`, `Authorization` and provider
+signature headers are application input and are forwarded. Internal
+`X-Volcano-*` headers are never forwarded.
+Proxy-derived headers (`Forwarded`, `X-Forwarded-*`, and `X-Real-IP`) are also
+removed; use `request_context.source_ip`, `request_context.host`, and
+`request_context.protocol` for Volcano's trusted connection metadata.
+
+Webhook example:
+
+```javascript
+import crypto from 'node:crypto';
+
+exports.handler = async (event) => {
+  const signature = event.headers['Provider-Signature']?.[0] || '';
+  const rawBody = Buffer.from(
+    event.body || '',
+    event.is_base64_encoded ? 'base64' : 'utf8'
+  );
+  const expected = crypto
+    .createHmac('sha256', process.env.WEBHOOK_SECRET)
+    .update(rawBody)
+    .digest('hex');
+  const supplied = Buffer.from(signature);
+  const calculated = Buffer.from(expected);
+
+  if (supplied.length !== calculated.length ||
+      !crypto.timingSafeEqual(supplied, calculated)) {
+    return { statusCode: 401, body: 'invalid signature' };
+  }
+
+  return {
+    statusCode: 202,
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ accepted: true })
+  };
+};
+```
+
+Reject stale provider timestamps before comparing the signature, and persist the
+provider event ID before applying side effects so retries are idempotent. Compare
+signatures with `timingSafeEqual` as above. Convert `event.body` according to
+`event.is_base64_encoded` for the exact signed bytes; do not parse and
+reserialize it first.
 
 ### With auth user token (user context)
 
@@ -146,6 +285,10 @@ return {
   body: JSON.stringify({ result: 'success' })
 };
 ```
+
+For a binary response, base64 encode `body` and return
+`isBase64Encoded: true`. `HEAD` executes the function with `method: "HEAD"` but
+Volcano suppresses the response body.
 
 ```json
 {

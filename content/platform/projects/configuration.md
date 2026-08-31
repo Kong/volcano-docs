@@ -145,10 +145,38 @@ auth:
         css: "body{}"                       # optional, <=256 KiB
       reset_password:                       # maps to page type "reset-password"
         html: "<html>...</html>"
+      signup:                               # also: forgot_password, device, verify_email
+        html: "<html>...</html>"
+    appearance:                             # PRO; built-in renderer configuration
+      theme:                                # shared by every managed auth page
+        version: 1
+        colors:
+          background: "#f7f5f2"
+          surface: "#ffffff"
+          text: "#1a1a1a"
+          accent: "#1d4ed8"
+          accent_text: "#ffffff"
+        font: humanist                      # system|humanist|geometric|slab|mono
+        scale: large                        # small|default|large
+        density: spacious                   # compact|comfortable|spacious
+        radius: large                       # none|small|medium|large
+      layouts:                              # centered|split-left|split-right
+        login: split-left
+        signup: split-right
+        forgot_password: centered
+        device: split-left
+        verify_email: centered
+        reset_password: split-right
 
 functions:                                  # must already be deployed
   - name: hello
     public: true                            # anon-key invocation
+    invocation_mode: http                  # rpc (default) or http
+    http_auth_mode: none                   # volcano (default) or none; none requires public
+    openapi_spec:                          # optional OpenAPI 3.0/3.1 metadata; HTTP mode only
+      openapi: 3.1.0
+      info: { title: Hello webhook, version: 1.0.0 }
+      paths: {}
     schedulers:                             # fully synced when declared
       - name: nightly
         cron: "0 3 * * *"                   # 5-field UTC cron
@@ -177,6 +205,11 @@ regenerate, test email, redeploy).
 - **Patch semantics within entries.** An omitted optional field keeps its
   current server value (for example a bucket entry with only
   `file_size_limit` leaves `allowed_mime_types` alone).
+- **Function invocation metadata.** `invocation_mode`, `http_auth_mode`, and
+  `openapi_spec` use the same validation as `volcano functions update`.
+  Unauthenticated HTTP ingress (`http_auth_mode: none`) is allowed only when
+  the function is public. Changing such a function to private implicitly
+  restores `http_auth_mode: volcano` when the auth mode is omitted.
 - **Fully synced when declared (destructive by design):** `variables`,
   `buckets[].policies`, `auth.providers.oauth`, `auth.email.templates`, and
   `functions[].schedulers`. The declared list is the source of truth: entries
@@ -202,6 +235,9 @@ regenerate, test email, redeploy).
   detach-and-recreate: the new domain serves after provisioning/verification.
 - **Hosted pages are upsert-only.** There is no delete API for hosted pages,
   so pages omitted from `managed_pages.pages` are left untouched.
+- **Managed-page appearance is also upsert-only in the manifest.** Omitted
+  theme or layout fields stay untouched. Use the appearance API's `DELETE`
+  operations to return a theme or page layout to default tracking.
 - **`auth.signup.allowed_email_domains` replaces the stored list** when
   declared. `[]` removes the restriction; omitting the key keeps the current
   allowlist. Entries are normalized to bare lowercase domains, so
@@ -232,8 +268,10 @@ Both are warnings: the rest of the manifest still applies and the CLI exits 0.
 - Plan gates are change-aware: they only fire when the manifest would change a
   gated value. Re-applying an export of a project downgraded from PRO stays a
   no-op.
-- PRO-gated surfaces: region subsets, email template bodies, hosted pages, and
-  custom domains. Scheduler counts and storage policy counts respect plan caps.
+- PRO-gated surfaces: region subsets, email template bodies, hosted pages,
+  custom domains, and the `auth.signup.allowed_email_domains` allowlist. A FREE
+  project can still declare the allowlist it already has, or clear it to remove
+  the restriction. Scheduler counts and storage policy counts respect plan caps.
 - Apply-phase failures (a provider call failing mid-apply) return `200` with
   per-entry `action: error`; already-applied changes are not rolled back.
   Re-running the deploy is safe — unchanged entries are no-ops.

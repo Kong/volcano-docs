@@ -112,6 +112,10 @@ Service keys and end-user tokens are project-scoped, so the same tokens that
 reach the parent reach its branches. Anonymous keys are not accepted on the
 query API, on a branch or on a parent.
 
+A branch that exists but cannot serve queries yet — still provisioning, being
+reset, expired, or with its parent being restored — answers `503`, not `404`, so
+polling can tell it apart from a name that was never there.
+
 A branch's password only works for that branch. Handing a branch connection
 string to a test runner or a preview environment does not hand it access to your
 production data.
@@ -146,6 +150,11 @@ branch does not serve connections while the reset runs.
 This is what makes a branch reusable in CI: reset before each run instead of
 creating and destroying a branch every time.
 
+One thing delays a reset: for up to 24 hours after the parent database is
+[restored](backups.md#backups-and-branches), reset returns `409`. The branch
+keeps serving its own data throughout — only the rewind is refused — and a reset
+after that lands on the restored parent data.
+
 ## Rotating a branch's password
 
 ```bash
@@ -154,8 +163,9 @@ curl -X POST https://api.volcano.dev/projects/$PROJECT_ID/databases/main_db/bran
 ```
 
 The response carries a new connection string; the previous one stops
-authenticating. Open connections are not interrupted. The parent database's
-credentials are untouched.
+authenticating new connections within a few seconds. Open connections are not
+interrupted. Rotation stops at the branch you name: the parent database's
+credentials and every sibling branch's are untouched.
 
 ## Deleting a branch
 
@@ -166,7 +176,8 @@ curl -X DELETE https://api.volcano.dev/projects/$PROJECT_ID/databases/main_db/br
 
 The branch stops accepting connections immediately and is removed in the
 background. Deleting a branch that is still provisioning is allowed and stops
-the build. Deleting a branch that is already gone succeeds.
+the build, and repeating the call while teardown is in progress is accepted
+again. Once the branch is gone the call returns `404`.
 
 ## What a branch costs
 
@@ -175,12 +186,16 @@ copied. What counts is how far it has diverged — the bytes it has written sinc
 the fork:
 
 ```text
-database storage = parent size + Σ (each branch's divergence)
+database storage = parent size
+                 + Σ (each branch's divergence)
+                 + Σ (each backup's cost)
 ```
 
-That total is what your plan's storage allowance is enforced against.
-`storage_bytes` on a branch is its divergence, and the database stats endpoint
-breaks the total down per branch, most expensive first:
+That total is what your plan's storage allowance is enforced against. A
+[backup](backups.md#what-backups-cost) is not charged on the same terms: a branch
+shares its parent's pages, while a backup you take is charged as a full copy of
+the database. `storage_bytes` on a branch is its divergence, and the database
+stats endpoint breaks the total down per branch, most expensive first:
 
 ```bash
 curl https://api.volcano.dev/projects/$PROJECT_ID/databases/main_db/stats \
@@ -194,7 +209,8 @@ curl https://api.volcano.dev/projects/$PROJECT_ID/databases/main_db/stats \
   "branches": [
     { "id": "9b1f0f4c-2b8e-4f43-9a71-1f6c2f0f2c31", "name": "feature_checkout", "storage_bytes": 536870912 },
     { "id": "3c2d1e0f-9a8b-7c6d-5e4f-3a2b1c0d9e8f", "name": "nightly_ci", "storage_bytes": 0 }
-  ]
+  ],
+  "backup_storage_bytes": 0
 }
 ```
 

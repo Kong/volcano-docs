@@ -99,6 +99,11 @@ const { sessions, total, page, total_pages, error } = await volcano.auth.getSess
 // Get specific page with custom limit
 const result = await volcano.auth.getSessions({ page: 2, limit: 10 });
 
+// The SDK pages by activity order. For a stable order that also supports cursor
+// pagination, call the endpoint with `sort=created_at`; see the Auth Endpoints
+// reference. Activity order is offset-only, because a session that refreshes its
+// token moves to the front and would be skipped by a cursor walk.
+
 if (!error) {
   console.log(`Page ${page} of ${total_pages} (${total} total sessions)`);
   sessions.forEach(session => {

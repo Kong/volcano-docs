@@ -24,6 +24,9 @@ Authorization: Bearer <platform_token>
       "name": "my-function",
       "status": "active",
       "is_public": false,
+      "invocation_mode": "rpc",
+      "http_auth_mode": "volcano",
+      "openapi_spec": null,
       "invoke_url": "https://func-uuid.functions.staging.volcano.dev/",
       "deployed_regions": ["us-east-1", "us-west-2"],
       "runtime": "nodejs24.x",
@@ -67,6 +70,10 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/functions" \
 - `code` (required) - ZIP or `tar.gz` archive containing function source code plus dependency manifests/lockfiles
 - `runtime` (required) - Runtime environment
 - `handler` (optional) - Function name to invoke; defaults to `handler`
+- `is_public` (optional) - Function visibility; defaults to `false` for a new function
+- `invocation_mode` (optional) - `rpc` (default) or `http`
+- `http_auth_mode` (optional) - `volcano` (default) or `none`; `none` requires a public HTTP function
+- `openapi_spec` (optional) - JSON-encoded OpenAPI 3.0 or 3.1 document for HTTP-mode metadata
 
 Cloud deploys install Node.js, Python, and Ruby dependencies during the function compile build. Upload source and manifests such as `package.json`, `requirements.txt`, or `Gemfile`; do not upload installed dependency directories such as `node_modules`, `python_deps`, `.venv`, or `vendor`.
 
@@ -130,7 +137,7 @@ Batch deploys follow the same source-bundle rules as single-function deploys: up
 
 ## Invoke Function
 
-Functions can be invoked in two ways:
+RPC functions can be invoked in two ways:
 
 - DNS endpoint (recommended, geo-routed): `https://{functionId}.functions.<domain>/`
 - API endpoint (direct invocation): `POST http://api.<domain>/functions/{functionId}/invoke`
@@ -147,6 +154,13 @@ CORS preflight for invocation only allows:
 Access-Control-Allow-Methods: POST, OPTIONS
 ```
 
+HTTP-mode DNS endpoints accept `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, and
+`DELETE` on `/` and nested paths. Their preflight response advertises:
+
+```http
+Access-Control-Allow-Methods: GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS
+```
+
 DNS equivalent:
 
 ```http
@@ -161,6 +175,11 @@ Content-Type: application/json
 - Anon key: allowed only when both are true:
   - key has `functions.invoke` permission
   - function has `is_public: true`
+
+For an HTTP function with `http_auth_mode: none`, the DNS endpoint does not
+require a Volcano token. This mode is valid only with `is_public: true` and is
+intended for webhooks that validate provider signatures inside the function.
+The direct `/functions/{functionId}/invoke` RPC endpoint remains authenticated.
 
 **Request:**
 ```json
@@ -343,7 +362,7 @@ Deletion is queued behind a running deployment and supersedes queued deploys.
 After deletion is requested, later deploys return `409 Conflict` until deletion
 finishes.
 
-## Update Function Visibility
+## Update Function Invocation Settings
 
 ```http
 PATCH /projects/{projectId}/functions/{functionId}
@@ -354,15 +373,28 @@ Content-Type: application/json
 **Request:**
 ```json
 {
-  "is_public": true
+  "is_public": true,
+  "invocation_mode": "http",
+  "http_auth_mode": "none",
+  "openapi_spec": {
+    "openapi": "3.1.0",
+    "info": {"title": "Webhook", "version": "1.0.0"},
+    "paths": {}
+  }
 }
 ```
 
 - `is_public: false` (default): private function, anon keys cannot invoke
 - `is_public: true`: public function, anon keys with `functions.invoke` can invoke
+- `invocation_mode: rpc`: POST-only `{ "payload": ... }` contract
+- `invocation_mode: http`: HTTP request-event contract on the DNS endpoint
+- `http_auth_mode: volcano`: Volcano token authentication
+- `http_auth_mode: none`: no Volcano token; requires `is_public: true` and HTTP mode
+- `openapi_spec`: optional OpenAPI 3.0/3.1 JSON metadata, up to 256 KiB; send `null` to clear
 
-> **Security note:** `is_public: true` does not mean "no token required" - it means invocation is allowed with an anon key.  
-> Since anon keys are commonly shipped in frontend code, public functions should be treated as publicly reachable.
+> **Security note:** `is_public: true` alone still requires a token. Tokenless
+> access occurs only for the explicit `http` + `none` combination. Public
+> functions should always be treated as internet-facing endpoints.
 
 ## Function Status
 

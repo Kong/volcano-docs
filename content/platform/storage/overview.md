@@ -139,7 +139,7 @@ Storage limits are enforced per-project based on your plan. Limits are configure
 ## Bandwidth
 
 Upload and download traffic (including public file serving) counts toward your
-platform user's monthly bandwidth cap (aggregate ingress + egress across owned
+platform user's billing-cycle bandwidth allowance (aggregate ingress + egress across owned
 projects), configured via `FREE_BANDWIDTH_CAP` / `PRO_BANDWIDTH_CAP` (in GB;
 `0` = unlimited). Once the platform user is over the cap, storage requests are
 rejected with `429` until the cap increases (plan/override) or the monthly meter

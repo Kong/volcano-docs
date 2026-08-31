@@ -17,6 +17,7 @@ Volcano provides serverless PostgreSQL databases. They auto-scale based on usage
 | Auth helpers | Built-in functions for user context (`auth.uid()`, `auth.email()`) |
 | Multiple databases | Create multiple databases per project |
 | Branching | Fork a database into an isolated, expiring copy for dev and CI |
+| Backups and restore | Back up on demand or on a schedule, and restore in place to a backup or a point in time (Pro) |
 
 ## Access methods
 
@@ -115,7 +116,7 @@ Response:
 {
   "id": "db_abc123",
   "name": "main",
-  "status": "creating",
+  "status": "provisioning",
   "region": "aws-us-east-1",
   "pg_version": 16
 }
@@ -268,6 +269,7 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/databases" \
 | [Quick start](quick-start.md) | Set up a database in 5 minutes |
 | [Creating databases](creating-databases.md) | Database provisioning options |
 | [Branching](branching.md) | Fork a database for development, testing, and CI |
+| [Backups and restore](backups.md) | Back up a database and roll it back |
 | [Query Builder API](query-builder-api.md) | Complete SDK query reference |
 | [REST API](rest-api.md) | HTTP endpoints for queries |
 | [Direct connection](direct-connection.md) | Connect from your functions |

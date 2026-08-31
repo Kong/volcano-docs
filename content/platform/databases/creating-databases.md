@@ -95,7 +95,9 @@ curl -X POST https://api.volcano.dev/projects/PROJECT_ID/databases \
 **Status progression:**
 - `provisioning` - Being created (5-10 seconds)
 - `active` - Ready to use
+- `restoring` - Being restored from a backup; not connectable, and most operations on it return `409`
 - `failed` - Creation failed
+- `deleting` - Being torn down
 
 ## Database Types
 
@@ -238,7 +240,7 @@ curl -X POST https://api.volcano.dev/projects/PROJECT_ID/databases/DB_ID/reset-p
 ```
 
 Update your functions' DATABASE_URL with the new connection string.
-The old Volcano password stops working after reset. The internal owner password is not rotated and is never exposed to clients.
+The old Volcano password stops opening new connections within a few seconds of the reset; connections already open keep working until they close. The internal owner password is not rotated and is never exposed to clients.
 
 ## See Also
 

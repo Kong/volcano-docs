@@ -20,6 +20,11 @@ The Database REST API lets you perform CRUD operations on your database tables u
 
 **Endpoint:** `POST /databases/{databaseName}/query/{operation}`
 
+To run the same operations against a branch instead of the database itself, put
+the branch in the path: `POST
+/databases/{databaseName}/branches/{branchName}/query/{operation}`. Everything on
+this page applies unchanged. See [Branching](branching.md).
+
 ---
 
 ## Getting Started
@@ -675,6 +680,18 @@ Row-Level Security automatically filters to current user's posts!
 ```
 
 **Fix:** Ensure table exists in your database
+
+Unexpected connection failures return `500 Internal Server Error` with a
+generic message and an `X-Request-Id` response header:
+
+```json
+{
+  "error": "Query failed"
+}
+```
+
+Use the request ID when contacting support. Volcano keeps connection details
+in server logs and does not return them to clients.
 
 ### Permission Denied (RLS)
 
