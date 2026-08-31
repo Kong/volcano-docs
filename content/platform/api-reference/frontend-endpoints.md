@@ -61,7 +61,7 @@ Supported frontend environments:
 - OpenNext `4.x`.
 
 If `engines.node` is omitted, Volcano builds with Node.js `20.x`.
-Your selected Node.js family must satisfy the installed Next.js package's `engines.node` constraint. The runtime matrix is tested against the pinned Next versions' npm metadata: Next `15.5.23` requires `^18.18.0 || ^19.8.0 || >=20.0.0`, and Next `16.3.1` requires `>=20.9.0`.
+Your selected Node.js family must satisfy the installed Next.js package's `engines.node` constraint. The runtime matrix is tested against the pinned Next versions' npm metadata: Next `15.5.24` requires `^18.18.0 || ^19.8.0 || >=20.0.0`, and Next `16.3.3` requires `>=20.9.0`.
 
 Plan limits:
 - FREE users can create up to `FREE_FRONTEND_DEPLOYMENTS` frontends per project.
@@ -132,7 +132,7 @@ Behavior:
 - Both the custom domain and default Volcano frontend URL continue to work.
 - The default `*.frontends.<env>.volcano.dev` URL keeps strict valid TLS and is not replaced by BYOC certificates from other domains.
 - Returns `201` when a new custom domain is queued, and `200` when the same domain is already configured.
-- Returns `409` when the frontend already has a different domain or the requested domain is already attached elsewhere.
+- Returns `409` when the frontend already has a different domain, the requested domain is attached elsewhere, or a previous attachment is still detaching.
 - Returns `503` when custom domain provisioning is temporarily unavailable.
 
 Provisioning lifecycle:

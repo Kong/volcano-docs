@@ -170,7 +170,7 @@ self-contained HTML error page. The status code identifies the failure:
 | Status | Meaning |
 | --- | --- |
 | `403` | Project traffic is disabled. |
-| `404` | No deployed frontend matches the address. |
+| `404` | No deployed frontend serves the address. |
 | `429` | The project reached a rate or monthly request limit. |
 | `502` | The deployed frontend is temporarily unreachable. |
 | `503` | A platform dependency is temporarily unavailable. |
@@ -190,6 +190,11 @@ them with `volcano variables …` or the [declarative config](../projects/config
 Custom domains are a **PRO** feature and use **bring-your-own-certificate
 (BYOC)** TLS: you supply the certificate and private key, and Volcano serves
 your domain with them. Volcano does not issue the certificate for you.
+
+On the Free plan an attached domain is kept but stops serving: requests to it
+return `404` while the frontend's `*.volcano.dev` URL keeps working. Upgrading
+puts the domain back in service without re-attaching it. See
+[moving from Pro to Free](../guides/plans-and-limits.md#moving-from-pro-to-free).
 
 Attaching a custom domain takes two steps — attach the domain (with your cert),
 then point DNS at your frontend:

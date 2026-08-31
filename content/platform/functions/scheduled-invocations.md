@@ -46,4 +46,9 @@ volcano functions schedulers delete my-function <scheduler-id>
 
 Schedulers are disabled or removed when their target function is deleted. When project region policy shrinks, scheduler rows for removed regions are disabled so stale regional workers cannot keep invoking removed functions.
 
+Scheduled invocations are a **PRO** feature. On the Free plan a scheduler is kept
+but stops firing — no runs are recorded, and its next run time keeps advancing —
+so an upgrade resumes it on its own cadence. See
+[moving from Pro to Free](../guides/plans-and-limits.md#moving-from-pro-to-free).
+
 Scheduled invocations deliver your configured payload as the function event. Volcano also injects `__volcano_schedule` with `scheduler_id`, `run_id`, `job_id`, `project_id`, `target_id`, `job_type`, and `region` so functions can distinguish manual and scheduled invocations.

@@ -14,22 +14,27 @@ Use `PUT /projects/{projectId}/auth/config` to control managed pages:
 - `post_auth_redirect_url`: must be present in `allowed_redirect_urls`
 - `post_logout_redirect_url`: must be present in `allowed_redirect_urls`
 
-## Update Lifecycle
+## Page types and URLs
 
-Two page types store one current HTML/CSS document each:
+Six page types can store appearance and legacy HTML/CSS independently:
 
 - `PUT /projects/{projectId}/auth/hosted-pages/{pageType}` updates HTML/CSS
 - `GET /projects/{projectId}/auth/hosted-pages/{pageType}` returns the current saved content
-- Supported `pageType`: `login`, `reset-password`
+- Supported `pageType`: `login`, `signup`, `forgot-password`, `device`, `verify-email`, `reset-password`
 
 ## Public Rendering
 
 Hosted pages are served from:
 
-- `GET /projects/{projectId}/auth/hosted` (unified entrypoint)
-- `GET /projects/{projectId}/auth/hosted?action=login|signup|forgot-password` (optional deep link to section)
-- `GET /projects/{projectId}/auth/hosted?action=device&user_code=<user_code>&anon_key=<anon_key>` (managed device approval deep link)
+- `GET /projects/{projectId}/auth/hosted` (sign in)
+- `GET /projects/{projectId}/auth/hosted/signup`
+- `GET /projects/{projectId}/auth/hosted/forgot-password`
+- `GET /projects/{projectId}/auth/hosted/device?user_code=<user_code>`
+- `GET /projects/{projectId}/auth/hosted/verify-email?token=<token>`
 - `GET /projects/{projectId}/auth/hosted/reset-password` (dedicated reset-password page)
+
+Every URL also needs `anon_key=<anon_key>`. Old sign-in links using
+`?action=signup|forgot-password|device` remain supported.
 
 The endpoint only serves HTML (`Accept: text/html`) and applies strict security
 headers. Invalid or unavailable hosted pages return a branded HTML error page
@@ -60,7 +65,7 @@ API serves the approval UI itself, with no dependency on any external app.
 
 - `POST /auth/device/authorize` returns a `verification_uri` /
   `verification_uri_complete` that point at this project's managed page:
-  `GET /projects/{projectId}/auth/hosted?action=device&user_code=<user_code>&anon_key=<anon_key>`.
+  `GET /projects/{projectId}/auth/hosted/device?user_code=<user_code>&anon_key=<anon_key>`.
 - The project's default anon key is embedded in that URL automatically so the
   page can sign the user in; managed auth must be enabled for the project.
 - The page signs the user in (email/password or OAuth) and calls
@@ -90,9 +95,51 @@ Helper endpoints used by the built-in login:
 - `POST /projects/{projectId}/auth/hosted/login/check-email` with `Authorization: Bearer <anon_key>`
 - Both endpoints are rate limited per project + client IP and apply exponential backoff before returning `429 Too Many Requests` with `Retry-After`.
 
-## Built-in Appearance & Branding
+## Configure built-in appearance
 
-The built-in `login` and `reset-password` pages render a modern, self-contained
+Use the appearance API when a page should keep Volcano's managed markup and
+runtime while taking on your brand:
+
+- `GET /projects/{projectId}/auth/pages/appearance` returns the saved theme,
+  per-page layouts, accepted options, defaults, and per-page parked state.
+- `PUT /projects/{projectId}/auth/pages/theme` saves the project-wide colours,
+  font, scale, density, and radius. `DELETE` restores the live default.
+- `PUT /projects/{projectId}/auth/pages/{pageType}/layout` saves `centered`,
+  `split-left`, or `split-right`. `DELETE` restores default tracking.
+- `POST /projects/{projectId}/auth/pages/{pageType}/preview` renders an unsaved
+  theme and layout without running real authentication requests.
+
+Theme and layout customisation requires PRO. A downgrade parks saved values:
+the public page uses defaults and Volcano branding, while the appearance GET
+and preview endpoints remain available. Upgrading restores the saved values.
+
+The same configuration round-trips through `volcano-config.yaml`:
+
+```yaml
+auth:
+  managed_pages:
+    appearance:
+      theme:
+        version: 1
+        colors:
+          background: "#f7f5f2"
+          surface: "#ffffff"
+          text: "#1a1a1a"
+          accent: "#1d4ed8"
+          accent_text: "#ffffff"
+        font: humanist
+        scale: large
+        density: spacious
+        radius: large
+      layouts:
+        login: split-left
+        signup: split-right
+        reset_password: centered
+```
+
+## Built-in branding
+
+The built-in pages render a modern, self-contained
 dark theme (a centered card with the project brand in a top navbar). Each step
 of the smart login flow reuses this layout.
 

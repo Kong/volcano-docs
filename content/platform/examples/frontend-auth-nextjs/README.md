@@ -292,6 +292,10 @@ export const config = {
 };
 ```
 
+Keep the `matcher` to the routes middleware decides: Volcano serves those from
+your runtime on every request so middleware always runs, and leaves the rest of
+the site cached at the edge. See [Frontends](../../frontends/overview.md#caching).
+
 ## Troubleshooting
 
 ### SDK Not Loading

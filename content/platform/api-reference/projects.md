@@ -233,6 +233,8 @@ Content-Type: application/json
 Query up to 10 named metrics over a trailing `30m`, `1h`, `24h`, or `7d` window.
 Supported metrics are `request_count`, `server_error_count`, `availability`, and `p95_latency`.
 Group results by `region` or `resource_type` when needed.
+Windows end at the most recent completed UTC minute. Use `observed_at` and
+`window.to` from the response as the evaluation boundary.
 
 **Response:**
 

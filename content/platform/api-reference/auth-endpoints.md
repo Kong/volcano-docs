@@ -463,7 +463,31 @@ Authorization: Bearer <access_token>
 }
 ```
 
-Returns all sessions for the current user. The `is_current` field indicates which session is making the current request.
+Returns the current user's sessions. The `is_current` field indicates which session is making the current request.
+
+**Ordering and pagination.** By default sessions come back in most-recently-active
+order, paged with `page` and `limit` (default 20, max 100), in the body shown
+above. Add `sort=created_at` to order by session start instead and unlock the
+standard cursor pagination used by the other list endpoints:
+
+```http
+GET /auth/user/sessions?sort=created_at&limit=20
+GET /auth/user/sessions?sort=created_at&limit=20&cursor=<next_cursor>
+GET /auth/user/sessions?sort=created_at&limit=20&ending_before=<prev_cursor>&offset=40
+```
+
+Cursor responses use the shared envelope: `data`, `limit`, `total`, `has_more`,
+`next_cursor`, `prev_cursor`.
+
+Cursor pagination requires `sort=created_at` and returns 400 otherwise. Activity
+order cannot be paged by cursor: `last_activity_at` is rewritten whenever a
+session refreshes its token, so a session that becomes active mid-paging moves
+above the cursor and would never appear in the remaining pages.
+
+Add `status=active` to hide expired sessions, or `status=expired` to show only
+those. Both filters also narrow `total`. The expired-only filter uses offset
+pagination: cursor mode rejects it because a session can expire above the
+cursor anchor during a walk. Cursor offsets may not exceed 100,000 rows.
 
 ---
 
@@ -702,7 +726,8 @@ Authorization: Bearer <platform_token>
 - `post_auth_redirect_url` and `post_logout_redirect_url` must be present in `allowed_redirect_urls`
 - `allowed_email_domains` entries must be bare domains (`domain1.com`, not
   `user@domain1.com` or `localhost`), max 100. They are stored lowercased and
-  replace the previous list; `[]` removes the restriction. See
+  replace the previous list; `[]` removes the restriction. The list is enforced
+  on PRO only — a downgrade parks it without discarding it. See
   [Email Domain Allowlist](../authentication/configuration/email-domain-allowlist.md).
 - `allowed_email_domains_mode` must be `disabled`, `signup` (default), or
   `signup_and_signin`. `signup_and_signin` also blocks sign-in for accounts
@@ -713,6 +738,11 @@ Authorization: Bearer <platform_token>
   Send an empty string to clear it and fall back to the managed device page. When a
   custom URL is set, device login does not require `managed_auth_enabled` (but the
   custom page's origin must be in `cors_allowed_origins` to call `/auth/device/verify`).
+
+**Errors:**
+- `403` - The update would set or widen `allowed_email_domains` on a project
+  that is not on the PRO plan. Removing the restriction stays available on
+  every plan
 
 ---
 

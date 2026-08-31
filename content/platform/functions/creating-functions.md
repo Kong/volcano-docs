@@ -173,7 +173,11 @@ volcano/
     worker.rb
 ```
 
-Local mode does not run the cloud build job, so local functions still rely on dependencies installed in your local project.
+Local mode installs these manifests too, using the runtime's own package manager
+(`npm`, `pip`, or `bundler`) on the interpreter the function's runtime names. You
+do not need to install dependencies into your project first, and you should not
+commit installed directories: `node_modules`, `.venv`, and `vendor/bundle` are
+excluded from the upload either way.
 
 ## Packaging
 

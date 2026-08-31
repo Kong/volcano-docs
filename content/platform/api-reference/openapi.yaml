@@ -1524,6 +1524,317 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProjectConfigValidationErrorResponse'
+  /projects/{id}/source-export:
+    get:
+      tags:
+        - Projects
+        - Git Connections
+      summary: Report the project's source-of-truth state
+      operationId: getProjectSourceExport
+      description: |
+        Volcano stores the source of the functions and frontend it runs for a
+        project. This reports whether that source has been written to the
+        connected repository, and whether the repository has taken over as the
+        project's source of truth.
+
+        `mode` is `platform`, `git_exporting`, `git_pending`, or `git`. Export
+        enters `git_exporting` before reading stored source. GitHub's signed
+        push event confirms that the initial commit reached the production
+        branch. That push or a newer production push changes the mode to
+        `git_pending` when it starts a deployment. `exported_at` records that
+        transition.
+
+        A successful Git run completes the transition when it matches the
+        recorded repository, production branch, and root directory and actually
+        dispatches every recorded resource. Ordinary production-branch pushes
+        deploy without changing a platform-managed project's source ownership.
+      security:
+        - UserToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: The project's source-of-truth state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectSourceExportState'
+        '401':
+          description: Unauthorized - invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - project not owned by the caller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '501':
+          description: Source export is not available in this deployment mode
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags:
+        - Projects
+        - Git Connections
+      summary: Initialize an empty repository with a project's stored source
+      operationId: exportProjectSource
+      description: |
+        Creates the first commit in the connected repository and pushes it
+        directly to the configured production branch. The push enters the
+        ordinary Git auto-deploy flow. Direct source writes remain frozen until
+        that deployment succeeds and the repository becomes the source of truth.
+
+        The caller confirms the production branch shown before export. Starting
+        export pins that branch: later GitHub default-branch changes do not
+        repoint the project. If the configured branch changed after the caller
+        read it, the request fails without exporting so the caller can show and
+        confirm the new value.
+
+        The response lists what the export could not carry: resources with no
+        successful deployment to take source from (`skipped`), and things no
+        export can hand back (`omitted`) — migrations, which Volcano stores no
+        copy of, and credential-shaped files, which are left for their owner to
+        add.
+
+        Requires a connected repository with no commits or branches, and runs
+        once. Volcano never creates the repository. If GitHub did not confirm
+        the push, retrying creates the same commit and adopts it when it already
+        reached the repository.
+      security:
+        - UserToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportProjectSourceRequest'
+      responses:
+        '201':
+          description: The initial production-branch commit that was pushed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectSourceExport'
+        '400':
+          description: Malformed request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized - invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - project not owned by the caller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Project not found, or it has no repository connected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: |
+            The source has already been exported, the repository has already
+            taken over as the source of truth, the confirmed production branch
+            is stale, a function or frontend deployment is still in progress,
+            or the project has no stored source to export
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: |
+            The repository refused the branch, or its contents cannot be laid
+            out as a repository — a stored file that only ever carries
+            credentials, or a layout Git auto-deploy would not read back
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: GitHub rate limited the request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '501':
+          description: Source export is not available in this deployment mode
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: GitHub integration is not configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags:
+        - Projects
+        - Git Connections
+      summary: Cancel an incomplete source export
+      operationId: cancelProjectSourceExport
+      description: |
+        Restores platform source writes while the project is in
+        `git_exporting` or `git_pending`. If Volcano reserved or deployed the
+        root commit, export remains consumed and cannot be run again. The
+        connected repository and any commit already pushed to it are unchanged.
+      security:
+        - UserToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '204':
+          description: The incomplete source transition was canceled
+        '401':
+          description: Unauthorized - invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - project not owned by the caller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: No incomplete transition exists, or Git already took ownership
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '501':
+          description: Source export is not available in this deployment mode
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /projects/{id}/git-connection/production-branch:
+    put:
+      tags:
+        - Projects
+        - Git Connections
+      summary: Set the branch a project deploys from
+      description: |
+        Changes only the production branch, leaving the repository binding
+        alone. PUT /projects/{id}/git-connection can also set it, but that is a
+        full rebind: it needs connection_id, installation_id and a repository
+        selector resent, and re-resolves the repository against GitHub for a
+        field that does not depend on it.
+
+        The branch does not have to exist. It is validated as a Git branch name
+        and nothing more, so a project can be pointed at a branch that is about
+        to be pushed — the case a repository created empty depends on.
+
+        Setting the branch here marks it as the project's own choice, so a later
+        default-branch rename on GitHub no longer moves it. Projects that never
+        set one keep following the repository's default branch.
+      operationId: setProjectGitProductionBranch
+      security:
+        - UserToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetProjectGitProductionBranchRequest'
+      responses:
+        '200':
+          description: The project's repo connection, with the new branch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectGitConnection'
+        '400':
+          description: |
+            Malformed request body, or a production_branch that is not a valid
+            Git branch name
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized - invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Project not owned by the caller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: |
+            Project not found, or it has no repository connected. The branch is
+            part of the connection, so there is nothing to set it on until one
+            exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: A Git source transition is pending
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Failed to set the production branch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /projects/{id}/git-connection:
     get:
       tags:
@@ -1599,7 +1910,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/ProjectGitConnection'
         '400':
-          description: Malformed request body
+          description: |
+            Malformed request body, no repository selector, selectors that
+            identify different repositories, a production_branch that is not a
+            valid Git branch name, no production_branch on a repository with no
+            default branch to follow (name one to connect a repository that has
+            no commits yet), or a production_branch other than the new
+            repository's default in a request that also changes repository.
           content:
             application/json:
               schema:
@@ -1620,6 +1937,14 @@ paths:
                 $ref: '#/components/schemas/Error'
         '404':
           description: Project or connection not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: |
+            A Git source transition is pending or complete, so the recorded
+            repository and root cannot be changed
           content:
             application/json:
               schema:
@@ -1663,6 +1988,14 @@ paths:
                 $ref: '#/components/schemas/Error'
         '404':
           description: Project not found, or has no repo connection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: |
+            A Git source transition is pending or complete, so the recorded
+            repository cannot be disconnected
           content:
             application/json:
               schema:
@@ -1722,10 +2055,16 @@ paths:
       summary: Update a project's Git auto-deploy settings
       description: |
         Full replace of the project's Git auto-deploy settings: what a push to
-        the connected repo's production branch deploys. All settings are
-        default-off. The frontend need not exist when the settings are saved;
-        frontend_name is resolved at deploy time. Independent of the repo
-        binding (see connectProjectGit).
+        the connected repo's production branch deploys.
+
+        Connecting a repository sets auto_deploy_enabled and deploy_functions
+        to true for a project that has never called this endpoint, so a push
+        deploys without any further setup. Once these settings have been saved
+        here they are the project's own: connecting, rebinding, disconnecting
+        and reconnecting all leave them untouched, including when they were
+        saved before any repository was connected. Frontend settings are off
+        until set here; the frontend need not exist when they are saved, since
+        frontend_name is resolved at deploy time.
       operationId: updateProjectGitDeploySettings
       security:
         - UserToken: []
@@ -1764,6 +2103,14 @@ paths:
                 $ref: '#/components/schemas/Error'
         '404':
           description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: |
+            A Git source transition is pending, or this change would remove
+            deploy coverage after Git has taken over
           content:
             application/json:
               schema:
@@ -2233,6 +2580,17 @@ paths:
                     - Ruby: def handler() (in main.rb)
                   default: "handler"
                   example: "handler"
+                is_public:
+                  type: boolean
+                  default: false
+                  description: Whether the function can be reached through public invocation ingress.
+                invocation_mode:
+                  $ref: '#/components/schemas/FunctionInvocationMode'
+                http_auth_mode:
+                  $ref: '#/components/schemas/FunctionHTTPAuthMode'
+                openapi_spec:
+                  type: string
+                  description: JSON-encoded OpenAPI 3.0 or 3.1 metadata for an HTTP-mode function.
       responses:
         '201':
           description: Function created and deployment workflow started
@@ -2394,9 +2752,16 @@ paths:
         - Function receives payload only (no `__volcano_auth`)
 
         **Transport and CORS:**
-        - Direct invocation endpoint is intended for `http://api.<domain>/functions/{functionId}/invoke`
-        - DNS invocation endpoint is `https://{functionId}.functions.<domain>/`
-        - CORS preflight for invocation allows only `POST, OPTIONS`
+        - This operation is the authenticated direct RPC endpoint and always uses the
+          POST `{payload: ...}` contract, including for functions whose DNS ingress is
+          configured in HTTP mode.
+        - The geo-routed DNS ingress is `https://{functionId}.functions.<domain>/`.
+        - RPC-mode DNS ingress accepts POST at `/`. HTTP-mode DNS ingress accepts GET,
+          HEAD, POST, PUT, PATCH, and DELETE at `/` and nested paths.
+        - Direct and RPC-mode CORS preflight advertises `POST, OPTIONS`. HTTP-mode DNS
+          preflight advertises `GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS`.
+        - `http_auth_mode: none` applies only to public HTTP-mode DNS ingress; this
+          direct operation always requires a Volcano credential.
       operationId: invokeFunction
       security:
         - AnonKey: []
@@ -2485,7 +2850,7 @@ paths:
         '429':
           description: |
             Rate limit exceeded (per-function or project-wide limit), or the
-            owning platform user's monthly bandwidth cap (aggregate ingress +
+            owning platform user's billing-cycle bandwidth allowance (aggregate ingress +
             egress) was exceeded.
           content:
             application/json:
@@ -3072,7 +3437,7 @@ paths:
         22.x or 24.x. The Node.js runtime is inferred from
         `package.json` `engines.node`; if omitted, Volcano uses Node.js 22.x.
         The selected Node.js family must also satisfy the installed Next.js package's
-        `engines.node` constraint. Volcano tests Next 15.5.23 (`^18.18.0 || ^19.8.0 || >=20.0.0`) and Next 16.3.1 (`>=20.9.0`).
+        `engines.node` constraint. Volcano tests Next 15.5.24 (`^18.18.0 || ^19.8.0 || >=20.0.0`) and Next 16.3.3 (`>=20.9.0`).
         Source archive size is enforced by the API with `SOURCE_ARCHIVE_SIZE_LIMIT_MB`; the CLI
         does not apply its own source archive size limit. After the final container images are
         built, the publish build enforces `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB` before pushing.
@@ -3447,7 +3812,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '409':
-          description: Conflict - custom domain already in use or frontend already has a custom domain
+          description: Conflict - custom domain already in use, still detaching, or frontend already has a custom domain
           content:
             application/json:
               schema:
@@ -3708,6 +4073,13 @@ paths:
         - $ref: '#/components/parameters/EndingBefore'
         - $ref: '#/components/parameters/Offset'
         - $ref: '#/components/parameters/Search'
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [provisioning, active, restoring, failed, deleting]
+          description: Return only the databases in this status.
       responses:
         '200':
           description: Successful response
@@ -3721,7 +4093,8 @@ paths:
       summary: Create a new serverless PostgreSQL database
       description: |
         Creates a serverless PostgreSQL database in the project.
-        Each project can contain up to 100 databases. Requests over this cap return 403.
+        Each project can hold 1 database on Free and up to 10,000 on Pro.
+        Requests over the plan's cap return 403.
       operationId: createDatabase
       security:
         - UserToken: []
@@ -3802,6 +4175,29 @@ paths:
                   message:
                     type: string
                     example: database deletion in progress
+        '404':
+          description: Project or database not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: |
+            A restore is running on the database. Deleting it while a worker is
+            replacing its data would race that worker, so wait for the restore
+            to finish.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: |
+            Volcano could not check whether a restore is running, and will not
+            delete a database that might be mid-restore. Retry.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /projects/{id}/databases/{databaseName}/branches:
     get:
       tags:
@@ -3896,7 +4292,7 @@ paths:
           description: |
             A branch of that name already exists on this database, or the
             database cannot be branched right now because it is still
-            provisioning, failed, or being deleted.
+            provisioning, being restored, failed, or being deleted.
           content:
             application/json:
               schema:
@@ -4004,7 +4400,8 @@ paths:
         branch half-deleted.
 
         Deleting a branch that is still provisioning is allowed and stops the
-        build. Deleting a branch that is already gone succeeds.
+        build, and repeating the call while teardown is in progress is accepted
+        again. Once the branch is gone the call returns `404`.
       operationId: deleteDatabaseBranch
       security:
         - UserToken: []
@@ -4080,7 +4477,10 @@ paths:
                 $ref: '#/components/schemas/Error'
         '409':
           description: |
-            The branch is not active, or a reset is already in progress.
+            The branch is not active, a reset is already in progress, the parent
+            database is being restored, or the parent was restored within the
+            last 24 hours — a reset re-forks from the parent, and the provider
+            holds a child's reset shut for that long afterwards.
           content:
             application/json:
               schema:
@@ -4099,7 +4499,9 @@ paths:
       description: |
         Issues a new password for the branch and invalidates the previous
         connection string. Existing connections are not interrupted; new ones
-        must use the returned string.
+        must use the returned string. Proxies pick the rotation up within a few
+        seconds, so the previous password can still open new connections until
+        then.
 
         The parent database's credentials are untouched.
       operationId: resetDatabaseBranchPassword
@@ -4134,6 +4536,492 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /projects/{id}/databases/{databaseName}/backups:
+    get:
+      tags:
+        - Database Backups
+      summary: List a database's backups
+      description: |
+        Returns every backup of the database, newest first, together with the
+        window a point-in-time restore may target.
+
+        Both backups you took and backups the schedule produced are listed;
+        `source` tells them apart. Only manual backups count against the plan's
+        backup allowance.
+      operationId: listDatabaseBackups
+      security:
+        - UserToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/DatabaseName'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseBackupList'
+        '403':
+          description: Backups are PRO-only and the owner's plan does not include them
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Project or database not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: |
+            The database has no storage project yet, so there is nothing to
+            list. A database reports this while it is still provisioning.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Backups are temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags:
+        - Database Backups
+      summary: Back up a database
+      description: |
+        Captures the database as it is now. The backup is available immediately;
+        its `size_bytes` appears once the storage provider has costed it.
+
+        Backups are rate-limited to one per minute per database, and capped by
+        the owner's plan.
+      operationId: createDatabaseBackup
+      security:
+        - UserToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/DatabaseName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDatabaseBackupRequest'
+      responses:
+        '201':
+          description: Backup created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseBackup'
+        '400':
+          description: Invalid backup name
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: |
+            The database has reached its backup allowance, or the owner's plan
+            does not include backups, which are PRO-only.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Project or database not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: |
+            A backup of that name already exists, the database is not active, a
+            restore is running on it, or a backup was taken too recently.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Backups are temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /projects/{id}/databases/{databaseName}/backups/{backupName}:
+    get:
+      tags:
+        - Database Backups
+      summary: Get a backup
+      description: Returns one backup of the database.
+      operationId: getDatabaseBackup
+      security:
+        - UserToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/DatabaseName'
+        - $ref: '#/components/parameters/BackupName'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseBackup'
+        '403':
+          description: Backups are PRO-only and the owner's plan does not include them
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Project, database, or backup not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: |
+            The database has no storage project yet, so it holds no backups. A
+            database reports this while it is still provisioning.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Backups are temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags:
+        - Database Backups
+      summary: Delete a backup
+      description: |
+        Deletes the backup and frees its storage. Scheduled backups can be
+        deleted too. A backup that is already gone reports `404`, so a name
+        that never existed and a name that no longer does read the same.
+        Refused with `409` while the database is being restored.
+      operationId: deleteDatabaseBackup
+      security:
+        - UserToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/DatabaseName'
+        - $ref: '#/components/parameters/BackupName'
+      responses:
+        '200':
+          description: Backup deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: deleted
+                  message:
+                    type: string
+                    example: backup deleted
+                required:
+                  - status
+                  - message
+        '403':
+          description: Backups are PRO-only and the owner's plan does not include them
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Project, database, or backup not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: |
+            The database is being restored. A restore is pinned to a backup it
+            may not have restored yet, so deleting one is refused until the
+            restore finishes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Backups are temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /projects/{id}/databases/{databaseName}/backup-schedule:
+    get:
+      tags:
+        - Database Backups
+      summary: Get the automated backup schedule
+      description: |
+        Returns the database's backup schedule. An empty list means no scheduled
+        backups.
+      operationId: getDatabaseBackupSchedule
+      security:
+        - UserToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/DatabaseName'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseBackupSchedule'
+        '403':
+          description: Backups are PRO-only and the owner's plan does not include them
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Project or database not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: |
+            The database has no storage project yet, so it has no schedule. A
+            database reports this while it is still provisioning.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Backups are temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Database Backups
+      summary: Replace the automated backup schedule
+      description: |
+        Replaces the schedule wholesale. Send an empty `entries` list to stop
+        scheduled backups.
+
+        Scheduled backups do not count against the plan's backup allowance, but
+        their retention is clamped to the plan's.
+      operationId: updateDatabaseBackupSchedule
+      security:
+        - UserToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/DatabaseName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatabaseBackupSchedule'
+      responses:
+        '200':
+          description: Schedule replaced
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseBackupSchedule'
+        '400':
+          description: |
+            The schedule names a recurrence that cannot fire: a weekly or
+            monthly one with no `day`, or a `day` outside its frequency's range
+            (1-7 for weekly, 1-28 for monthly). The response says which.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Backups are PRO-only and the owner's plan does not include them
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Project or database not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: |
+            The database is not active, or a restore is running on it — a restore
+            moves the data to a new branch, and the provider keeps the schedule
+            per branch.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Backups are temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /projects/{id}/databases/{databaseName}/restores:
+    get:
+      tags:
+        - Database Backups
+      summary: List a database's restores
+      description: |
+        Returns the database's restore history, newest first, capped at the 50
+        most recent. There is no pagination: a database that has been restored
+        more than 50 times keeps the older records but does not return them.
+      operationId: listDatabaseRestores
+      security:
+        - UserToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/DatabaseName'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseRestoreList'
+        '403':
+          description: Backups are PRO-only and the owner's plan does not include them
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Project or database not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Backups are temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags:
+        - Database Backups
+      summary: Restore a database
+      description: |
+        Replaces the database's data, either with a named backup or with its
+        state at a point in time. This is destructive: everything written after
+        that point is discarded.
+
+        Asynchronous: the response is `202` with the restore `pending` and the
+        database `restoring`. The database does not accept connections until the
+        restore reports `completed`; its connection string is unchanged
+        throughout, so nothing holding it needs updating.
+
+        Restores are in place. There is no way to restore into a second
+        database, and a database's branches are never restored — they keep
+        serving their own data, but resetting a branch from its parent is
+        refused by the storage provider for up to 24 hours afterwards.
+      operationId: createDatabaseRestore
+      security:
+        - UserToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/DatabaseName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDatabaseRestoreRequest'
+      responses:
+        '202':
+          description: Restore accepted and in progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseRestore'
+        '400':
+          description: |
+            Neither or both restore targets were named, or the requested time is
+            outside the available window.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: |
+            The owner's plan does not include backups or point-in-time restore.
+            Both are PRO-only.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Project, database, or backup not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: |
+            A restore is already in progress, the database is not active,
+            another database operation is still running, or the database is
+            holding as many pre-restore branches as it may.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Backups are temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /projects/{id}/databases/{databaseName}/restores/{restoreId}:
+    get:
+      tags:
+        - Database Backups
+      summary: Get a restore
+      description: |
+        Returns the restore. Poll this after starting one; the database is
+        connectable again once it reports `completed`.
+      operationId: getDatabaseRestore
+      security:
+        - UserToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/DatabaseName'
+        - $ref: '#/components/parameters/RestoreId'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseRestore'
+        '403':
+          description: Backups are PRO-only and the owner's plan does not include them
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Project, database, or restore not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Backups are temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /projects/{id}/databases/{databaseName}/reset-password:
     post:
       tags:
@@ -4144,6 +5032,10 @@ paths:
         through pgproxy. This does not rotate or expose the internal owner password.
         The returned password and connection string are the only client credentials that
         will authenticate through pgproxy after reset.
+
+        Existing connections are not interrupted; new ones must use the returned
+        string. Proxies pick the rotation up within a few seconds, so the previous
+        password can still open new connections until then.
       operationId: resetDatabasePassword
       security:
         - UserToken: []
@@ -4170,6 +5062,34 @@ paths:
                   connection_string:
                     type: string
                     description: Updated pgproxy connection string using Volcano-managed credentials.
+        '400':
+          description: Database is not active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Database not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: |
+            A restore is running on the database. A restore replaces the
+            credentials as it finishes, so wait for it and rotate afterwards.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: |
+            Volcano could not check whether a restore is running, and will not
+            rotate a credential a restore might be about to replace. Retry.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /projects/{id}/databases/{databaseName}/type:
     patch:
@@ -4209,6 +5129,22 @@ paths:
           description: Invalid database type
         '404':
           description: Database not found
+        '409':
+          description: |
+            The database is not active — being provisioned, deleted, or
+            restored. Compute can only be changed while it is active.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: |
+            Volcano could not check whether a restore is running, and will not
+            reconfigure compute a restore might be moving. Retry.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /projects/{id}/databases/{databaseName}/stats:
     get:
       tags:
@@ -4645,6 +5581,8 @@ paths:
                 $ref: '#/components/schemas/Error'
         '429':
           $ref: '#/components/responses/DatabaseQueryCapExceeded'
+        '503':
+          $ref: '#/components/responses/DatabaseBranchQueryUnavailable'
   /databases/{databaseName}/branches/{branchName}/query/select:
     post:
       tags:
@@ -4721,6 +5659,8 @@ paths:
                 $ref: '#/components/schemas/Error'
         '429':
           $ref: '#/components/responses/DatabaseQueryCapExceeded'
+        '503':
+          $ref: '#/components/responses/DatabaseBranchQueryUnavailable'
   /databases/{databaseName}/branches/{branchName}/query/insert:
     post:
       tags:
@@ -4793,6 +5733,8 @@ paths:
                 $ref: '#/components/schemas/Error'
         '429':
           $ref: '#/components/responses/DatabaseQueryCapExceeded'
+        '503':
+          $ref: '#/components/responses/DatabaseBranchQueryUnavailable'
   /databases/{databaseName}/branches/{branchName}/query/update:
     post:
       tags:
@@ -4864,6 +5806,8 @@ paths:
                 $ref: '#/components/schemas/Error'
         '429':
           $ref: '#/components/responses/DatabaseQueryCapExceeded'
+        '503':
+          $ref: '#/components/responses/DatabaseBranchQueryUnavailable'
   /databases/{databaseName}/branches/{branchName}/query/delete:
     post:
       tags:
@@ -4931,6 +5875,8 @@ paths:
                 $ref: '#/components/schemas/Error'
         '429':
           $ref: '#/components/responses/DatabaseQueryCapExceeded'
+        '503':
+          $ref: '#/components/responses/DatabaseBranchQueryUnavailable'
   /databases/regions:
     get:
       tags:
@@ -5787,6 +6733,27 @@ paths:
         Returns paginated sessions for the currently authenticated user.
         Each session includes device info, IP addresses, and activity timestamps.
         The current session is marked with `is_current: true`.
+
+        **Ordering and pagination.** Without `sort`, results are ordered by most
+        recent activity and paged with `page`/`limit`, returning the
+        `sessions`/`total`/`page`/`limit`/`total_pages` body below. This is the
+        legacy default and is preserved for existing clients.
+
+        Send `sort=created_at` to opt into the standard list contract: results are
+        ordered by session start (newest first) and may be paged either with
+        `page`/`limit` or by cursor with `cursor`/`ending_before` plus a bounded
+        `offset` past the cursor anchor. Cursor responses use the shared
+        `data` envelope with `next_cursor`/`prev_cursor`.
+
+        Unlike other list endpoints, sending `limit` without `page` does **not**
+        select cursor mode here; `sort=created_at` is the only opt-in. Cursor
+        pagination is rejected with 400 for the activity order, because
+        `last_activity_at` changes whenever a session refreshes its token: a row
+        that crosses the cursor anchor between two requests would be skipped and
+        never shown. The `status=expired` filter is also offset-only because a
+        session can expire above the cursor anchor during a walk. Sending that
+        filter in cursor mode, `page` with `cursor` or `ending_before`, or both
+        cursor directions returns 400.
       operationId: authGetMySessions
       security:
         - AuthUserAccessToken: []
@@ -5806,6 +6773,50 @@ paths:
             minimum: 1
             maximum: 100
             default: 20
+        - name: sort
+          in: query
+          description: |
+            Sort key. `last_activity` (default) orders by most recent activity and
+            supports offset pagination only. `created_at` orders by session start
+            and supports both offset and cursor pagination.
+          schema:
+            type: string
+            enum: [last_activity, created_at]
+            default: last_activity
+        - name: status
+          in: query
+          description: |
+            Filter by whether the session can still be refreshed. Omit for every
+            stored session, including expired ones. `expired` is not supported
+            with cursor pagination.
+          schema:
+            type: string
+            enum: [active, expired]
+        - name: cursor
+          in: query
+          description: |
+            Opaque keyset cursor from a previous response's `next_cursor`. Requires
+            `sort=created_at`; mutually exclusive with `page` and `ending_before`.
+          schema:
+            type: string
+        - name: ending_before
+          in: query
+          description: |
+            Opaque keyset cursor from a previous response's `prev_cursor`, paging
+            backward. Requires `sort=created_at`; mutually exclusive with `page`
+            and `cursor`.
+          schema:
+            type: string
+        - name: offset
+          in: query
+          description: |
+            Bounded number of rows to skip past the cursor anchor (the hybrid
+            jump, maximum 100000). Ignored unless `cursor` or `ending_before` is
+            supplied.
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 100000
       responses:
         '200':
           description: Paginated list of user sessions
@@ -5830,6 +6841,26 @@ paths:
                   total_pages:
                     type: integer
                     description: Total number of pages
+                  data:
+                    type: array
+                    description: Sessions for this page (cursor pagination only)
+                    items:
+                      $ref: '#/components/schemas/AuthSession'
+                  has_more:
+                    type: boolean
+                    description: Whether a further page exists (cursor pagination only)
+                  next_cursor:
+                    type: string
+                    description: Opaque cursor for the next page (cursor pagination only)
+                  prev_cursor:
+                    type: string
+                    description: Opaque cursor for the previous page (cursor pagination only). Send as `ending_before`.
+        '400':
+          description: Invalid or conflicting pagination parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Not authenticated
           content:
@@ -6287,6 +7318,14 @@ paths:
       description: |
         List paginated sessions for a specific auth user.
         Returns session details including device info, IP address, and activity timestamps.
+
+        Ordering and pagination match `GET /auth/user/sessions`: the default is
+        activity order with `page`/`limit` and the legacy `sessions` body, and
+        `sort=created_at` opts into the standard cursor/offset hybrid with the
+        shared `data` envelope. Cursor pagination is only available for
+        `sort=created_at`, because the activity timestamp changes under paging.
+        The `status=expired` filter is offset-only because sessions can expire
+        above a cursor anchor during a walk.
       operationId: listUserSessions
       security:
         - UserToken: []
@@ -6313,6 +7352,50 @@ paths:
             minimum: 1
             maximum: 100
             default: 20
+        - name: sort
+          in: query
+          description: |
+            Sort key. `last_activity` (default) orders by most recent activity and
+            supports offset pagination only. `created_at` orders by session start
+            and supports both offset and cursor pagination.
+          schema:
+            type: string
+            enum: [last_activity, created_at]
+            default: last_activity
+        - name: status
+          in: query
+          description: |
+            Filter by whether the session can still be refreshed. Omit for every
+            stored session, including expired ones. `expired` is not supported
+            with cursor pagination.
+          schema:
+            type: string
+            enum: [active, expired]
+        - name: cursor
+          in: query
+          description: |
+            Opaque keyset cursor from a previous response's `next_cursor`. Requires
+            `sort=created_at`; mutually exclusive with `page` and `ending_before`.
+          schema:
+            type: string
+        - name: ending_before
+          in: query
+          description: |
+            Opaque keyset cursor from a previous response's `prev_cursor`, paging
+            backward. Requires `sort=created_at`; mutually exclusive with `page`
+            and `cursor`.
+          schema:
+            type: string
+        - name: offset
+          in: query
+          description: |
+            Bounded number of rows to skip past the cursor anchor (the hybrid
+            jump, maximum 100000). Ignored unless `cursor` or `ending_before` is
+            supplied.
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 100000
       responses:
         '200':
           description: Paginated list of user sessions
@@ -6337,6 +7420,26 @@ paths:
                   total_pages:
                     type: integer
                     description: Total number of pages
+                  data:
+                    type: array
+                    description: Sessions for this page (cursor pagination only)
+                    items:
+                      $ref: '#/components/schemas/AuthSession'
+                  has_more:
+                    type: boolean
+                    description: Whether a further page exists (cursor pagination only)
+                  next_cursor:
+                    type: string
+                    description: Opaque cursor for the next page (cursor pagination only)
+                  prev_cursor:
+                    type: string
+                    description: Opaque cursor for the previous page (cursor pagination only). Send as `ending_before`.
+        '400':
+          description: Invalid or conflicting pagination parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: User not found
     delete:
@@ -6502,6 +7605,8 @@ paths:
         are a PRO-plan feature: requests from a FREE-plan project owner are
         rejected with 403, and FREE projects always send the built-in default
         templates regardless of any previously saved custom rows.
+        Every project is created with one template per type, so customizing one
+        is usually a PUT; creating a type the project already has returns 409.
         Valid template types: welcome, confirmation, password_reset, password_changed
       operationId: createEmailTemplate
       security:
@@ -6529,6 +7634,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '403':
           description: Custom email templates require the PRO plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The project already has a template of this type
           content:
             application/json:
               schema:
@@ -6691,6 +7802,9 @@ paths:
       tags:
         - Auth Configuration
       summary: Update auth configuration
+      description: |
+        Updates the project's auth configuration. Only the fields present in
+        the body are changed.
       operationId: updateAuthConfig
       security:
         - UserToken: []
@@ -6708,6 +7822,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthConfig'
+        '403':
+          description: |
+            The update would turn on, widen, or otherwise edit the email domain
+            allowlist (`allowed_email_domains`, `allowed_email_domains_mode`)
+            for a project that is not on the PRO plan. A FREE project keeps
+            whatever allowlist it already has — parked, enforcing nothing until
+            it upgrades — and may still remove it, so a downgrade never leaves a
+            project locked out of its own signups.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /projects/{id}/auth/config/test-email:
     post:
       tags:
@@ -6759,7 +7885,11 @@ paths:
       tags:
         - Auth Configuration
       summary: Get hosted auth page
-      description: Returns current saved HTML/CSS for the page type. If no custom page exists yet, returns the default template for that page type.
+      description: |
+        Returns the saved HTML/CSS for the page type, or `page: null` when the
+        project has not customized it yet. Always returns `defaults` (the theme
+        shell to seed an editor with, which is valid input to the update endpoint)
+        and `runtime` (the script the rendered page runs, plus a preview harness).
       operationId: getAuthHostedPage
       security:
         - UserToken: []
@@ -6816,13 +7946,295 @@ paths:
           description: Forbidden
         '404':
           description: Project not found
+  /projects/{id}/auth/pages/appearance:
+    get:
+      tags: [Auth Configuration]
+      summary: Get managed auth page appearance
+      operationId: getAuthPageAppearance
+      security:
+        - UserToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: Saved appearance and effective plan state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthPageAppearanceResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Appearance could not be read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /projects/{id}/auth/pages/theme:
+    put:
+      tags: [Auth Configuration]
+      summary: Save the managed auth page theme
+      operationId: updateAuthPageTheme
+      security:
+        - UserToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAuthPageThemeRequest'
+      responses:
+        '200':
+          description: Theme saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateAuthPageThemeRequest'
+        '400':
+          description: Invalid or unreadable theme
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Plan does not permit customisation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Theme could not be saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags: [Auth Configuration]
+      summary: Clear the managed auth page theme
+      operationId: deleteAuthPageTheme
+      security:
+        - UserToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '204':
+          description: Theme cleared
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Plan does not permit customisation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Theme could not be cleared
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /projects/{id}/auth/pages/{pageType}/layout:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - name: pageType
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/HostedAuthPageType'
+    put:
+      tags: [Auth Configuration]
+      summary: Save one managed auth page layout
+      operationId: updateAuthPageLayout
+      security:
+        - UserToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAuthPageLayoutRequest'
+      responses:
+        '200':
+          description: Layout saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateAuthPageLayoutRequest'
+        '400':
+          description: Invalid page type or layout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Plan does not permit customisation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Layout could not be saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags: [Auth Configuration]
+      summary: Clear one managed auth page layout
+      operationId: deleteAuthPageLayout
+      security:
+        - UserToken: []
+      responses:
+        '204':
+          description: Layout cleared
+        '400':
+          description: Invalid page type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Plan does not permit customisation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Layout could not be cleared
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /projects/{id}/auth/pages/{pageType}/preview:
+    post:
+      tags: [Auth Configuration]
+      summary: Preview an unsaved managed auth page appearance
+      operationId: previewAuthPage
+      security:
+        - UserToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - name: pageType
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/HostedAuthPageType'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreviewAuthPageRequest'
+      responses:
+        '200':
+          description: Complete HTML preview document
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreviewAuthPageResponse'
+        '400':
+          description: Invalid page type or draft
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Preview could not be rendered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /projects/{id}/auth/hosted/{pageType}:
     get:
       tags:
         - Auth Configuration
-      summary: Render managed reset-password page
+      summary: Render a managed auth page
       description: |
-        Public HTML endpoint for the managed reset-password page.
+        Public HTML endpoint for signup, forgot-password, device approval,
+        verify-email, and reset-password pages. Login uses the path without a
+        page type.
         Requires `Accept: text/html`.
         Returns 404 when managed hosted pages are disabled for the project.
       security: []
@@ -9119,6 +10531,12 @@ paths:
         **Complete Resumable Session:**
         Complete a session after all parts are uploaded.
         Requires: `X-Upload-Session` header with session ID and `X-Upload-Complete: true` header.
+
+        **Resumable Session Ownership:**
+        A session created with a user access token remains bound to that user. A session
+        created with an anon key remains bound to that exact anon key. Reuse the same
+        identity or anon key for part uploads, status, completion, and abort requests;
+        an ownership mismatch returns `404`.
       operationId: uploadStorageObject
       security:
         - AnonKey: []
@@ -9185,6 +10603,8 @@ paths:
             - Invalid request body or missing required fields
         '403':
           description: Access denied by storage policy
+        '404':
+          description: Resumable upload session not found or not owned by this credential
         '413':
           description: |
             File size exceeds plan-based limits. This occurs when:
@@ -9205,6 +10625,7 @@ paths:
         - Maximum part size is 25MB
         - Parts can be uploaded in any order
         - Re-uploading a part overwrites the previous upload
+        - Anonymous sessions must reuse the exact anon key that created the session
       operationId: uploadPart
       security:
         - AnonKey: []
@@ -9251,7 +10672,7 @@ paths:
         '403':
           description: Access denied
         '404':
-          description: Session not found
+          description: Session not found or not owned by this credential
     get:
       tags:
         - Storage Objects
@@ -9264,6 +10685,7 @@ paths:
 
         **Session Status (with X-Upload-Session header):**
         Returns the status of a resumable upload session, including which parts have been uploaded.
+        Anonymous sessions must reuse the exact anon key that created the session.
       operationId: downloadStorageObject
       security:
         - AnonKey: []
@@ -9321,7 +10743,7 @@ paths:
         '403':
           description: Access denied by storage policy
         '404':
-          description: Object or session not found
+          description: Object or session not found, or session not owned by this credential
         '429':
           $ref: '#/components/responses/BandwidthCapExceeded'
     delete:
@@ -9336,8 +10758,10 @@ paths:
 
         **Abort Session (with X-Upload-Session header):**
         Aborts a resumable upload session and cleans up any uploaded parts.
+        Anonymous sessions must reuse the exact anon key that created the session.
       operationId: deleteStorageObject
       security:
+        - AnonKey: []
         - ServiceRoleKey: []
         - AuthUserAccessToken: []
       parameters:
@@ -9360,7 +10784,7 @@ paths:
         '403':
           description: Access denied by storage policy
         '404':
-          description: Object or session not found
+          description: Object or session not found, or session not owned by this credential
         '429':
           $ref: '#/components/responses/BandwidthCapExceeded'
   /storage/{bucketName}/{path}/visibility:
@@ -9495,6 +10919,8 @@ components:
     UserToken:
       $ref: ./components/common/security-schemes.yaml#/components/securitySchemes/UserToken
   parameters:
+    BackupName:
+      $ref: ./components/common/parameters.yaml#/components/parameters/BackupName
     BranchName:
       $ref: ./components/common/parameters.yaml#/components/parameters/BranchName
     BucketName:
@@ -9559,6 +10985,8 @@ components:
       $ref: ./components/common/parameters.yaml#/components/parameters/ProjectId
     Search:
       $ref: ./components/common/parameters.yaml#/components/parameters/Search
+    RestoreId:
+      $ref: ./components/common/parameters.yaml#/components/parameters/RestoreId
     SchedulerId:
       $ref: ./components/common/parameters.yaml#/components/parameters/SchedulerId
     VariableName:
@@ -9566,21 +10994,30 @@ components:
   responses:
     BandwidthCapExceeded:
       description: |
-        The platform user exceeded their monthly bandwidth cap (aggregate
+        The platform user exceeded their billing-cycle bandwidth allowance (aggregate
         ingress + egress across owned projects). Enforcement is eventual:
-        requests are rejected until the cap increases (plan/override) or the
-        calendar-month meter resets.
+        requests are rejected until the allowance increases or the next
+        anniversary cycle begins.
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
     DatabaseQueryCapExceeded:
       description: |
-        The query was rejected by a monthly usage cap: either the platform user's
-        bandwidth cap (aggregate ingress + egress across owned projects) or the
-        project's monthly database-request cap. Enforcement is eventual: queries
-        are rejected until the relevant cap increases (plan/override) or the
-        calendar-month meter resets. The error message identifies which cap.
+        The query was rejected by a billing-cycle allowance: either the owning
+        platform user's bandwidth allowance (aggregate ingress + egress across
+        owned projects) or their database-request allowance. Enforcement is
+        eventual: queries are rejected until the allowance increases or the
+        next anniversary cycle begins. The error message identifies the resource.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    DatabaseBranchQueryUnavailable:
+      description: |
+        The branch exists but cannot serve queries: it is still provisioning,
+        being reset, expired, or its parent is being restored. Distinct from
+        `404` so a caller waiting on a branch can tell it apart from a typo.
       content:
         application/json:
           schema:
@@ -9602,6 +11039,20 @@ components:
       $ref: ./components/common/schemas.yaml#/components/schemas/AuthInsightsWindow
     AuthHostedPage:
       $ref: ./components/common/schemas.yaml#/components/schemas/AuthHostedPage
+    AuthPageAppearanceResponse:
+      $ref: ./components/common/schemas.yaml#/components/schemas/AuthPageAppearanceResponse
+    AuthPageDensity:
+      $ref: ./components/common/schemas.yaml#/components/schemas/AuthPageDensity
+    AuthPageFont:
+      $ref: ./components/common/schemas.yaml#/components/schemas/AuthPageFont
+    AuthPageLayout:
+      $ref: ./components/common/schemas.yaml#/components/schemas/AuthPageLayout
+    AuthPageRadius:
+      $ref: ./components/common/schemas.yaml#/components/schemas/AuthPageRadius
+    AuthPageScale:
+      $ref: ./components/common/schemas.yaml#/components/schemas/AuthPageScale
+    AuthPageTheme:
+      $ref: ./components/common/schemas.yaml#/components/schemas/AuthPageTheme
     AuthHostedPageResponse:
       $ref: ./components/common/schemas.yaml#/components/schemas/AuthHostedPageResponse
     AuthIdentity:
@@ -9630,8 +11081,12 @@ components:
       $ref: ./components/common/schemas.yaml#/components/schemas/BatchFunctionDeployResponse
     CompleteUploadSessionResponse:
       $ref: ./components/common/schemas.yaml#/components/schemas/CompleteUploadSessionResponse
+    CreateDatabaseBackupRequest:
+      $ref: ./components/common/schemas.yaml#/components/schemas/CreateDatabaseBackupRequest
     CreateDatabaseBranchRequest:
       $ref: ./components/common/schemas.yaml#/components/schemas/CreateDatabaseBranchRequest
+    CreateDatabaseRestoreRequest:
+      $ref: ./components/common/schemas.yaml#/components/schemas/CreateDatabaseRestoreRequest
     CreateDatabaseRequest:
       $ref: ./components/common/schemas.yaml#/components/schemas/CreateDatabaseRequest
     CreateEmailTemplateRequest:
@@ -9656,6 +11111,14 @@ components:
       $ref: ./components/common/schemas.yaml#/components/schemas/CreateVariableRequest
     Database:
       $ref: ./components/common/schemas.yaml#/components/schemas/Database
+    DatabaseBackup:
+      $ref: ./components/common/schemas.yaml#/components/schemas/DatabaseBackup
+    DatabaseBackupList:
+      $ref: ./components/common/schemas.yaml#/components/schemas/DatabaseBackupList
+    DatabaseBackupSchedule:
+      $ref: ./components/common/schemas.yaml#/components/schemas/DatabaseBackupSchedule
+    DatabaseBackupScheduleEntry:
+      $ref: ./components/common/schemas.yaml#/components/schemas/DatabaseBackupScheduleEntry
     DatabaseBranch:
       $ref: ./components/common/schemas.yaml#/components/schemas/DatabaseBranch
     DatabaseBranchList:
@@ -9672,6 +11135,12 @@ components:
       $ref: ./components/common/schemas.yaml#/components/schemas/DatabaseDeleteRequest
     DatabaseQueryResult:
       $ref: ./components/common/schemas.yaml#/components/schemas/DatabaseQueryResult
+    DatabaseRestore:
+      $ref: ./components/common/schemas.yaml#/components/schemas/DatabaseRestore
+    DatabaseRestoreList:
+      $ref: ./components/common/schemas.yaml#/components/schemas/DatabaseRestoreList
+    DatabaseRestoreWindow:
+      $ref: ./components/common/schemas.yaml#/components/schemas/DatabaseRestoreWindow
     DatabaseStats:
       $ref: ./components/common/schemas.yaml#/components/schemas/DatabaseStats
     DatabaseQueryPerformanceResponse:
@@ -10152,11 +11621,15 @@ components:
           type: string
         private:
           type: boolean
+        is_empty:
+          type: boolean
+          description: Whether the repository has no commits and can receive an initial source export.
       required:
         - id
         - full_name
         - default_branch
         - private
+        - is_empty
     GitRepositoriesResponse:
       type: object
       properties:
@@ -10183,8 +11656,9 @@ components:
         production_branch:
           type: string
           description: >-
-            The repository's GitHub default branch, cached at connect time and
-            used as the deployment target.
+            The branch a push must land on to deploy. Follows the repository's
+            GitHub default branch unless the project set its own, which a
+            default-branch rename on GitHub then leaves alone.
         updated_at:
           type: string
           format: date-time
@@ -10296,6 +11770,132 @@ components:
           description: Current holder's fencing token. Present only when held.
       required:
         - held
+    ProjectSourceExportState:
+      type: object
+      description: The project's source of truth and any pending Git transition.
+      properties:
+        mode:
+          type: string
+          enum:
+            - platform
+            - git_exporting
+            - git_pending
+            - git
+        transition_started_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When source export started, cleared if an incomplete transition is canceled.
+        exported_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: >-
+            When the initial export push entered deployment, or when a
+            transition was canceled after its commit was reserved. Once set,
+            the one-time export is consumed.
+        handed_over_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: >-
+            When a complete production-branch deployment first proved the
+            repository could drive the project, null until then. Once set, the
+            repository is the project's source of truth.
+      required:
+        - mode
+        - transition_started_at
+        - exported_at
+        - handed_over_at
+    ProjectSourceExport:
+      type: object
+      description: The initial production-branch commit, and everything export could not carry.
+      properties:
+        repo_full_name:
+          type: string
+        branch:
+          type: string
+          description: The production branch that was created.
+        commit_sha:
+          type: string
+        file_count:
+          type: integer
+        skipped:
+          type: array
+          description: >-
+            Resources whose source could not be taken, with the reason. Most
+            often a resource that has never deployed successfully.
+          items:
+            $ref: '#/components/schemas/ProjectSourceExportSkip'
+        omitted:
+          type: array
+          description: Things deliberately left out of the branch.
+          items:
+            $ref: '#/components/schemas/ProjectSourceExportOmission'
+      required:
+        - repo_full_name
+        - branch
+        - commit_sha
+        - file_count
+        - skipped
+        - omitted
+    ExportProjectSourceRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        production_branch:
+          type: string
+          minLength: 1
+          description: The currently configured production branch the user confirmed for export.
+      required:
+        - production_branch
+    ProjectSourceExportSkip:
+      type: object
+      properties:
+        kind:
+          type: string
+          description: >-
+            The kind of resource, "function" or "frontend". Deliberately not an
+            enum: the generated constants would collide with an existing
+            resource-type enum and rename its members.
+        name:
+          type: string
+        reason:
+          type: string
+      required:
+        - kind
+        - name
+        - reason
+    ProjectSourceExportOmission:
+      type: object
+      properties:
+        kind:
+          type: string
+          description: >-
+            What was left out: migrations Volcano stores no copy of, variable
+            values, a credential-shaped file, installed dependencies, or an
+            archive entry a repository cannot carry.
+        resource:
+          type: string
+          description: The resource it came from, empty when project-wide.
+        path:
+          type: string
+      required:
+        - kind
+        - resource
+        - path
+    SetProjectGitProductionBranchRequest:
+      type: object
+      properties:
+        production_branch:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: >-
+            The branch a push must land on to deploy. Validated as a Git branch
+            name only — it does not have to exist yet.
+      required:
+        - production_branch
     ConnectProjectGitRequest:
       type: object
       properties:
@@ -10324,11 +11924,24 @@ components:
           description: Monorepo subdirectory the project builds from. Omit for the repo root.
         production_branch:
           type: string
-          deprecated: true
+          maxLength: 255
           description: >-
-            Deprecated. The deployment branch always follows the repository's
-            GitHub default branch; when given it must equal that default branch.
-            New callers omit it.
+            The branch a push must land on to deploy, with three cases, because
+            this is a full replace and a read-modify-write client sends back
+            whatever it read. Omit it to follow the repository's GitHub default
+            branch, which also discards a branch set earlier. Send back the
+            branch the project already deploys from, when that is the
+            repository's default, and nothing changes either way — a project
+            pinned to that branch stays pinned. Sending the default branch when
+            the project deploys from something else returns it to following the
+            default, including on a rebind, where a pin describes a branch
+            chosen for the repository being left. Any other branch becomes the
+            project's own choice, exempt from later default-branch renames. Validated as a Git branch name only: it does not have to
+            exist yet, so a project can be pointed at a branch about to be
+            pushed. Changing repository and naming a branch other than the new
+            repository's default in one request is refused with 400, because the
+            branch named is almost always the previous repository's, echoed
+            back — connect first, then set the branch.
       required:
         - connection_id
         - installation_id
@@ -10352,6 +11965,10 @@ components:
       $ref: ./components/common/schemas.yaml#/components/schemas/FrontendUsageHistoryResponse
     Function:
       $ref: ./components/common/schemas.yaml#/components/schemas/Function
+    FunctionInvocationMode:
+      $ref: ./components/common/schemas.yaml#/components/schemas/FunctionInvocationMode
+    FunctionHTTPAuthMode:
+      $ref: ./components/common/schemas.yaml#/components/schemas/FunctionHTTPAuthMode
     FunctionDeployment:
       $ref: ./components/common/schemas.yaml#/components/schemas/FunctionDeployment
     FunctionInvocationRequest:
@@ -10490,6 +12107,10 @@ components:
       $ref: ./components/common/schemas.yaml#/components/schemas/ProjectConfigHostedPage
     ProjectConfigHostedPages:
       $ref: ./components/common/schemas.yaml#/components/schemas/ProjectConfigHostedPages
+    PreviewAuthPageRequest:
+      $ref: ./components/common/schemas.yaml#/components/schemas/PreviewAuthPageRequest
+    PreviewAuthPageResponse:
+      $ref: ./components/common/schemas.yaml#/components/schemas/PreviewAuthPageResponse
     ProjectConfigMissingResource:
       $ref: ./components/common/schemas.yaml#/components/schemas/ProjectConfigMissingResource
     ProjectConfigOAuthProvider:
@@ -10602,6 +12223,10 @@ components:
       $ref: ./components/common/schemas.yaml#/components/schemas/UpdateAuthConfigRequest
     UpdateAuthHostedPageRequest:
       $ref: ./components/common/schemas.yaml#/components/schemas/UpdateAuthHostedPageRequest
+    UpdateAuthPageLayoutRequest:
+      $ref: ./components/common/schemas.yaml#/components/schemas/UpdateAuthPageLayoutRequest
+    UpdateAuthPageThemeRequest:
+      $ref: ./components/common/schemas.yaml#/components/schemas/UpdateAuthPageThemeRequest
     UpdateDatabaseTypeRequest:
       $ref: ./components/common/schemas.yaml#/components/schemas/UpdateDatabaseTypeRequest
     UpdateEmailTemplateRequest:

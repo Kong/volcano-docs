@@ -72,6 +72,41 @@ exclude those plus the Python artifact directories `.venv`, `venv`,
 `site-packages`, `__pycache__`, and `python_deps` — a frontend build root
 carrying those still packages them, which counts against the size limits below.
 
+Already running on Volcano and want your code in Git? [Export your
+source](export-to-git.md) can initialize a new empty repository and push the
+project directly to its production branch.
+
+## If you do not have a repository yet
+
+Volcano never creates a repository for you. Commit your project locally, create
+a repository on your own account or organization, push to it, then connect it.
+
+Start with a local commit — both routes below push existing commits, so neither
+works without one:
+
+```bash
+git init && git add -A && git commit -m "Initial commit"
+git branch -M main
+```
+
+Then create the remote and push. With the [GitHub CLI](https://cli.github.com):
+
+```bash
+gh repo create my-app --private --source=. --push
+```
+
+Or create it in the GitHub UI and add the remote by hand. Create it **empty** —
+no README, `.gitignore`, or license — so the first commit is the one you just
+made:
+
+```bash
+git remote add origin https://github.com/<owner>/my-app.git
+git push -u origin main
+```
+
+Either way you keep your own Git credentials — Volcano never mints, stores, or
+asks for a push credential. With the repository pushed, continue below.
+
 ## 1. Connect GitHub
 
 Start the connection flow and send the user to the returned URL to install the
@@ -123,7 +158,7 @@ curl "https://api.volcano.dev/user/git/connections/$CONNECTION_ID/installations/
 ```json
 {
   "repositories": [
-    { "id": 812345678, "full_name": "acme/storefront", "default_branch": "main", "private": true }
+    { "id": 812345678, "full_name": "acme/storefront", "default_branch": "main", "private": true, "is_empty": false }
   ]
 }
 ```
@@ -158,15 +193,75 @@ curl -X PUT "https://api.volcano.dev/projects/$PROJECT_ID/git-connection" \
 - `root_directory` is the **build root** for a monorepo. Function discovery,
   dependency manifests, and the frontend app root are all resolved beneath it.
   Omit it for the repository root.
-- `production_branch` is read-only: it always follows the repository's GitHub
-  default branch, and Volcano refreshes it when you change the default on GitHub.
+- `production_branch` is the branch a push must land on to deploy. Omit it and
+  the project follows the repository's GitHub default branch, which Volcano keeps
+  in step when you rename it on GitHub — so omitting it is also how a project
+  goes back to following the default. Any other branch deploys from that branch
+  instead. See [Deploy from a different
+  branch](#deploy-from-a-different-branch).
+
+  Sending back the branch the project **already deploys from**, when that is the
+  repository's default — which is what you get by reading the connection,
+  changing one field and sending it back — changes nothing either way, so a
+  branch you pinned earlier stays pinned. Editing the root directory this way is
+  safe. Sending the default branch when the project deploys from something else
+  returns it to following the default.
+
+  Changing `repository_id` and naming a branch other than the new repository's
+  default in the same request returns `400`: the branch is almost always the old
+  repository's, sent back unchanged. Reconnect first, then set the branch.
 
 Several projects may bind the same repository. Binding never creates or deletes
 anything on GitHub; `DELETE` on the same path only unbinds the project.
 
+### Deploy from a different branch
+
+A project can deploy from any branch. Change it without touching the binding:
+
+```bash
+curl -X PUT "https://api.volcano.dev/projects/$PROJECT_ID/git-connection/production-branch" \
+  -H "Authorization: Bearer $VOLCANO_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "production_branch": "release" }'
+```
+
+```json
+{
+  "repo_installation_id": 52001234,
+  "repo_id": 812345678,
+  "repo_full_name": "acme/storefront",
+  "root_directory": "apps/api",
+  "production_branch": "release",
+  "updated_at": "2026-08-11T17:09:03Z"
+}
+```
+
+**The branch does not have to exist yet.** It is validated as a Git branch name
+and nothing more, so you can point a project at a branch you are about to push —
+which is what makes this work for a repository you created empty and are
+about to push into.
+
+Once you set the branch here, it is yours: renaming the repository's default
+branch on GitHub no longer moves it. This holds even when the branch you set is
+the current default — use this endpoint, not the connect call, when you want to
+pin a project to the default branch it already deploys from.
+
+Projects that never set a branch keep following the default. To return one to
+following it, reconnect with `PUT /projects/{id}/git-connection` omitting
+`production_branch`.
+
+Pushes to any other branch are ignored — there is one deployment branch per
+project, and nothing else deploys.
+
 ## 4. Turn on auto-deploy
 
-Deploy settings are separate from the binding, and everything is off by default:
+**Connecting a repository already turned this on.** Step 3 set
+`auto_deploy_enabled` and `deploy_functions` to `true`, so pushes deploy your
+functions without any call here.
+
+Use this endpoint to deploy a frontend as well, to change the build roots, or
+to turn auto-deploy off. It is a full replace, so send every field you want to
+keep — including the two that are already on:
 
 ```bash
 curl -X PUT "https://api.volcano.dev/projects/$PROJECT_ID/git-deploy-settings" \
@@ -182,7 +277,7 @@ curl -X PUT "https://api.volcano.dev/projects/$PROJECT_ID/git-deploy-settings" \
 
 | Field | Effect |
 |-------|--------|
-| `auto_deploy_enabled` | Master switch. A push that arrives while this is off is never deployed, and turning it on later does not deploy that push retroactively. |
+| `auto_deploy_enabled` | Master switch, on from the first connect. A push that arrives while this is off is never deployed, and turning it on later does not deploy that push retroactively. Once you save settings here they are never defaulted over again — rebinding, disconnecting and reconnecting all leave them as you set them. |
 | `deploy_functions` | Deploy every function discovered under `volcano/functions/`. |
 | `frontend_name` | Frontend to deploy. Omit or leave empty to deploy no frontend. The frontend does not have to exist yet — it is created on the first deploy. |
 | `frontend_app_root` | App root the frontend builds from, relative to `root_directory`. Requires `frontend_name`; omit for the build root itself. |
@@ -216,7 +311,7 @@ configured frontend. It does not apply the rest of your project configuration.
 |---------|------------------|------------------|
 | Function source | Yes | Push |
 | Frontend source | Yes | Push |
-| Function visibility (`public`) | Yes, from `volcano-config.yaml` | Push, or `volcano config deploy` |
+| Function invocation settings (`public`, modes, OpenAPI metadata) | Yes, from `volcano-config.yaml` | Push, or `volcano config deploy` |
 | Variables, buckets, auth, OAuth, email templates, schedulers, databases | No | `volcano config deploy` — see the [configuration manifest](configuration.md) |
 
 Variables are read at build and run time from the project, so a variable you
@@ -227,21 +322,27 @@ code change.
 
 If your repository has a `volcano-config.yaml` at the build root, auto-deploy
 reads it and applies the per-resource settings that belong to the resources it
-deploys — today that is `functions[].public`:
+deploys: function visibility, invocation/auth modes, and OpenAPI metadata:
 
 ```yaml
 version: 1
 functions:
   - name: hello
     public: true
+    invocation_mode: http
+    http_auth_mode: none
+    openapi_spec:
+      openapi: 3.1.0
+      info: { title: Hello webhook, version: 1.0.0 }
+      paths: {}
 ```
 
-Visibility is the function's current state, not a property of a code version:
-the declared value takes effect when Volcano processes the push, before any code
+Invocation settings are current function state, not properties of a code version:
+the declared values take effect when Volcano processes the push, before any code
 deploys and regardless of whether that code deploy later succeeds. That is the
 same behavior as `volcano config deploy` and
 `volcano functions update <name> --public`, which also flip it immediately. A
-function the commit creates gets its declared visibility as the function is
+function the commit creates gets its declared settings as the function is
 created.
 
 Precedence is fixed: the project's deploy settings decide **whether** a resource
@@ -270,6 +371,11 @@ one, a file over 4 MiB, or a link rather than a regular file.
 and branch deletions are ignored. Preview deployments for branches and pull
 requests are not available yet.
 
+Projects that [export source to GitHub](export-to-git.md) pin the production
+branch confirmed at export time. A later GitHub default-branch change does not
+move production. After handover, set a different production branch explicitly
+before pushing it; branch changes are frozen while export is in progress.
+
 **Latest wins.** While a run is pending, a newer push to the same branch
 supersedes it — the older run is marked `superseded` and never deploys a commit
 you have already moved past. A run that is already executing is allowed to
@@ -287,6 +393,47 @@ the functions, and vice versa.
 **Runs are skipped, not failed,** when there is nothing to do: auto-deploy is
 off, the project was disconnected or its binding changed before execution, the
 project was deleted, or the commit contains no deployable resource.
+
+## Deploying directly while connected
+
+Connecting a repository does not disable the CLI or the dashboard. A connected
+project still accepts `volcano cloud functions deploy` and every other direct
+deploy, and those deploys take effect immediately.
+
+They are not durable, though, and the two ways they can go are opposite:
+
+- **A resource that also exists in the repository is reverted by the next
+  push.** The push redeploys it from the commit, discarding what you uploaded.
+  Nothing warns you at upload time, and the revert looks like an ordinary
+  deployment.
+- **A resource that does not exist in the repository survives.** Pushes never
+  delete resources that are missing from the commit, so a function you only
+  ever deployed directly keeps running — and keeps not being in your repo.
+
+Treat the repository as the source of truth for anything you want to keep. Use
+direct deploys for throwaway iteration, and commit the change once you want it
+to stick.
+
+**Telling them apart after the fact.** Every deployment records
+`deploy_source`, so a project's history distinguishes a push (`git`) from a
+direct deploy (`cli`, `web`, `api`). Read it on each item in the
+[deployment feed](../guides/deployment-source.md) when a resource is not what you
+expect — the endpoint has no `deploy_source` query filter:
+
+```bash
+curl -H "Authorization: Bearer $VOLCANO_TOKEN" \
+  "https://api.volcano.dev/projects/$PROJECT_ID/deployments?limit=20"
+```
+
+A `git` entry after your direct deploy is the revert.
+
+## Make Git the only source of truth
+
+An ordinary production-branch push deploys the repository but does not disable
+direct platform deploys. To move source ownership to Git, follow [Export your
+source to GitHub](export-to-git.md). Export initializes a new empty repository,
+observes its root push, and disables direct source deploys only after that push
+or a newer production push deploys successfully.
 
 ## Limits
 
@@ -306,9 +453,10 @@ the commit, not transient conditions.
 
 ## Troubleshooting
 
-**Nothing happened after a push.** Check that the push targeted the repository's
-default branch, that `auto_deploy_enabled` is `true`, and that the project is
-still bound to that repository (`GET /projects/{id}/git-connection`).
+**Nothing happened after a push.** Check that the push targeted the project's
+`production_branch` — read it back, don't assume it is the repository's default —
+that `auto_deploy_enabled` is `true`, and that the project is still bound to that
+repository (`GET /projects/{id}/git-connection`).
 
 **A function is missing.** It is probably being skipped by discovery. Confirm it
 sits directly under `volcano/functions/` inside `root_directory`, that its name

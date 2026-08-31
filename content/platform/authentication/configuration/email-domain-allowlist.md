@@ -6,6 +6,7 @@ description: "Restrict which email domains can own an account in your Volcano pr
 Restrict which email domains can own an account in your project, and decide
 whether accounts that predate the restriction may keep signing in.
 
+**PRO plan required.**
 **Settings:** `allowed_email_domains`, `allowed_email_domains_mode`
 **Types:** Array of strings, string
 **Defaults:** `[]` (any domain), `"signup"`
@@ -17,6 +18,11 @@ people with a company address should be able to join.
 
 Set both settings from the Dashboard, the API, or `volcano-config.yaml`. An empty
 list accepts any domain.
+
+The allowlist is a PRO feature, to set and to enforce. A FREE project that asks
+for one gets `403 the email domain allowlist is only available on the PRO plan`,
+and a project that downgrades keeps its domains but stops enforcing them — see
+[Plans](#plans).
 
 **Dashboard:** in **Auth Settings → General**, under **Email Domain Allowlist**,
 enter the domains one per line and choose where the list applies: **New signups
@@ -155,6 +161,10 @@ working on the next request rather than at expiry. The accounts themselves stay,
 so putting the domain back restores access; delete the users if you need them
 gone for good.
 
+Nobody is signed out while the list is parked on a FREE project: sign-in admits
+the same accounts, so ending their sessions would only interrupt users the
+project can no longer keep out.
+
 Saving and signing out are one operation: if the sign-out fails, the save fails
 with it and the previous policy stays in force, so a project never advertises a
 lock it has not applied. A sign-in that was already in flight when you saved can
@@ -199,6 +209,40 @@ In `volcano-config.yaml`, `allowed_email_domains: []` clears the list; omitting
 a key leaves the stored value untouched. From the Dashboard, **Not enforced**
 parks the list and emptying the field clears it.
 
+Both work on any plan — see below.
+
+## Plans
+
+The allowlist is a PRO feature, to configure and to enforce.
+
+A project that drops to FREE keeps its domains — nothing is deleted, and
+`GET /auth/config` still returns them — but they stop deciding anything: signups
+and sign-ins from any domain go through again, and the sessions the policy would
+have ended are left alone. Upgrading to PRO puts the stored list straight back
+to work, without anyone re-saving it. Plan changes reach the API within a few
+seconds.
+
+**Downgrading reopens signups you closed.** If the list is the only thing
+keeping strangers out of your app, disable signup
+([`enable_signup: false`](../configuring-auth-methods.md)) before you downgrade.
+
+What a FREE project can do to the list it configured while on PRO:
+
+| Change | FREE |
+|--------|------|
+| Save the policy it already has (a `volcano-config.yaml` apply, for example) | Allowed — nothing changes |
+| Park the list (`disabled`), leaving the domains as they are | Allowed |
+| Clear the list (`[]`) | Allowed |
+| Add or replace a domain, parked or not | `403`, nothing is saved |
+| Switch to `signup_and_signin`, or turn a parked list back on | `403` |
+
+The rule behind the table: a FREE project may move toward no restriction, never
+away from it. That keeps a downgrade from stranding a project behind a list it
+cannot clear, while still requiring PRO to configure one. A parked list counts
+as the allowlist for this — nothing but a mode change and an upgrade stand
+between it and enforcement — so the only edit FREE can make to the domains is
+dropping them.
+
 ## Troubleshooting
 
 **Signup returns 403 `email domain is not allowed for this project`**
@@ -227,6 +271,14 @@ An entry is not a bare domain. Use `domain1.com`, not `user@domain1.com`,
 
 **Saving returns 400 `invalid allowed_email_domains_mode`**
 The mode must be `disabled`, `signup`, or `signup_and_signin`.
+
+**Saving returns 403 `the email domain allowlist is only available on the PRO plan`**
+The project is on FREE. Upgrade to PRO to set or widen the list. A project that
+was on PRO keeps the list it saved, unenforced, and can still remove it.
+
+**An outside domain signed up even though the list is set**
+Check the plan. On anything but PRO the list is parked: it stays in the config
+and stops being enforced. Upgrade to put it back in force.
 
 ## Related
 

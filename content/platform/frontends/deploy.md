@@ -78,9 +78,9 @@ them as release identifiers.
 Each generated frontend runtime image must fit the configured
 `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB`. Volcano checks an uncompressed upper
 bound—the exact pinned base-image layers plus the generated application
-layer—before publishing. A server, image-optimizer, or warmer image over the
-limit fails the asynchronous deployment. Remove unused production dependencies
-or large generated files from the frontend bundle to reduce its size.
+layer—before publishing. A server or image-optimizer image over the limit fails
+the asynchronous deployment. Remove unused production dependencies or large
+generated files from the frontend bundle to reduce its size.
 
 ## 4. Add a custom domain
 

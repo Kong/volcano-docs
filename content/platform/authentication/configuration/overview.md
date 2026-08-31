@@ -35,7 +35,7 @@ Customize authentication settings per project.
 
 **Access Control:**
 - [enable_signup](provider-separation.md#layer-2-master-signup-toggle) - Allow/block public signups
-- [allowed_email_domains](email-domain-allowlist.md) - Restrict signups, and optionally sign-ins, to specific email domains
+- [allowed_email_domains](email-domain-allowlist.md) - Restrict signups, and optionally sign-ins, to specific email domains (PRO)
 
 ## Get Configuration
 
