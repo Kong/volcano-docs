@@ -39,5 +39,8 @@ jobs:
       - name: Test reusable actions
         run: pnpm test:actions
 
+      - name: Test docs tooling
+        run: pnpm test:docs
+
       - name: Build
         run: pnpm build

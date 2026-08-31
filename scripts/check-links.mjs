@@ -37,7 +37,7 @@ const publicAssets = new Set(
 );
 
 const errors = [];
-const linkRe = /\[[^\]]*\]\(([^)\s]+)\)/g;
+const linkRe = /\[[^\]]*\]\(([^)\s]+)(?:[ \t]+(?:"[^"\n]*"|'[^'\n]*'|\([^\n)]*\)))?[ \t]*\)/g;
 
 for (const file of mdFiles) {
   const dir = path.dirname(file);

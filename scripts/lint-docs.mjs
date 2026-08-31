@@ -50,8 +50,10 @@ function checkBody(file, body, offset) {
     }
     if (!inFence && /^# /.test(line)) err(file, `H1 in body at line ${offset + i + 1}; move it to the frontmatter title`);
     if (!inFence) {
-      for (const match of line.matchAll(/\[[^\]]*\]\((\/[^)\s]+)\)/g)) {
-        const section = match[1].split("/", 2)[1];
+      const links = line.matchAll(/\[[^\]]*\]\((\/[^)\s]+)(?:[ \t]+(?:"[^"\n]*"|'[^'\n]*'|\([^\n)]*\)))?[ \t]*\)/g);
+      for (const match of links) {
+        const url = match[1].split("#")[0].split("?")[0];
+        const section = url.split("/", 2)[1];
         if (!siteSections.has(section)) {
           err(file, `site-absolute link must start with a docs section at line ${offset + i + 1}: ${match[1]}`);
         }
