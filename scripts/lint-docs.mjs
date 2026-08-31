@@ -50,18 +50,17 @@ function checkBody(file, body, offset) {
       return;
     }
     if (!inFence && /^# /.test(line)) err(file, `H1 in body at line ${offset + i + 1}; move it to the frontmatter title`);
-    if (!inFence) {
-      for (const link of markdownLinks(line)) {
-        if (!link.startsWith("/")) continue;
-        const route = routePath(link);
-        if (route === "/") continue;
-        const section = route.split("/", 2)[1];
-        if (!siteSections.has(section)) {
-          err(file, `site-absolute link must start with a docs section at line ${offset + i + 1}: ${link}`);
-        }
-      }
-    }
   });
+
+  for (const link of markdownLinks(body)) {
+    if (!link.url.startsWith("/")) continue;
+    const route = routePath(link.url);
+    if (route === "/") continue;
+    const section = route.split("/", 2)[1];
+    if (!siteSections.has(section)) {
+      err(file, `site-absolute link must start with a docs section at line ${offset + link.line}: ${link.url}`);
+    }
+  }
 }
 
 function lintFile(file) {

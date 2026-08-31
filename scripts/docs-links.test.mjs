@@ -24,7 +24,7 @@ function run(script, ...args) {
 try {
   fs.writeFileSync(
     path.join(content, "index.md"),
-    `---\ntitle: "Test"\ndescription: "Valid link forms."\n---\n\n[root](/)\n[root fragment](/#top)\n[fragment](/sdk#authentication)\n[query](/sdk?tab=js)\n[titled](/sdk "SDK docs")\n`,
+    `---\ntitle: "Test"\ndescription: "Valid link forms."\n---\n\n[root](/)\n[root fragment](/#top)\n[fragment](/sdk#authentication)\n[query](/sdk?tab=js)\n[titled](/sdk "SDK docs")\n\`[ignored](/bogus)\`\n\n\`\`\`text\n[ignored](/bogus)\n\`\`\`\n`,
   );
   fs.writeFileSync(
     path.join(content, "sdk", "index.md"),
@@ -33,18 +33,26 @@ try {
   assert.match(run("lint-docs.mjs", content), /docs OK/);
   assert.match(run("check-links.mjs", content, publicDir), /links OK/);
 
-  fs.writeFileSync(
-    path.join(content, "index.md"),
-    `---\ntitle: "Test"\ndescription: "Invalid titled link."\n---\n\n[bad](/bogus "details")\n`,
-  );
-  assert.throws(
-    () => run("lint-docs.mjs", content),
-    (error) => error.status === 1 && error.stderr.includes("/bogus"),
-  );
-  assert.throws(
-    () => run("check-links.mjs", content, publicDir),
-    (error) => error.status === 1 && error.stderr.includes("/bogus"),
-  );
+  const invalidLinks = [
+    `[bad](/bogus "details")`,
+    `[bad][target]\n\n[target]: /bogus`,
+    `[bad](</bogus>)`,
+    `[bad [nested]](/bogus)`,
+  ];
+  for (const markdown of invalidLinks) {
+    fs.writeFileSync(
+      path.join(content, "index.md"),
+      `---\ntitle: "Test"\ndescription: "Invalid link form."\n---\n\n${markdown}\n`,
+    );
+    assert.throws(
+      () => run("lint-docs.mjs", content),
+      (error) => error.status === 1 && error.stderr.includes("/bogus"),
+    );
+    assert.throws(
+      () => run("check-links.mjs", content, publicDir),
+      (error) => error.status === 1 && error.stderr.includes("/bogus"),
+    );
+  }
 } finally {
   fs.rmSync(tmp, { recursive: true, force: true });
 }

@@ -43,15 +43,15 @@ for (const file of mdFiles) {
   const dir = path.dirname(file);
   const text = fs.readFileSync(file, "utf8");
   for (const link of markdownLinks(text)) {
-    if (/^(https?:|mailto:|tel:|#)/.test(link)) continue;
-    const url = routePath(link);
+    if (/^(https?:|mailto:|tel:|#)/.test(link.url)) continue;
+    const url = routePath(link.url);
     if (url === "") continue;
 
     if (url.startsWith("/")) {
       const clean = "/" + url.replace(/^\/+/, "").replace(/\/+$/, "");
       if (routes.has(clean) || routes.has(clean.replace(/\.md$/, ""))) continue;
       if (publicAssets.has(url) || publicAssets.has(clean)) continue;
-      errors.push(`${routeOf(file)}  ->  ${link}  (no route or public asset)`);
+      errors.push(`${routeOf(file)}  ->  ${link.url}  (no route or public asset)`);
       continue;
     }
 
@@ -61,9 +61,9 @@ for (const file of mdFiles) {
     if (fs.existsSync(path.join(target, "index.md"))) continue; // dir -> index
     if (!url.endsWith(".md") && fs.existsSync(target + ".md")) continue; // extensionless page
     if (fs.existsSync(target)) {
-      errors.push(`${routeOf(file)}  ->  ${link}  (links to an unserved file, not a page)`);
+      errors.push(`${routeOf(file)}  ->  ${link.url}  (links to an unserved file, not a page)`);
     } else {
-      errors.push(`${routeOf(file)}  ->  ${link}  (target does not exist)`);
+      errors.push(`${routeOf(file)}  ->  ${link.url}  (target does not exist)`);
     }
   }
 }
