@@ -8,6 +8,7 @@ import url from "node:url";
 import yaml from "js-yaml";
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
+import { markdownLinks, routePath } from "./markdown-links.mjs";
 
 const here = path.dirname(url.fileURLToPath(import.meta.url));
 const schema = JSON.parse(
@@ -50,12 +51,13 @@ function checkBody(file, body, offset) {
     }
     if (!inFence && /^# /.test(line)) err(file, `H1 in body at line ${offset + i + 1}; move it to the frontmatter title`);
     if (!inFence) {
-      const links = line.matchAll(/\[[^\]]*\]\((\/[^)\s]+)(?:[ \t]+(?:"[^"\n]*"|'[^'\n]*'|\([^\n)]*\)))?[ \t]*\)/g);
-      for (const match of links) {
-        const url = match[1].split("#")[0].split("?")[0];
-        const section = url.split("/", 2)[1];
+      for (const link of markdownLinks(line)) {
+        if (!link.startsWith("/")) continue;
+        const route = routePath(link);
+        if (route === "/") continue;
+        const section = route.split("/", 2)[1];
         if (!siteSections.has(section)) {
-          err(file, `site-absolute link must start with a docs section at line ${offset + i + 1}: ${match[1]}`);
+          err(file, `site-absolute link must start with a docs section at line ${offset + i + 1}: ${link}`);
         }
       }
     }

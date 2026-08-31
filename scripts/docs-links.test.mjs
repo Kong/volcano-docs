@@ -10,6 +10,7 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "volcano-docs-links-"));
 const content = path.join(tmp, "content");
 const publicDir = path.join(tmp, "public");
 fs.mkdirSync(content);
+fs.mkdirSync(path.join(content, "sdk"));
 fs.mkdirSync(publicDir);
 
 function run(script, ...args) {
@@ -22,13 +23,18 @@ function run(script, ...args) {
 
 try {
   fs.writeFileSync(
-    path.join(content, "test.md"),
-    `---\ntitle: "Test"\ndescription: "Valid link forms."\n---\n\n[fragment](/sdk#authentication)\n[query](/sdk?tab=js)\n[titled](/sdk "SDK docs")\n`,
+    path.join(content, "index.md"),
+    `---\ntitle: "Test"\ndescription: "Valid link forms."\n---\n\n[root](/)\n[root fragment](/#top)\n[fragment](/sdk#authentication)\n[query](/sdk?tab=js)\n[titled](/sdk "SDK docs")\n`,
+  );
+  fs.writeFileSync(
+    path.join(content, "sdk", "index.md"),
+    `---\ntitle: "SDK"\ndescription: "SDK route fixture."\n---\n`,
   );
   assert.match(run("lint-docs.mjs", content), /docs OK/);
+  assert.match(run("check-links.mjs", content, publicDir), /links OK/);
 
   fs.writeFileSync(
-    path.join(content, "test.md"),
+    path.join(content, "index.md"),
     `---\ntitle: "Test"\ndescription: "Invalid titled link."\n---\n\n[bad](/bogus "details")\n`,
   );
   assert.throws(

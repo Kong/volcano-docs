@@ -18,7 +18,7 @@
     "check:search-index": "node scripts/check-search-index.mjs",
     "test:actions": "node scripts/lint-docs-action.test.mjs",
     "test:docs": "node scripts/docs-links.test.mjs",
-    "verify": "node src/lib/relative-md-href.test.mjs && node scripts/lint-docs.mjs content && node scripts/check-links.mjs content public && pnpm build",
+    "verify": "node src/lib/relative-md-href.test.mjs && node scripts/docs-links.test.mjs && node scripts/lint-docs.mjs content && node scripts/check-links.mjs content public && pnpm build",
     "migrate:docs": "node scripts/migrate-docs.mjs"
   },
   "dependencies": {
