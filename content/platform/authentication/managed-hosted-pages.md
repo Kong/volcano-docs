@@ -44,6 +44,10 @@ To start managed auth from your app, redirect users to:
 
 - `GET /projects/{projectId}/auth/hosted?anon_key=<anon_key>`
 
+Built-in pages call the auth API from Volcano's API origin, so they do not need
+an entry in `cors_allowed_origins`. Custom auth pages run cross-origin and must
+register their application origin in the project's CORS configuration.
+
 ## Built-in Smart Login Experience
 
 When no custom `login` page is configured, hosted login uses an email-first flow:

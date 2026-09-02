@@ -268,6 +268,11 @@ function App() {
     }
   }
 
+  async function handleSignOut() {
+    const { error } = await volcano.auth.signOut();
+    if (error) console.error('Sign-out request failed:', error);
+  }
+
   if (!user) {
     return <LoginForm onLogin={handleLogin} />;
   }
@@ -275,7 +280,7 @@ function App() {
   return (
     <div>
       <h1>Welcome {user.email}</h1>
-      <button onClick={() => volcano.auth.signOut()}>Sign Out</button>
+      <button onClick={handleSignOut}>Sign Out</button>
       {/* Tokens automatically cleared from localStorage on signOut */}
       
       <PostsList posts={posts} />

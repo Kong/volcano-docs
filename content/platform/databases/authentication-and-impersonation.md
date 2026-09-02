@@ -193,7 +193,8 @@ console.log('Alice sees:', alicePosts.length, 'posts');
 // Returns: Alice's posts
 
 // Sign out Alice
-await volcano.auth.signOut();
+const { error: signOutError } = await volcano.auth.signOut();
+if (signOutError) throw signOutError;
 
 // Sign in as Bob
 await volcano.auth.signIn({ 
@@ -549,7 +550,8 @@ await volcano.auth.signIn({ email: 'alice@test.com', password: 'pass1' });
 await volcano.insert('posts', { title: 'Alice Post' });
 
 // Sign out, sign in as Bob
-await volcano.auth.signOut();
+const { error: signOutError } = await volcano.auth.signOut();
+if (signOutError) throw signOutError;
 await volcano.auth.signIn({ email: 'bob@test.com', password: 'pass2' });
 
 // Query posts as Bob

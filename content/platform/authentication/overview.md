@@ -211,5 +211,6 @@ const result = await volcano.functions.invoke('my-function', {
 | [Concepts](concepts.md) | Understand users, tokens, and sessions |
 | [OAuth providers](oauth-providers.md) | Set up social sign-in |
 | [Anonymous users](anonymous-users.md) | Enable guest access |
+| [Manage SDK sessions](./session-management.md) | Adopt, refresh, and sign out SDK sessions |
 | [Configuration](configuration/overview.md) | Customize authentication behavior |
 | [Security](security/token-types.md) | Learn about token types and security |

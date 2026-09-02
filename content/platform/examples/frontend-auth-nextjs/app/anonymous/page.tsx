@@ -131,14 +131,17 @@ export default function AnonymousPage() {
   const signOut = async () => {
     if (!volcano) return;
 
-    await volcano.auth.signOut();
+    const { error } = await volcano.auth.signOut();
     setUser(null);
     setStep(1);
     setAnonName('');
     setConvertEmail('');
     setConvertPassword('');
     setConvertName('');
-    setMessage('');
+    setMessage(
+      error ? `Signed out locally. Refresh token revocation failed: ${error.message}` : ''
+    );
+    setMessageType(error ? 'error' : 'success');
   };
 
   return (

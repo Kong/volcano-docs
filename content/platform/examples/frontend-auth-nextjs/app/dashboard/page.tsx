@@ -52,7 +52,8 @@ export default function DashboardPage() {
             lowerMessage.includes('account is')) {
           // User was deleted or banned - sign out and redirect
           console.log('User account is no longer accessible:', errorMessage);
-          await volcano.auth.signOut();
+          const { error: signOutError } = await volcano.auth.signOut();
+          if (signOutError) console.error('Refresh token revocation failed:', signOutError);
           router.push('/auth');
         } else {
           // Other errors
@@ -151,7 +152,8 @@ export default function DashboardPage() {
         
         // Sign out after a brief delay to show the message
         setTimeout(async () => {
-          await volcano.auth.signOut();
+          const { error: signOutError } = await volcano.auth.signOut();
+          if (signOutError) console.error('Refresh token revocation failed:', signOutError);
           router.push('/auth');
         }, 2000);
         return;
@@ -167,7 +169,8 @@ export default function DashboardPage() {
   const handleSignOut = async () => {
     if (!volcano) return;
 
-    await volcano.auth.signOut();
+    const { error } = await volcano.auth.signOut();
+    if (error) console.error('Refresh token revocation failed:', error);
     router.push('/');
   };
 

@@ -173,10 +173,12 @@ if (error) {
 #### Sign Out
 
 ```javascript
-await volcano.auth.signOut();
+const { error } = await volcano.auth.signOut();
+if (error) throw error;
 ```
 
-Clears local session and invalidates refresh token on server.
+On success, this clears the local session and invalidates the refresh token.
+If invalidation fails, the SDK still clears locally and returns the error.
 
 ---
 
