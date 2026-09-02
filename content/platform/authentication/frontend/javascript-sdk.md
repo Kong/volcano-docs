@@ -139,13 +139,14 @@ if (error) {
 Sign out the current user.
 
 ```javascript
-await volcano.auth.signOut();
+const { error } = await volcano.auth.signOut();
+if (error) throw error;
 ```
 
 **Effect:**
 - Clears local session
-- Revokes refresh token on server
-- Future refreshes will fail
+- Revokes the refresh token on success
+- Returns an error when the logout request fails, after clearing locally
 
 ---
 

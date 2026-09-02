@@ -143,7 +143,8 @@ const { data: aliceData } = await volcano.from('posts').select('*');
 // Returns: Alice's posts (auth.uid() = Alice's ID)
 
 // Switch to User B
-await volcano.auth.signOut();
+const { error: signOutError } = await volcano.auth.signOut();
+if (signOutError) throw signOutError;
 await volcano.auth.signIn({ email: 'bob@example.com', password: 'bob-pass' });
 const { data: bobData } = await volcano.from('posts').select('*');
 // Returns: Bob's posts (auth.uid() = Bob's ID)

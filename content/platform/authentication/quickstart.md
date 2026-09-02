@@ -116,10 +116,12 @@ if (user) {
 End the user's session:
 
 ```javascript
-await volcano.auth.signOut();
+const { error } = await volcano.auth.signOut();
+if (error) throw error;
 ```
 
-This revokes the refresh token on the server and clears the local session.
+On success, this revokes the refresh token and clears the local session.
+If the logout request fails, the SDK still clears the local session and returns the error.
 
 ## Step 6: Invoke a function with user context
 
@@ -253,8 +255,9 @@ function App() {
   };
 
   const handleSignOut = async () => {
-    await volcano.auth.signOut();
+    const { error } = await volcano.auth.signOut();
     setUser(null);
+    if (error) alert(error.message);
   };
 
   if (loading) {

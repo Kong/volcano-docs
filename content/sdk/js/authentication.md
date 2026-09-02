@@ -379,6 +379,9 @@ if (error) {
 window.location.href = data.authorization_url;
 ```
 
+The result is discarded with `AuthSessionChangedError` if the active session changes while the
+request is in flight.
+
 ### Unlink OAuth Provider
 
 Remove an OAuth provider from an account:
@@ -390,6 +393,9 @@ if (!error) {
   console.log('Google account unlinked');
 }
 ```
+
+The result is discarded with `AuthSessionChangedError` if the active session changes while the
+request is in flight.
 
 ### List Linked Providers
 
@@ -404,6 +410,29 @@ if (providers) {
   });
 }
 ```
+
+The result is discarded with `AuthSessionChangedError` if the active session changes while the
+request is in flight.
+
+### Check Provider Token Status
+
+Check whether Volcano has a valid server-held provider token:
+
+```javascript
+const { provider, expiresIn, error } = await volcano.auth.getOAuthProviderToken('github');
+```
+
+This method returns provider and expiry metadata, not the credential. Volcano refreshes an expired
+token on the server. A stale result returns `AuthSessionChangedError`.
+
+Refresh a provider token explicitly when the application needs a new validity window:
+
+```javascript
+const { provider, expiresIn, error } = await volcano.auth.refreshOAuthToken('github');
+```
+
+The refresh credential and new access token remain on the server. A stale result returns
+`AuthSessionChangedError`.
 
 ### Access Provider APIs
 
@@ -424,6 +453,8 @@ if (data) {
 ```
 
 Volcano automatically handles token refresh and passes the correct credentials to the provider.
+The response is discarded with `AuthSessionChangedError` if the active session changes while the
+request is in flight.
 
 ## Anonymous Users
 
@@ -432,7 +463,7 @@ Let users explore your app without creating an account, then convert them to ful
 ### Create Anonymous User
 
 ```javascript
-const { user, session, error } = await volcano.auth.signUpAnonymous({
+const { user, session, error } = await volcano.auth.signInAnonymously({
   preferred_theme: 'dark',
 });
 
@@ -443,6 +474,8 @@ if (user) {
 ```
 
 Anonymous users get a unique ID and can store data, but they don't have an email address or password.
+They cannot recover the account after signing out unless they first convert it to a full account.
+`signUpAnonymous()` remains available as a compatibility alias.
 
 ### Convert to Full Account
 
@@ -486,6 +519,8 @@ if (error) {
 }
 ```
 
+Confirmation does not sign in the confirmed account or change an unrelated local session.
+
 ### Resend Confirmation Email
 
 If the user didn't receive the email:
@@ -498,14 +533,17 @@ if (!error) {
 }
 ```
 
+The response does not reveal whether the account exists or is already confirmed. Delivery occurs
+only for an existing unconfirmed account when transactional email is configured.
+
 ## Password Recovery
 
 ### Request Password Reset
 
-Send a password reset email to the user:
+Request a password reset email. Volcano sends it when transactional email is configured:
 
 ```javascript
-const { message, error } = await volcano.auth.forgotPassword('alice@example.com');
+const { message, error } = await volcano.auth.resetPasswordForEmail('alice@example.com');
 
 if (!error) {
   console.log('Password reset email sent');
@@ -513,6 +551,7 @@ if (!error) {
 ```
 
 For security, this always succeeds even if the email doesn't exist in your system.
+`forgotPassword()` remains available as a deprecated compatibility alias.
 
 ### Reset Password
 
@@ -533,6 +572,10 @@ if (error) {
 }
 ```
 
+Resetting the password revokes the recovered account's existing sessions and does not sign it in.
+The client keeps any unrelated local session unchanged; sign in with the new password when the reset
+flow completes.
+
 ## Email Change
 
 ### Request Email Change
@@ -546,6 +589,11 @@ if (!error) {
   console.log('Confirmation email sent to', newEmail);
 }
 ```
+
+If another authentication operation replaces the active session before a successful acknowledgement
+arrives, the method returns an `AuthSessionChangedError` and leaves the newer session untouched. The
+server may still have started the email change for the original account, so handle this result
+separately from a rejected request.
 
 ### Confirm Email Change
 
@@ -561,6 +609,10 @@ if (user) {
 }
 ```
 
+The returned user reflects the confirmed address. If another authentication operation replaces the
+active session before a successful confirmation arrives, the method returns an
+`AuthSessionChangedError` and leaves the newer session's user untouched.
+
 ### Cancel Email Change
 
 If the user changes their mind:
@@ -572,6 +624,10 @@ if (!error) {
   console.log('Email change cancelled');
 }
 ```
+
+If another authentication operation replaces the active session before a successful cancellation
+arrives, the method returns an `AuthSessionChangedError` and leaves the newer session untouched. The
+server may still have cancelled the pending change for the original account.
 
 ## Update User Profile
 
@@ -620,6 +676,10 @@ if (sessions) {
 }
 ```
 
+`getSessions()` uses offset pagination and defaults to page `1` with `20` sessions per page.
+The response is rejected with `AuthSessionChangedError` if another authentication operation
+replaces the local session while the request is in flight.
+
 ### Revoke a Session
 
 Sign out from a specific device:
@@ -632,6 +692,12 @@ if (!error) {
 }
 ```
 
+The request uses the current access token. Deleting that token's own session clears local
+credentials, including when the request outcome is uncertain; deleting another session preserves
+them. If another authentication operation replaces the session before deletion finishes, the method
+returns an `AuthSessionChangedError` instead of clearing the replacement or acknowledging a stale
+result.
+
 ### Sign Out All Other Devices
 
 Keep only the current session active:
@@ -643,6 +709,11 @@ if (!error) {
   console.log('All other sessions have been signed out');
 }
 ```
+
+The session whose access token authorizes the request remains active. Do not replace the client's
+session while this request is in flight: the server may revoke that replacement as an "other"
+session. If replacement occurs, the method returns an `AuthSessionChangedError` instead of
+acknowledging a stale result.
 
 ## Security Best Practices
 
