@@ -8170,6 +8170,49 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
   /projects/{id}/auth/pages/{pageType}/preview:
+    get:
+      tags: [Auth Configuration]
+      summary: Render a short-lived managed auth page preview
+      description: |
+        Public HTML endpoint for a preview URL returned by the POST operation.
+        The signed ticket contains the unsaved appearance, expires shortly, and
+        runs the production page runtime against mocked authentication responses.
+      operationId: renderAuthPagePreview
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - name: pageType
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/HostedAuthPageType'
+        - name: ticket
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 4096
+          description: Short-lived signed preview ticket returned by the POST operation.
+      responses:
+        '200':
+          description: Rendered preview document
+          content:
+            text/html:
+              schema:
+                type: string
+        '404':
+          description: Ticket is invalid or expired, its path does not match, or managed authentication is disabled
+          content:
+            text/plain:
+              schema:
+                type: string
+        '500':
+          description: Preview could not be rendered
+          content:
+            text/plain:
+              schema:
+                type: string
     post:
       tags: [Auth Configuration]
       summary: Preview an unsaved managed auth page appearance
@@ -8191,7 +8234,7 @@ paths:
               $ref: '#/components/schemas/PreviewAuthPageRequest'
       responses:
         '200':
-          description: Complete HTML preview document
+          description: Short-lived URL for the rendered preview document
           content:
             application/json:
               schema:
@@ -8215,7 +8258,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '404':
-          description: Project not found
+          description: Project not found or managed authentication is disabled
           content:
             application/json:
               schema:

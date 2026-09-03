@@ -110,8 +110,12 @@ runtime while taking on your brand:
   font, scale, density, and radius. `DELETE` restores the live default.
 - `PUT /projects/{projectId}/auth/pages/{pageType}/layout` saves `centered`,
   `split-left`, or `split-right`. `DELETE` restores default tracking.
-- `POST /projects/{projectId}/auth/pages/{pageType}/preview` renders an unsaved
-  theme and layout without running real authentication requests.
+- `POST /projects/{projectId}/auth/pages/{pageType}/preview` accepts an unsaved
+  theme and layout and returns `preview_url` and `expires_at`. Navigate an iframe
+  or browser tab to `preview_url` to render the preview before it expires. The
+  document uses the project's current enabled authentication methods, but mocks
+  every authentication request: typing and moving between form states works,
+  while account creation, sign-in, email delivery, and OAuth redirects do not.
 
 Theme and layout customisation requires PRO. A downgrade parks saved values:
 the public page uses defaults and Volcano branding, while the appearance GET
