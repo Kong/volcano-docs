@@ -73,10 +73,15 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
       title: "Volcano docs",
       description:
         "Volcano provides a serverless cloud for engineers and researchers who want to build compute-intensive applications without thinking about infrastructure.",
+      alternates: { canonical: "/" },
     };
   }
 
   const page = source.getPage(params.slug);
   if (!page) notFound();
-  return { title: page.data.title, description: page.data.description };
+  return {
+    title: page.data.title,
+    description: page.data.description,
+    alternates: { canonical: page.url },
+  };
 }
