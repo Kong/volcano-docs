@@ -91,6 +91,19 @@ Structure:
 **Version note:** Fumadocs 16 hard-requires Next 16, so the site is on Next 16 +
 React 19.2 rather than `volcano-web`'s Next 15.5. Every other convention matches.
 
+### Sitemap
+
+`/sitemap.xml` lists all docs pages on the domain serving the request. It is
+generated per request, using the hosting proxy's `X-Forwarded-Host` and
+`X-Forwarded-Proto` headers (or `Host` when accessed directly). Reverse proxies
+must overwrite these forwarding headers with the public hostname and scheme.
+The assembly manifest's placeholder `site.base_url` is not used by this route.
+
+Register the deployed site's `/sitemap.xml` URL in Plain's knowledge sources.
+After `pnpm build` and `pnpm start`, run
+`node scripts/check-sitemap.mjs http://localhost:3000` to check the XML, route
+coverage, and origins across direct and proxied requests.
+
 ## Tooling
 
 - [`scripts/lint-docs.mjs`](scripts/lint-docs.mjs) — validates docs against the
