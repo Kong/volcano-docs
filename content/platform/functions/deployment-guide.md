@@ -63,6 +63,25 @@ Cloud deployments enforce two separate limits: `SOURCE_ARCHIVE_SIZE_LIMIT_MB` fo
 
 Include source files, lockfiles, dependency manifests, and any generated runtime output your handler needs, such as `dist/` or `build/`. Exclude installed dependency directories, dependency caches, local test artifacts, and files that are only useful during development.
 
+### DO: Declare Your Package Manager
+
+For Node.js functions, declare the manager in `package.json` and ship its lockfile:
+
+```json
+{
+  "packageManager": "pnpm@9.15.0"
+}
+```
+
+`packageManager` decides which manager installs your dependencies, even when a lockfile from another one is still checked in — a stale `pnpm-lock.yaml` cannot pull a project that declares `npm@10` onto pnpm. Without it, Volcano goes by the lockfile you shipped, and **more than one lockfile family fails the build**:
+
+```text
+multiple lockfile families found: pnpm:/src/pnpm-lock.yaml npm:/src/package-lock.json
+add packageManager to package.json or remove extra lockfiles
+```
+
+The lockfile has to belong to the manager that ends up selected. If it does not — none shipped, or `packageManager` names one whose lockfile is missing — dependencies resolve fresh during the build instead of from your lockfile, so a deployment can pick up versions you never tested.
+
 ### DO: Bundle Your Code
 
 Use tools like esbuild to minimize package size:
