@@ -81,6 +81,8 @@ make check    # lint + build (pre-PR)
 make          # list all targets
 ```
 
+Set `SITE_URL` to the deployed origin so canonical links and the sitemap use the correct host. Local builds default to `http://localhost:3000`.
+
 Structure:
 
 - `src/app` — App Router (`layout.tsx`, `(docs)` group, `[[...slug]]` renderer, `api/search`).
