@@ -82,6 +82,92 @@ exports.handler = async (event) => {
 };
 ```
 
+## Scoping variables to a function
+
+By default every function receives every project variable. A function's
+environment is capped at **4096 bytes** — the sum of the names and values it is
+configured with — so a project with many variables eventually needs its
+functions scoped to the ones they use.
+
+Declare the scope in `volcano-config.yaml`:
+
+```yaml
+version: 1
+functions:
+  - name: checkout
+    variable_scope: scoped
+    variables:
+      - STRIPE_WEBHOOK_SECRET
+```
+
+Then deploy it with `volcano config deploy`, or push it if the project uses
+[GitHub auto-deploy](../projects/git-deploy.md).
+
+A scoped function receives two sets of variables, and they are not equally
+binding:
+
+- **Declared** — the names you list in `variables`. These are required. A
+  declared name the project does not define is a `400`; you asked for it, so
+  Volcano tells you it is not there.
+- **Detected** — the names Volcano finds in the source you deploy. These are
+  optional. A detected name the project defines is included; one it does not is
+  ignored, because a direct reference is often to something optional
+  (`process.env.DEBUG`, `process.env.NODE_ENV`) and code written to run without
+  it should still deploy.
+
+  Volcano reads direct references only:
+
+  | Runtime | Detected forms |
+  | --- | --- |
+  | Node.js | `process.env.NAME`, `process.env["NAME"]` |
+  | Python | `os.environ["NAME"]`, `os.getenv("NAME")` |
+  | Ruby | `ENV["NAME"]`, `ENV.fetch("NAME")` |
+
+  Detection re-runs on every deploy and reads the whole source you uploaded, so
+  adding a `process.env.NEW_KEY` to your code is enough — no manifest change
+  needed. It reads code only: a name in a comment or inside an unrelated string
+  is not a reference and does not select a variable. Code interpolated into a
+  string still counts, so `${process.env.KEY}`, `#{ENV['KEY']}` and
+  `f"{os.getenv('KEY')}"` are detected. Dependency trees
+  (`node_modules`, `vendor`, `.venv`) are skipped, so declare a variable your
+  function only reads from inside a dependency.
+
+Detected names are remembered even when the project does not define them yet, so
+creating the variable later redeploys the function with it. Declare a name in
+`variables` when the function must not deploy without it.
+
+Volcano cannot see a variable read through a computed name:
+
+```javascript
+// Detected: the name is a literal in code.
+const secret = process.env.STRIPE_WEBHOOK_SECRET;
+
+// Not detected: declare STRIPE_WEBHOOK_SECRET in `variables`.
+const key = `STRIPE_${suffix}`;
+const secret = process.env[key];
+
+// Not detected: neither of these is a read.
+// process.env.OLD_KEY
+const help = "set process.env.OLD_KEY before running";
+```
+
+Two problems are rejected with `400` before anything deploys, so a bad scope
+never reaches a running function:
+
+- The function declares a variable the project does not define.
+- The resulting environment is larger than 4096 bytes.
+
+Scoping also narrows propagation: creating, updating, or deleting a variable
+redeploys only the functions that select it, instead of every function in the
+project. Changing a function's own scope redeploys its environment too, so
+switching from `all` to `scoped` removes the variables it no longer selects from
+the running function.
+
+If a source deploy fails, Volcano restores the function's previous scope. A
+later variable write still builds the environment that the running code reads.
+
+Set `variable_scope: all` to go back to receiving everything.
+
 ## List Variables
 
 ```bash
@@ -173,6 +259,7 @@ For maximum security, fetch secrets from a dedicated secrets manager inside your
 ## See Also
 
 - [Creating Functions](creating-functions.md)
+- [Project configuration](../projects/configuration.md) - declare function variable scope
 - [Databases](../databases/creating-databases.md) - set DATABASE_URL as a project variable
 
 

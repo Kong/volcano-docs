@@ -312,6 +312,7 @@ configured frontend. It does not apply the rest of your project configuration.
 | Function source | Yes | Push |
 | Frontend source | Yes | Push |
 | Function invocation settings (`public`, modes, OpenAPI metadata) | Yes, from `volcano-config.yaml` | Push, or `volcano config deploy` |
+| Function variable scope (`variable_scope`, `variables`) | Yes, from `volcano-config.yaml` | Push, or `volcano config deploy` |
 | Variables, buckets, auth, OAuth, email templates, schedulers, databases | No | `volcano config deploy` — see the [configuration manifest](configuration.md) |
 
 Variables are read at build and run time from the project, so a variable you

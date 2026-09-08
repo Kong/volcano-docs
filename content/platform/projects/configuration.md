@@ -19,9 +19,10 @@ The manifest applies to the currently selected project (`volcano use <name>` /
 manifest.
 
 [GitHub auto-deploy](git-deploy.md) reads the same file from your repository,
-but applies only `functions[].public` — the per-resource settings that belong to
-the code a push deploys. Every other section still needs `volcano config
-deploy`.
+but applies only the `functions[]` settings that belong to the code a push
+deploys: `public`, `invocation_mode`, `http_auth_mode`, `openapi_spec`,
+`variable_scope`, and `variables`. Every other section still needs `volcano
+config deploy`.
 
 ## Full schema (version 1)
 
@@ -177,6 +178,9 @@ functions:                                  # must already be deployed
       openapi: 3.1.0
       info: { title: Hello webhook, version: 1.0.0 }
       paths: {}
+    variable_scope: scoped                  # all (default) or scoped
+    variables:                              # replaces the declared list when present
+      - STRIPE_SECRET_KEY
     schedulers:                             # fully synced when declared
       - name: nightly
         cron: "0 3 * * *"                   # 5-field UTC cron
@@ -210,9 +214,15 @@ regenerate, test email, redeploy).
   Unauthenticated HTTP ingress (`http_auth_mode: none`) is allowed only when
   the function is public. Changing such a function to private implicitly
   restores `http_auth_mode: volcano` when the auth mode is omitted.
+- **Function variable scope.** `variable_scope: all` (the default) gives a
+  function every project variable. `variable_scope: scoped` gives it only the
+  variables it selects: every name in `variables`, plus the names Volcano
+  detects in its source that the project defines. Omitting either key keeps the
+  function's current value, so a function scoped through an earlier apply stays
+  scoped. See [Function variables](#function-variables) below.
 - **Fully synced when declared (destructive by design):** `variables`,
-  `buckets[].policies`, `auth.providers.oauth`, `auth.email.templates`, and
-  `functions[].schedulers`. The declared list is the source of truth: entries
+  `buckets[].policies`, `auth.providers.oauth`, `auth.email.templates`,
+  `functions[].variables`, and `functions[].schedulers`. The declared list is the source of truth: entries
   absent from the manifest are deleted; an explicit empty list deletes
   everything. Run `volcano config pull` before your first deploy and check the
   `--dry-run` report to see what a partial list would remove.
@@ -276,6 +286,79 @@ Both are warnings: the rest of the manifest still applies and the CLI exits 0.
   per-entry `action: error`; already-applied changes are not rolled back.
   Re-running the deploy is safe — unchanged entries are no-ops.
 - Applies are serialized per project; a concurrent apply returns `409`.
+
+## Function variables
+
+By default a function receives every project variable. That is fine until the
+set grows: the platform caps a function's environment at **4096 bytes**, summed
+across the names and values it is configured with, and a project can hold more
+than that.
+
+Scoping a function narrows it to the variables it actually reads:
+
+```yaml
+functions:
+  - name: checkout
+    variable_scope: scoped
+    variables:
+      - STRIPE_WEBHOOK_SECRET
+```
+
+The function's variables come from two sets, which differ in whether the name
+has to exist:
+
+- **Declared** — the names in `variables`. **Required:** a declared name the
+  project does not define fails the apply. These round-trip through
+  `volcano config pull`, so the manifest stays the source of truth for them.
+- **Detected** — the names Volcano finds in the source you deploy.
+  **Optional:** a detected name is included when the project defines it and
+  ignored when it does not, because a direct reference is often to something
+  optional (`process.env.DEBUG`, `process.env.NODE_ENV`) and code written to
+  run without it should still deploy. Volcano reads direct references only:
+
+  | Runtime | Detected forms |
+  | --- | --- |
+  | Node.js | `process.env.NAME`, `process.env["NAME"]` |
+  | Python | `os.environ["NAME"]`, `os.getenv("NAME")` |
+  | Ruby | `ENV["NAME"]`, `ENV.fetch("NAME")` |
+
+  Detection runs on every deploy and reads the whole source you uploaded, so it
+  follows your code without a manifest change. It reads code only: a name that
+  appears just in a comment or inside an unrelated string is not a reference and
+  does not select a variable. Code interpolated into a string still counts, so
+  `${process.env.KEY}`, `#{ENV['KEY']}` and `f"{os.getenv('KEY')}"` are
+  detected. It skips dependency trees (`node_modules`,
+  `vendor`, `.venv`), so declare a variable your function only reads from inside
+  a dependency.
+
+Detected names are remembered even when the project does not define them yet, so
+creating the variable later redeploys the function with it. **Declare a name in
+`variables` when the function must not deploy without it** — that is the
+difference between the two sets.
+
+Anything computed — `process.env[key]`, a name built at runtime — cannot be
+detected. **Declare those in `variables`.** A scoped function reading a variable
+that is neither declared nor detected gets `undefined` at runtime, even when the
+project defines it; that is the cost of not failing a deploy over an optional
+reference.
+
+Apply checks every function against the variables the manifest will produce, not
+the ones the project has now, so one file can create a variable and declare it on
+the same pass. It rejects the apply before any change lands when:
+
+- A scoped function declares a variable the resulting project does not define —
+  including one this file deletes, even if that function's own entry is
+  unchanged. Create the variable, or drop the name.
+- A function's resulting environment exceeds 4096 bytes. Scope the function to
+  fewer variables, or shorten the values.
+
+Changing `variable_scope` or `variables` redeploys that function's environment,
+so switching from `all` to `scoped` removes the variables it no longer selects
+from the running function rather than only from its configuration.
+
+Creating, updating, or deleting a project variable only redeploys the functions
+that select it. A function scoped away from a variable is left alone, so a write
+to one secret no longer restarts every function in the project.
 
 ## Secrets
 

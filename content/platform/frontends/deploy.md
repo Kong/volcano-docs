@@ -53,6 +53,37 @@ ready:
 volcano cloud frontends redeploy my-site
 ```
 
+### Dependencies
+
+Volcano installs your dependencies before running the build, and picks the
+package manager in this order:
+
+| Your project | Volcano installs with |
+| --- | --- |
+| declares `"packageManager": "pnpm@9.15.0"` (or `yarn@`, `npm@`) in `package.json` | the manager you declared, at that version |
+| declares nothing and ships one lockfile | the manager that lockfile belongs to |
+| declares nothing and ships several lockfiles | `pnpm`, then `yarn`, then `npm` |
+| declares nothing and ships no lockfile | `npm` |
+
+`packageManager` wins over the lockfiles, so a stale `pnpm-lock.yaml` left in a
+project that declares `npm@10` no longer changes what runs. Declaring it is the
+only way to be certain, and it is what to reach for when several lockfiles are
+checked in — where a single manager is required, several lockfile families fail
+the build rather than falling back to that order.
+
+**Ship the lockfile that belongs to that manager.** Volcano installs from it, so
+your build gets the versions you tested. Without it — none shipped, or
+`packageManager` naming a manager whose lockfile is missing — dependencies
+resolve fresh during the build and can differ from your local install. Where
+locked installs are required, the build stops instead:
+
+```text
+no pnpm lockfile found and ALLOW_UNLOCKED_INSTALLS=false
+```
+
+The build log names the manager and version that were selected, so check there
+first when a build installed something you did not expect.
+
 ### Regional runtime repair
 
 After propagation retries, Volcano treats a regional runtime as missing only
