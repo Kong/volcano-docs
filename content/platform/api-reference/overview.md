@@ -176,10 +176,16 @@ Volcano's internal headers are never returned.
 ## CLI version gating
 
 A CLI reports its version via the `X-Volcano-CLI-Version` request header. The API
-replies with `X-Volcano-CLI-Instruction` (`suggestion_version_upgrade` / `require_version_upgrade`)
-and `X-Volcano-Device-Instruction` (`reauth`), and hard-blocks deprecated versions
-with `426 Upgrade Required`. Requests without the header are unaffected. See
-CLI Version Gating.
+can reply with these instructions:
+
+- `X-Volcano-CLI-Instruction`: `suggestion_version_upgrade`,
+  `require_version_upgrade`, `low_credit_warning`, or `not_enough_credit`.
+- `X-Volcano-Credit-URL`: the billing page address sent with a credit instruction.
+- `X-Volcano-Device-Instruction`: `reauth`.
+
+Deprecated CLI versions are blocked with `426 Upgrade Required`. Credit
+instructions explain the account state but do not block a request. Requests
+without the version header are unaffected. See CLI Version Gating.
 
 ## API endpoints
 

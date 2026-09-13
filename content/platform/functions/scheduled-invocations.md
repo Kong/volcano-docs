@@ -33,7 +33,7 @@ Cron expressions use standard 5-field syntax and are evaluated in UTC. Seconds f
 }
 ```
 
-Every requested region must already have the function deployed. Function schedulers accept at most one explicit region. Requests for non-deployed regions or multiple regions are rejected. Platform frontend warmers are the exception: they create internal warmer jobs in every deployed frontend region.
+Every requested region must already have the function deployed. Function schedulers accept at most one explicit region. Requests for non-deployed regions or multiple regions are rejected. [Keeping runtimes ready](overview.md#response-time-on-the-first-invocation) is not a scheduler and does not follow this rule: Volcano runs it itself, in every deployed region, and it never calls your handler.
 
 ## Manage Schedulers
 

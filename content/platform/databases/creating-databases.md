@@ -17,21 +17,23 @@ curl https://api.volcano.dev/databases/regions
 ```json
 [
   {
-    "id": "aws-us-east-1",
-    "name": "AWS US East 1 (N. Virginia)"
-  },
-  {
-    "id": "aws-us-east-2",
-    "name": "AWS US East 2 (Ohio)"
+    "id": "aws-ap-northeast-1",
+    "name": "Asia Pacific (Tokyo)"
   },
   {
     "id": "aws-eu-central-1",
-    "name": "AWS Europe Central 1 (Frankfurt)"
+    "name": "Europe (Frankfurt)"
+  },
+  {
+    "id": "aws-us-east-1",
+    "name": "US East (N. Virginia)"
   }
 ]
 ```
 
-This is a public endpoint (no authentication required).
+This is a public endpoint (no authentication required). These are the only
+values `region` accepts when you create a database, so read them from here
+instead of hardcoding a list.
 
 ## List Available PostgreSQL Versions
 

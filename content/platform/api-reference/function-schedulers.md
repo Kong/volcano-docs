@@ -28,7 +28,7 @@ Create request:
 }
 ```
 
-`regions` is optional. If omitted, Volcano randomly chooses one deployed region and invokes the function in that region according to the cron schedule. The chosen region remains stable while it is still deployed; if geofencing removes it, Volcano randomly chooses one of the remaining deployed regions. Explicit regions must contain exactly one deployed region. Function schedulers do not fan out to every deployed region; internal frontend warmers are the separate fanout use case.
+`regions` is optional. If omitted, Volcano randomly chooses one deployed region and invokes the function in that region according to the cron schedule. The chosen region remains stable while it is still deployed; if geofencing removes it, Volcano randomly chooses one of the remaining deployed regions. Explicit regions must contain exactly one deployed region. Function schedulers never fan out to every deployed region; the per-region coverage Volcano runs to [keep runtimes ready](../functions/overview.md#response-time-on-the-first-invocation) is its own and is not a scheduler.
 
 `schedule.cron_expression` must be a standard 5-field cron expression evaluated in UTC. Seconds fields, descriptors such as `@daily`, and Quartz-only syntax such as `?`, `L`, `W`, or `#` are not supported. Volcano validates that the schedule runs no more frequently than once per minute and at least once every 31 days.
 

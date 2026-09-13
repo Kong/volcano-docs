@@ -191,6 +191,68 @@ exports.handler = async (event) => {
 
 See [User context](user-context.md) for details.
 
+## Response time on the first invocation
+
+A function that has not run recently has nowhere to run, so the next invocation
+waits for a runtime to start and load your code before your handler is reached.
+That startup is what makes an occasional invocation slower than the ones after
+it.
+
+Volcano keeps your runtimes started for you, in every region the function is
+deployed to:
+
+- **For two days after each deploy**, whether or not anything calls it. You
+  deploy, then call it yourself — that first call is the one worth being fast,
+  and it is fast without any traffic having warmed it up.
+- **For a day after the most recent invocation**, for as long as the function
+  keeps being used. A function called every few hours stays continuously ready.
+
+A function that goes a full day without an invocation stops being kept ready, and
+its next caller waits for a runtime to start. That invocation also puts the
+function back on the list, within a couple of minutes, so a function coming back
+into use is slow once rather than slow repeatedly. Redeploying restores the
+two-day window immediately.
+
+Nothing here is a setting, and it is the same on both plans. Keeping runtimes
+ready is not billed as invocations or bandwidth, and it does not appear in your
+[usage](../guides/plans-and-limits.md).
+
+### What runs, and what does not
+
+Your handler is never called to keep a runtime ready. Volcano starts the runtime
+and loads your module, then stops before reaching your handler, so nothing you
+do per invocation happens: no request is processed and no response is produced.
+
+Loading your module does run the code at the top level of the file, outside your
+handler, the same way it runs on a real cold start. That is what makes the
+readiness worth having: a connection pool or client created there is already
+built when a real caller arrives. Anything that code logs shows up in your
+[logs](logs.md) as an ordinary startup, so a module that logs on load will do so
+while its runtimes are being kept ready.
+
+```javascript
+// Runs when the runtime starts, including when Volcano is keeping it ready.
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+exports.handler = async (event) => {
+  // Only runs for a real invocation.
+  const { rows } = await pool.query('SELECT now()');
+  return { statusCode: 200, body: JSON.stringify(rows[0]) };
+};
+```
+
+Top-level code that is not safe to run without a caller — sending a message,
+writing a row, charging a card — belongs inside the handler. That was already
+true, because a cold start runs it too; keeping runtimes ready just makes it
+happen more often.
+
+Keeping a runtime ready without calling your handler needs Volcano to know which
+file your handler lives in, which it takes from the handler name: `index.handler`
+means the `handler` export in `index.js`. A handler that resolves some other way —
+through a directory index, or a package export — leaves Volcano unable to find
+that file, and a function it cannot find the entry point for is not kept ready.
+Point the handler at the file directly if you want the behavior above.
+
 ## Resource limits
 
 Functions have configurable resource limits based on your plan:

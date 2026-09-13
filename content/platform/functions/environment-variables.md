@@ -69,7 +69,11 @@ through so private registries keep working:
 For frontend server runtimes, Volcano also owns the cache and revalidation wiring
 (`CACHE_*`, `FRONTEND_REVALIDATION_*`, `MAX_REVALIDATE_CONCURRENCY`) and sets those
 values itself, so a project variable of the same name does not take effect there
-either.
+either. `NODE_ENV` is pinned to `production` on every frontend runtime, including
+when you run the project locally: your framework picks its production builds from
+it, and a frontend that renders with development builds fails on every
+server-rendered page. Your own functions are unaffected — set `NODE_ENV` there if
+you want it.
 
 ## Using in Functions and Frontends
 
@@ -84,10 +88,55 @@ exports.handler = async (event) => {
 
 ## Scoping variables to a function
 
-By default every function receives every project variable. A function's
-environment is capped at **4096 bytes** — the sum of the names and values it is
-configured with — so a project with many variables eventually needs its
-functions scoped to the ones they use.
+By default functions receive only project variables marked `shared: true`.
+The compatibility value `variable_scope: all` means this shared list. Existing
+variables are backfilled into the list. For legacy clients, creating a variable
+without `shared` includes it in the list; send `shared: false` to create a
+non-shared variable. Updates that omit `shared` preserve membership.
+
+Replace the shared list in `volcano-config.yaml` using existing names only:
+
+```yaml
+version: 1
+shared_variables:
+  - LOG_LEVEL
+```
+
+This changes no variable values and deletes no variables. Omit the field to
+keep the list, or use `shared_variables: []` to clear it. Config export includes
+these names and omits variable values.
+
+A declared `shared_variables` list is the complete membership, so it decides for
+every variable in the same apply. A per-variable `shared` on a `variables` entry
+does not override it; that field applies only when the manifest omits
+`shared_variables`.
+
+Re-applying the same list retries function environment reconciliation without
+rewriting variable values or membership. This also retries a previous failure
+to start reconciliation.
+
+Dashboard clients can replace the list with `PUT /projects/{id}/shared-variables`:
+
+```json
+{"shared_variables": ["LOG_LEVEL"]}
+```
+
+The operation returns `204` after saving membership and starting synchronization.
+Request bodies larger than 4 MiB return `413` before decoding.
+Unknown names or an oversized final function environment return `400` before
+any membership, sync, or deployment changes. The final list is validated as a
+whole, so it can shrink an oversized legacy list in one request.
+
+The variable API also accepts optional `shared` on create and update requests
+and returns it on reads.
+Scoped functions still receive their declared and detected project variables,
+regardless of shared membership. Shared membership controls function environments;
+frontends continue to receive project variables under the frontend rules above.
+
+Each function environment is capped at **4096 bytes**, counting UTF-8 bytes in
+names and values. Variable writes and membership changes validate affected
+function environments before saving anything. A rejected change leaves values,
+membership, and deployments unchanged.
 
 Declare the scope in `volcano-config.yaml`:
 

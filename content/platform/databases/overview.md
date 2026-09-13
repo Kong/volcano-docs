@@ -236,13 +236,26 @@ const { data } = await volcanoAdmin.from('posts').select('*');
 |--------|----------|
 | `aws-us-east-1` | US East (N. Virginia) — Default |
 | `aws-us-west-2` | US West (Oregon) |
+| `aws-eu-west-1` | Europe (Ireland) |
 | `aws-eu-central-1` | Europe (Frankfurt) |
+| `aws-ap-southeast-1` | Asia Pacific (Singapore) |
+| `aws-ap-southeast-2` | Asia Pacific (Sydney) |
+| `aws-ap-northeast-1` | Asia Pacific (Tokyo) |
+| `aws-sa-east-1` | South America (São Paulo) |
 
-Get the full list of available regions:
+These are the same regions you can deploy functions to, so a project's data and
+its functions can sit in the same place. Query the list rather than hardcoding
+it:
 
 ```bash
-curl "https://api.volcano.dev/databases/regions" \
-  -H "Authorization: Bearer $PLATFORM_TOKEN"
+curl "https://api.volcano.dev/databases/regions"
+```
+
+```json
+[
+  { "id": "aws-ap-northeast-1", "name": "Asia Pacific (Tokyo)" },
+  { "id": "aws-us-east-1", "name": "US East (N. Virginia)" }
+]
 ```
 
 ### PostgreSQL versions
