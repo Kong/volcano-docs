@@ -214,8 +214,26 @@ regenerate, test email, redeploy).
   Unauthenticated HTTP ingress (`http_auth_mode: none`) is allowed only when
   the function is public. Changing such a function to private implicitly
   restores `http_auth_mode: volcano` when the auth mode is omitted.
+- **Shared variables.** `shared_variables: [LOG_LEVEL]` replaces the complete
+  shared list using existing names only. Omission keeps membership; `[]` clears
+  it. Apply changes no values and deletes no variables through this field.
+  Re-applying the same list retries function environment reconciliation, including
+  after a previous apply failed to start it.
+  Export emits the shared names and omits variable values. Unknown names and
+  oversized final function environments are rejected before mutations. Scoped
+  functions select variables independently of this list. The variable API's
+  optional `shared` write field preserves existing membership when omitted and
+  defaults to `true` for new variables for legacy clients.
+  In a manifest that declares `shared_variables`, that list is the complete
+  membership and is authoritative for every variable in the apply. Each create
+  and update is written with the membership the list gives it, never as shared
+  first and demoted after, so no reader sees a name under a membership the
+  manifest did not ask for. A conflicting per-variable `shared` does not override
+  the list — declaring `shared_variables: []` alongside `shared: true` on an entry
+  writes that variable private. Use the per-variable field only when the manifest
+  omits `shared_variables`.
 - **Function variable scope.** `variable_scope: all` (the default) gives a
-  function every project variable. `variable_scope: scoped` gives it only the
+  function only variables marked `shared: true`. `variable_scope: scoped` gives it only the
   variables it selects: every name in `variables`, plus the names Volcano
   detects in its source that the project defines. Omitting either key keeps the
   function's current value, so a function scoped through an earlier apply stays
@@ -289,8 +307,8 @@ Both are warnings: the rest of the manifest still applies and the CLI exits 0.
 
 ## Function variables
 
-By default a function receives every project variable. That is fine until the
-set grows: the platform caps a function's environment at **4096 bytes**, summed
+By default a function receives the project variables marked `shared: true`.
+Keep this list small: the platform caps a function's environment at **4096 bytes**, summed
 across the names and values it is configured with, and a project can hold more
 than that.
 

@@ -1393,6 +1393,86 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /projects/{id}/shared-variables:
+    put:
+      tags:
+        - Projects
+      summary: Replace shared variable names
+      description: |
+        Atomically replaces the complete shared function-variable list without
+        changing values. Names must already exist. Validates final affected
+        function environments before membership or propagation side effects.
+        An empty list clears membership. Omitted names remain stored as non-shared variables.
+      operationId: replaceSharedVariables
+      security:
+        - UserToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [shared_variables]
+              not:
+                required: [expected_shared_variables, expected_shared_variables_digest]
+              properties:
+                shared_variables:
+                  type: array
+                  uniqueItems: true
+                  items:
+                    type: string
+                    maxLength: 256
+                    pattern: '^[a-zA-Z_][a-zA-Z0-9_]*$'
+                expected_shared_variables:
+                  type: array
+                  uniqueItems: true
+                  description: When present, replace only if the current complete shared list matches this list.
+                  items:
+                    type: string
+                    maxLength: 256
+                    pattern: '^[a-zA-Z_][a-zA-Z0-9_]*$'
+                expected_shared_variables_digest:
+                  type: string
+                  minLength: 64
+                  maxLength: 64
+                  pattern: '^[a-f0-9]{64}$'
+                  description: SHA-256 of the sorted unique current shared names joined by a newline. Use instead of expected_shared_variables for a compact conditional replacement.
+      responses:
+        '204':
+          description: Shared list replaced and affected function synchronization started.
+        '400':
+          description: Invalid names or final function environment.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Project not found
+        '409':
+          description: Shared list changed since it was read.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '413':
+          description: Request body exceeds 4,194,304 bytes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Persistence or synchronization failed
+        '503':
+          description: Shared variable membership writes are disabled during rollout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /projects/{id}/config:
     get:
       tags:
@@ -1404,8 +1484,8 @@ paths:
         volcano-config.yaml rendering with `Accept: application/yaml` or
         `?format=yaml`; the YAML is returned verbatim as the raw response body
         (`Content-Type: application/yaml`) and is meant to be saved as-is.
-        Write-only secrets (SMTP password, OAuth client secrets, TLS material)
-        are omitted from the export; the YAML rendering adds a header comment
+        Variable values and write-only secrets (SMTP password, OAuth client secrets, TLS material)
+        are omitted from the export; shared_variables contains names only; the YAML rendering adds a header comment
         describing how to set them via CLI environment interpolation.
       operationId: getProjectConfig
       security:
@@ -1435,7 +1515,8 @@ paths:
                 format: binary
                 description: |
                   Canonical volcano-config.yaml document returned verbatim,
-                  ready to be saved as-is.
+                  ready to be saved as-is. The response body is limited to
+                  4,194,304 bytes, matching the configuration apply limit.
         '401':
           description: Unauthorized - invalid or missing token
           content:
@@ -1444,6 +1525,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '404':
           description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '413':
+          description: Canonical YAML export exceeds 4,194,304 bytes
           content:
             application/json:
               schema:
@@ -1524,6 +1611,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProjectConfigValidationErrorResponse'
+        '503':
+          description: Shared variable membership writes are disabled during rollout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /projects/{id}/source-export:
     get:
       tags:
@@ -2595,7 +2688,7 @@ paths:
                   type: string
                   enum: [all, scoped]
                   description: |
-                    Which project variables this function receives. `all` (the default) gives it every project variable; `scoped` gives it only the variables it selects. Omitting this leaves an existing function's scope unchanged.
+                    Which project variables this function receives. `all` (the default) gives it only project variables marked `shared: true`; `scoped` gives it only the variables it selects. Omitting this leaves an existing function's scope unchanged.
                 variables:
                   type: string
                   description: |
@@ -3449,7 +3542,7 @@ paths:
         22.x or 24.x. The Node.js runtime is inferred from
         `package.json` `engines.node`; if omitted, Volcano uses Node.js 22.x.
         The selected Node.js family must also satisfy the installed Next.js package's
-        `engines.node` constraint. Volcano tests Next 15.5.25 (`^18.18.0 || ^19.8.0 || >=20.0.0`) and Next 16.3.4 (`>=20.9.0`).
+        `engines.node` constraint. Volcano tests Next 15.5.25 (`^18.18.0 || ^19.8.0 || >=20.0.0`) and Next 16.3.5 (`>=20.9.0`).
         Source archive size is enforced by the API with `SOURCE_ARCHIVE_SIZE_LIMIT_MB`; the CLI
         does not apply its own source archive size limit. After the final container images are
         built, the publish build enforces `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB` before pushing.
@@ -4059,6 +4152,12 @@ paths:
                 $ref: '#/components/schemas/Variable'
         '400':
           description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Private variable membership writes are disabled during rollout
           content:
             application/json:
               schema:
@@ -5897,6 +5996,8 @@ paths:
       operationId: listDatabaseRegions
       description: |
         Returns the regions enabled for database provisioning in this platform environment.
+        These are the same regions offered for function deployment, and the only values
+        the `region` field of a database accepts.
         This is a public endpoint that doesn't require authentication.
       responses:
         '200':
@@ -5914,8 +6015,8 @@ paths:
                       description: Region identifier for API usage
                     name:
                       type: string
-                      example: "AWS US East 1 (N. Virginia)"
-                      description: Human-readable region name
+                      example: "US East (N. Virginia)"
+                      description: Human-readable region location
   /databases/postgres-versions:
     get:
       tags:
@@ -6041,6 +6142,12 @@ paths:
                 $ref: '#/components/schemas/Variable'
         '404':
           description: Variable not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Private variable membership writes are disabled during rollout
           content:
             application/json:
               schema:
@@ -9319,7 +9426,13 @@ paths:
         - GitHub repositories: `/user/repos`
         - Microsoft Graph profile: `/me`
 
-        The response is the raw JSON response from the provider's API.
+        The response wraps the provider's raw JSON value with request metadata.
+        An empty provider body is represented as `data: null`; the envelope
+        preserves the provider's HTTP status in `status_code`, including errors.
+        Provider response bodies are limited to 8 MiB after decompression.
+        Transport failures, invalid JSON (including invalid UTF-8), and oversized
+        bodies return `502`. Provider redirects to another origin are blocked and
+        return `400`.
       operationId: callOAuthProviderAPI
       security:
         - AuthUserAccessToken: []
@@ -9362,12 +9475,30 @@ paths:
             application/json:
               schema:
                 type: object
-                additionalProperties: true
-                description: Raw response from the OAuth provider's API
+                description: OAuth provider API response envelope
+                required:
+                  - provider
+                  - endpoint
+                  - status_code
+                  - data
+                properties:
+                  provider:
+                    type: string
+                    enum: [google, github, microsoft, apple]
+                  endpoint:
+                    type: string
+                  status_code:
+                    type: integer
+                    minimum: 100
+                    maximum: 599
+                  data:
+                    description: Raw provider JSON value, or null when the provider returns no body
+                    nullable: true
         '400':
           description: |
             Invalid request (for example: missing `endpoint`, an `endpoint` that is
-            not a relative path, or an unsupported HTTP method).
+            not a relative path, or an unsupported HTTP method), or a provider
+            redirect to another origin.
           content:
             application/json:
               schema:
@@ -9378,8 +9509,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '404':
+          description: OAuth provider configuration not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Failed to create the provider API request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '502':
-          description: Provider API error
+          description: Provider transport failure, invalid JSON, or response body larger than 8 MiB
           content:
             application/json:
               schema:

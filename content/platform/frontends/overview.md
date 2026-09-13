@@ -179,6 +179,37 @@ Local mode puts no CDN in front of your app — every request reaches it — so
 `X-Cache` and everything above only applies once deployed. A page that is
 cached wrongly will look fine locally.
 
+## Response time on the first request
+
+A request your runtime has to answer needs that runtime started, and starting it
+takes time if nothing has run there recently. That startup is what makes an
+occasional request slower than the ones after it.
+
+Volcano keeps your runtimes started for you, in every region the frontend is
+deployed to, so most visitors never pay for it:
+
+- **For two days after each deploy**, whether or not anyone visits. You
+  deploy, then open your own site — that first look is the one worth being fast,
+  and it is fast without any traffic having warmed it up.
+- **For a day after the most recent request**, for as long as your site keeps
+  being used. A site with a visitor every few hours stays continuously ready.
+
+A site that goes a full day without a single request stops being kept ready, and
+its next visitor waits for a runtime to start. That request also puts the site
+back on the list, within a couple of minutes, so a site coming back to life is
+slow once rather than slow repeatedly. Redeploying restores the two-day window
+immediately.
+
+Nothing here is a setting. Both windows are the same on both plans; Pro keeps two
+runtimes ready per region instead of one, so two visitors arriving at once are
+both answered without a startup. Keeping runtimes ready is not billed as requests
+or bandwidth, and it does not appear in your
+[usage](../guides/plans-and-limits.md).
+
+Keeping a frontend ready renders a page, so anything your server-side code logs
+while doing that appears in your logs alongside real visits. Only the logging is
+shared; those renders are still not counted as requests.
+
 ## Platform error pages
 
 When Volcano cannot route or serve a frontend request, browsers receive a

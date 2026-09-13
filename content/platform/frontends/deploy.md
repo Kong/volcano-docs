@@ -157,3 +157,36 @@ orchestration and infrastructure diagnostics stay in operator logs.
 - [Environment variables](../functions/environment-variables.md) — build vs runtime.
 - [Frontend API reference](../api-reference/frontend-endpoints.md) — deploy over HTTP.
 - [Deploy from GitHub](../projects/git-deploy.md) — redeploy on every push instead of running the CLI.
+
+## Rewrite routes to public files
+
+With the default Volcano frontend configuration, `beforeFiles` rewrites can serve files from your app's `public` directory:
+
+```js
+// next.config.mjs
+export default {
+  async rewrites() {
+    return {
+      beforeFiles: [{ source: '/dashboard/:path*', destination: '/app/index.html' }],
+      afterFiles: [],
+      fallback: [],
+    };
+  },
+};
+```
+
+Place the document at `public/app/index.html`. Requests to `/dashboard` and its nested paths return that document while preserving the browser URL. Headers configured for the requested route still apply. Missing files remain 404 responses.
+
+Rebuild existing deployments to enable public-file rewrites.
+
+- Use regular files in `public` for rewrite destinations. Symbolic links are not included.
+- Files reachable through rewrites increase deployment size. Unrelated public files and identity self-rewrites are excluded from the server copy.
+- The server copy is capped at 256 MiB and 20,000 files, and each file is capped at 199 MiB to leave room within Lambda's streamed-response limit. The build warning names files skipped at either byte cap. A rewrite to a skipped file returns 404; narrow the rewrite destinations or change the app to use the file's direct static URL.
+- Rewrites to public files do not support byte ranges. Use direct static URLs for seekable media and resumable downloads.
+- Configured locales work when the app has no `basePath`, and `basePath` works when i18n is disabled. The build warns that rewrites to public files do not resolve when `basePath` and i18n are combined.
+
+Public-file responses include a content-based `ETag`. Uncompressed `GET` responses include a byte length. Matching conditional requests return `304` without reading the file body.
+
+Precompressed public files such as `.gz` downloads retain their compressed bytes and are served as downloads. Dynamic rewrite parameters can include encoded slashes (`%2F`) to reach nested public files.
+
+The default `max-age=0` still requires revalidation; validators reduce transferred bytes, not the number of origin requests.
