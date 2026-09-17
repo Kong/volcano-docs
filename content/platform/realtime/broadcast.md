@@ -95,6 +95,29 @@ Channel names can be up to 64 characters.
 channel.unsubscribe();
 ```
 
+Unsubscribing retains application handlers for a later subscription.
+
+With an authenticated Python `VolcanoClient`, await subscription readiness before
+sending and await unsubscribe to pause delivery:
+
+```python
+channel = client.realtime.channel("updates")
+channel.on("message", print)
+await channel.subscribe()
+await channel.send({"text": "Ready"})
+await channel.unsubscribe()
+await channel.subscribe()
+```
+
+In Python, an explicit pause discards pending callbacks; a callback already
+running may finish. Automatic reconnects preserve queued broadcasts and request
+missed messages when server history is available. A failed or cancelled
+subscription attempt cannot be activated by a late acknowledgement. Removing a
+channel or disconnecting stops SDK delivery without cancelling or waiting for a
+running application callback. Await application work separately during shutdown.
+If an unsubscribe request is cancelled, the SDK finishes its protocol cleanup
+before propagating cancellation.
+
 ## Example: Chat room
 
 ```javascript

@@ -393,3 +393,43 @@ propagate to functions and frontends through one batched workflow, region
 changes trigger function redeploys, and new custom domains provision
 asynchronously. Check convergence with the usual commands (`volcano variables
 list`, `volcano frontends domain get`, ...).
+
+## Frontend variable selection
+
+Limit the project variables available to an existing frontend during both build
+and runtime:
+
+```yaml
+version: 1
+frontends:
+  - name: web
+    variable_scope: scoped
+    variables:
+      - NEXT_PUBLIC_API_URL
+      - SESSION_SECRET
+```
+
+Frontends default to `all`, preserving access to all project variables. Unlike
+functions, this legacy frontend mode does not use the shared function list.
+`scoped` selects only the declared names; frontend source is not scanned for
+variable references. Missing declared variables reject deployment or apply.
+`NEXT_PUBLIC_*` names remain build-only and do not enter the runtime environment.
+
+Omitting either field preserves its stored value; `variables: []` selects no
+project variables in scoped mode. Config export includes both fields. Keep any
+existing `custom_domain` declaration when applying the frontend entry, since
+omitting it removes the domain under the existing reconciliation rules.
+
+A scope change synchronizes the running cloud frontend's environment. Rebuild
+and redeploy to apply changes to values embedded in browser assets. Local mode
+uses the stored selection on deployment and restart. Variable updates that the
+frontend does not select do not trigger its runtime synchronization.
+
+Selected runtime values, platform metadata, and reserved space for the largest
+cache metadata and proxy-token rotation must fit the 4,096-byte
+environment limit before a variable or scope change is saved. This conservative
+reservation includes 1,024 bytes for the next proxy token plus its key, even
+when no rotation is staged. It keeps updates safe without reading deployed runtimes. Deployment
+also checks the final environment including platform-managed values; an oversized
+environment fails before the runtime configuration is updated. Error messages
+report byte counts without exposing variable values.
