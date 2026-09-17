@@ -31,6 +31,18 @@ sources:
     path: docs
     index: README.md
 
+  - dest: content/sdk/python
+    repo: Kong/volcano-sdk-python
+    ref: main
+    path: docs
+    index: README.md
+
+  - dest: content/sdk/ruby
+    repo: Kong/volcano-sdk-ruby
+    ref: main
+    path: docs
+    index: README.md
+
   - dest: content/cli
     repo: Kong/volcano-cli
     ref: main
