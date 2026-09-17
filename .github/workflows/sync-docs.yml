@@ -48,6 +48,8 @@ jobs:
           repositories: |
             volcano-hosting
             volcano-sdk-js
+            volcano-sdk-python
+            volcano-sdk-ruby
             volcano-cli
           permission-contents: read
 
