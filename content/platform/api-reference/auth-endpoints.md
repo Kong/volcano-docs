@@ -168,6 +168,12 @@ missing or expired.
 Wildcard CORS entries and cross-site origins do not qualify for cookie mode.
 Those clients continue to receive and send `refresh_token` in JSON.
 
+A frontend served on its default Volcano URL is one of those cross-site
+origins. Frontends answer on `volcano.run` and the API on `volcano.dev`, so a
+browser would not send the cookie back and the API does not set one. Use the
+default JSON token mode there, or serve the app from a custom domain that is
+same-site with the API host you call.
+
 ---
 
 ### Confirm Email

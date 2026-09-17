@@ -24,8 +24,8 @@ configured app root.
 
 ## Repository layout
 
-Volcano discovers what to deploy from the file tree. Nothing is generated for
-you and there is no separate build config.
+For repositories you connect directly, Volcano discovers functions from the
+file tree and deploys the frontend selected in Git deploy settings.
 
 ```text
 my-repo/
@@ -75,6 +75,47 @@ carrying those still packages them, which counts against the size limits below.
 Already running on Volcano and want your code in Git? [Export your
 source](export-to-git.md) can initialize a new empty repository and push the
 project directly to its production branch.
+
+### Exported projects with multiple frontends
+
+[Source export](export-to-git.md) places each frontend in `frontends/<name>/`
+and writes `.volcano/source-layout.json` with its name and app root. When that
+file is present, every listed frontend deploys on each production-branch push.
+The single frontend selection applies to repositories without that file.
+Functions continue to deploy from `volcano/functions/` when Deploy functions is
+on. These pushes deploy all configured resources; they do not filter by changed
+paths.
+
+### Choose frontend workspaces
+
+To move an exported frontend, move its files and update
+`.volcano/source-layout.json` in the same commit:
+
+```json
+{
+  "version": 1,
+  "frontends": [
+    { "name": "web", "workspace": "apps/web", "app_root": "" },
+    { "name": "admin", "workspace": "apps/admin", "app_root": "" }
+  ]
+}
+```
+
+`workspace` is relative to the configured project root. `app_root` is relative
+to that workspace. Volcano packages the entire workspace, including shared
+packages and dependency manifests, subject to the normal source exclusions.
+Both paths must be clean relative paths contained within their parent. Missing
+workspaces or apps without `package.json` fail deployment.
+
+Omitting `workspace` keeps `frontends/<name>`. An explicit `"workspace": ""`
+selects the project root. For a shared monorepo, give both frontends an empty
+workspace and set their app roots to `apps/web` and `apps/admin`; both builds
+then receive the shared dependencies. Each retry uses the layout from the same
+commit.
+
+Initial export always uses `frontends/<name>`; custom paths are configured in
+Git after export. This layout belongs to the source commit, not
+`volcano-config.yaml`.
 
 ## If you do not have a repository yet
 

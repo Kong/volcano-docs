@@ -32,7 +32,7 @@ Responses are compressed automatically — no plugin or middleware needed. Send
 an `Accept-Encoding` header and you get the best encoding you accept:
 
 ```bash
-curl -sI -H 'Accept-Encoding: br, gzip' https://your-site.frontends.volcano.dev/ | grep -i content-encoding
+curl -sI -H 'Accept-Encoding: br, gzip' https://your-site.frontends.volcano.run/ | grep -i content-encoding
 # content-encoding: br
 ```
 
@@ -64,7 +64,7 @@ pages Next.js built ahead of time are held at the edge, so repeat visitors are
 answered without reaching your runtime. Check any response with `X-Cache`:
 
 ```bash
-curl -sI https://your-site.frontends.volcano.dev/pricing | grep -i -e x-cache -e cache-control
+curl -sI https://your-site.frontends.volcano.run/pricing | grep -i -e x-cache -e cache-control
 # cache-control: s-maxage=31536000
 # x-cache: Hit from volcano
 ```
@@ -73,7 +73,7 @@ Every response also says which build and region answered. Your app's own headers
 are served as written, and Volcano's internal ones are never returned:
 
 ```bash
-curl -sI https://your-site.frontends.volcano.dev/pricing | grep -i x-volcano
+curl -sI https://your-site.frontends.volcano.run/pricing | grep -i x-volcano
 # x-volcano-version: staging-abc1234
 # x-volcano-region: us-east-1
 ```
@@ -240,7 +240,7 @@ Custom domains are a **PRO** feature and use **bring-your-own-certificate
 your domain with them. Volcano does not issue the certificate for you.
 
 On the Free plan an attached domain is kept but stops serving: requests to it
-return `404` while the frontend's `*.volcano.dev` URL keeps working. Upgrading
+return `404` while the frontend's `*.frontends.volcano.run` URL keeps working. Upgrading
 puts the domain back in service without re-attaching it. See
 [moving from Pro to Free](../guides/plans-and-limits.md#moving-from-pro-to-free).
 
@@ -271,7 +271,7 @@ Volcano URL** (the `<frontend-id>.frontends.<region-domain>` host shown by
 frontend — it does not change across redeploys.
 
 ```text
-app.example.com.  CNAME  <frontend-id>.frontends.volcano.dev.
+app.example.com.  CNAME  <frontend-id>.frontends.volcano.run.
 ```
 
 The domain becomes `active` once Volcano finishes attaching your certificate.

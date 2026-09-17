@@ -68,15 +68,27 @@ same RPC/Volcano defaults.
 
 You can invoke a function in either of these ways:
 
-1. **DNS endpoint (recommended):** `https://{functionId}.functions.<domain>/`  
-   This path includes built-in geo routing.
-2. **Invoke endpoint:** `POST http://api.<domain>/functions/{functionId}/invoke`  
+1. **DNS endpoint (recommended):** the function's `invoke_url`  
+   Geo-routed, and the only way to reach the function on its own domain.
+2. **Invoke endpoint:** `POST https://api.volcano.dev/functions/{functionId}/invoke`  
    Useful when you want direct invocation on the API host.
+
+Functions answer on their own domain, separate from the API. Never build the
+invocation host yourself — the endpoint differs between deployments, and a
+host derived from your API URL will not reach the function. Read `invoke_url`
+from the function or from `GET /functions/resolve`:
+
+```bash
+INVOKE_URL=$(curl -s "https://api.volcano.dev/projects/$PROJECT_ID/functions/$FUNC_ID" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" | jq -r '.invoke_url')
+```
+
+Every example below invokes `$INVOKE_URL`.
 
 Example DNS call:
 
 ```bash
-curl -X POST "https://$FUNC_ID.functions.volcano.dev/" \
+curl -X POST "$INVOKE_URL" \
   -H "Authorization: Bearer $SERVICE_KEY" \
   -H "Content-Type: application/json" \
   -d '{"payload":{"action":"process","data":"value"}}'
@@ -91,7 +103,7 @@ Functions are **private by default** (`is_public: false`).
 For admin operations, background jobs, cron, and webhooks:
 
 ```bash
-curl -X POST "https://$FUNC_ID.functions.volcano.dev/" \
+curl -X POST "$INVOKE_URL" \
   -H "Authorization: Bearer $SERVICE_KEY" \
   -H "Content-Type: application/json" \
   -d '{"payload":{"action":"process","data":"value"}}'
@@ -128,7 +140,7 @@ HTTP-mode functions receive this event instead of the RPC payload:
   "body": "{\"event\":\"payment.succeeded\"}",
   "is_base64_encoded": false,
   "request_context": {
-    "host": "FUNCTION_ID.functions.volcano.dev",
+    "host": "FUNCTION_ID.functions.volcano.run",
     "source_ip": "203.0.113.10",
     "protocol": "HTTP/1.1"
   }
@@ -193,7 +205,7 @@ reserialize it first.
 For user-facing operations:
 
 ```bash
-curl -X POST "https://$FUNC_ID.functions.volcano.dev/" \
+curl -X POST "$INVOKE_URL" \
   -H "Authorization: Bearer ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"payload":{"action":"get_profile"}}'
@@ -218,7 +230,7 @@ Function receives:
 Use this only for explicitly public functions:
 
 ```bash
-curl -X POST "https://$FUNC_ID.functions.volcano.dev/" \
+curl -X POST "$INVOKE_URL" \
   -H "Authorization: Bearer $ANON_KEY" \
   -H "Content-Type: application/json" \
   -d '{"payload":{"action":"public_ping"}}'
@@ -269,10 +281,18 @@ Every invocation response says which build and region answered:
 - `X-Volcano-Version`: `<version>` in `production`, `<env>-<version>` elsewhere (example: `staging-xyz`)
 - `X-Volcano-Region`: the region your function ran in (example: `us-east-1`)
 
-Those two and `X-Volcano-Health` are set by the platform: a response header your
-function returns under one of those names is dropped rather than forwarded, as
-are Volcano's own internal headers. Every other header you return is forwarded
-as written.
+A third, `X-Volcano-Function-Invoked: true`, appears only once your function has
+actually run. Use it to tell your function's own `404` from Volcano's: a `404`
+without it means Volcano had no such function to call, so a client caching a
+function's id can discard that id and look the name up again. A `404` with it
+came from your code, and repeating the call would run your code twice. Do not
+read `X-Volcano-Version` for this — it is stamped on every response, including
+errors raised before your function is reached.
+
+Those three and `X-Volcano-Health` are set by the platform: a response header
+your function returns under one of those names is dropped rather than forwarded,
+as are Volcano's own internal headers. Every other header you return is
+forwarded as written.
 
 ## Handling responses
 

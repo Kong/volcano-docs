@@ -27,7 +27,7 @@ API, function, and storage callers get JSON:
 Match on `code`, not on the human-readable text:
 
 ```javascript
-const res = await fetch("https://your-project.volcano.dev/api/items");
+const res = await fetch("https://your-site.frontends.volcano.run/api/items");
 
 if (res.status === 503) {
   const body = await res.json().catch(() => null);

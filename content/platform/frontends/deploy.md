@@ -133,7 +133,7 @@ Volcano URL (`<frontend-id>.frontends.<region-domain>`, from `domain get` /
 `frontends get`). That host is stable across redeploys:
 
 ```text
-app.example.com.  CNAME  <frontend-id>.frontends.volcano.dev.
+app.example.com.  CNAME  <frontend-id>.frontends.volcano.run.
 ```
 
 The domain goes `active` once Volcano finishes attaching your certificate —

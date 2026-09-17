@@ -53,9 +53,15 @@ Set these in your Volcano project:
 
 This function requires an authenticated user context:
 
+Invoke the `invoke_url` the API returns for the function rather than building a
+host, which differs between deployments:
+
 ```bash
+INVOKE_URL=$(curl -s "$VOLCANO_API_URL/projects/$PROJECT_ID/functions/$FUNCTION_ID" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" | jq -r '.invoke_url')
+
 # Invoke with user authentication
-curl -X POST https://your-project.volcano.dev/functions/realtime-test \
+curl -X POST "$INVOKE_URL" \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   -H "Content-Type: application/json"
 ```

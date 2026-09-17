@@ -117,7 +117,7 @@ moment you upgrade. You do not have to set them up twice.
 | Custom email templates | Kept; the default templates are sent |
 | Custom managed auth pages | Kept; the built-in pages are served, with Volcano branding |
 | Scheduled functions | Kept; they stop running, and their next run time keeps advancing |
-| Frontend custom domains | Kept; the domain stops serving and returns `404`. Your `*.volcano.dev` URL keeps working |
+| Frontend custom domains | Kept; the domain stops serving and returns `404`. Your `*.frontends.volcano.run` URL keeps working |
 | Database query logs | Kept; new queries stop being recorded, and query insights stop being readable |
 | Database compute size | Shrunk to the Free size, and restored when you upgrade. No downtime, no data loss |
 
