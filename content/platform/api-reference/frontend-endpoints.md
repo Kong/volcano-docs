@@ -130,7 +130,7 @@ Behavior:
 - BYOC is mandatory for custom-domain creation.
 - Your uploaded certificate is used to secure the custom domain.
 - Both the custom domain and default Volcano frontend URL continue to work.
-- The default `*.frontends.<env>.volcano.dev` URL keeps strict valid TLS and is not replaced by BYOC certificates from other domains.
+- The default `*.frontends.<env>.volcano.run` URL keeps strict valid TLS and is not replaced by BYOC certificates from other domains.
 - Returns `201` when a new custom domain is queued, and `200` when the same domain is already configured.
 - Returns `409` when the frontend already has a different domain, the requested domain is attached elsewhere, or a previous attachment is still detaching.
 - Returns `503` when custom domain provisioning is temporarily unavailable.

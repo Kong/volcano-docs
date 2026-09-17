@@ -27,7 +27,7 @@ Authorization: Bearer <platform_token>
       "invocation_mode": "rpc",
       "http_auth_mode": "volcano",
       "openapi_spec": null,
-      "invoke_url": "https://func-uuid.functions.staging.volcano.dev/",
+      "invoke_url": "https://func-uuid.functions.staging.volcano.run/",
       "deployed_regions": ["us-east-1", "us-west-2"],
       "runtime": "nodejs24.x",
       "handler": "index.handler",
@@ -139,8 +139,13 @@ Batch deploys follow the same source-bundle rules as single-function deploys: up
 
 RPC functions can be invoked in two ways:
 
-- DNS endpoint (recommended, geo-routed): `https://{functionId}.functions.<domain>/`
-- API endpoint (direct invocation): `POST http://api.<domain>/functions/{functionId}/invoke`
+- DNS endpoint (recommended, geo-routed): the function's `invoke_url`, which in
+  production reads `https://{functionId}.functions.volcano.run/`
+- API endpoint (direct invocation): `POST https://api.volcano.dev/functions/{functionId}/invoke`
+
+The two live on different domains, and the DNS endpoint differs between
+deployments. Send requests to `invoke_url` as returned rather than building the
+host yourself.
 
 ```http
 POST /functions/{functionId}/invoke
@@ -164,7 +169,7 @@ Access-Control-Allow-Methods: GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS
 DNS equivalent:
 
 ```http
-POST https://{functionId}.functions.<domain>/
+POST <invoke_url>
 Authorization: Bearer <service_key_or_access_token_or_anon_key>
 Content-Type: application/json
 ```
@@ -230,8 +235,10 @@ All successful function invocations include `X-Volcano-Version` (`<version>` in 
 
 ## Resolve Function Name
 
-Resolves a function name to function ID in the caller's project.  
-Used by SDKs before DNS invocation (`<function-id>.functions.<env-domain>`).
+Resolves a function name to function ID and invocation URL in the caller's project.  
+Used by SDKs before DNS invocation. Invoke the returned `invoke_url` as-is; it is
+not derivable from the API host. It is omitted in local development, where you
+invoke through `POST /functions/{functionId}/invoke` instead.
 
 ```http
 GET /functions/resolve?name={functionName}
@@ -250,6 +257,7 @@ Authorization: Bearer <service_key_or_access_token_or_anon_key>
 {
   "name": "my-function",
   "function_id": "3cd3e058-e3ff-42a5-ae4d-650ef9b45746",
+  "invoke_url": "https://3cd3e058-e3ff-42a5-ae4d-650ef9b45746.functions.volcano.run/",
   "cache_ttl_seconds": 300
 }
 ```

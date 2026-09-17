@@ -113,20 +113,26 @@ exports.handler = async (event) => {
 # Create source ZIP or tar.gz file
 zip function.zip index.js
 
-# Deploy to Volcano
+# Deploy to Volcano. The response carries the function's id and invoke_url.
 curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/functions" \
   -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -F "name=hello" \
   -F "runtime=nodejs24.x" \
   -F "handler=handler" \
-  -F "code=@function.zip"
+  -F "code=@function.zip" > function.json
+
+FUNCTION_ID=$(jq -r '.id' function.json)
+INVOKE_URL=$(jq -r '.invoke_url' function.json)
 ```
 
 ### 3. Invoke
 
+Invoke `invoke_url` as returned. Functions answer on their own domain, so an
+endpoint built from the API URL will not reach them.
+
 ```bash
-# Option A (recommended): DNS endpoint with geo routing
-curl -X POST "https://$FUNCTION_ID.functions.volcano.dev/" \
+# Option A (recommended): the returned endpoint, which is geo-routed
+curl -X POST "$INVOKE_URL" \
   -H "Authorization: Bearer $SERVICE_KEY" \
   -H "Content-Type: application/json" \
   -d '{"payload": {"name": "Volcano"}}'
@@ -134,7 +140,7 @@ curl -X POST "https://$FUNCTION_ID.functions.volcano.dev/" \
 
 ```bash
 # Option B: Invoke endpoint on API host (direct invocation)
-curl -X POST "http://api.volcano.dev/functions/$FUNCTION_ID/invoke" \
+curl -X POST "https://api.volcano.dev/functions/$FUNCTION_ID/invoke" \
   -H "Authorization: Bearer $SERVICE_KEY" \
   -H "Content-Type: application/json" \
   -d '{"payload": {"name": "Volcano"}}'

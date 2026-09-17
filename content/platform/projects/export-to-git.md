@@ -72,8 +72,27 @@ volcano/
         └── tax.js
 volcano-config.yaml
 package.json
-web/
+frontends/
+├── web/
+│   └── package.json
+└── admin/
+    └── package.json
+.volcano/
+└── source-layout.json
 ```
+
+Export supports multiple frontends and functions. Each frontend gets a
+`frontends/<name>/` workspace, including its dependencies and original app root.
+Functions keep the existing single-file or directory layout.
+
+The generated `.volcano/source-layout.json` records frontend names and app roots.
+Keep it in Git: it tells Volcano to deploy every exported frontend instead of
+using the single frontend in Git deploy settings. The Auto deploy and Deploy
+functions switches still apply.
+
+The initial export and every later production-branch push deploy all configured
+resources, including those whose code has not changed. Git takes over source
+ownership only after a deployment covers every exported serving resource.
 
 Export takes source from each function and frontend's latest successful
 deployment. A resource that has never deployed successfully appears in
