@@ -6,4 +6,16 @@ import { docs } from "../../.source/server";
 export const source = loader({
   baseUrl: "/",
   source: docs.toFumadocsSource(),
+  pageTree: {
+    transformers: [
+      {
+        folder(node, folderPath) {
+          if (folderPath === "platform/api-reference") {
+            return { ...node, name: "API reference" };
+          }
+          return node;
+        },
+      },
+    ],
+  },
 });
