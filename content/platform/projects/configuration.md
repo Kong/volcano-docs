@@ -41,9 +41,14 @@ databases:                                  # must already exist; assertion-only
     database_type: volcano-db-xs            # asserted; tier changes are NOT
                                             #   allowed via config
 
+frontend_shared_variables:                 # complete list for shared frontends
+  - NEXT_PUBLIC_API_URL
+
 variables:                                  # ALWAYS fully synced when declared
   - name: STRIPE_SECRET_KEY
     value: ${STRIPE_SECRET_KEY}             # ${ENV} interpolated by the CLI
+  - name: NEXT_PUBLIC_API_URL
+    value: https://api.myapp.com
 
 buckets:                                    # must already exist (never created here)
   - name: avatars
@@ -189,6 +194,7 @@ functions:                                  # must already be deployed
 
 frontends:                                  # must already be deployed
   - name: web
+    variable_scope: shared                  # all (default), shared, or scoped
     custom_domain:                          # PRO; BYOC TLS only
       domain: app.myapp.com
       tls:                                  # optional for an existing domain
@@ -238,6 +244,11 @@ regenerate, test email, redeploy).
   detects in its source that the project defines. Omitting either key keeps the
   function's current value, so a function scoped through an earlier apply stays
   scoped. See [Function variables](#function-variables) below.
+- **Frontend shared variables.** `frontend_shared_variables` replaces the complete
+  project list for frontends with `variable_scope: shared`. Omission keeps the
+  list; `[]` clears it. Unknown names and environments over 4096 bytes are
+  rejected before mutation. `all` keeps the legacy access to every project
+  variable. `scoped` uses only the frontend entry's `variables` list.
 - **Fully synced when declared (destructive by design):** `variables`,
   `buckets[].policies`, `auth.providers.oauth`, `auth.email.templates`,
   `functions[].variables`, and `functions[].schedulers`. The declared list is the source of truth: entries
@@ -409,9 +420,11 @@ frontends:
       - SESSION_SECRET
 ```
 
-Frontends default to `all`, preserving access to all project variables. Unlike
-functions, this legacy frontend mode does not use the shared function list.
-`scoped` selects only the declared names; frontend source is not scanned for
+New frontends default to `scoped` with no selected project variables. Existing
+frontends created under the legacy `all` default keep that selection until it
+is changed explicitly; this legacy mode selects every project variable and does
+not use the shared function list. `scoped` selects only the declared names;
+frontend source is not scanned for
 variable references. Missing declared variables reject deployment or apply.
 `NEXT_PUBLIC_*` names remain build-only and do not enter the runtime environment.
 

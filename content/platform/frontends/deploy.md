@@ -35,11 +35,17 @@ volcano variables deploy NEXT_PUBLIC_API_URL=https://api.example.com
 ## 3. Deploy
 
 ```bash
-volcano cloud frontends deploy
+volcano cloud frontends deploy --variable-scope scoped --variable NEXT_PUBLIC_API_URL
 ```
 
 The CLI uploads your app, Volcano builds it, publishes the assets, and returns
-the site URL. Watch progress and check status:
+the site URL. New frontends use a scoped variable environment by default. Use
+`--variable-scope scoped` and pass each required project variable with
+`--variable`; variables not selected are not available to the build or runtime.
+Scoped mode with no `--variable` flags exposes no project variables. Existing
+frontends keep their current selection when these flags are omitted.
+
+Watch progress and check status:
 
 ```bash
 volcano cloud frontends list
