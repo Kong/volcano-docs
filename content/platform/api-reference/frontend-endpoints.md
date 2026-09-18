@@ -13,6 +13,8 @@ Multipart form fields:
 - `name` (required): DNS-safe frontend name.
 - `framework` (optional): currently `nextjs`.
 - `app_root` (optional): relative POSIX path from the uploaded archive root to the Next.js app to build, such as `apps/web` for a monorepo. Omit it for single-app archives.
+- `variable_scope` (optional): `scoped` or `all`. New frontends default to `scoped`; omitting it for an existing frontend preserves the stored selection.
+- `variables` (optional, repeated): project variable names selected when `variable_scope=scoped`. Submit one multipart field per name. An empty scoped selection exposes no project variables.
 - `archive` (required): ZIP or `tar.gz` bundle of the frontend project or monorepo workspace root. The API stores a normalized `tar.gz` archive.
 
 Size limits:
@@ -28,6 +30,8 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/frontends" \
   -F "name=web" \
   -F "framework=nextjs" \
   -F "app_root=apps/web" \
+  -F "variable_scope=scoped" \
+  -F "variables=NEXT_PUBLIC_API_URL" \
   -F "archive=@repo.tar.gz"
 ```
 
@@ -49,9 +53,9 @@ Deployment availability and concurrency:
 - If edge recovery exhausts its retries, the frontend stays `degraded` and keeps serving; another redeploy retries recovery while preserving availability.
 
 Build environment:
-- Project variables stored through the variables API are resolved before the frontend build.
-- Project variables are available to the build, except names the build itself reserves, which it drops with a warning in the build log. See [Environment Variables](../functions/environment-variables.md#names-reserved-during-builds).
-- Variables other than `NEXT_PUBLIC_*` are also available to the deployed frontend runtime.
+- Project variables stored through the variables API are resolved before the frontend build according to the frontend's selection. New frontends default to `scoped` with no selected names; existing frontends keep their stored selection when a deploy omits `variable_scope` and `variables`.
+- A scoped deploy selects the repeated `variables` names. `variable_scope=all` explicitly selects every project variable. Selected variables are available to the build, except names the build itself reserves, which it drops with a warning in the build log. See [Environment Variables](../functions/environment-variables.md#names-reserved-during-builds).
+- Selected variables other than `NEXT_PUBLIC_*` are also available to the deployed frontend runtime.
 - Next.js inlines `NEXT_PUBLIC_*` values into the client bundle, so those values are excluded from the server runtime. Changing one requires a redeploy.
 - For monorepos, `app_root` selects the Next.js app inside the uploaded archive. Redeploys reuse the frontend's stored `app_root`.
 
