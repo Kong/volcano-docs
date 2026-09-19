@@ -37,8 +37,11 @@ a standalone static site and a route inside `volcano-web` stays open.
 | Section | Source repo | Path | Owns |
 | --- | --- | --- | --- |
 | `content/get-started/` | **this repo** | — | Cross-surface intro |
-| `content/platform/` | `Kong/volcano-hosting` | `docs/` | Platform concepts + API reference |
+| `content/platform/` | `Kong/volcano-hosting` | `docs/public/` | Platform concepts + API reference |
+| `content/sdk/index.md` | **this repo** | — | SDK language selector and runtime requirements |
 | `content/sdk/js/` | `Kong/volcano-sdk-js` | `docs/` | JavaScript/TypeScript SDK |
+| `content/sdk/python/` | `Kong/volcano-sdk-python` | `docs/` | Python SDK |
+| `content/sdk/ruby/` | `Kong/volcano-sdk-ruby` | `docs/` | Ruby SDK |
 | `content/cli/` | `Kong/volcano-cli` | `docs/` | CLI reference |
 
 > Agent skills (`volcano-skills`) and IDE plugins (`volcano-agentic-plugins`) are
@@ -49,11 +52,12 @@ The mapping is defined machine-readably in [`docs.config.yaml`](docs.config.yaml
 
 ## Editing docs
 
-- **Product docs** (platform, sdk, cli, ai): edit them in their source repo,
+- **Product docs** (platform, SDK languages, CLI): edit them in their source repo,
   following [`spec/markdown-format.md`](spec/markdown-format.md). The sync bot
-  commits them here — do not hand-edit `content/platform`, `content/sdk`,
-  or `content/cli`; they are overwritten on every sync.
+  commits them here — do not hand-edit `content/platform`, `content/sdk/js`,
+  `content/sdk/python`, `content/sdk/ruby`, or `content/cli`; they are overwritten on every sync.
 - **Intro pages**: edit [`content/get-started/`](content/get-started) here.
+- **SDK landing page**: edit [`content/sdk/index.md`](content/sdk/index.md) here when a language's runtime requirements or shared capabilities change. Check the claims against its package metadata and keep the sync destinations scoped to the language subdirectories.
 
 ## Rollout
 
