@@ -1,7 +1,8 @@
 import { source } from "@/lib/source";
 import { createFromSource } from "fumadocs-core/search/server";
 
-const search = createFromSource(source);
+// Results use relevance scores, so property-sort indexes only enlarge the asset.
+const search = createFromSource(source, { sort: { enabled: false } });
 
 function getHandler() {
   if (process.env.NODE_ENV === "development") {
