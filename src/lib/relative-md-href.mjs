@@ -15,6 +15,14 @@ export function ensureRelativeMdHref(href) {
   if (!href) return href;
   if (/^([a-z][a-z0-9+.-]*:|\/|#)/i.test(href)) return href; // scheme, root-absolute, or #anchor
   if (href.startsWith("./") || href.startsWith("../")) return href;
-  if (!/\.md(#.*)?$/i.test(href)) return href; // only .md pages (optional #fragment)
+  if (!/\.md([?#].*)?$/i.test(href)) return href;
   return "./" + href;
+}
+
+export function resolveRelativeMdHref(href, source, page) {
+  const normalized = ensureRelativeMdHref(href);
+  if (!normalized) return normalized;
+  // Fumadocs resolves file paths but does not parse query strings.
+  const [, destination, suffix] = normalized.match(/^([^?#]*)(.*)$/);
+  return source.resolveHref(destination, page) + suffix;
 }
