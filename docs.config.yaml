@@ -17,6 +17,7 @@ nav:
   - cli
 
 # Sync sources. `index` names the file mapped to the section landing (index.md).
+# content/sdk/index.md is authored here; sync only the language subdirectories.
 # `include` (glob) narrows what to copy for repos that are not doc-shaped.
 sources:
   - dest: content/platform
@@ -48,4 +49,3 @@ sources:
     ref: main
     path: docs
     index: README.md
-
