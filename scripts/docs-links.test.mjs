@@ -4,6 +4,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import url from "node:url";
+import { fromMarkdown } from "mdast-util-from-markdown";
+import { relocatedIndexHref, remarkRelocatedIndex } from "./relocated-index.mjs";
 
 const root = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), "..");
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "volcano-docs-links-"));
@@ -32,6 +34,24 @@ try {
   );
   assert.match(run("lint-docs.mjs", content), /docs OK/);
   assert.match(run("check-links.mjs", content, publicDir), /links OK/);
+
+  const guide = path.join(content, "sdk", "guide.md");
+  const links = "[landing](./README.md#install)\n[reference][home]\n\n[home]: README.md?tab=python#install\n\n`[example](./README.md)`\n";
+  fs.writeFileSync(guide, links);
+  assert.match(run("check-links.mjs", content, publicDir), /links OK/);
+  const tree = fromMarkdown(links);
+  remarkRelocatedIndex()(tree, { path: guide });
+  assert.equal(tree.children[0].children[0].url, "./index.md#install");
+  assert.equal(tree.children[1].url, "index.md?tab=python#install");
+  assert.equal(tree.children[2].children[0].value, "[example](./README.md)");
+  assert.equal(relocatedIndexHref("../README.md#top", guide), "../index.md#top");
+  assert.equal(relocatedIndexHref("https://example.com/README.md", guide), "https://example.com/README.md");
+  assert.equal(relocatedIndexHref("/sdk/README.md", guide), "/sdk/README.md");
+  assert.equal(relocatedIndexHref("missing/README.md", guide), "missing/README.md");
+  fs.writeFileSync(path.join(content, "sdk", "README.md"), "Existing page");
+  assert.equal(relocatedIndexHref("./README.md", guide), "./README.md");
+  fs.unlinkSync(path.join(content, "sdk", "README.md"));
+  fs.unlinkSync(guide);
 
   const invalidLinks = [
     `[bad](/bogus "details")`,
