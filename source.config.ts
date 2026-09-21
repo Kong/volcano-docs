@@ -1,4 +1,5 @@
 import { defineConfig, defineDocs } from "fumadocs-mdx/config";
+import { remarkRelocatedIndex } from "./scripts/relocated-index.mjs";
 
 // Reads the assembled docs tree. get-started is authored here; platform, sdk,
 // cli, and ai are synced from their source repos (see docs.config.yaml).
@@ -53,7 +54,7 @@ function rehypeScriptToTemplate() {
 
 export default defineConfig({
   mdxOptions: {
-    remarkPlugins: [remarkCodeLangAlias],
+    remarkPlugins: [remarkCodeLangAlias, remarkRelocatedIndex],
     rehypePlugins: [rehypeScriptToTemplate],
     // Table cells index one document per cell, bloating the export without useful matches.
     remarkStructureOptions: {

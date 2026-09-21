@@ -9,6 +9,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { markdownLinks, routePath } from "./markdown-links.mjs";
+import { relocatedIndexHref } from "./relocated-index.mjs";
 
 const contentDir = process.argv[2] || "content";
 const publicDir = process.argv[3] || "public";
@@ -44,7 +45,7 @@ for (const file of mdFiles) {
   const text = fs.readFileSync(file, "utf8");
   for (const link of markdownLinks(text)) {
     if (/^(https?:|mailto:|tel:|#)/.test(link.url)) continue;
-    const url = routePath(link.url);
+    const url = routePath(relocatedIndexHref(link.url, file));
     if (url === "") continue;
 
     if (url.startsWith("/")) {
