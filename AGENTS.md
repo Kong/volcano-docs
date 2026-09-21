@@ -38,13 +38,18 @@ pnpm lint:docs <dir> # validate markdown against spec/markdown-format.md
 
 | Path | Purpose |
 |------|---------|
-| `content/` | The docs tree. `get-started` + `index.md` are authored here; `platform`, `sdk`, `cli`, `ai` are **synced** from source repos (`docs.config.yaml`) — do not hand-edit them. |
+| `content/` | The docs tree. `get-started`, `index.md`, and `sdk/index.md` are authored here. The language subtrees `sdk/{js,python,ruby}`, plus `platform`, `cli`, and `ai`, are **synced** from source repos (`docs.config.yaml`) — do not hand-edit them. |
 | `src/app/` | App Router: root layout, `(docs)` group, `[[...slug]]` renderer, `api/search`. |
 | `src/lib/` | `source.ts` (Fumadocs loader over `content/`), `layout.shared.tsx`. |
 | `source.config.ts` | Fumadocs MDX config; `.source/` is generated (gitignored). |
 | `spec/` | Docs format contract + JSON schema. |
 | `scripts/` | `lint-docs.mjs`, `migrate-docs.mjs`. |
 | `eslint-rules/` | The `volcano/*` custom rules (copied from volcano-web). |
+
+The SDK landing page is owned by this repository. When an SDK changes its minimum
+runtime or shared capabilities, update `content/sdk/index.md` with the language
+guide and verify the claims against that SDK's package metadata. Sync destinations
+must preserve this landing page; keep them scoped to individual SDK languages.
 
 ---
 

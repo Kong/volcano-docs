@@ -65,6 +65,17 @@ try {
     process.exit(1);
   }
   console.log(`check-search-index: query "${searchTerm}" returned ${results.length} result(s)`);
+  for (const [query, url] of [
+    ["Volcano SDK Documentation", "/sdk/js"],
+    ["Python SDK", "/sdk/python"],
+    ["Ruby SDK", "/sdk/ruby"],
+  ]) {
+    const matches = await client.search(query);
+    if (!matches.some((result) => result.type === "page" && result.url === url)) {
+      throw new Error(`check-search-index: query "${query}" did not find ${url}.`);
+    }
+    console.log(`check-search-index: query "${query}" found ${url}`);
+  }
 } finally {
   server.close();
 }
