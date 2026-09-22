@@ -22,6 +22,8 @@ If `regions` is omitted, the scheduler randomly chooses one deployed region when
 
 Cron expressions use standard 5-field syntax and are evaluated in UTC. Seconds fields, descriptors such as `@daily`, and Quartz-only syntax are not supported. Schedules must run no more frequently than once per minute and at least once every 31 days.
 
+[Durable functions](durable-functions.md) take schedulers too, on their own `durable-functions` collection and with the same request shape. Each tick starts an execution instead of invoking the function; the two collections do not accept each other's function ids.
+
 ## Explicit Regions
 
 ```json
@@ -50,5 +52,8 @@ Scheduled invocations are a **PRO** feature. On the Free plan a scheduler is kep
 but stops firing — no runs are recorded, and its next run time keeps advancing —
 so an upgrade resumes it on its own cadence. See
 [moving from Pro to Free](../guides/plans-and-limits.md#moving-from-pro-to-free).
+Creating one on Free answers `403`. Pro allows 5 per project, counted across
+standard and [durable](durable-functions.md) functions together, and a create
+past the cap answers `403` as well.
 
 Scheduled invocations deliver your configured payload as the function event. Volcano also injects `__volcano_schedule` with `scheduler_id`, `run_id`, `job_id`, `project_id`, `target_id`, `job_type`, and `region` so functions can distinguish manual and scheduled invocations.

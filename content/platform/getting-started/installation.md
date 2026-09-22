@@ -39,6 +39,12 @@ volcano login
 volcano login --token pk-xxxxxxxxxx
 ```
 
+A `pk-` platform token reaches every project in your account. For a CI job that
+deploys one project, create a project access token (`pt-`) instead and call the
+API with it — a leak then exposes that project only, and you can revoke it
+without disturbing anything else. See
+[Using the API](../api-reference/using-the-api.md#move-ci-off-an-account-wide-platform-token).
+
 See the [Volcano CLI docs](https://github.com/Kong/volcano-cli/tree/main/docs) for authentication and the full command reference (or run `volcano <command> --help`).
 
 ### Verify Installation
@@ -194,7 +200,10 @@ VOLCANO_SERVICE_KEY=your-service-key  # Server-side only
 | `VOLCANO_API_URL` | Your Volcano API endpoint | Yes |
 | `VOLCANO_ANON_KEY` | Public key for SDK initialization | Yes |
 | `VOLCANO_SERVICE_KEY` | Secret key with admin access | No |
-| `VOLCANO_PLATFORM_TOKEN` | Account-level API token | No |
+| `VOLCANO_PLATFORM_TOKEN` | Account-level API token (`pk-`) | No |
+
+For automation, prefer a project access token (`pt-`) over the account-level
+token. See [Project access tokens](../authentication/security/project-access-tokens.md).
 
 ## TypeScript support
 

@@ -21,12 +21,14 @@ account (auth)
     │     ├── connects → databases, storage
     │     ├── runs on → a runtime
     │     ├── invoked via → alias / HTTP / scheduler
+    ├── durable functions ..... long-running, checkpointed logic → durable-functions.md
     ├── databases ............. managed Postgres               → databases.md
     │     └── schema changed by → migrations
     ├── storage ............... buckets → objects, policies    → storage.md
     ├── variables ............. env vars / secrets             → variables.md
     ├── frontends ............. deployed sites, custom domains → frontends.md
     ├── git connection ........ push-to-deploy from GitHub     → git.md
+    ├── access tokens ......... project-scoped CI credentials  → access-tokens.md
     └── declarative config .... one YAML syncing the above     → ../project-configuration.md
 ```
 
@@ -50,7 +52,10 @@ The CLI can operate against two targets:
 
 Top-level resource commands (`volcano functions …`, `volcano databases …`, etc.)
 act on your **active context**: the local environment when running, otherwise
-the cloud project.
+the cloud project. [Durable functions](durable-functions.md) are the exception:
+the local environment does not run durable executions, so they live under
+`volcano cloud durable …` and a top-level `volcano durable …` says so rather
+than running.
 
 ## Output styling
 
@@ -79,8 +84,10 @@ Piped, CI, and `NO_COLOR` output remains plain. Machine output is unchanged.
 | Element | CLI can… | Commands | Details |
 |---|---|---|---|
 | Account / auth | sign up, log in/out | `signup`, `login`, `logout` | [authentication.md](authentication.md) |
+| Access tokens | create, list, get, revoke project credentials | `cloud access-tokens …` | [access-tokens.md](access-tokens.md) |
 | Project | create, list, get, rename, delete, select, get anon keys | `projects …`, `use` | below |
 | Functions | deploy, invoke, inspect, schedule, alias | `functions …` | [functions.md](functions.md) |
+| Durable functions | deploy, start, inspect executions, read logs, schedule | `cloud durable …` | [durable-functions.md](durable-functions.md) |
 | Databases | create, inspect, delete, migrate | `databases …`, `migrations …` | [databases.md](databases.md) |
 | Storage | manage buckets, objects, policies | `storage …` | [storage.md](storage.md) |
 | Variables | deploy, list, get, delete | `variables …` | [variables.md](variables.md) |

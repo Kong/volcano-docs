@@ -3,7 +3,9 @@ title: "Plans and limits"
 description: "Free vs Pro limits for functions, frontends, databases, storage, realtime, and your account on Volcano."
 ---
 
-Volcano has two plans, **Free** and **Pro**. Metered allowances apply to your combined usage across every project you own. Allowances reset each month at your account's anniversary time. Free accounts use their signup time. A new Pro subscription uses its subscription billing anchor. Days 29–31 move to the last day of a short month and return to the original day when possible. Annual subscriptions still receive twelve monthly allowance windows. Deleting a project does not remove its usage from the account total. Free stops at its allowance; Pro keeps serving and bills overage. Unused Pro credits and purchased overage capacity carry forward between monthly windows. New credits expire 12 calendar months after they are added, and Volcano uses credits with the nearest expiry first. Existing credits keep their current expiry. "Unavailable" means a feature is not offered on that plan.
+Volcano has two plans, **Free** and **Pro**. Metered allowances apply to your combined usage across every project you own. Allowances reset each month at your account's anniversary time. Free accounts use their signup time. A new Pro subscription uses its subscription billing anchor. Days 29–31 move to the last day of a short month and return to the original day when possible. Annual subscriptions still receive twelve monthly allowance windows. Deleting a project does not remove its usage from the account total. Free stops at its allowance; Pro keeps serving and bills overage. Concurrent function and frontend requests share the same allowance, including requests that are still completing. Unused Pro credits and purchased overage capacity carry forward between monthly windows. New credits expire 12 calendar months after they are added, and Volcano uses credits with the nearest expiry first. Existing credits keep their current expiry. "Unavailable" means a feature is not offered on that plan.
+
+A resource Volcano adds after your contract starts is not covered by it: your contract fixes the terms for what it prices, and a new resource has none. Start using one and it is served at the allowance and overage rate of the current offer, alongside everything your contract still fixes.
 
 ## Account
 
@@ -20,7 +22,32 @@ Volcano has two plans, **Free** and **Pro**. Metered allowances apply to your co
 | Memory | 128 MB | 256 MB | Per runtime |
 | Ephemeral disk | 512 MB | 1 GB | Per runtime |
 | Functions per project | 10,000 | 10,000 | Absolute hard cap |
+| [Schedulers](../functions/scheduled-invocations.md) | Unavailable | 5 | Per project, counted across standard and durable functions together |
 | [Runtimes kept ready](../functions/overview.md#response-time-on-the-first-invocation) | 1 per region, for 2 days after each deploy and 1 day after the most recent invocation | Same | Not counted as invocations or bandwidth |
+
+## Durable functions
+
+[Durable functions](../functions/durable-functions.md) are available on both plans and metered on their own allowances. Starting one does not spend the shared request allowance below.
+
+| Limit | Free | Pro | Scope |
+|---|---|---|---|
+| Execution allowance | 5,000 / month | 10,000 / month | Combined across all your projects; every start, including a retry you start yourself |
+| Operation allowance | 100,000 / month | 200,000 / month | Combined across all your projects; the execution itself plus every step, retry, wait, condition poll, callback, parallel branch and nested invocation it begins |
+| Compute allowance | 10,000 GB-s / month | 100,000 GB-s / month | Combined across all your projects; memory × time your code is actually running, summed over every resume. Time suspended in a wait is not charged |
+| Memory | 128 MB | 1 GB | Per execution, and the size its compute is charged at. Set by your plan, not per function |
+| Step timeout | 300 s | 900 s | One attempt between checkpoints, not the whole execution |
+| Execution timeout | 366 days | 366 days | A whole execution, including time suspended in a wait |
+| Result retention | 30 days | 30 days | After an execution finishes |
+| Concurrent executions | 10 | 100 | In flight at once, per project |
+| Durable functions per project | 10,000 | 10,000 | Absolute hard cap, counted separately from standard functions |
+| Schedulers | Unavailable | 5 | Per project, shared with standard function schedulers |
+| Runtimes kept ready | Not kept ready | Same | Durable functions are started, not called |
+
+Execution timeout and retention are the same on both plans on purpose: they are fixed when the function is created, so a plan change never leaves an existing function configured for limits its plan no longer allows. The timeout is set as high as it goes for the same reason — what actually bounds an execution is its 3,000 operations and your concurrent-execution cap, not the clock.
+
+A durable function gets more memory than a standard one on Pro because it orchestrates — it holds the state of a workflow across resumes, and on Pro that is where agent and fan-out work runs. Memory comes from your plan, and it is applied on a function's next deploy, so a plan change reaches an existing function when you next deploy it. More memory also means proportionally more CPU, and it is the size your compute allowance is charged at: the same work costs 8× more compute on Pro's 1 GB than on Free's 128 MB, against an allowance 10× larger.
+
+Operations and compute are both counted from a finished execution, so those allowances are enforced on the next start rather than by stopping an execution already running: whatever is in flight finishes and is billed. On Free that means a project can end a cycle slightly over them, bounded by how many executions it may run at once.
 
 ## Functions and frontends (shared)
 
@@ -28,9 +55,9 @@ Functions and frontends share these counters.
 
 | Limit | Free | Pro | Scope |
 |---|---|---|---|
-| Request allowance | 100,000 / month | 1,000,000 / month | Combined across all your projects: every function invocation **and** proxied frontend request, including static assets and `/_next/image` |
-| Rate limit (per resource) | 10 req/s | Unlimited | Each function or frontend |
-| Rate limit (per project) | 60 req/s | Unlimited | Across all functions and frontends |
+| Request allowance | 100,000 / month | 1,000,000 / month | Combined across all your projects: every function invocation **and** proxied frontend request, including static assets and `/_next/image`. Durable executions have their own allowances above |
+| Rate limit (per resource) | 100 requests / 10s | Unlimited | Each function or frontend |
+| Rate limit (per project) | 600 requests / 10s | Unlimited | Across all functions and frontends |
 | Build timeout | 30 min | 60 min | Per build |
 | Build-minute allowance | 60 / month | 60 / month | Combined across all your projects; Free blocks new builds at the allowance, Pro bills overage |
 
@@ -79,6 +106,14 @@ Postgres change notifications generated by Volcano do not count toward the messa
 | Absolute frontend hard cap | 10,000 | 10,000 | Safety hard cap |
 | Custom domains | Unavailable | 1 per frontend | Plan gate |
 | [Runtimes kept ready](../frontends/overview.md#response-time-on-the-first-request) | 1 per region, for 2 days after each deploy and 1 day after the most recent request | 2 per region, same windows | Not counted as requests or bandwidth |
+
+## API access tokens
+
+| Limit | Free | Pro | Scope |
+|---|---|---|---|
+| [Project access tokens](../api-reference/using-the-api.md) per project | 100 | 100 | Safety hard cap, counts only tokens that can still authenticate |
+
+Revoked and expired tokens do not count against it, so cycling short-lived tokens never fills the allowance.
 
 ## Authentication
 
@@ -135,7 +170,12 @@ Five things are not parked:
   until you take a backup, and the point-in-time window fills as the database
   writes.
 - **Function and frontend sizing.** Memory, timeout, and ephemeral disk change to
-  the Free values on the resource's next deploy.
+  the Free values on the resource's next deploy. A [durable
+  function](../functions/durable-functions.md)'s own sizing is part of this: its
+  step timeout drops from 900 seconds to 300 and its memory from 1 GB to 128 MB on
+  its next deploy, so a step that ran close to the Pro limits has to fit in the
+  Free ones afterwards. Until you deploy it, it keeps running at the Pro size and
+  its compute is charged at that size.
 - **Log history.** Log search and streaming immediately narrow to Free's
   retention window, so logs older than that stop being readable even if they were
   written while you were on Pro. Nothing is deleted, and upgrading brings the
@@ -149,6 +189,14 @@ Five things are not parked:
 Rate limits, monthly quotas, and realtime limits switch to the Free values right
 away. Requests already served and usage already recorded are kept, so an account
 that has passed a Free quota is over it until its next allowance window starts.
+
+Durable executions already running are the same: nothing stops them. The
+concurrent-execution cap drops to the Free value immediately, so a project that
+was running more than that keeps them to completion and cannot start another
+until enough have finished. Executions are not cancelled and no work is lost —
+ending one early to fit a new cap would throw away a job midway rather than
+merely delay it. An execution can run for a long time, so use `stop` on the ones
+you no longer need if you want slots back sooner.
 
 Database compute is the one thing Volcano resizes for you, because it bills by the
 hour whether or not anything connects. Each database drops to the Free compute size

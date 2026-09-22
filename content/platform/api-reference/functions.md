@@ -5,6 +5,8 @@ description: "Deploy and invoke serverless functions."
 
 Deploy and invoke serverless functions.
 
+These endpoints cover standard functions only. [Durable functions](../functions/durable-functions.md) are a separate collection under `/projects/{projectId}/durable-functions`, and a durable function's id answers `404` here.
+
 ## List Functions
 
 ```http
@@ -117,7 +119,7 @@ deployment finishes. Different functions and projects deploy concurrently.
 Deployment history reports waiting work as `queued` and replaced work as
 `superseded`.
 
-**Limit:** Each project can contain up to 10,000 functions. Creating a new function over this cap returns `403 Forbidden`.
+**Limit:** Each project can contain up to 10,000 standard functions. Creating a new function over this cap returns `403 Forbidden`. Durable functions have their own cap of the same size, counted separately.
 
 ## Deploy Multiple Functions
 
@@ -230,8 +232,18 @@ The direct `/functions/{functionId}/invoke` RPC endpoint remains authenticated.
 
 The HTTP status code and headers are forwarded from the function response, except
 for the platform-owned ones (`X-Volcano-Version`, `X-Volcano-Region`,
-`X-Volcano-Health`) and Volcano's internal headers, which are dropped.  
-All successful function invocations include `X-Volcano-Version` (`<version>` in production, `<env>-<version>` in non-production environments) and `X-Volcano-Region`.
+`X-Volcano-Health`, `X-Volcano-Function-Invoked`, `X-Volcano-Proxy-Ms`,
+`X-Volcano-Proxy-Handler-Ms`, `X-Volcano-Compute-Ms`) and
+Volcano's internal headers, which are dropped.  
+All successful function invocations include `X-Volcano-Version` (`<version>` in production, `<env>-<version>` in non-production environments), `X-Volcano-Region`, `X-Volcano-Proxy-Ms` (milliseconds spent preparing the call, from your request arriving until your function ran), `X-Volcano-Proxy-Handler-Ms` (the part of that spent in the invoke endpoint itself), and `X-Volcano-Compute-Ms` (milliseconds spent running your function).
+
+The JavaScript, Python, and Ruby SDKs can recover a rejected user credential
+before dispatch: they refresh the captured session once per resolution or
+invocation stage and retry with the original payload. They preserve explicit
+session replacement and never replay a function's own HTTP response, a platform
+403, or an ambiguous network failure. See the [JavaScript](/sdk/js/functions),
+[Python](/sdk/python/functions), and [Ruby](/sdk/ruby/functions) guides for native
+response and error handling.
 
 ## Resolve Function Name
 
@@ -274,22 +286,22 @@ These are runtime invocation logs. Set `resource.type` to `function`; omit
 `resource.ids` to list logs across all functions or include one or more function
 IDs for selected functions. The optional `q` field runs a free-text search. When
 `q` is omitted or blank, the endpoint returns stored logs using structured
-filters only. Use `invocation_id` to select one exact function invocation; it can
-be combined with `q` and the other structured filters. Deployment build logs are
-exposed through the deployment log endpoints below. The platform token must
-belong to the owner of `{projectId}`.
+filters only. Use `invocation.id` in `q` to select one function invocation.
+Deployment build logs use the resource deployment selector below. Authenticate
+with the project owner's platform token or a project access token; `read_only`
+is sufficient. Project end-user sessions cannot read these logs.
+
+See the [logs guide](../functions/logs.md) for query syntax and SDK examples.
 
 **Request Body Fields:**
 - `resource.type` - Required. Use `function`
 - `resource.ids` - Optional function IDs
 - `q` - Optional free-text query
-- `invocation_id` - Optional exact function invocation ID
 - `limit` - Max events (default: 100, max: 1000)
 - `cursor` - Opaque pagination cursor
 - `start_time` - Inclusive lower bound as an RFC3339 timestamp
 - `end_time` - Inclusive upper bound as an RFC3339 timestamp
-- `levels` - Array of `trace`, `debug`, `info`, `warn`, `error`, or `fatal`
-- `regions` - Region filters
+- Filter levels, regions, and invocation IDs through fields in `q`.
 
 **Example:**
 ```json
@@ -298,10 +310,7 @@ belong to the owner of `{projectId}`.
     "type": "function",
     "ids": ["550e8400-e29b-41d4-a716-446655440000"]
   },
-  "q": "checkout_failed",
-  "invocation_id": "01JZ8QK9V6X3P5T7N2M4R8C0AB",
-  "levels": ["warn", "error"],
-  "regions": ["us-east-1"],
+  "q": "body:checkout_failed invocation.id:01JZ8QK9V6X3P5T7N2M4R8C0AB level:(warn OR error) region:us-east-1",
   "limit": 50
 }
 ```
@@ -314,7 +323,7 @@ belong to the owner of `{projectId}`.
       "id": "log/us-east-1/01HKG3W9M0A5V7R2J6Z0Q6Y4S9",
       "timestamp": "2024-01-01T12:00:00Z",
       "level": "info",
-      "message": "Log message",
+      "body": "Log message",
       "resource": {
         "type": "function",
         "id": "550e8400-e29b-41d4-a716-446655440000",
@@ -420,3 +429,4 @@ Useful deployment fields in responses:
 - [Creating Functions](../functions/creating-functions.md)
 - [Invoking Functions](../functions/invoking-functions.md)
 - [Function Logs](../functions/logs.md)
+- [Durable Functions](../functions/durable-functions.md)

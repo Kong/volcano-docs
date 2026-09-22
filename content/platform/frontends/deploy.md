@@ -67,6 +67,7 @@ package manager in this order:
 | Your project | Volcano installs with |
 | --- | --- |
 | declares `"packageManager": "pnpm@9.15.0"` (or `yarn@`, `npm@`) in `package.json` | the manager you declared, at that version |
+| declares `"packageManager"` as anything else (`bun@…`, a bare `pnpm`) | the build fails |
 | declares nothing and ships one lockfile | the manager that lockfile belongs to |
 | declares nothing and ships several lockfiles | `pnpm`, then `yarn`, then `npm` |
 | declares nothing and ships no lockfile | `npm` |

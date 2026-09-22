@@ -152,6 +152,9 @@ functions:
 Then deploy it with `volcano config deploy`, or push it if the project uses
 [GitHub auto-deploy](../projects/git-deploy.md).
 
+Scoping works the same way for [durable functions](durable-functions.md), which
+read variables from their environment like any other function.
+
 A scoped function receives two sets of variables, and they are not equally
 binding:
 

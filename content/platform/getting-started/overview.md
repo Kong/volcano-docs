@@ -84,12 +84,15 @@ Volcano uses different keys for different purposes:
 
 | Key type | Purpose | Use in |
 |----------|---------|--------|
-| Platform token | Manage projects, deploy functions, provision databases | Backend, CI/CD |
-| Anon key | Initialize SDK, allow users to sign up/sign in | Frontend |
+| Platform token (`pk-`) | Manage every project in your account | Your terminal, backend, CI/CD |
+| Project access token (`pt-`) | Manage one project, with a read-only option | CI, scripts, AI agents |
+| Anon key | Initialize the SDK, let users sign up and sign in | Frontend |
 | Service key | Invoke functions as admin, bypass RLS | Backend only |
-| Access token | Authenticate as a specific user | Frontend, functions |
+| User access token | Authenticate as a specific user | Frontend, functions |
 
-> **Important:** Never expose platform tokens or service keys in frontend code. These keys have admin access and should only be used in secure server environments.
+> **Important:** Never expose platform tokens, project access tokens, or service keys in frontend code. They act on your project rather than on behalf of one user, and belong only in environments you control.
+
+For the full comparison, see [Token types](../authentication/security/token-types.md).
 
 ## A typical workflow
 
@@ -100,10 +103,18 @@ Volcano uses different keys for different purposes:
 5. **Build your frontend** — Use the SDK to authenticate users and invoke functions
 6. **Set up RLS** — Write policies to secure your data per user
 
+## Ways to use Volcano
+
+Everything above is reachable five ways — the dashboard, the CLI, the SDKs, the
+REST API, and the MCP server — and they are all clients of the same API, so
+nothing is available through only one of them. See
+[Ways to use Volcano](../interfaces/README.md) for which to reach for.
+
 ## What's next
 
 | Guide | Description |
 |-------|-------------|
+| [Ways to use Volcano](../interfaces/README.md) | Dashboard, CLI, SDK, API, and MCP — and when to use each |
 | [Quickstart](quickstart.md) | Deploy your first function in 5 minutes |
 | [Installation](installation.md) | Set up the SDK and CLI |
 | [Projects](../projects/overview.md) | Learn about project management |

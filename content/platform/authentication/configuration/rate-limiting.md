@@ -40,6 +40,7 @@ Prevent mass account creation.
 HTTP/1.1 429 Too Many Requests
 X-RateLimit-Limit: 50
 X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 1704128400
 
 {"error": "rate limit exceeded, try again later"}
 ```
@@ -70,15 +71,18 @@ Usually higher than signup/signin (legitimate users refresh frequently).
 
 ## Response Headers
 
-Every request includes rate limit headers:
+Signup, signin, and refresh responses carry the remaining quota:
 
 ```http
 X-RateLimit-Limit: 100
 X-RateLimit-Remaining: 73
-X-RateLimit-Reset: 1704128400
 ```
 
 Use these to show users their remaining quota.
+
+Signup, password reset, and email change add `X-RateLimit-Reset` to their `429`
+responses — the Unix timestamp the hour window rolls over. Signin and refresh
+do not send it.
 
 ## Per-IP, Per-Project
 

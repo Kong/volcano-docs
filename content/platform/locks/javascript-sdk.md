@@ -94,6 +94,27 @@ not yet reclaimable (`lock_ownership_lost`). Authentication, validation,
 rate-limit, and availability failures return an error. Keep the lease object
 private; its token proves ownership.
 
+## Recover an uncertain acquisition
+
+Create ownership and request IDs before acquisition when the caller needs to
+recover an uncertain response:
+
+```javascript
+const token = crypto.randomUUID();
+const requestId = crypto.randomUUID();
+const acquired = await volcano.locks.acquire('migration', { ttl: 30, token, requestId });
+```
+
+The SDK retries a transport failure or HTTP 503 once with the same key, TTL,
+IDs, and credential. Other HTTP errors are not retried. Reuse those IDs for the
+same uncertain acquisition; use a new ownership token for a new lease after
+release or expiry. Keep the ownership token private.
+
+Each lock method accepts `requestId`. `withLock` forwards acquisition IDs only
+to acquisition and gives renewal and release their own request IDs. Equivalent
+native examples are in the [Python](/sdk/python/locks) and [Ruby](/sdk/ruby/locks)
+lock guides.
+
 ## Reject writes from a displaced holder
 
 `lease.fencingToken` rises whenever the lock changes hands and stays the same

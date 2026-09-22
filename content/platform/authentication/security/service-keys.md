@@ -122,7 +122,7 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/service-keys/$KEY_ID/
   -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
 
-This generates a new key and immediately invalidates the old one. Update your environment variables before regenerating in production.
+This generates a new key and invalidates the old one. The old key stops working within a few seconds, so update your environment variables before regenerating in production.
 
 ### Limit access
 
@@ -163,6 +163,8 @@ curl "https://api.volcano.dev/projects/$PROJECT_ID/service-keys" \
 curl -X DELETE "https://api.volcano.dev/projects/$PROJECT_ID/service-keys/$KEY_ID" \
   -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
+
+A deleted key stops working within a few seconds.
 
 ## If a service key is compromised
 

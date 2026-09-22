@@ -46,6 +46,8 @@ await channel.send({ event: 'message', text: 'Hello!' });
 ## Configuration
 
 ```typescript
+import type { VolcanoAuth } from '@volcano.dev/sdk';
+
 interface RealtimeConfig {
   // Required
   apiUrl: string;           // Your Volcano API URL
@@ -54,6 +56,13 @@ interface RealtimeConfig {
   
   // Optional
   getToken?: () => Promise<string>;  // Function to refresh token
+  volcanoClient?: VolcanoAuth;      // Authenticated client for row fetching
+  databaseName?: string;            // Database used for row fetching
+  fetchConfig?: {
+    enabled?: boolean;             // Default: true when a client is provided
+    batchWindowMs?: number;         // Default: 20
+    maxBatchSize?: number;          // Default: 50
+  };
 }
 ```
 
@@ -281,6 +290,13 @@ presence.on('leave', (info) => {
 
 ## Postgres Changes events
 
+Standalone clients receive lightweight notifications containing the row's `id`.
+To fetch current INSERT and UPDATE rows automatically, provide an authenticated
+`volcanoClient` and `databaseName`. Callbacks must still handle a missing `record`
+when fetching fails. UPDATE does not include the previous row; DELETE carries
+only its key and is currently delivered to service-key subscriptions.
+See [Postgres change payloads](./postgres-changes.md#wire-payload).
+
 ### Listen for changes
 
 ```javascript
@@ -288,16 +304,15 @@ const db = realtime.channel('public:messages', { type: 'postgres' });
 
 // Listen for specific operations
 db.onPostgresChanges('INSERT', 'public', 'messages', (payload) => {
-  console.log('New row:', payload.record);
+  console.log('Inserted row ID:', payload.id ?? payload.record?.id);
 });
 
 db.onPostgresChanges('UPDATE', 'public', 'messages', (payload) => {
-  console.log('Updated row:', payload.record);
-  console.log('Old values:', payload.old_record);
+  console.log('Updated row ID:', payload.id ?? payload.record?.id);
 });
 
 db.onPostgresChanges('DELETE', 'public', 'messages', (payload) => {
-  console.log('Deleted row ID:', payload.old_record?.id);
+  console.log('Deleted row ID:', payload.id);
 });
 
 // Listen for all changes
@@ -317,7 +332,7 @@ Database changes are filtered by RLS policies. Users only receive changes for ro
 // Users will only receive changes for their own rows
 db.onPostgresChanges('*', 'public', 'notes', (payload) => {
   // Only changes to THIS user's notes
-  console.log('My note changed:', payload.record);
+  console.log('My note changed:', payload.id ?? payload.record?.id);
 });
 ```
 

@@ -83,7 +83,7 @@ to be stored, so Next.js's own rendering choice is the whole contract:
 
 | Route | What Next.js sends | At the edge |
 | --- | --- | --- |
-| Prerendered at build | `s-maxage=31536000` | Cached |
+| Prerendered at build | `s-maxage=31536000` | Cached until something replaces it |
 | `export const revalidate = 60` | `s-maxage=60` | Cached for 60 seconds |
 | `export const dynamic = 'force-dynamic'` | `no-store` | Never cached |
 | Reads cookies, headers, or search params | `no-store` | Never cached |
@@ -92,22 +92,78 @@ So a page that is always a `Miss` is a page your app is rendering per request.
 If you expected it to be cached, make it static — the usual cause is a dynamic
 API called in the page or in a layout above it, which opts the whole route out.
 
-**Cached pages are never more than a minute behind your app.** A page your app
-can replace at any moment cannot also be trusted for a year, so the edge checks
-back with your runtime at least every 60 seconds and serves what it already has
-while nothing has changed. Anything that changes what a page renders —
-[`revalidatePath()`, `revalidateTag()`](https://nextjs.org/docs/app/guides/incremental-static-regeneration),
-or a redeploy — reaches visitors within that window:
+**A cached page is kept for the lifetime it asked for.** A page prerendered at
+build stays at the edge until something replaces it, so a visitor returning the
+next day is answered without your runtime being involved at all. A page with
+`export const revalidate = N` expires on its own after N seconds.
+
+Three things replace a page before then: a redeploy,
+[`revalidatePath()`](https://nextjs.org/docs/app/api-reference/functions/revalidatePath),
+and [`revalidateTag()`](https://nextjs.org/docs/app/api-reference/functions/revalidateTag).
+All of them clear only the pages they affect — publishing one post does not empty
+the cache for the rest of your site:
 
 ```js
 // app/api/publish/route.js
 import { revalidatePath } from "next/cache";
 
 export async function POST() {
-  revalidatePath("/blog"); // live for everyone within a minute
+  revalidatePath("/blog"); // /blog is refetched on the next visit; nothing else moves
   return Response.json({ revalidated: true });
 }
 ```
+
+Two limits come with `revalidatePath()`. It clears the exact address that was
+revalidated — both `/blog` and `/blog/`, so a site that canonicalizes the
+trailing slash still drops the stored page — and the cache treats each query
+string as its own entry, so clearing `/blog` leaves `/blog?utm_source=newsletter`
+serving until that entry's own lifetime runs out. Redeploy when you need every
+variant of a page gone at once. A rewritten route is cleared at the address the
+visitor requested, not the destination the rewrite resolved. And the route has to
+be one Volcano can name: a path *ending* in `*` is rejected, because there is no
+way to clear that one page without also clearing every page sharing its prefix.
+An asterisk anywhere else in a path is fine, and so is a path of up to about
+3,950 characters. A path Volcano cannot clear is refused and recorded in your
+function's logs; `revalidatePath()` itself still returns normally, so check the
+logs if a page you cleared is still serving the old content.
+
+Passing `"layout"` as the second argument marks the layout and everything beneath
+it, which is more pages than a single address can name. Volcano clears the
+layout's own page. For the pages under it, tag their data and use
+`revalidateTag()`, or redeploy — a prerendered page is otherwise kept until
+something replaces it.
+
+The same limit applies to a typed dynamic pattern such as
+`revalidatePath("/product/[slug]", "page")`: that names `/product/[slug]`, not
+`/product/123` or `/product/456`. Tag the data those pages are built from if you
+need them cleared by name.
+
+**`revalidateTag()` clears pages too.** A tag names data rather than an address,
+so the CDN keeps the tags a page was built from alongside it and clears every
+page carrying the tag when you mark it — wherever those pages live:
+
+```js
+// app/api/publish/route.js
+import { revalidateTag } from "next/cache";
+
+export async function POST() {
+  revalidateTag("posts"); // every page built from `posts` is cleared; nothing else moves
+  return Response.json({ revalidated: true });
+}
+```
+
+Both reach visitors within seconds of the call, and a tag costs the same whether
+it clears two pages or ten thousand. A page is only cleared this way if it was
+stored after being built from that tag, so the first build of a page following a
+tag change is what puts it under the tag.
+
+Unlike `revalidatePath()`, a tag is not tied to an address, so it clears every
+query-string variant of the pages it covers.
+
+A page carries up to about forty tags to the CDN, and each tag has to be under
+about 215 characters with no spaces. Tags past either limit still work inside
+your app — they just will not clear the page from the CDN, so keep the tags you
+publish with short and few.
 
 **Signed-in pages are not shared.** The CDN keys on `Authorization` but not on
 cookies, so an answer that depends on who is asking is held out of the shared
@@ -135,8 +191,8 @@ Most of these rules act on a response, not on the route that produced it.
 an answer stored for an anonymous one. Cookies are not, and that is the gap to
 design around: ask the same URL without the session cookie and the answer is
 stored under whatever your app declared, and a later request that does carry one
-can be served that copy for up to a minute. On a route whose answer depends on a
-cookie, do not declare it shareable.
+can be served that copy for as long as your app said the page could live. On a
+route whose answer depends on a cookie, do not declare it shareable.
 
 A prefetch and a full page load of the same URL are cached separately, as are
 the same page requested on two different domains.
@@ -209,6 +265,25 @@ or bandwidth, and it does not appear in your
 Keeping a frontend ready renders a page, so anything your server-side code logs
 while doing that appears in your logs alongside real visits. Only the logging is
 shared; those renders are still not counted as requests.
+
+## Measuring where a response spent its time
+
+Every response Volcano proxies from your site carries:
+
+```text
+X-Volcano-Origin-Ms: 42
+```
+
+That is how long your site took to *start* answering, measured from the moment
+Volcano asked it. A page streams to the browser as it is produced, so by the
+time the last byte leaves there is nowhere left to write a header — first byte
+is the part that can be reported. Compare it against the browser's total load
+time: when the two are far apart, the difference is transfer and rendering
+rather than your server-side code.
+
+A static asset served from cache typically reports single digits. A page your
+server-side code renders reports whatever that render costs, plus a startup if
+the request arrived cold — see the section above.
 
 ## Platform error pages
 

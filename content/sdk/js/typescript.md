@@ -311,6 +311,8 @@ interface PostgresChange {
   old_record?: Record<string, unknown>;
   columns?: string[];
   timestamp: string;
+  id?: string | number;
+  mode?: 'lightweight';
 }
 ```
 
@@ -333,24 +335,18 @@ channel.onPostgresChanges('INSERT', 'public', 'messages', (change: PostgresChang
 ### Presence State
 
 ```typescript
-interface PresenceState {
-  [clientId: string]: Record<string, unknown>;
-}
-
-// Type your presence data
-interface UserPresence {
-  user_id: string;
-  username: string;
-  status: 'online' | 'away' | 'busy';
-}
+import type { PresenceState } from '@volcano.dev/sdk/realtime';
 
 channel.onPresenceSync((state: PresenceState) => {
-  const users = Object.values(state) as UserPresence[];
-  users.forEach((user) => {
-    console.log(`${user.username} is ${user.status}`);
-  });
+  for (const connection of Object.values(state)) {
+    console.log(connection.client, connection.user, connection.connInfo);
+  }
 });
 ```
+
+Each entry is a server connection record. One user can have multiple connections.
+`connInfo` and `chanInfo` contain server metadata when present. `track()` keeps
+local application state; it does not place custom fields on these records.
 
 ## Functions Types
 
@@ -392,6 +388,65 @@ if (error && VolcanoSystemError.is(error)) {
   console.error(error.status, error.message); // `status` is typed here
 }
 ```
+
+## Durable Function Types
+
+Writing a [durable function](./durable-functions.md) and calling one are two
+different type surfaces. The handler's types come from the `/durable` subpath,
+which is where the authoring API lives:
+
+```typescript
+import { durable, type DurableContext, type DurableHandler } from '@volcano.dev/sdk/durable';
+
+interface OrderInput {
+  order_id: number;
+}
+
+interface OrderResult {
+  order_id: number;
+  outcome: 'shipped' | 'refunded';
+}
+
+// `DurableContext` is what a helper takes when steps live outside the handler.
+async function charge(ctx: DurableContext, order: Order) {
+  return ctx.step('charge', () => chargeCard(order));
+}
+
+const run: DurableHandler<OrderInput, OrderResult> = async (input, ctx) => {
+  const order = await ctx.step('load', () => loadOrder(input.order_id));
+  await charge(ctx, order);
+  await ctx.wait('settle', '30s');
+  return { order_id: order.id, outcome: 'shipped' };
+};
+
+export const handler = durable(run);
+```
+
+`ctx.step`, `ctx.map` and `ctx.parallel` are generic in what they return, so a
+step's result type flows into the rest of the handler without a cast.
+`StepOptions`, `WaitUntilOptions`, `BatchOptions`, `BatchResult`, `Retry` and
+`DurableDuration` are exported alongside them for anything you build on top.
+
+Starting and reading executions uses the main entry point instead:
+
+```typescript
+import type { DurableExecutionStatus } from '@volcano.dev/sdk';
+
+const running: DurableExecutionStatus = 'running';
+const { data } = await volcano.durable.list(projectId, 'order-pipeline', { status: running });
+
+const execution = await volcano.durable.get(projectId, 'order-pipeline', executionId);
+if (execution.data?.status === 'succeeded') {
+  const result = execution.data.result as OrderResult;
+}
+```
+
+`DurableExecution` is the handle `start`, `get` and `stop` resolve with, and
+`PaginatedDurableExecutions` is what `list` returns. Both are generated from
+the API contract, so they follow the wire's snake_case (`function_id`,
+`created_at`, `result_expired`). `result` is `unknown` there — the platform
+returns whatever the handler produced and cannot know its type, so narrow or
+assert it on the way out.
 
 ## OAuth Types
 

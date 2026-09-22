@@ -243,6 +243,8 @@ Requirements:
 > **Security note:** Public functions still require a valid anon key, but anon keys are usually embedded in frontend apps.  
 > If your frontend exposes the anon key, treat `is_public: true` functions as internet-facing endpoints.
 
+Everything on this page is about standard functions. A [durable function](durable-functions.md) is not invocable through any of these: it answers `404` on this endpoint and on a function URL, whatever its visibility, because it runs as an execution you start and then poll.
+
 Function receives:
 ```javascript
 {
@@ -281,18 +283,41 @@ Every invocation response says which build and region answered:
 - `X-Volcano-Version`: `<version>` in `production`, `<env>-<version>` elsewhere (example: `staging-xyz`)
 - `X-Volcano-Region`: the region your function ran in (example: `us-east-1`)
 
-A third, `X-Volcano-Function-Invoked: true`, appears only once your function has
-actually run. Use it to tell your function's own `404` from Volcano's: a `404`
-without it means Volcano had no such function to call, so a client caching a
-function's id can discard that id and look the name up again. A `404` with it
-came from your code, and repeating the call would run your code twice. Do not
-read `X-Volcano-Version` for this — it is stamped on every response, including
-errors raised before your function is reached.
+When Volcano dispatched to your function, it also reports:
 
-Those three and `X-Volcano-Health` are set by the platform: a response header
-your function returns under one of those names is dropped rather than forwarded,
-as are Volcano's own internal headers. Every other header you return is
-forwarded as written.
+- `X-Volcano-Proxy-Ms`: milliseconds Volcano spent preparing the call, counted
+  from the moment your request arrived until your function was dispatched.
+  Covers authenticating the caller, validating the request, resolving the
+  function, and quota. Does not include function execution.
+- `X-Volcano-Proxy-Handler-Ms`: the part of `X-Volcano-Proxy-Ms` spent in the
+  invoke endpoint itself. Subtract it from `X-Volcano-Proxy-Ms` to see what
+  authentication and request validation cost.
+- `X-Volcano-Compute-Ms`: milliseconds spent running the function, from
+  dispatch until it returned. Does not include proxy preparation.
+
+```text
+X-Volcano-Proxy-Ms: 9
+X-Volcano-Proxy-Handler-Ms: 2
+X-Volcano-Compute-Ms: 41
+```
+
+Here the call waited 9 ms on Volcano, 7 ms of it before the invoke endpoint was
+reached, and 41 ms on the function.
+
+`X-Volcano-Function-Invoked: true` appears only once your function has actually
+run. Use it to tell your function's own `404` from Volcano's: a `404` without it
+means Volcano had no such function to call, so a client caching a function's id
+can discard that id and look the name up again. A `404` with it came from your
+code, and repeating the call would run your code twice. Do not read
+`X-Volcano-Version` for this — it is stamped on every response, including errors
+raised before your function is reached.
+
+`X-Volcano-Version`, `X-Volcano-Region`, `X-Volcano-Function-Invoked`,
+`X-Volcano-Proxy-Ms`, `X-Volcano-Proxy-Handler-Ms`, `X-Volcano-Compute-Ms`, and
+`X-Volcano-Health` are set by
+the platform: a response header your function returns under one of those names
+is dropped rather than forwarded, as are Volcano's own internal headers. Every
+other header you return is forwarded as written.
 
 ## Handling responses
 

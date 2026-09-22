@@ -198,7 +198,6 @@ Content-Type: application/json
 **Security:**
 - Generic response (doesn't reveal if email exists)
 - Doesn't reveal if already confirmed
-- Rate limited like signup
 - If user exists and is unconfirmed, resend rotates token (old link becomes invalid)
 - If user doesn't exist or is already confirmed, no email is sent
 
@@ -294,9 +293,9 @@ Content-Type: application/json
 
 ### Rate Limiting
 
-**Applies to:**
-- Signup (includes confirmation email sending)
-- Resend confirmation (uses signup rate limit)
+Signup is rate limited per project and client IP, which also caps the
+confirmation emails it sends. See
+[Rate limiting](configuration/rate-limiting.md).
 
 ## Configuration Examples
 

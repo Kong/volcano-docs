@@ -10,7 +10,7 @@ Presence channels let you track which users are online in real-time. Perfect for
 1. Clients subscribe to a presence channel
 2. User metadata (like `display_name`) from signup is automatically included in presence
 3. All subscribers receive join, leave, and sync events
-4. When a client disconnects, they're automatically removed
+4. When a client unsubscribes or disconnects, its membership is removed and the remaining subscribers receive a leave event
 
 ## Basic usage
 

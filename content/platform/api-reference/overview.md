@@ -28,14 +28,19 @@ curl "https://api.volcano.dev/projects" \
 
 Different endpoints require different token types:
 
-| Token type | Use for | Example |
-|------------|---------|---------|
-| Platform token | Managing projects, deploying functions, provisioning databases | Project management API |
-| Anon key | User authentication (signup, signin, refresh) | Auth endpoints with anon key |
-| Access token | Accessing user profile, invoking functions as a user | User-authenticated requests |
-| Service key | Admin operations, invoking functions, bypassing RLS | Backend admin operations |
+| Token type | Use for | Where it comes from |
+|------------|---------|---------------------|
+| Platform token (`pk-`) | Managing every project in your account | `volcano login`, or the dashboard |
+| Project access token (`pt-`) | Managing a single project from CI, a script, or an agent | `POST /projects/{id}/access-tokens` |
+| Anon key | User authentication (signup, signin, refresh) | Created with the project |
+| Auth user access token | Acting as one of *your* end users: their profile, invoking functions as them | Signup/signin response |
+| Service key | Admin operations, invoking functions, bypassing RLS | `POST /projects/{id}/service-keys` |
 
-See [Authentication](authentication.md) for details on each token type.
+See [Authentication](authentication.md) for details on each token type, and [Using the API](using-the-api.md) for a worked example from first token to first deploy.
+
+A machine-readable description of everything below is available at
+`https://api.volcano.dev/openapi.yaml` — see [OpenAPI specification](openapi.md)
+for generating a client or importing the API into a REST client.
 
 ## Request format
 
@@ -144,24 +149,27 @@ The response includes pagination metadata:
 
 ## Rate limiting
 
-API requests are rate limited. Rate limit information is included in response headers:
+The user authentication endpoints are rate limited per project and client IP, in hourly windows you [configure per project](../authentication/configuration/rate-limiting.md). They report the quota on every response:
 
 ```text
 X-RateLimit-Limit: 100
 X-RateLimit-Remaining: 73
-X-RateLimit-Reset: 1704128400
 ```
 
-When you exceed the rate limit, you'll receive a `429` response:
+Over the limit they return `429`:
 
 ```text
 HTTP/1.1 429 Too Many Requests
 X-RateLimit-Limit: 100
 X-RateLimit-Remaining: 0
-Retry-After: 60
+X-RateLimit-Reset: 1704128400
 ```
 
-Wait until the `Retry-After` period has passed before making more requests.
+`X-RateLimit-Reset` is a Unix timestamp for the end of the window. `/auth/signup`, `/auth/forgot-password`, `/auth/reset-password`, and `/auth/user/change-email` send it on a `429`; `/auth/signin` and `/auth/refresh` do not.
+
+No other endpoint sends these headers. Project management endpoints are not rate limited, so a request with a valid token is never refused for its rate. [Project locks](locks.md) and function invocation have their own limits and return `429` without these headers.
+
+One case does return `429` without a quota header: repeatedly presenting credentials that are not recognized. Each unrecognized value has to be checked, so a client working through many of them is rationed per source. Retry with a credential that works, or check the token still exists — a valid token is answered from cache and never counts against this.
 
 Every response says which build and region answered:
 
@@ -217,6 +225,30 @@ See [Projects](projects.md) for details.
 | `GET` | `/projects/{id}/functions/{functionId}/deployments` | List function deployments |
 
 See [Functions](functions.md) for details.
+
+### Durable functions
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/projects/{id}/durable-functions` | Deploy a durable function |
+| `GET` | `/projects/{id}/durable-functions` | List durable functions |
+| `GET` | `/projects/{id}/durable-functions/{functionId}` | Get a durable function |
+| `DELETE` | `/projects/{id}/durable-functions/{functionId}` | Delete a durable function |
+| `GET` | `/projects/{id}/durable-functions/{functionId}/deployments` | List durable function deployments |
+| `POST` | `/durable-functions/{functionId}/executions` | Start an execution with an application credential |
+| `POST` | `/projects/{id}/durable-functions/{functionId}/executions` | Start an execution as the project owner |
+| `GET` | `/projects/{id}/durable-functions/{functionId}/executions` | List executions |
+| `GET` | `/projects/{id}/durable-functions/{functionId}/executions/{executionId}` | Get an execution |
+| `POST` | `/projects/{id}/durable-functions/{functionId}/executions/{executionId}/stop` | Stop an execution |
+| `GET` | `/projects/{id}/durable-functions/{functionId}/schedulers` | List schedules |
+| `POST` | `/projects/{id}/durable-functions/{functionId}/schedulers` | Create a schedule |
+| `GET` | `/projects/{id}/durable-functions/{functionId}/schedulers/{schedulerId}` | Get a schedule |
+| `PATCH` | `/projects/{id}/durable-functions/{functionId}/schedulers/{schedulerId}` | Update a schedule |
+| `DELETE` | `/projects/{id}/durable-functions/{functionId}/schedulers/{schedulerId}` | Delete a schedule |
+
+Durable functions are a separate collection: a standard function's id is `404`
+here, and a durable function's id is `404` under `/projects/{id}/functions`. See
+[Durable functions](../functions/durable-functions.md) for details.
 
 ### Frontends
 
@@ -287,13 +319,37 @@ See [Auth endpoints](auth-endpoints.md) for details.
 | `GET` | `/projects/{id}/anon-keys` | List anon keys |
 | `DELETE` | `/projects/{id}/anon-keys/{keyId}` | Delete an anon key |
 
+### Project access tokens
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/projects/{id}/access-tokens` | Create a token and return its secret, once |
+| `GET` | `/projects/{id}/access-tokens` | List tokens (`page`, `limit`, `search`, `include_revoked`) |
+| `GET` | `/projects/{id}/access-tokens/{tokenId}` | Get one token's metadata |
+| `DELETE` | `/projects/{id}/access-tokens/{tokenId}` | Revoke a token |
+| `GET` | `/projects/{id}/access-tokens/usage` | Daily request counts for every token in the project |
+| `GET` | `/projects/{id}/access-tokens/{tokenId}/usage` | Daily request counts for one token |
+
+Creating, listing, reading, and revoking require a platform token: a project access token cannot manage project access tokens. The usage endpoints are ordinary project reads. See [Project access tokens](../authentication/security/project-access-tokens.md).
+
+### MCP
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/mcp` | Model Context Protocol endpoint for AI agents |
+
+This endpoint takes its project from the credential, so it accepts a project access token only. See [MCP server](../interfaces/mcp.md).
+
 ## What's next
 
 | Reference | Description |
 |-----------|-------------|
+| [Using the API](using-the-api.md) | Create a token, deploy, and read logs over HTTP |
 | [Authentication](authentication.md) | Token types and auth headers |
 | [Projects](projects.md) | Project management API |
 | [Functions](functions.md) | Function deployment and invocation |
 | [Databases](databases.md) | Database provisioning |
 | [Auth endpoints](auth-endpoints.md) | User authentication API |
+| [MCP server](../interfaces/mcp.md) | Give an AI agent a scoped tool surface over one project |
 | [Errors](errors.md) | Error codes and handling |
+| [OpenAPI specification](openapi.md) | Generate a client from the machine-readable contract |

@@ -13,35 +13,37 @@ Volcano is a backend-as-a-service platform that provides everything you need to 
 - **PostgreSQL Database** with Row-Level Security and a browser-friendly query builder
 - **File Storage** with access control policies
 - **Realtime** subscriptions for database changes, presence, and broadcast messaging
-- **Serverless Functions** for custom backend logic
+- **Serverless Functions** for custom backend logic, including durable
+  functions that checkpoint and resume across hours
 
 The SDK is designed to work seamlessly in browsers, React/Next.js applications, and Node.js environments.
 
 ## Documentation
 
-| Guide                                   | Description                                                   |
-| --------------------------------------- | ------------------------------------------------------------- |
-| [Getting Started](./getting-started.md) | Installation, configuration, and your first request           |
-| [Authentication](./authentication.md)   | User sign-up, sign-in, OAuth, sessions, and password recovery |
-| [Database](./database.md)               | Query builder for PostgreSQL with Row-Level Security          |
-| [Storage](./storage.md)                 | Upload, download, and manage files                            |
-| [Realtime](./realtime.md)               | WebSocket subscriptions, presence, and broadcast              |
-| [Functions](./functions.md)             | Invoke serverless functions                                   |
-| [Project locks](./locks.md)             | Leases that keep one holder at a time on backend work         |
-| [Next.js Integration](./nextjs.md)      | Server components, middleware, and SSR considerations         |
-| [TypeScript](./typescript.md)           | Type definitions and best practices                           |
-| [Error Handling](./error-handling.md)   | Error patterns and troubleshooting                            |
+| Guide                                       | Description                                                   |
+| ------------------------------------------- | ------------------------------------------------------------- |
+| [Getting Started](./getting-started.md)     | Installation, configuration, and your first request           |
+| [Authentication](./authentication.md)       | User sign-up, sign-in, OAuth, sessions, and password recovery |
+| [Database](./database.md)                   | Query builder for PostgreSQL with Row-Level Security          |
+| [Storage](./storage.md)                     | Upload, download, and manage files                            |
+| [Realtime](./realtime.md)                   | WebSocket subscriptions, presence, and broadcast              |
+| [Functions](./functions.md)                 | Invoke serverless functions                                   |
+| [Durable functions](./durable-functions.md) | Write functions that checkpoint and resume across hours       |
+| [Project locks](./locks.md)                 | Leases that keep one holder at a time on backend work         |
+| [Next.js Integration](./nextjs.md)          | Server components, middleware, and SSR considerations         |
+| [TypeScript](./typescript.md)               | Type definitions and best practices                           |
+| [Error Handling](./error-handling.md)       | Error patterns and troubleshooting                            |
 
 ## Quick Example
 
 Here's a complete example showing authentication and database queries:
 
 ```javascript
-import { VolcanoAuth } from '@volcano.dev/sdk';
+import { VolcanoClient } from '@volcano.dev/sdk';
 
 // Initialize the client
-const volcano = new VolcanoAuth({
-  apiUrl: 'https://api.yourproject.volcano.dev',
+const volcano = new VolcanoClient({
+  apiUrl: 'https://api.volcano.dev',
   anonKey: 'your-anon-key',
 });
 
@@ -88,3 +90,7 @@ Realtime support is included with the SDK and is available from
 ## License
 
 Apache License 2.0 - see [LICENSE](https://github.com/Kong/volcano-sdk-js/blob/main/LICENSE) for details.
+
+See [Logs](./logs.md) for project-token authentication, search, pagination, and activity.
+
+See [Versions and compatibility](./versions.md) for runtime support, upgrades, and restoring a tested dependency set.

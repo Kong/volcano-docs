@@ -11,6 +11,14 @@ Function schedulers are managed below a function:
 - `PATCH /projects/:id/functions/:functionId/schedulers/:schedulerId`
 - `DELETE /projects/:id/functions/:functionId/schedulers/:schedulerId`
 
+[Durable functions](../functions/durable-functions.md) take schedulers on the same
+routes below `/projects/:id/durable-functions/:functionId`, and a tick starts an
+execution instead of invoking the function.
+
+`GET /projects/:id/schedulers` lists every scheduler in the project, both kinds
+together. Each one carries `function_kind`, which is `standard` or `durable`, and
+tells you which collection to read the function back from.
+
 Create request:
 
 ```json

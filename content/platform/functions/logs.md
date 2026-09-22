@@ -5,8 +5,13 @@ description: "View historical and live execution logs for your functions."
 
 View historical and live execution logs for your functions.
 
-Function runtime and deployment build log endpoints require a platform token
-for the project owner. Tokens from other users cannot read logs for the project.
+Read runtime and deployment logs with a platform token belonging to the project
+owner or a project access token. A `read_only` project token is sufficient.
+Project end-user sessions, anon keys, and service keys do not grant log access.
+Keep project tokens on your server and rotate them through project token management.
+
+For SDK examples, see [JavaScript](/sdk/js/logs), [Python](/sdk/python/logs),
+and [Ruby](/sdk/ruby/logs).
 
 ## Runtime Logs
 
@@ -21,7 +26,9 @@ Content-Type: application/json
 
 Set `resource.type` to `function`. Omit `resource.ids` to return logs across all
 functions in the project, or include one or more function IDs to return logs for
-selected functions. The `q` field is optional; leave it blank or omit it to list
+selected functions. A [durable function](durable-functions.md) is read the same
+way, by its own ID; its runtime logs cover every execution, including what each
+resume logged again. The `q` field is optional; leave it blank or omit it to list
 stored logs using structured filters only.
 
 ```bash

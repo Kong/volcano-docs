@@ -353,6 +353,7 @@ configured frontend. It does not apply the rest of your project configuration.
 | Function source | Yes | Push |
 | Frontend source | Yes | Push |
 | Function invocation settings (`public`, modes, OpenAPI metadata) | Yes, from `volcano-config.yaml` | Push, or `volcano config deploy` |
+| Function kind (`standard` or `durable`) | Yes, from `volcano-config.yaml`, on the push that creates it | Fixed once created |
 | Function variable scope (`variable_scope`, `variables`) | Yes, from `volcano-config.yaml` | Push, or `volcano config deploy` |
 | Variables, buckets, auth, OAuth, email templates, schedulers, databases | No | `volcano config deploy` — see the [configuration manifest](configuration.md) |
 
@@ -364,7 +365,7 @@ code change.
 
 If your repository has a `volcano-config.yaml` at the build root, auto-deploy
 reads it and applies the per-resource settings that belong to the resources it
-deploys: function visibility, invocation/auth modes, and OpenAPI metadata:
+deploys: function kind, visibility, invocation/auth modes, and OpenAPI metadata:
 
 ```yaml
 version: 1
@@ -377,7 +378,25 @@ functions:
       openapi: 3.1.0
       info: { title: Hello webhook, version: 1.0.0 }
       paths: {}
+  - name: order-workflow
+    kind: durable
 ```
+
+### Deploying durable functions from a repository
+
+Durable functions live under `volcano/functions/` alongside standard ones and
+are declared with `kind: durable`. Omitting `kind` means `standard`, so a
+manifest written before durable functions existed keeps deploying unchanged.
+
+A function's kind is fixed when it is created. The declared kind therefore
+applies on the push that creates the function, and on every later push it is
+checked rather than applied — a manifest that changes `kind` for a function that
+already exists fails the run instead of silently deploying the wrong kind. To
+change a kind, delete the function and let the next push create it again.
+
+An unrecognised `kind` fails the run without retrying, the same as any other
+unusable manifest. That is deliberate: defaulting it would create a resource
+your repository does not describe, and no later push could correct it.
 
 Invocation settings are current function state, not properties of a code version:
 the declared values take effect when Volcano processes the push, before any code

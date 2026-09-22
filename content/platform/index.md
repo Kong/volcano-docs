@@ -13,6 +13,20 @@ New to Volcano? Start here:
 2. [Core concepts](getting-started/overview.md) — Understand how Volcano works
 3. [Installation](getting-started/installation.md) — Set up the SDK and CLI
 
+## Ways to use Volcano
+
+Everything Volcano does is one API. The dashboard, the CLI, the SDKs, and the
+MCP server are all ways of calling it — see
+[Ways to use Volcano](interfaces/README.md) for which to reach for.
+
+| Interface | Reach for it when | Documentation |
+|-----------|-------------------|---------------|
+| Dashboard | Exploring, one-off changes, reading logs and usage | [Dashboard](interfaces/dashboard.md) |
+| CLI | Deploying from a terminal or CI, migrations, local development | [CLI reference](/cli) |
+| SDK | Writing application code — auth, queries, storage, realtime | [JavaScript](/sdk/js), [Python](/sdk/python), [Ruby](/sdk/ruby) |
+| REST API | Automating what the CLI does not cover | [API reference](api-reference/overview.md) |
+| MCP server | Letting an AI agent inspect or change one project | [MCP server](interfaces/mcp.md) |
+
 ## Core features
 
 ### Functions
@@ -23,6 +37,8 @@ Serverless functions that run your backend code. Supports Node.js, Python, and R
 |-------|-------------|
 | [Overview](functions/overview.md) | What functions are and how they work |
 | [Creating functions](functions/creating-functions.md) | Deploy your first function |
+| [Durable functions](functions/durable-functions.md) | Long-running work that checkpoints and resumes |
+| [Developing durable functions locally](guides/durable-functions-locally.md) | Run one on your machine, then deploy it unchanged |
 | [Invoking functions](functions/invoking-functions.md) | Call functions from your app |
 | [User context](functions/user-context.md) | Access authenticated user data |
 | [Environment variables](functions/environment-variables.md) | Configure secrets and settings |
@@ -103,6 +119,7 @@ Deploy static and server-rendered sites (Next.js) with build/runtime variables a
 |-------|-------------|
 | [Anon keys](authentication/security/anon-keys.md) | Public keys for frontend use |
 | [Service keys](authentication/security/service-keys.md) | Secret keys with admin access |
+| [Project access tokens](authentication/security/project-access-tokens.md) | Project-scoped API credentials for CI, scripts, and agents |
 | [Token types](authentication/security/token-types.md) | Understanding different token types |
 | [Security checklist](guides/security-checklist.md) | Production security guide |
 
@@ -114,14 +131,6 @@ Deploy static and server-rendered sites (Next.js) with build/runtime variables a
 | [Export your source to GitHub](projects/export-to-git.md) | Initialize an empty repository with a project's stored source and deploy it from Git |
 | [Configuration manifest](projects/configuration.md) | Declarative `volcano-config.yaml` reference (config deploy/pull) |
 
-### CLI
-
-The Volcano CLI lets you manage your projects from the terminal.
-
-| Guide | Description |
-|-------|-------------|
-| [Volcano CLI](https://github.com/Kong/volcano-cli/tree/main/docs) | CLI installation, authentication, and command reference — maintained in the volcano-cli repo (`volcano <command> --help`, `volcano docs search`) |
-
 ## API reference
 
 Complete REST API documentation for all Volcano endpoints.
@@ -129,6 +138,8 @@ Complete REST API documentation for all Volcano endpoints.
 | Reference | Description |
 |-----------|-------------|
 | [Overview](api-reference/overview.md) | API basics and authentication |
+| [Using the API](api-reference/using-the-api.md) | Create an access token, deploy, read logs, handle errors |
+| [OpenAPI specification](api-reference/openapi.md) | Fetch the machine-readable contract and generate a client |
 | [Authentication](api-reference/authentication.md) | Auth headers and token types |
 | [Auth endpoints](api-reference/auth-endpoints.md) | Signup, signin, and user management |
 | [Projects](api-reference/projects.md) | Project management endpoints |
