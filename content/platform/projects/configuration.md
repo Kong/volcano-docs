@@ -176,7 +176,8 @@ auth:
 
 functions:                                  # must already be deployed
   - name: hello
-    public: true                            # anon-key invocation
+    kind: standard                          # standard (default) or durable; fixed at creation
+    public: true                            # anon-key invocation; anon-key start for durable
     invocation_mode: http                  # rpc (default) or http
     http_auth_mode: none                   # volcano (default) or none; none requires public
     openapi_spec:                          # optional OpenAPI 3.0/3.1 metadata; HTTP mode only
@@ -204,10 +205,15 @@ frontends:                                  # must already be deployed
         certificate_chain_pem: ${TLS_CHAIN_PEM}   # optional, write-only
 ```
 
-Not in the manifest: project logo, anon/service keys, auth users (no end-user
-creation, bans, or sessions), scheduler regions, code artifacts
-(function/frontend deploys), and one-shot actions (password reset, key
+Not in the manifest: project logo, anon/service keys, project access tokens,
+auth users (no end-user creation, bans, or sessions), scheduler regions, code
+artifacts (function/frontend deploys), and one-shot actions (password reset, key
 regenerate, test email, redeploy).
+
+Credentials stay out because they are state, not configuration: they are created
+and revoked imperatively, and a project access token's secret exists only in the
+response that created it. Manage them through
+[their endpoints](../authentication/security/project-access-tokens.md).
 
 ## Reconciliation semantics
 
@@ -220,6 +226,19 @@ regenerate, test email, redeploy).
   Unauthenticated HTTP ingress (`http_auth_mode: none`) is allowed only when
   the function is public. Changing such a function to private implicitly
   restores `http_auth_mode: volcano` when the auth mode is omitted.
+- **Function kind is asserted, never written.** `kind` is fixed when a function
+  is created, so the manifest compares it and reports an error when it
+  disagrees with the deployed function. Omitting it means `standard`, so name
+  `kind: durable` to describe a durable function. An export writes
+  `kind: durable` for durable functions and leaves it off standard ones, so
+  re-applying an export is a no-op either way.
+- **Durable functions take no invocation settings.** `invocation_mode`,
+  `http_auth_mode`, and `openapi_spec` describe synchronous HTTP invocation,
+  which a durable function does not have — it is started through its executions
+  collection. Declaring one on a durable function is a validation error, and an
+  export never writes them. `public` still applies: on a durable function it
+  lets an anon key start executions. See
+  [Durable functions](../functions/durable-functions.md).
 - **Shared variables.** `shared_variables: [LOG_LEVEL]` replaces the complete
   shared list using existing names only. Omission keeps membership; `[]` clears
   it. Apply changes no values and deletes no variables through this field.

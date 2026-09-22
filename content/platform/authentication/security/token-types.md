@@ -9,7 +9,7 @@ Volcano uses different token types for different purposes.
 
 **Purpose:** Manage your projects, functions, and databases
 
-**Created via:** Management API (port 8001)
+**Created via:** `volcano login` (browser sign-in), or the dashboard
 
 **Used for:**
 - Creating/deleting projects
@@ -17,14 +17,60 @@ Volcano uses different token types for different purposes.
 - Viewing logs
 - Managing auth users (admin operations)
 - Creating/revoking anon keys
+- Creating/revoking project access tokens
 
-**Format:** Random token
+**Format:** Random token, prefixed `pk-`
+
+**Scope:** Your whole account. For automation, mint a project access token with it rather than sharing it.
 
 **Example:**
 ```bash
 curl -X GET https://api.volcano.dev/projects \
-  -H "Authorization: Bearer your-platform-token"
+  -H "Authorization: Bearer pk-your-platform-token"
 ```
+
+---
+
+## Project Access Token
+
+**Purpose:** Manage a single project from CI, a script, or an AI agent
+
+**Created via:** `POST /projects/{id}/access-tokens`, which requires a platform token
+
+**Used for:**
+- Deploying functions and frontends
+- Reading and writing variables and project settings
+- Provisioning databases
+- Searching, streaming, and aggregating logs and metrics
+
+**Format:** Opaque random secret, prefixed `pt-`
+
+**Scopes:** `full` (everything the owner can do on that project, up to deleting it) or `read_only` (reads only, enforced by what the endpoint does rather than its HTTP method, and excluding the reads that return a credential — service keys, anon keys, variable values, and database connection strings)
+
+**Shown once:** The secret is returned only in the create response. Volcano stores a hash, so it cannot be retrieved later.
+
+**Example:**
+```bash
+# Create (platform token required)
+curl -X POST https://api.volcano.dev/projects/abc-123/access-tokens \
+  -H "Authorization: Bearer pk-your-platform-token" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"ci-deploy","scope":"full"}'
+
+# Use
+curl -X POST https://api.volcano.dev/projects/abc-123/functions \
+  -H "Authorization: Bearer pt-your-project-token" \
+  -F "name=checkout" -F "runtime=nodejs24.x" -F "code=@checkout.zip"
+```
+
+**Why it's safer than a platform token:**
+- Works on one project only; another project's route returns 403
+- Refused on account-scoped endpoints
+- Cannot create, list, read, or revoke project access tokens, including itself
+- Revocable in seconds, with an optional expiry
+- Keeps its record after revocation, so you can see what it did
+
+See [Project access tokens](project-access-tokens.md) for the full security model.
 
 ---
 
@@ -196,7 +242,8 @@ curl -X POST https://api.volcano.dev/databases/db-id/query/select \
 
 | Token Type | Created By | Used For | Scoped To | User Context | RLS |
 |------------|------------|----------|-----------|--------------|-----|
-| **Platform Token** | You (Management API) | Project management | Account | No | N/A |
+| **Platform Token** | You (`volcano login` or dashboard) | Project management | Account | No | N/A |
+| **Project Access Token** | You (platform token required) | Project management from CI, scripts, agents | Project | No | N/A |
 | **Anon Key** | Auto (per project) | Public auth + public function invoke | Project | No | N/A |
 | **Access Token** | Signup/signin | Functions + DB queries | Project + User | Yes | Enforced |
 | **Refresh Token** | Signup/signin | Token refresh | User | No | N/A |
@@ -213,8 +260,11 @@ curl -X POST https://api.volcano.dev/databases/db-id/query/select \
 **Backend admin operations / cron jobs:**
 → Use **Service Key**
 
-**Managing your project:**
+**Managing your projects from a workstation:**
 → Use **Platform Token**
+
+**Managing one project from CI, a script, or an agent:**
+→ Use **Project Access Token** (`read_only` unless the job deploys)
 
 **Getting new access token:**
 → Use **Refresh Token** (with Anon Key)
@@ -227,8 +277,10 @@ curl -X POST https://api.volcano.dev/databases/db-id/query/select \
 
 ## See Also
 
+- [Project Access Tokens](project-access-tokens.md) - Project-scoped API credentials for automation
 - [Anon Keys](anon-keys.md) - Public keys for frontend authentication
 - [Service Keys](service-keys.md) - Admin keys for backend operations
+- [Using the API](../../api-reference/using-the-api.md) - Task-oriented guide to the REST API
 
 
 

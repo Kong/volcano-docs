@@ -98,6 +98,11 @@ Export takes source from each function and frontend's latest successful
 deployment. A resource that has never deployed successfully appears in
 `skipped` and is not written.
 
+Both kinds of function are exported into the same `volcano/functions/`
+directory. Durable functions are marked with `kind: durable` in
+`volcano-config.yaml`, which is how the first push from the exported repository
+recreates them as durable rather than standard.
+
 Export refuses to push when a currently serving resource has no readable stored
 source or cannot be represented in the repository layout. This keeps the first
 Git deployment from waiting on source that the commit does not contain.

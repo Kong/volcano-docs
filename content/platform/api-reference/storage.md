@@ -4,6 +4,7 @@ description: "REST API endpoints for Volcano Storage operations."
 ---
 
 REST API endpoints for Volcano Storage operations.
+For language-native uploads and resumable sessions, see the [JavaScript](/sdk/js/storage), [Python](/sdk/python/storage), and [Ruby](/sdk/ruby/storage) guides.
 
 ## Authentication
 
@@ -575,7 +576,7 @@ Content-Type: application/json
 
 ```json
 {
-  "id": "session-abc123",
+  "session_id": "session-abc123",
   "part_size": 26214400,
   "total_parts": 205,
   "expires_at": "2024-01-22T10:30:00Z"
@@ -601,15 +602,15 @@ X-Upload-Session: session-abc123
 
 ```json
 {
-  "id": "session-abc123",
+  "session_id": "session-abc123",
   "status": "uploading",
-  "object_path": "videos/large-file.mp4",
+  "path": "videos/large-file.mp4",
   "content_type": "video/mp4",
   "total_size": 5368709120,
   "part_size": 26214400,
   "total_parts": 205,
-  "parts_uploaded": 100,
-  "bytes_uploaded": 2621440000,
+  "parts_uploaded": 2,
+  "bytes_uploaded": 52428800,
   "parts": [
     {"part_number": 1, "etag": "\"abc123\"", "size": 26214400},
     {"part_number": 2, "etag": "\"def456\"", "size": 26214400}
@@ -678,7 +679,9 @@ X-Upload-Complete: true
 
 ### Abort upload session
 
-Aborts a resumable upload using DELETE with session header.
+Aborts a resumable upload using DELETE with the session header.
+The session and its uploaded parts are discarded without publishing an object.
+Later status requests return `404 Not Found`.
 
 ```http
 DELETE /storage/{bucket_name}/{path}
@@ -706,7 +709,7 @@ curl -X POST "https://api.yourapp.com/storage/videos/movie.mp4" \
     "total_size": 524288000
   }'
 
-# Response: {"id": "session-123", "part_size": 26214400, "total_parts": 20, ...}
+# Response: {"session_id": "session-123", "part_size": 26214400, "total_parts": 20, ...}
 
 # 2. Upload parts (can be done in parallel)
 curl -X PUT "https://api.yourapp.com/storage/videos/movie.mp4" \
@@ -766,16 +769,10 @@ Upload sessions expire after 7 days. This is independent of token expiry - if yo
 
 ## Rate limits
 
-Storage operations are subject to rate limiting:
-
-| Operation | Limit |
-|-----------|-------|
-| Upload | 100 requests/minute |
-| Download | 1000 requests/minute |
-| List | 100 requests/minute |
-| Delete | 100 requests/minute |
-
-Exceeding limits returns `429 Too Many Requests`.
+Storage operations are not rate limited per request. They draw on your
+billing-cycle bandwidth allowance; once it is spent, storage requests are
+rejected with `429 Too Many Requests` until the meter resets or the cap is
+raised. See [Storage overview](../storage/overview.md#bandwidth).
 
 ## Examples
 

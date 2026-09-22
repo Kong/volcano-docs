@@ -776,6 +776,40 @@ Both methods use the same RLS enforcement.
 
 ---
 
+## Response headers
+
+Every query response reports where its time went:
+
+- `X-Volcano-Proxy-Ms`: milliseconds Volcano spent before running the query,
+  counted from the moment your request arrived — authenticating the caller,
+  validating the request, resolving the database, and building the SQL.
+- `X-Volcano-Proxy-Handler-Ms`: the part of `X-Volcano-Proxy-Ms` spent in the
+  query endpoint itself. Subtract it from `X-Volcano-Proxy-Ms` to see what
+  authentication and request validation cost.
+- `X-Volcano-Compute-Ms`: milliseconds the database took to run the query and
+  return its rows.
+
+All three are present whether the query succeeded or failed, so a slow
+statement and a slow request are easy to tell apart.
+
+```bash
+curl -sD - -X POST "https://api.volcano.dev/databases/$DATABASE/query/select" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"table":"posts"}' -o /dev/null | grep -i x-volcano
+```
+
+```text
+X-Volcano-Proxy-Ms: 6
+X-Volcano-Proxy-Handler-Ms: 2
+X-Volcano-Compute-Ms: 14
+```
+
+This query waited 6 ms on Volcano — 4 ms of it before the query endpoint was
+reached — and 14 ms on the database.
+
+---
+
 ## Limits
 
 - **Tables:** Must exist in your database

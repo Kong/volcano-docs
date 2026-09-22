@@ -14,6 +14,17 @@ Use this checklist before deploying your Volcano application to production.
 - [ ] Service keys never exposed in frontend applications
 - [ ] Platform tokens rotated on a regular schedule
 
+### Project access tokens
+
+- [ ] CI, scripts, and agents authenticate with a project access token (`pt-`), not an account-wide platform token
+- [ ] One token per pipeline and environment, so a single job can be revoked on its own
+- [ ] `read_only` scope wherever the job does not deploy (monitoring, smoke tests, log readers)
+- [ ] `expires_at` set on anything short-lived — contractor access, an agent run, a one-off migration
+- [ ] Tokens rotated on a schedule: create the replacement, swap the secret, then revoke the old one
+- [ ] Unused and revoked tokens cleaned up; a project holds at most 100 active tokens
+- [ ] Per-token usage reviewed for traffic you cannot account for
+- [ ] Token secrets held only in your secret store — they are shown once and cannot be recovered
+
 ### Token configuration
 
 - [ ] Access token lifetime set appropriately (default: 1 hour)
@@ -130,6 +141,8 @@ Have documented plans for:
 |----------|----------|
 | Compromised anon key | Revoke and regenerate, no data exposed |
 | Compromised service key | Revoke immediately, audit database for changes |
+| Compromised project access token | Revoke it, then rotate the project's other credentials and review its usage and deployments — revoking stops future calls but undoes nothing |
+| Compromised platform token | Rotate it, then check every project on the account; move automation to project access tokens |
 | Brute force attack | Lower rate limits, review authentication logs |
 | Data breach | Notify affected users, investigate scope |
 | DDoS attack | Enable additional rate limiting, contact support |
@@ -147,4 +160,5 @@ Have documented plans for:
 | Guide | Description |
 |-------|-------------|
 | [Service keys](../authentication/security/service-keys.md) | Secure your service keys |
+| [Project access tokens](../authentication/security/project-access-tokens.md) | Scope automation credentials to one project |
 | [Row-level security](../databases/row-level-security.md) | Protect data with RLS |

@@ -283,7 +283,7 @@ GET /projects/{id}/usage
 Authorization: Bearer <platform_token>
 ```
 
-Returns the current-month total, the lifetime (all-time) total, and recent daily/hourly series for each tracked metric, plus a per-frontend request breakdown for the current usage period.
+Returns the current-month total, the lifetime (all-time) total, and recent daily/hourly series for each tracked metric, plus a per-frontend request breakdown for the current usage period. `Durable Operations` and `Durable Compute (MB-Seconds)` lag the others: both are counted once an execution finishes, so work still running has not reached the series yet.
 
 **Response:**
 ```json
@@ -304,6 +304,27 @@ Returns the current-month total, the lifetime (all-time) total, and recent daily
       "all_time": 543210,
       "daily": [{ "timestamp": "2026-04-26T00:00:00Z", "value": 321 }],
       "hourly": [{ "timestamp": "2026-04-27T20:00:00Z", "value": 18 }]
+    },
+    {
+      "metric": "Durable Executions",
+      "total": 84,
+      "all_time": 1902,
+      "daily": [{ "timestamp": "2026-04-26T00:00:00Z", "value": 7 }],
+      "hourly": [{ "timestamp": "2026-04-27T20:00:00Z", "value": 1 }]
+    },
+    {
+      "metric": "Durable Operations",
+      "total": 3640,
+      "all_time": 81044,
+      "daily": [{ "timestamp": "2026-04-26T00:00:00Z", "value": 364 }],
+      "hourly": [{ "timestamp": "2026-04-27T20:00:00Z", "value": 52 }]
+    },
+    {
+      "metric": "Durable Compute (MB-Seconds)",
+      "total": 129024,
+      "all_time": 2842624,
+      "daily": [{ "timestamp": "2026-04-26T00:00:00Z", "value": 12902 }],
+      "hourly": [{ "timestamp": "2026-04-27T20:00:00Z", "value": 1843 }]
     }
   ],
   "frontends": [

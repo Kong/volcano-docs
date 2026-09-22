@@ -35,6 +35,8 @@ Functions:
 - Receive authenticated user identity when invoked with user tokens
 - Can be invoked automatically on a cron schedule with [scheduled invocations](scheduled-invocations.md)
 
+Work that runs longer than one invocation allows, or that has to wait on something, belongs in a [durable function](durable-functions.md) instead. Those checkpoint their progress and resume from the last completed step.
+
 ## CLI folder layout
 
 When using the Volcano CLI, place functions under:
@@ -154,7 +156,7 @@ Response:
 }
 ```
 
-The invocation HTTP status code and headers come directly from your function response, and Volcano adds `X-Volcano-Version` (`production`: `VERSION`, non-production: `ENV-VERSION`) and `X-Volcano-Region`. See [Invoking functions](invoking-functions.md#response-format) for the headers Volcano owns and does not forward.
+The invocation HTTP status code and headers come directly from your function response, and Volcano adds `X-Volcano-Version` (`production`: `VERSION`, non-production: `ENV-VERSION`), `X-Volcano-Region`, `X-Volcano-Proxy-Ms` (milliseconds spent preparing the call, from your request arriving until your function ran), `X-Volcano-Proxy-Handler-Ms` (the part of that spent in the invoke endpoint itself), and `X-Volcano-Compute-Ms` (milliseconds spent running your function). See [Invoking functions](invoking-functions.md#response-format) for the headers Volcano owns and does not forward.
 
 ## Environment variables
 
@@ -223,6 +225,11 @@ Nothing here is a setting, and it is the same on both plans. Keeping runtimes
 ready is not billed as invocations or bandwidth, and it does not appear in your
 [usage](../guides/plans-and-limits.md).
 
+[Durable functions](durable-functions.md) are not kept ready. They are started
+rather than called, and an execution that runs for hours pays a runtime start
+once at its beginning and once after each wait, so readiness is not what decides
+how long one takes.
+
 ### What runs, and what does not
 
 Your handler is never called to keep a runtime ready. Volcano starts the runtime
@@ -276,6 +283,7 @@ Functions have configurable resource limits based on your plan:
 | Guide | Description |
 |-------|-------------|
 | [Creating functions](creating-functions.md) | Detailed deployment guide with examples |
+| [Durable functions](durable-functions.md) | Long-running work that checkpoints and resumes |
 | [Invoking functions](invoking-functions.md) | Call functions from your app |
 | [User context](user-context.md) | Access authenticated user data |
 | [Environment variables](environment-variables.md) | Configure secrets and settings |

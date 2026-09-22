@@ -88,16 +88,19 @@ await presenceChannel.track(); // Automatic - uses metadata from signup
 
 ### Subscribe to database changes
 
+A standalone client receives the changed row's primary key. Optional row fetching
+can add `record` for INSERT and UPDATE; it does not provide previous row values.
+See [Postgres change payloads](./postgres-changes.md#wire-payload).
+
 ```javascript
 const dbChannel = realtime.channel('public:messages', { type: 'postgres' });
 
 dbChannel.onPostgresChanges('INSERT', 'public', 'messages', (payload) => {
-  console.log('New message inserted:', payload.record);
+  console.log('Inserted message ID:', payload.id ?? payload.record?.id);
 });
 
 dbChannel.onPostgresChanges('UPDATE', 'public', 'messages', (payload) => {
-  console.log('Message updated:', payload.record);
-  console.log('Previous value:', payload.old_record);
+  console.log('Updated message ID:', payload.id ?? payload.record?.id);
 });
 
 await dbChannel.subscribe();

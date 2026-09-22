@@ -37,6 +37,16 @@ console.log('Result:', data);
 
 `version` maps to the `X-Volcano-Version` response header (`<version>` in production, `<env>-<version>` in non-production).
 
+Function resolution and invocation recover from a platform HTTP 401 before dispatch:
+the SDK refreshes the captured session and retries the rejected request once.
+Concurrent calls share successful recovery. Replacing or signing out that session
+prevents replay under another identity. The call preserves its original payload values.
+A function's own response, HTTP 403, or a network failure never triggers this retry.
+Anonymous and service keys do not refresh.
+
+Starting sign-out prevents a pending invocation from dispatching. An invocation
+already sent to the function cannot be cancelled by changing the local session.
+
 ### With Typed Response
 
 ```typescript
@@ -262,6 +272,16 @@ exports.handler = async (event) => {
 };
 ```
 
+### Work That Runs for Hours
+
+A function invocation is bounded by its timeout, so work that has to survive
+longer — a multi-step pipeline, an approval that arrives tomorrow, a batch job
+over a flaky API — belongs in a
+[durable function](./durable-functions.md), which checkpoints its progress and
+resumes where it left off. Those are started with `volcano.durable.start`
+instead of `functions.invoke`, and answer with an execution to follow rather
+than a result.
+
 ## Use Cases
 
 ### When to Use Functions
@@ -291,6 +311,13 @@ The browser-based query builder is better for:
 ## Error Handling
 
 ### Client-Side
+
+Resolution and pre-dispatch HTTP errors retain `error.status`, plus `error.code`
+and `error.retryAfter` when the server supplies them. `retryAfter` is a delay in
+seconds. These fields remain available after narrowing an invocation error with
+`VolcanoSystemError.is(error)`. Transport failures have a null status and no HTTP
+metadata. A function's own HTTP response remains in `data` and `status`, with
+`error` set to null.
 
 ```javascript
 const { data, error } = await volcano.functions.invoke('process-payment', {

@@ -24,7 +24,7 @@ OAuth authentication in Volcano works in three main modes:
 
 ### Step 1: Configure OAuth Provider
 
-First, configure OAuth credentials for your project via the Management API:
+First, configure OAuth credentials for your project through the Volcano API:
 
 ```bash
 # Create OAuth configuration for Google

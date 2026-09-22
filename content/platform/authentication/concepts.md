@@ -6,9 +6,9 @@ description: "Core authentication concepts in Volcano: platform vs auth users, t
 ## Users
 
 **Platform Users** - Developers who use Volcano (you)
-- Created via Management API
+- Created when you sign up for Volcano
 - Own projects and resources
-- Authenticate with platform user tokens
+- Authenticate with a platform token from `volcano login`, or a [project access token](security/project-access-tokens.md) scoped to one project
 
 **Auth Users** - End-users of your application
 - Created via your project's auth endpoints
