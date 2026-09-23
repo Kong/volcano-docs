@@ -55,11 +55,18 @@ Functions and frontends share these counters.
 
 | Limit | Free | Pro | Scope |
 |---|---|---|---|
-| Request allowance | 100,000 / month | 1,000,000 / month | Combined across all your projects: every function invocation **and** proxied frontend request, including static assets and `/_next/image`. Durable executions have their own allowances above |
+| Request allowance | 100,000 / month | 1,000,000 / month | Combined across all your projects: every function invocation **and** proxied frontend request, including static assets and `/_next/image`. Durable executions have their own allowances above. Free enforcement is eventual |
 | Rate limit (per resource) | 100 requests / 10s | Unlimited | Each function or frontend |
 | Rate limit (per project) | 600 requests / 10s | Unlimited | Across all functions and frontends |
 | Build timeout | 30 min | 60 min | Per build |
 | Build-minute allowance | 60 / month | 60 / month | Combined across all your projects; Free blocks new builds at the allowance, Pro bills overage |
+
+Request enforcement on Free is eventual: the allowance is counted away from the
+request, so a project keeps being served for a few seconds after it reaches it
+and ends the cycle slightly over. Those requests are served and counted like any
+other. Volcano does this so a request never waits on a usage lookup, and it
+errs in your favour.
+
 
 ## Databases
 

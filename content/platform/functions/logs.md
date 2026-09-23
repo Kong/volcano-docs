@@ -168,9 +168,10 @@ internal failures are reported generically and logged server-side.
 
 Deployment build logs use the same project log search endpoint. Add a
 `resource.deployments.ids` selector to read one or more deployments for the
-selected function resources. Frontend logs include customer build output and
-stable platform errors with a support ID. They exclude platform commands,
-paths, and stack traces.
+selected function resources. New function and frontend builds show dependency
+installation, project build and syntax-check output, concise progress, and
+actionable errors. Platform setup, packaging, and publishing diagnostics stay
+in internal operator logs. Existing historical logs are unchanged.
 
 ```http
 POST /projects/{id}/logs/search

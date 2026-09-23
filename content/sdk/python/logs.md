@@ -26,6 +26,11 @@ for event in page.data:
 
 `search()` returns an immutable `LogSearchResponse` with `data`, `limit`, `has_more`, and `next_cursor`.
 
+Both log methods reject malformed response envelopes and row collections with
+`TypeError`. The response must be an object whose `data` field is a list of
+objects; an empty object is not an empty page. Page limits and activity totals
+must be integers, and `has_more` must be a boolean.
+
 ## Continue a search
 
 ```python

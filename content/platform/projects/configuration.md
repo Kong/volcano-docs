@@ -196,6 +196,10 @@ functions:                                  # must already be deployed
 frontends:                                  # must already be deployed
   - name: web
     variable_scope: shared                  # all (default), shared, or scoped
+    function_routes:                        # fully synced when declared
+      - function: hello                     # standard HTTP-mode function
+        path_prefix: /api                   # exact segment prefix; /api or /api/...
+        strip_prefix: true                  # function receives / for /api
     custom_domain:                          # PRO; BYOC TLS only
       domain: app.myapp.com
       tls:                                  # optional for an existing domain
@@ -226,6 +230,15 @@ response that created it. Manage them through
   Unauthenticated HTTP ingress (`http_auth_mode: none`) is allowed only when
   the function is public. Changing such a function to private implicitly
   restores `http_auth_mode: volcano` when the auth mode is omitted.
+- **Frontend Function routes.** Declaring `frontends[].function_routes` fully
+  syncs the same-origin path mappings for that frontend; routes absent from the
+  list are deleted. Omitting the key preserves existing routes, while
+  `function_routes: []` deletes them all. Targets must be deployed standard
+  Functions configured with `invocation_mode: http`. A route works on both the
+  generated frontend hostname (including preview deployments) and a custom
+  domain because routing follows the resolved frontend rather than the domain.
+  An apply may remove a function's routes and change it to `rpc` together;
+  Volcano removes the routes before changing the invocation mode.
 - **Function kind is asserted, never written.** `kind` is fixed when a function
   is created, so the manifest compares it and reports an error when it
   disagrees with the deployed function. Omitting it means `standard`, so name
