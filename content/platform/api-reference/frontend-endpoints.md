@@ -64,8 +64,8 @@ Supported frontend environments:
 - Node.js `22.x` and `24.x`, inferred from `package.json` `engines.node`.
 - OpenNext `4.x`.
 
-If `engines.node` is omitted, Volcano builds with Node.js `20.x`.
-Your selected Node.js family must satisfy the installed Next.js package's `engines.node` constraint. The runtime matrix is tested against the pinned Next versions' npm metadata: Next `15.5.25` requires `^18.18.0 || ^19.8.0 || >=20.0.0`, and Next `16.3.5` requires `>=20.9.0`.
+If `engines.node` is omitted, Volcano builds with Node.js `22.x`.
+Your selected Node.js family must satisfy the installed Next.js package's `engines.node` constraint. The runtime matrix is tested against the pinned Next versions' npm metadata: Next `15.5.26` requires `^18.18.0 || ^19.8.0 || >=20.0.0`, and Next `16.3.6` requires `>=20.9.0`.
 
 Plan limits:
 - FREE users can create up to `FREE_FRONTEND_DEPLOYMENTS` frontends per project.

@@ -50,7 +50,8 @@ document to route or validate runtime requests.
 Invocation metadata is control-plane configuration, so switching back does not
 redeploy or replace the function runtime. Patch the function back to `rpc`; Volcano
 atomically restores `http_auth_mode: volcano` and clears `openapi_spec`. Making
-the function private at the same time closes anon-key access as well:
+the function private at the same time closes anon-key access as well. Remove any
+Frontend Function routes attached to the function before switching it to `rpc`:
 
 ```bash
 curl -X PATCH "https://api.volcano.dev/projects/$PROJECT_ID/functions/$FUNC_ID" \
@@ -63,6 +64,56 @@ After the update, the DNS endpoint again accepts only `POST /` with the
 `{"payload": ...}` RPC envelope and Volcano authentication. Existing RPC
 functions require no migration action: a missing metadata row resolves to the
 same RPC/Volcano defaults.
+
+## Mount an HTTP Function on a Frontend path
+
+A Frontend can route a path prefix directly to an HTTP-mode Function. This is
+useful for same-origin web and billing APIs, and it lets a private Function act
+as an authentication backend without adding a browser SDK:
+
+```bash
+curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/frontends/$FRONTEND_ID/function-routes" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"function_id\":\"$FUNC_ID\",\"path_prefix\":\"/api/auth\",\"strip_prefix\":true}"
+```
+
+The Frontend and Function must belong to the same project, and the Function
+must use HTTP invocation mode. The Function may remain private because only the
+trusted Frontend route bypasses its public Function-DNS authentication. With
+`strip_prefix: true`, a request to `/api/auth/signin` reaches the Function as
+`/signin`; query parameters, request headers, body bytes, and cookies are
+preserved.
+
+Routes belong to the Frontend rather than to a particular hostname. They apply
+equally to its generated hostname, custom domain, local generated hostname, and
+any preview hostname that resolves to that Frontend. Responses are always
+marked `Cache-Control: private, no-store`. A Frontend can have up to 64 Function
+routes.
+
+To issue same-origin sessions, return each cookie as a separate `Set-Cookie`
+value. Omit `Domain` to make it host-only, use `HttpOnly` and `SameSite=Lax` (or
+the policy your application requires), and add `Secure` when
+`event.request_context.scheme` is `https`. For example:
+
+```javascript
+return {
+  statusCode: 200,
+  multiValueHeaders: {
+    'Set-Cookie': [
+      `volcano_access=${accessToken}; Path=/; HttpOnly; Secure; SameSite=Lax`,
+      `volcano_refresh=${refreshToken}; Path=/api/auth; HttpOnly; Secure; SameSite=Lax`
+    ]
+  },
+  body: JSON.stringify({ signed_in: true })
+};
+```
+
+In local mode, use the Frontend URL returned by Volcano, such as
+`http://FRONTEND_ID.frontends.localhost:8080`. Local HTTP cookies must omit
+`Secure`. A development server at `http://localhost:3000` does not pass through
+Volcano ingress by itself; configure that server to proxy `/api/auth` to the
+local Frontend URL if you want to keep using port 3000.
 
 ## Two ways to consume an RPC function
 
@@ -141,6 +192,7 @@ HTTP-mode functions receive this event instead of the RPC payload:
   "is_base64_encoded": false,
   "request_context": {
     "host": "FUNCTION_ID.functions.volcano.run",
+    "scheme": "https",
     "source_ip": "203.0.113.10",
     "protocol": "HTTP/1.1"
   }
@@ -160,8 +212,9 @@ the event reaches the function; authenticated-user context remains available as
 signature headers are application input and are forwarded. Internal
 `X-Volcano-*` headers are never forwarded.
 Proxy-derived headers (`Forwarded`, `X-Forwarded-*`, and `X-Real-IP`) are also
-removed; use `request_context.source_ip`, `request_context.host`, and
-`request_context.protocol` for Volcano's trusted connection metadata.
+removed; use `request_context.source_ip`, `request_context.host`,
+`request_context.scheme`, and `request_context.protocol` for Volcano's trusted
+connection metadata.
 
 Webhook example:
 

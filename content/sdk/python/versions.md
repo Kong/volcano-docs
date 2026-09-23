@@ -16,7 +16,7 @@ Keep the resolved dependency lock used by your application and install from that
 
 ## Runtime and compatibility
 
-Use Python 3.11 or later. Native CI tests Python 3.11 and 3.14; it does not test every intervening interpreter release. REST methods are synchronous, while realtime uses an asynchronous lifecycle.
+Use Python 3.11 or later. Native CI tests every Python version from 3.11 through 3.14. REST methods are synchronous, while realtime uses an asynchronous lifecycle.
 
 The package is currently on the 0.x release line. Treat a minor-version update as potentially incompatible and read its release notes before upgrading.
 JavaScript, Python and Ruby releases have independent version numbers; matching numbers are not a compatibility requirement.

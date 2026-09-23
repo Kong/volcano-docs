@@ -154,9 +154,9 @@ volcano cloud frontends logs my-site
 ```
 
 Build logs show the selected Node.js and package-manager versions, dependency
-installation, Next.js detection, the build command, and Next.js/OpenNext
+installation, Next.js detection, the build command, and your Next.js build
 output. Validation failures include an actionable message. Platform
-orchestration and infrastructure diagnostics stay in operator logs.
+setup, packaging, and publishing diagnostics stay in internal operator logs.
 
 ## Next
 

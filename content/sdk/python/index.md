@@ -6,7 +6,7 @@ order: 1
 
 Use `volcano-sdk-python` for authentication, database queries, storage, functions, logs, locks, and realtime events.
 REST calls are synchronous and raise typed exceptions on failure.
-Python 3.11 or later is required; CI tests Python 3.11 and 3.14.
+Python 3.11 or later is required; CI tests every Python version from 3.11 through 3.14.
 
 ## Install the published package
 

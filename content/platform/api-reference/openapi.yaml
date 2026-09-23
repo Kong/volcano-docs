@@ -2976,6 +2976,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '409':
+          description: Function settings conflict with attached Frontend Function routes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     delete:
       tags:
         - Functions
@@ -4663,7 +4669,7 @@ paths:
         22.x or 24.x. The Node.js runtime is inferred from
         `package.json` `engines.node`; if omitted, Volcano uses Node.js 22.x.
         The selected Node.js family must also satisfy the installed Next.js package's
-        `engines.node` constraint. Volcano tests Next 15.5.25 (`^18.18.0 || ^19.8.0 || >=20.0.0`) and Next 16.3.5 (`>=20.9.0`).
+        `engines.node` constraint. Volcano tests Next 15.5.26 (`^18.18.0 || ^19.8.0 || >=20.0.0`) and Next 16.3.6 (`>=20.9.0`).
         Source archive size is enforced by the API with `SOURCE_ARCHIVE_SIZE_LIMIT_MB`; the CLI
         does not apply its own source archive size limit. After the final container images are
         built, the publish build enforces `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB` before pushing.
@@ -5233,6 +5239,198 @@ paths:
                 $ref: '#/components/schemas/Error'
         '500':
           description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /projects/{id}/frontends/{frontendId}/function-routes:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/FrontendId'
+    get:
+      tags:
+        - Frontends
+      summary: List a Frontend's Function routes
+      operationId: listFrontendFunctionRoutes
+      security:
+        - UserToken: []
+        - ProjectAccessToken: []
+      responses:
+        '200':
+          description: Function routes ordered from most to least specific
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FrontendFunctionRouteList'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Project not owned by the caller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Failed to list Function routes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags:
+        - Frontends
+      summary: Route a Frontend path to an HTTP Function
+      operationId: createFrontendFunctionRoute
+      description: The Frontend and Function must belong to this Project. The Function may be private but must use HTTP invocation mode. The route applies to every hostname that resolves to the Frontend, including generated, custom-domain, preview, and local hostnames.
+      security:
+        - UserToken: []
+        - ProjectAccessToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFrontendFunctionRouteRequest'
+      responses:
+        '201':
+          description: Function route created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FrontendFunctionRoute'
+        '400':
+          description: Invalid path or non-HTTP Function
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Project not owned by the caller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Frontend or Function not found in the Project
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Path is already routed or the Frontend has reached its 64-route limit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Failed to create Function route
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /projects/{id}/frontends/{frontendId}/function-routes/{routeId}:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/FrontendId'
+      - $ref: '#/components/parameters/FrontendFunctionRouteId'
+    put:
+      tags:
+        - Frontends
+      summary: Replace a Frontend Function route
+      operationId: updateFrontendFunctionRoute
+      security:
+        - UserToken: []
+        - ProjectAccessToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFrontendFunctionRouteRequest'
+      responses:
+        '200':
+          description: Function route replaced
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FrontendFunctionRoute'
+        '400':
+          description: Invalid path or non-HTTP Function
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Project not owned by the caller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Function route, Frontend, or Function not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Path is already routed or the Frontend has reached its 64-route limit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Failed to replace Function route
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags:
+        - Frontends
+      summary: Delete a Frontend Function route
+      operationId: deleteFrontendFunctionRoute
+      security:
+        - UserToken: []
+        - ProjectAccessToken: []
+      responses:
+        '204':
+          description: Function route deleted
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Project not owned by the caller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Function route not found on the Frontend
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Failed to delete Function route
           content:
             application/json:
               schema:
@@ -13197,6 +13395,14 @@ components:
         type: string
         format: uuid
       description: Frontend ID
+    FrontendFunctionRouteId:
+      name: routeId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Frontend Function route ID
     FunctionId:
       name: functionId
       in: path
@@ -16262,6 +16468,72 @@ components:
         - deployed_regions
         - created_at
         - updated_at
+    FrontendFunctionRoute:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        frontend_id:
+          type: string
+          format: uuid
+        function_id:
+          type: string
+          format: uuid
+        path_prefix:
+          type: string
+          minLength: 2
+          maxLength: 512
+          pattern: ^/[^?#\\]*[^/?#\\]$
+        strip_prefix:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - project_id
+        - frontend_id
+        - function_id
+        - path_prefix
+        - strip_prefix
+        - created_at
+        - updated_at
+    FrontendFunctionRouteList:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FrontendFunctionRoute'
+      required:
+        - data
+    CreateFrontendFunctionRouteRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        function_id:
+          type: string
+          format: uuid
+        path_prefix:
+          type: string
+          minLength: 2
+          maxLength: 512
+          pattern: ^/[^?#\\]*[^/?#\\]$
+        strip_prefix:
+          type: boolean
+          default: false
+      required:
+        - function_id
+        - path_prefix
     FrontendCustomDomainResponse:
       type: object
       properties:
@@ -18732,6 +19004,12 @@ components:
           minLength: 1
         custom_domain:
           $ref: '#/components/schemas/ProjectConfigCustomDomain'
+        function_routes:
+          type: array
+          maxItems: 64
+          description: Complete set of same-origin Function path mappings when declared. Omission preserves existing mappings; an empty list deletes all mappings.
+          items:
+            $ref: '#/components/schemas/ProjectConfigFrontendFunctionRoute'
       required:
         - name
     ProjectConfigFunction:
@@ -20506,6 +20784,25 @@ components:
           $ref: '#/components/schemas/AuthPageTheme'
         layouts:
           $ref: '#/components/schemas/ProjectConfigAuthPageLayouts'
+    ProjectConfigFrontendFunctionRoute:
+      type: object
+      additionalProperties: false
+      properties:
+        function:
+          type: string
+          minLength: 1
+          description: Name of an existing standard Function configured for HTTP invocation.
+        path_prefix:
+          type: string
+          minLength: 2
+          maxLength: 512
+          pattern: ^/[^?#\\]*[^/?#\\]$
+        strip_prefix:
+          type: boolean
+          default: false
+      required:
+        - function
+        - path_prefix
     DatabaseQueryPerformanceDatabase:
       type: object
       properties:
