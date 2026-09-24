@@ -733,7 +733,7 @@ Authorization: Bearer <platform_token>
 - `allowed_email_domains` entries must be bare domains (`domain1.com`, not
   `user@domain1.com` or `localhost`), max 100. They are stored lowercased and
   replace the previous list; `[]` removes the restriction. The list is enforced
-  on PRO only — a downgrade parks it without discarding it. See
+  on SUPERAGENT only — a downgrade parks it without discarding it. See
   [Email Domain Allowlist](../authentication/configuration/email-domain-allowlist.md).
 - `allowed_email_domains_mode` must be `disabled`, `signup` (default), or
   `signup_and_signin`. `signup_and_signin` also blocks sign-in for accounts
@@ -747,7 +747,7 @@ Authorization: Bearer <platform_token>
 
 **Errors:**
 - `403` - The update would set or widen `allowed_email_domains` on a project
-  that is not on the PRO plan. Removing the restriction stays available on
+  that is not on the SUPERAGENT plan. Removing the restriction stays available on
   every plan
 
 ---

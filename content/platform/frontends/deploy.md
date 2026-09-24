@@ -122,7 +122,7 @@ generated files from the frontend bundle to reduce its size.
 
 ## 4. Add a custom domain
 
-Custom domains are **PRO** and use **bring-your-own-certificate (BYOC)** TLS —
+Custom domains are **SUPERAGENT** and use **bring-your-own-certificate (BYOC)** TLS —
 supply your own PEM certificate and unencrypted private key (`--chain` is
 optional):
 

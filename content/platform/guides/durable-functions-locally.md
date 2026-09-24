@@ -137,7 +137,7 @@ The same manifest, the same handler, the same runtime version. What differs in p
 - **Long waits work at their real length.** Run once with `LOCAL_DURABLE_REAL_TIME=true` before shipping a function whose timing matters.
 - **Your costs are what you expect.** Local executions are metered on the same three counters as deployed ones, so the project's usage is a fair estimate of what a workload will cost before you ship it. Read it from `GET /projects/{id}/usage` and check it against [the allowances for your plan](plans-and-limits.md).
 
-Callbacks are the one thing you cannot try locally: nothing here can deliver one, so an execution that waits on a callback fails saying so. Deploy the function to exercise that path.
+Volcano does not expose externally completed callbacks in local or cloud execution. Use `ctx.waitUntil` to poll application state instead.
 
 ## Related
 

@@ -32,7 +32,7 @@ version: 1
 project:
   name: my-app                              # optional rename
   all_regions: false
-  selected_regions: [us-east-1, us-west-2]  # bare region names; subset requires PRO
+  selected_regions: [us-east-1, us-west-2]  # bare region names; subset requires SUPERAGENT
 
 databases:                                  # must already exist; assertion-only
   - name: appdb                             # required, matches deployed database
@@ -128,10 +128,10 @@ auth:
     templates:                              # fully synced when declared
       confirmation:
         subject: "Confirm your email"
-        html_body: "<p>Confirm: {{.Token}}</p>"   # bodies require PRO
+        html_body: "<p>Confirm: {{.Token}}</p>"   # bodies require SUPERAGENT
         text_body: "Confirm: {{.Token}}"
       password_reset:
-        subject: "Reset your password"      # subject-only works on FREE
+        subject: "Reset your password"      # subject-only works on HOBBY
       password_changed:
         subject: "Your password was changed"
       welcome:
@@ -145,7 +145,7 @@ auth:
       post_auth: https://myapp.com/welcome
       post_logout: https://myapp.com/goodbye
       device_verification: https://myapp.com/device
-    pages:                                  # PRO; upsert-only (omission => untouched)
+    pages:                                  # SUPERAGENT; upsert-only (omission => untouched)
       login:
         html: "<html>...</html>"            # required, <=256 KiB
         css: "body{}"                       # optional, <=256 KiB
@@ -153,7 +153,7 @@ auth:
         html: "<html>...</html>"
       signup:                               # also: forgot_password, device, verify_email
         html: "<html>...</html>"
-    appearance:                             # PRO; built-in renderer configuration
+    appearance:                             # SUPERAGENT; built-in renderer configuration
       theme:                                # shared by every managed auth page
         version: 1
         colors:
@@ -200,7 +200,7 @@ frontends:                                  # must already be deployed
       - function: hello                     # standard HTTP-mode function
         path_prefix: /api                   # exact segment prefix; /api or /api/...
         strip_prefix: true                  # function receives / for /api
-    custom_domain:                          # PRO; BYOC TLS only
+    custom_domain:                          # SUPERAGENT; BYOC TLS only
       domain: app.myapp.com
       tls:                                  # optional for an existing domain
         mode: byoc
@@ -290,7 +290,7 @@ response that created it. Manage them through
 - **Email templates and built-in defaults.** Template content that still
   matches the built-in defaults is not a customization: exports omit the
   default bodies, and a declared `templates` map treats them as absent, so a
-  subject-only entry works on FREE without touching the default content. A
+  subject-only entry works on HOBBY without touching the default content. A
   template type absent from a declared map reverts to the built-in default.
 - **Never created, never deleted:** functions, frontends, databases, and
   buckets. The manifest only updates their configuration. Databases are
@@ -337,10 +337,10 @@ Both are warnings: the rest of the manifest still applies and the CLI exits 0.
   database assertion mismatches, plan-gate violations) return `422` with the
   full error list and **nothing is applied**.
 - Plan gates are change-aware: they only fire when the manifest would change a
-  gated value. Re-applying an export of a project downgraded from PRO stays a
+  gated value. Re-applying an export of a project downgraded from SUPERAGENT stays a
   no-op.
-- PRO-gated surfaces: region subsets, email template bodies, hosted pages,
-  custom domains, and the `auth.signup.allowed_email_domains` allowlist. A FREE
+- SUPERAGENT-gated surfaces: region subsets, email template bodies, hosted pages,
+  custom domains, and the `auth.signup.allowed_email_domains` allowlist. A HOBBY
   project can still declare the allowlist it already has, or clear it to remove
   the restriction. Scheduler counts and storage policy counts respect plan caps.
 - Apply-phase failures (a provider call failing mid-apply) return `200` with

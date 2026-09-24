@@ -222,7 +222,7 @@ Presence channel names can be up to 64 characters.
 
 Presence limits are based on your project plan:
 
-| Limit | FREE | PRO |
+| Limit | HOBBY | SUPERAGENT |
 |-------|------|-----|
 | Max channels per connection | 100 | 200 |
 | Max presences per channel | 10,000 | 10,000 |

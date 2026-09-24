@@ -256,7 +256,7 @@ back on the list, within a couple of minutes, so a site coming back to life is
 slow once rather than slow repeatedly. Redeploying restores the two-day window
 immediately.
 
-Nothing here is a setting. Both windows are the same on both plans; Pro keeps two
+Nothing here is a setting. Both windows are the same on both plans; SUPERAGENT keeps two
 runtimes ready per region instead of one, so two visitors arriving at once are
 both answered without a startup. Keeping runtimes ready is not billed as requests
 or bandwidth, and it does not appear in your
@@ -310,14 +310,14 @@ them with `volcano variables …` or the [declarative config](../projects/config
 
 ## Custom domains
 
-Custom domains are a **PRO** feature and use **bring-your-own-certificate
+Custom domains are a **SUPERAGENT** feature and use **bring-your-own-certificate
 (BYOC)** TLS: you supply the certificate and private key, and Volcano serves
 your domain with them. Volcano does not issue the certificate for you.
 
-On the Free plan an attached domain is kept but stops serving: requests to it
+On the HOBBY plan an attached domain is kept but stops serving: requests to it
 return `404` while the frontend's `*.frontends.volcano.run` URL keeps working. Upgrading
 puts the domain back in service without re-attaching it. See
-[moving from Pro to Free](../guides/plans-and-limits.md#moving-from-pro-to-free).
+[moving from SUPERAGENT to HOBBY](../guides/plans-and-limits.md#moving-from-superagent-to-hobby).
 
 Attaching a custom domain takes two steps — attach the domain (with your cert),
 then point DNS at your frontend:

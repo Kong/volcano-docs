@@ -127,10 +127,8 @@ For CLI workflows, see the [Volcano CLI docs](https://github.com/Kong/volcano-cl
 
 ## Storage limits
 
-Storage limits are enforced per-project based on your plan. Limits are configured via environment variables:
-
-- `FREE_STORAGE_LIMIT` - Storage limit for free plans (in MB)
-- `PRO_STORAGE_LIMIT` - Storage limit for pro plans (in MB)
+Your plan sets the account-wide storage allowance and maximum object size. See
+[Plans and limits](../guides/plans-and-limits.md#object-storage) for current values.
 
 **Error codes for file size violations:**
 - `413` - Plan-based storage quota exceeded or plan-based file size limit exceeded

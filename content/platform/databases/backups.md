@@ -8,7 +8,7 @@ can take one whenever you like, restore one in place, or roll the database back
 to any point inside your plan's history window without having taken a backup at
 all.
 
-Backups are a Pro capability. On the Free plan every endpoint on this page
+Backups are a SUPERAGENT capability. On the HOBBY plan every endpoint on this page
 returns `403`, including the read-only ones. See [Limits](#limits).
 
 Take one before anything you might want to undo:
@@ -300,8 +300,8 @@ Deleting a backup releases its storage, and takes effect immediately.
 The point-in-time history behind `restore_window` is not charged to you at all.
 Volcano covers it, because you did not choose it: it comes with your plan.
 
-Pro databases have no storage cap, so backups add to your storage figure rather
-than putting a limit at risk. Free databases are never counted for backup
+SUPERAGENT databases have no storage cap, so backups add to your storage figure rather
+than putting a limit at risk. HOBBY databases are never counted for backup
 storage, so the figure is zero there — including on one that still holds a
 scheduled backup from a plan it has since left.
 
@@ -333,13 +333,13 @@ whether or not you are looking, and retention is what bounds how many it holds.
 
 ## Limits
 
-| | Free | Pro |
+| | HOBBY | SUPERAGENT |
 |---|---|---|
 | Backups per database | Not included | 50 |
 | Backup retention | Not included | 30 days |
 | Point-in-time restore window | Not included | 7 days |
 
-Backups, scheduled backups, and point-in-time restore are all Pro. A Free
+Backups, scheduled backups, and point-in-time restore are all SUPERAGENT. A HOBBY
 project gets `403` from every endpoint here, with nothing to configure and
 nothing to turn on.
 
@@ -351,12 +351,12 @@ cannot silently consume two slots.
 Retention is applied when a backup is taken: `expires_at` is when it will be
 deleted for you.
 
-Downgrading to Free deletes the backups you took, turns off any schedule, and
+Downgrading to HOBBY deletes the backups you took, turns off any schedule, and
 closes the point-in-time window. Backups your schedule had already taken are left
 to expire on their own retention — you cannot list, restore, or delete them
 meanwhile, and they are not charged to you. Backup storage stops counting toward
 your database's storage with the downgrade itself, so a database whose data fits
-Free is not held over backups you can no longer reach. Upgrading gives the capability
+HOBBY is not held over backups you can no longer reach. Upgrading gives the capability
 back immediately, but it starts from that moment: there is nothing to restore from
 until you take a backup, and the point-in-time window fills as the database
 writes.

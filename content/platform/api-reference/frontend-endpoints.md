@@ -68,9 +68,8 @@ If `engines.node` is omitted, Volcano builds with Node.js `22.x`.
 Your selected Node.js family must satisfy the installed Next.js package's `engines.node` constraint. The runtime matrix is tested against the pinned Next versions' npm metadata: Next `15.5.26` requires `^18.18.0 || ^19.8.0 || >=20.0.0`, and Next `16.3.6` requires `>=20.9.0`.
 
 Plan limits:
-- FREE users can create up to `FREE_FRONTEND_DEPLOYMENTS` frontends per project.
-- PRO users can create up to `PRO_FRONTEND_DEPLOYMENTS` frontends per project.
-- A value of `0` means unlimited.
+- HOBBY users can create one frontend per project.
+- SUPERAGENT users can create frontends up to the project hard limit.
 - When exceeded, the API returns `403` with an error like `frontend deployment limit exceeded for your plan`.
 
 Hard limit:
@@ -117,7 +116,7 @@ Triggers a new deployment using the latest uploaded artifact. If `app_root` is c
 
 Returns `202 Accepted` and schedules asynchronous deprovisioning. If another deployment is running, list/get responses keep the frontend's current status and expose the queued deletion as `pending_deployment_id`. The status changes to `deleting` when cleanup starts. When cleanup finishes, the frontend no longer appears in lists and `GET /projects/{project_id}/frontends/{frontend_id}` returns `404`.
 
-## Create Frontend Custom Domain (PRO)
+## Create Frontend Custom Domain (SUPERAGENT)
 
 `POST /projects/{project_id}/frontends/{frontend_id}/domain`
 
@@ -129,8 +128,8 @@ JSON body:
 - `tls.certificate_chain_pem` (optional): PEM-encoded chain.
 
 Behavior:
-- FREE plan: returns `403` (custom domains are PRO-only).
-- PRO plan: configures one custom domain per frontend.
+- HOBBY plan: returns `403` (custom domains are SUPERAGENT-only).
+- SUPERAGENT plan: configures one custom domain per frontend.
 - BYOC is mandatory for custom-domain creation.
 - Your uploaded certificate is used to secure the custom domain.
 - Both the custom domain and default Volcano frontend URL continue to work.

@@ -255,7 +255,7 @@ own and some do not.
 All three messages carry a link to your usage page appended to them. They are the
 plan's monthly [durable
 allowances](../functions/durable-functions.md#limits-and-billing), and only a
-Free project is stopped at them; a Pro project is served and billed for the
+HOBBY project is stopped at them; a SUPERAGENT project is served and billed for the
 excess. None of them spends an execution, and none interrupts an execution
 already running — the operation and compute allowances in particular are applied
 to the next start, since neither is known until an execution has finished.

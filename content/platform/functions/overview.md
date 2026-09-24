@@ -270,7 +270,7 @@ Point the handler at the file directly if you want the behavior above.
 
 Functions have configurable resource limits based on your plan:
 
-| Resource | Free plan | Pro plan |
+| Resource | HOBBY plan | SUPERAGENT plan |
 |----------|-----------|----------|
 | Timeout | 180 seconds | 180 seconds |
 | Memory | 256 MB | 256 MB |

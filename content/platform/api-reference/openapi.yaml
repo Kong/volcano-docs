@@ -3328,10 +3328,9 @@ paths:
         '503':
           description: |
             Durable execution is not available in this environment, or the
-            usage limit service could not be reached to charge the start. The
-            first means the capability is paused or this deployment cannot
-            serve it, so it is not one to retry in a loop; the second is
-            transient.
+            plan terms for the start could not be read. The first means the
+            capability is paused or this deployment cannot serve it, so it is
+            not one to retry in a loop; the second is transient.
           content:
             application/json:
               schema:
@@ -4445,10 +4444,9 @@ paths:
         '503':
           description: |
             Durable execution is not available in this environment, or the
-            usage limit service could not be reached to charge the start. The
-            first means the capability is paused or this deployment cannot
-            serve it, so it is not one to retry in a loop; the second is
-            transient.
+            plan terms for the start could not be read. The first means the
+            capability is paused or this deployment cannot serve it, so it is
+            not one to retry in a loop; the second is transient.
           content:
             application/json:
               schema:
@@ -12725,7 +12723,9 @@ paths:
           description: |
             File size exceeds plan-based limits. This occurs when:
             - File exceeds the plan-based maximum file size (FREE or PRO tier)
-            - Upload would exceed the project's total storage quota
+            - The account on the FREE plan holds its file-storage allowance.
+              Enforcement is eventual: uploads are accepted until Volcano's
+              next allowance check sees the account at its allowance
         '429':
           $ref: '#/components/responses/BandwidthCapExceeded'
     put:

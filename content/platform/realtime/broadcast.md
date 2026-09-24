@@ -206,7 +206,7 @@ const channelB = realtimeB.channel('chat');  // Only Project B users
 
 ## Limits
 
-| Limit | Free Plan | Pro Plan |
+| Limit | HOBBY Plan | SUPERAGENT Plan |
 |-------|-----------|----------|
 | Max message size | 256 KB | 1 MB |
 | Max channels per connection | 100 | 500 |

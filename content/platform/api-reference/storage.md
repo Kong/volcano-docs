@@ -743,8 +743,8 @@ curl -X POST "https://api.yourapp.com/storage/videos/movie.mp4" \
 | Session expiry | 7 days |
 
 **Plan-based file size limits:**
-- **FREE tier**: Maximum file size is configured per deployment (e.g., 100MB)
-- **PRO tier**: Higher limits available (e.g., 1GB or more)
+- **HOBBY tier**: Maximum file size is configured per deployment (e.g., 100MB)
+- **SUPERAGENT tier**: Higher limits available (e.g., 1GB or more)
 
 Files exceeding the plan-based limit will be rejected with HTTP 413 at upload time (for simple uploads) or when creating a resumable upload session.
 

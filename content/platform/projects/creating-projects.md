@@ -14,7 +14,7 @@ curl -X POST https://api.volcano.dev/projects \
   -d '{"name":"my-app"}'
 ```
 
-Create a project restricted to one region (PRO plan):
+Create a project restricted to one region (SUPERAGENT plan):
 
 ```bash
 curl -X POST https://api.volcano.dev/projects \
