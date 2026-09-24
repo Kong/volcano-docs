@@ -48,9 +48,9 @@ Volcano enforces hard caps on resource creation:
 - Each user can create up to 1,000 projects.
 - Each project can contain up to 10,000 functions.
 - Each project can contain up to 10,000 frontends.
-- Each project can contain up to 10,000 databases on Pro (1 on Free).
+- Each project can contain up to 10,000 databases on SUPERAGENT (1 on HOBBY).
 
-See [Plans and limits](../guides/plans-and-limits.md) for Free vs Pro limits across every resource.
+See [Plans and limits](../guides/plans-and-limits.md) for HOBBY vs SUPERAGENT limits across every resource.
 
 Create requests that would exceed these caps return `403 Forbidden`.
 
@@ -63,7 +63,7 @@ curl -X POST "https://api.volcano.dev/projects" \
   -d '{"name": "my-app"}'
 ```
 
-To constrain function deployment to a subset of regions (PRO plan):
+To constrain function deployment to a subset of regions (SUPERAGENT plan):
 
 ```bash
 curl -X POST "https://api.volcano.dev/projects" \

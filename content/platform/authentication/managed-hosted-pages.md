@@ -117,7 +117,7 @@ runtime while taking on your brand:
   every authentication request: typing and moving between form states works,
   while account creation, sign-in, email delivery, and OAuth redirects do not.
 
-Theme and layout customisation requires PRO. A downgrade parks saved values:
+Theme and layout customisation requires SUPERAGENT. A downgrade parks saved values:
 the public page uses defaults and Volcano branding, while the appearance GET
 and preview endpoints remain available. Upgrading restores the saved values.
 
@@ -158,7 +158,7 @@ of the smart login flow reuses this layout.
 - Styling is fully inline (no external stylesheets or web fonts) so the pages
   stay within the strict managed-page Content-Security-Policy. System font
   stacks are used.
-- The "Powered by Volcano" badge is shown only on the FREE plan; it is omitted
+- The "Powered by Volcano" badge is shown only on the HOBBY plan; it is omitted
   on paid plans.
 
 Custom hosted pages (configured via `PUT /projects/{projectId}/auth/hosted-pages/{pageType}`)

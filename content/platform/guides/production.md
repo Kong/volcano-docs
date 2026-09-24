@@ -64,4 +64,4 @@ volcano cloud frontends logs my-site
 
 - Work through the [security checklist](security-checklist.md).
 - Review your plan against [plans and limits](plans-and-limits.md) — upgrade to
-  Pro for higher caps and scheduled functions.
+  SUPERAGENT for higher caps and scheduled functions.

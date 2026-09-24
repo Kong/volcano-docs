@@ -48,11 +48,11 @@ volcano functions schedulers delete my-function <scheduler-id>
 
 Schedulers are disabled or removed when their target function is deleted. When project region policy shrinks, scheduler rows for removed regions are disabled so stale regional workers cannot keep invoking removed functions.
 
-Scheduled invocations are a **PRO** feature. On the Free plan a scheduler is kept
+Scheduled invocations are a **SUPERAGENT** feature. On the HOBBY plan a scheduler is kept
 but stops firing — no runs are recorded, and its next run time keeps advancing —
 so an upgrade resumes it on its own cadence. See
-[moving from Pro to Free](../guides/plans-and-limits.md#moving-from-pro-to-free).
-Creating one on Free answers `403`. Pro allows 5 per project, counted across
+[moving from SUPERAGENT to HOBBY](../guides/plans-and-limits.md#moving-from-superagent-to-hobby).
+Creating one on HOBBY answers `403`. SUPERAGENT allows 5 per project, counted across
 standard and [durable](durable-functions.md) functions together, and a create
 past the cap answers `403` as well.
 

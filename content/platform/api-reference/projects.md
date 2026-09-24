@@ -96,7 +96,7 @@ Content-Type: application/json
 }
 ```
 
-To restrict a project to specific regions (PRO plan):
+To restrict a project to specific regions (SUPERAGENT plan):
 
 ```json
 {

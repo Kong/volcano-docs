@@ -17,7 +17,7 @@ Volcano provides serverless PostgreSQL databases. They auto-scale based on usage
 | Auth helpers | Built-in functions for user context (`auth.uid()`, `auth.email()`) |
 | Multiple databases | Create multiple databases per project |
 | Branching | Fork a database into an isolated, expiring copy for dev and CI |
-| Backups and restore | Back up on demand or on a schedule, and restore in place to a backup or a point in time (Pro) |
+| Backups and restore | Back up on demand or on a schedule, and restore in place to a backup or a point in time (SUPERAGENT) |
 
 ## Access methods
 

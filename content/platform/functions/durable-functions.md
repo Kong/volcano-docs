@@ -74,7 +74,7 @@ Every context operation is checkpointed: what finished is recorded, and a resume
 | `ctx.child(name?, fn)` | Groups operations under one checkpointed context. |
 | `ctx.log` | The execution's logger, with the execution's identifiers attached. |
 
-Waits and polls are held by the platform rather than by your code, so a function suspended for an hour costs nothing while it waits — but the execution timeout still applies. Full reference and worked examples are in the SDK's [durable functions guide](/sdk/js/durable-functions).
+Waits and polls are held by the platform rather than by your code, so a function suspended for an hour costs nothing while it waits — but the execution timeout still applies. Volcano does not expose externally completed callbacks; use `ctx.waitUntil` to poll application state instead. Full reference and worked examples are in the SDK's [durable functions guide](/sdk/js/durable-functions).
 
 ## Deploy one
 
@@ -463,7 +463,7 @@ Each tick starts an execution rather than invoking the function, and gives it an
 
 A schedule whose tick is still running when the next one is due starts a second execution; the concurrency cap is what bounds that. Give a long-running schedule an interval comfortably longer than the work.
 
-Schedulers are a Pro capability: on Free the create answers `403`. Pro allows 5 per project, counted across durable and standard functions together, and the sixth answers `403` as well.
+Schedulers are a SUPERAGENT capability: on HOBBY the create answers `403`. SUPERAGENT allows 5 per project, counted across durable and standard functions together, and the sixth answers `403` as well.
 
 ## Delete a durable function
 
@@ -490,7 +490,6 @@ Three things differ locally, all deliberately:
 
 - **A wait resolves immediately.** A function that waits a day is normal to write and unusable to sit through. Your function cannot tell — it still suspends, and still resumes with everything it had finished — but you get the answer in seconds. Set `LOCAL_DURABLE_REAL_TIME=true` to make waits take their real time.
 - **There is one region.** Everything runs on the one local engine, so there is nothing to choose between.
-- **Callbacks are not delivered.** Nothing local can call one back, so an execution that waits on one fails saying so rather than waiting for good. Deploy the function to run it.
 
 Everything else behaves as it does deployed: steps checkpoint and replay, a failed step retries on its backoff, `ctx.map` and `ctx.parallel` fan out, `ctx.waitUntil` polls, usage is metered on the same three counters, and an execution suspended when you stop the local server resumes when you start it again.
 
@@ -520,7 +519,6 @@ Durable executions are metered on three allowances of their own and spend nothin
 | Each `ctx.waitUntil` check | Size `maxAttempts` with this in mind: 200 checks is 200 operations |
 | Each `ctx.child` context | Plus whatever the child itself does |
 | Each `ctx.map` item and `ctx.parallel` branch | Each runs in a child context of its own |
-| Each callback the execution waits on | One per callback, however long it stays outstanding |
 | Each function an execution invokes from inside itself | One for making the call, on top of whatever the call costs |
 
 Only beginning something is charged. How it turned out — a step that succeeded, a wait that elapsed, an execution that failed — is a record of work already counted, not a second operation.
@@ -531,11 +529,11 @@ Only beginning something is charged. How it turned out — a step that succeeded
 compute = memory × (time running, summed over every resume)
 ```
 
-Waiting is not running. An execution suspended in a `wait`, a `waitUntil` between checks, or a callback that has not arrived holds no runtime and adds nothing, which is why a `waitUntil` on a long interval is cheaper than a short one for the same reason it is kinder to whatever it polls. Wall-clock life is not charged either: an execution that spends a day parked and a second working is charged for the second. A resume replays what it already recorded rather than doing it again, and replay is fast, but it does run — the time it takes is part of the resume that carries it.
+Waiting is not running. An execution suspended in a `wait` or a `waitUntil` between checks holds no runtime and adds nothing, which is why a `waitUntil` on a long interval is cheaper than a short one for the same reason it is kinder to whatever it polls. Wall-clock life is not charged either: an execution that spends a day parked and a second working is charged for the second. A resume replays what it already recorded rather than doing it again, and replay is fast, but it does run — the time it takes is part of the resume that carries it.
 
 Operations and compute are both counted once an execution has finished, so a long execution's usage appears when it ends rather than as it runs.
 
-| Limit | Free | Pro |
+| Limit | HOBBY | SUPERAGENT |
 |---|---|---|
 | Execution allowance | 5,000 / month | 10,000 / month |
 | Operation allowance | 100,000 / month | 200,000 / month |
@@ -548,9 +546,9 @@ Operations and compute are both counted once an execution has finished, so a lon
 | Concurrent executions per project | 10 | 100 |
 | Durable functions per project | 10,000 | 10,000 |
 
-All three allowances are combined across your projects. Past any of them Free stops starting new executions and Pro bills the excess.
+All three allowances are combined across your projects. Once any of them is reached, HOBBY stops starting new executions within a few seconds and SUPERAGENT bills the excess. See [how HOBBY allowances are enforced](../guides/plans-and-limits.md#how-hobby-allowances-are-enforced).
 
-Memory comes from your plan rather than from the function, and a function picks up a plan change on its next deploy. More memory means proportionally more CPU, so a Pro execution both has more room and runs faster — and its compute is charged at the larger size, so the same work costs 8× the compute of Free's 128 MB against an allowance 10× larger.
+Memory comes from your plan rather than from the function, and a function picks up a plan change on its next deploy. More memory means proportionally more CPU, so a SUPERAGENT execution both has more room and runs faster — and its compute is charged at the larger size, so the same work costs 8× the compute of HOBBY's 128 MB against an allowance 10× larger.
 
 The step timeout bounds one attempt between checkpoints, not the execution: a durable function outlives it by checkpointing and being resumed. The execution timeout bounds the whole execution, including time suspended in a wait.
 
@@ -558,11 +556,11 @@ In practice operations run out before the clock does. An execution gets 3,000 of
 
 The other thing a long execution holds is one of your concurrent execution slots, for as long as it runs. That cap, not the timeout, is what limits how much long-lived work a project can have in flight at once; `stop` is how you get a slot back early.
 
-Because operations and compute are only known once an execution has finished, those allowances are applied to the next start rather than to work already under way. An execution running when one runs out is never interrupted: it finishes, and it is charged for what it did. The start that follows answers `429` with which allowance it hit, and spends no execution.
+Every allowance is applied to the next start rather than to work already under way, and operations and compute are only known once an execution has finished. An execution running when one runs out is never interrupted: it finishes, and it is charged for what it did. The start that follows answers `429` with which allowance it hit, and spends no execution.
 
 The number of executions in flight at once is capped per project, and a start beyond that cap answers `429` as well. An execution stops counting against the cap once it finishes, whether or not you ever read it. Fire-and-forget starts are safe: you do not have to poll an execution to release its slot.
 
-Starting through the application endpoint goes through the same rate limit and the same CORS policy as a function invocation: on Free that is 100 starts per 10 seconds for one function and 600 across the project, and a browser start is refused when the project enforces CORS and the page's origin is not allowed. Both refuse before an execution begins — `429` for the rate limit, `403` for the origin — so neither spends an execution. The project-scoped owner endpoint is not rate limited.
+Starting through the application endpoint goes through the same rate limit and the same CORS policy as a function invocation: on HOBBY that is 100 starts per 10 seconds for one function and 600 across the project, and a browser start is refused when the project enforces CORS and the page's origin is not allowed. Both refuse before an execution begins — `429` for the rate limit, `403` for the origin — so neither spends an execution. The project-scoped owner endpoint is not rate limited.
 
 Durable functions are counted against their own per-project cap, so they cannot exhaust the standard function cap or the other way round. See [Plans and limits](../guides/plans-and-limits.md).
 
@@ -573,4 +571,4 @@ Durable functions are counted against their own per-project cap, so they cannot 
 | [Functions overview](overview.md) | Standard functions, runtimes, and packaging |
 | [Environment variables](environment-variables.md) | Configure secrets and settings |
 | [Logs](logs.md) | View and filter function logs |
-| [Plans and limits](../guides/plans-and-limits.md) | Free and Pro limits in full |
+| [Plans and limits](../guides/plans-and-limits.md) | HOBBY and SUPERAGENT limits in full |

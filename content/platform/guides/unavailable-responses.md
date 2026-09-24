@@ -85,6 +85,20 @@ application/json` on any request whose response your code parses as JSON.
 | Realtime | WebSocket close code `4503` |
 | pgproxy | Postgres `ErrorResponse`, SQLSTATE `57P03` (`cannot_connect_now`) |
 
+The codes above are what a **new** connection attempt gets. When `read_only`
+status propagates, Volcano also force-closes already-established pgproxy
+connections and realtime clients, but that teardown does not send these
+codes: pgproxy drops the socket without an `ErrorResponse`, and realtime
+closes with generic close code `3004`, not `4503`. Treat an unexpected
+disconnect on a working connection as a signal to reconnect, then read the
+refusal from the codes above on that next attempt. Neither realtime nor
+pgproxy re-checks project traffic status on an already-established
+connection, so a session that was still establishing when status changed
+can escape the teardown sweep entirely: it keeps working, with no re-check
+on its later requests, until the client or server ends that connection for
+an unrelated reason — at which point the next reconnect is refused. This
+can take time across instances.
+
 Function invocation, storage, the database REST API, and auth-user endpoints
 never turn a browser-issued `Accept` header into HTML: a script or SDK calling
 these must always be able to parse the response as JSON.
@@ -100,13 +114,16 @@ SQLSTATE: 57P03
 ## Recovery
 
 Traffic resumes automatically once the underlying condition clears — nothing
-needs to be purged or redeployed. The `no-store` response is never cached, but
-the allow/deny decision itself is cached for up to a couple of seconds at the
-traffic gate, so a request made immediately after recovery can still see one
-more unavailable response before the next one succeeds.
+needs to be purged or redeployed. For an account restricted by overage arrears,
+Volcano requests `read_only` status until the monthly credit grant or purchased
+credits clear the arrears, then requests `active` status. The allowance
+resetting by itself does not resume usage while arrears remain. The `no-store`
+response is never cached, but the
+allow/deny decision at the traffic gate is cached and refreshes eventually after
+the status change. A request made immediately after recovery can still receive
+an unavailable response.
 
 If you see this on your own project, check your account and project status in the
-Volcano dashboard — it reports the specific reason, which the response
-deliberately withholds from your visitors. See
-[plans and limits](plans-and-limits.md) for the limits that apply to your
-project.
+Volcano dashboard. The response deliberately withholds the reason from your
+visitors. See [plans and limits](plans-and-limits.md) for the limits and billing
+behavior that apply to your project.

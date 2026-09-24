@@ -151,7 +151,7 @@ curl -X PUT https://api.volcano.dev/projects/{PROJECT_ID}/auth/config \
 
 ## Restricting signups to specific email domains
 
-**PRO plan required.**
+**SUPERAGENT plan required.**
 
 `allowed_email_domains` limits which email domains can own an account in the
 project. Empty (the default) allows any domain.
@@ -197,7 +197,7 @@ device-code token exchange; saving that mode signs out the accounts it excludes.
 
 Matching is exact and case-insensitive on the domain part, so listing
 `domain1.com` does **not** allow `mail.domain1.com`. Existing accounts are never
-deleted, and `[]` removes the restriction. Enforcement needs PRO too: a
+deleted, and `[]` removes the restriction. Enforcement needs SUPERAGENT too: a
 downgrade parks the list, keeping the domains and letting every domain in again
 until the project upgrades. See
 [Email Domain Allowlist](configuration/email-domain-allowlist.md) for the
@@ -620,10 +620,10 @@ curl -X PUT .../auth/config -d '{"allowed_email_domains_mode": "signup"}'
 
 ### "the email domain allowlist is only available on the PRO plan"
 
-**Cause:** the project is on FREE and the update would set, widen, or otherwise
+**Cause:** the project is on HOBBY and the update would set, widen, or otherwise
 edit the allowlist
 
-**Solution:** upgrade to PRO. A project that configured a list while on PRO
+**Solution:** upgrade to SUPERAGENT. A project that configured a list while on SUPERAGENT
 keeps the domains after a downgrade — parked, enforcing nothing — and can still
 clear them
 

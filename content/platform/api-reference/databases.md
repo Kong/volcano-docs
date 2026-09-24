@@ -83,7 +83,7 @@ Content-Type: application/json
 Database name is normalized to PostgreSQL format (lowercase, underscores).
 Names can be up to 64 characters.
 
-**Limit:** Each project can hold 1 database on Free and up to 10,000 on Pro. Creating a database over the plan's cap returns `403 Forbidden`.
+**Limit:** Each project can hold 1 database on HOBBY and up to 10,000 on SUPERAGENT. Creating a database over the plan's cap returns `403 Forbidden`.
 
 ## Delete Database
 
@@ -193,7 +193,7 @@ characters, unique within the parent database.
 | `409` | Name already exists, or the database cannot be branched right now |
 | `503` | Branching is temporarily unavailable |
 
-**Limit:** 10 branches per database on Free, 25 on Pro. Branches in every state
+**Limit:** 10 branches per database on HOBBY, 25 on SUPERAGENT. Branches in every state
 count, including those still provisioning.
 
 ### Get Branch
@@ -316,7 +316,7 @@ restore](../databases/backups.md) for the concepts; this section is the endpoint
 reference. Backups cover the database itself — branches are neither backed up
 nor restored.
 
-Every endpoint in this section is Pro-only. On the Free plan they all answer
+Every endpoint in this section is SUPERAGENT-only. On the HOBBY plan they all answer
 `403`, reads included.
 
 ### List Backups
@@ -380,12 +380,12 @@ reserved for the platform's own snapshots.
 | Status | Meaning |
 |---|---|
 | `400` | Invalid backup name |
-| `403` | Backup allowance reached, or backups are Pro-only |
+| `403` | Backup allowance reached, or backups are SUPERAGENT-only |
 | `404` | Project or database not found |
 | `409` | Name already exists, a backup was taken less than a minute ago, or the database is restoring |
 | `503` | Backups are temporarily unavailable |
 
-**Limit:** 50 backups per database on Pro, counting only backups you took. Free
+**Limit:** 50 backups per database on SUPERAGENT, counting only backups you took. HOBBY
 has none — every endpoint in this section answers `403`.
 
 ### Get Backup
@@ -466,7 +466,7 @@ Scheduled backups do not count against the plan's backup allowance.
 | Status | Meaning |
 |---|---|
 | `400` | Invalid frequency, hour, or day |
-| `403` | Backups are Pro-only |
+| `403` | Backups are SUPERAGENT-only |
 | `409` | The database is not active |
 
 ### List Restores
@@ -525,7 +525,7 @@ Backups](#list-backups).
 | Status | Meaning |
 |---|---|
 | `400` | Both targets or neither, or a time outside the window |
-| `403` | Backups and point-in-time restore are Pro-only |
+| `403` | Backups and point-in-time restore are SUPERAGENT-only |
 | `404` | Project, database, or backup not found |
 | `409` | A restore is already in progress, the database is not active, another database operation is running, or too many pre-restore states are still held open |
 | `503` | Restores are temporarily unavailable |
@@ -798,7 +798,7 @@ Authorization: Bearer <platform_token>
 
 Returns the database's current top queries from `pg_stat_statements`, ranked by total execution time.
 
-**PRO plan required.**
+**SUPERAGENT plan required.**
 
 **Query Parameters:**
 - `limit` - Maximum number of queries to return, from 1 to 100 (default: 10)

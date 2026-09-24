@@ -163,10 +163,10 @@ Realtime enforces rate limits to prevent abuse:
 
 | Action | Limit |
 |--------|-------|
-| Concurrent connections | 200 (FREE), 100,000 (PRO) |
-| Channels per connection | 100 (FREE), 500 (PRO) |
+| Concurrent connections | 200 (HOBBY), 100,000 (SUPERAGENT) |
+| Channels per connection | 100 (HOBBY), 500 (SUPERAGENT) |
 | Publishes per second | 10 per connection |
-| Message size | 256 KB (FREE), 1 MB (PRO) |
+| Message size | 256 KB (HOBBY), 1 MB (SUPERAGENT) |
 
 When a rate limit is exceeded:
 1. The action is rejected
@@ -177,7 +177,7 @@ When a rate limit is exceeded:
 
 Limits vary by plan:
 
-| Limit | FREE | PRO |
+| Limit | HOBBY | SUPERAGENT |
 |-------|------|-----|
 | Concurrent connections | 200 | 100,000 |
 | Messages per month | 100,000 | Unlimited |
@@ -306,8 +306,8 @@ Configure security settings in **Realtime > Settings**:
 
 | Setting | Description | Default |
 |---------|-------------|---------|
-| Max channels per connection | Limit channel subscriptions | 100 (FREE) / 200 (PRO) |
-| Max message size | Maximum broadcast payload | 32 KB (FREE) / 256 KB (PRO) |
+| Max channels per connection | Limit channel subscriptions | 100 (HOBBY) / 200 (SUPERAGENT) |
+| Max message size | Maximum broadcast payload | 32 KB (HOBBY) / 256 KB (SUPERAGENT) |
 
 ## Incident response
 

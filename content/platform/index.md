@@ -156,7 +156,7 @@ Step-by-step guides for common tasks.
 | Guide | Description |
 |-------|-------------|
 | [Deploy to production](guides/production.md) | Ship your project to the cloud |
-| [Plans and limits](guides/plans-and-limits.md) | Free vs Pro limits by resource |
+| [Plans and limits](guides/plans-and-limits.md) | HOBBY vs SUPERAGENT limits by resource |
 | [Database migrations](guides/migrations.md) | Manage schema changes with the CLI |
 | [Deployment performance](guides/deployment-performance.md) | Deployment latency objectives, phases, and telemetry |
 

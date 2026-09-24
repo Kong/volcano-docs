@@ -222,7 +222,7 @@ as requests against the parent, and appear in the parent's query logs.
 
 ## Limits
 
-| | Free | Pro |
+| | HOBBY | SUPERAGENT |
 |---|---|---|
 | Branches per database | 10 | 25 |
 
