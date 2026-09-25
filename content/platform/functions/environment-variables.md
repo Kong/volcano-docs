@@ -35,6 +35,17 @@ curl -X POST https://api.volcano.dev/projects/PROJECT_ID/variables \
 - Can contain only letters, digits, and underscores
 - Maximum length: 256 characters
 
+Volcano rejects these function runtime names on variable create, update, and
+config apply (including dry run):
+
+- `_HANDLER`, `_X_AMZN_TRACE_ID`, `AWS_DEFAULT_REGION`, `AWS_REGION`, `AWS_EXECUTION_ENV`
+- `AWS_LAMBDA_FUNCTION_NAME`, `AWS_LAMBDA_FUNCTION_MEMORY_SIZE`, `AWS_LAMBDA_FUNCTION_VERSION`, `AWS_LAMBDA_INITIALIZATION_TYPE`
+- `AWS_LAMBDA_LOG_GROUP_NAME`, `AWS_LAMBDA_LOG_STREAM_NAME`, `AWS_LAMBDA_RUNTIME_API`, `AWS_LAMBDA_MAX_CONCURRENCY`
+- `AWS_ACCESS_KEY`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`
+- `AWS_LAMBDA_METADATA_API`, `AWS_LAMBDA_METADATA_TOKEN`, `LAMBDA_TASK_ROOT`, `LAMBDA_RUNTIME_DIR`
+
+Use another name. See the [full reserved-name list](https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html).
+
 ### Names reserved during builds
 
 The build that compiles your function or frontend uses environment variables of its
@@ -47,9 +58,8 @@ warning: ignoring reserved build env var SOURCE_URL
 ```
 
 The variable is still stored and still delivered to your deployed function and
-frontend server runtimes; only the build does not see it. Names the function runtime
-reserves for itself, such as `AWS_REGION`, cannot be used as runtime environment
-variables at all.
+frontend server runtimes; only the build does not see it. Function runtime names
+listed above are rejected before storage.
 
 | Reserved | Examples |
 | --- | --- |

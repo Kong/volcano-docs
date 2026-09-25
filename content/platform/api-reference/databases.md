@@ -798,6 +798,10 @@ Authorization: Bearer <platform_token>
 
 Returns the database's current top queries from `pg_stat_statements`, ranked by total execution time.
 
+Only data statements (`SELECT`, `INSERT`, `UPDATE`, `DELETE`, `MERGE`) are listed, with literal values replaced by `?`. Statements Volcano runs to operate the database are left out.
+
+`role` is the Postgres role that ran the query. Common values are `anon` and `authenticated` for RLS-enforced connections, `service_role`, and the database owner role for full-access connections such as the default connection string and service-key queries. Roles you create appear by name, and a role that no longer exists appears as `unknown`.
+
 **SUPERAGENT plan required.**
 
 **Query Parameters:**
