@@ -81,7 +81,7 @@ make check    # lint + build (pre-PR)
 make          # list all targets
 ```
 
-Set `SITE_URL` to the deployed origin so canonical links and the sitemap use the correct host. Local builds default to `http://localhost:3000`.
+Canonical links and the sitemap use `https://docs.volcano.dev` in production builds and `http://localhost:3000` in `pnpm dev`. Set `SITE_URL` to override the origin.
 
 Structure:
 
