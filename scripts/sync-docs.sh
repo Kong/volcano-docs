@@ -69,10 +69,15 @@ for i in $(seq 0 $((n - 1))); do
   fi
 
   find "$dest" -name .DS_Store -delete
+
+  if [ "$repo" = "Kong/volcano-hosting" ]; then
+    sha="$(git -C "$clone" rev-parse HEAD)"
+    printf '{\n  "Kong/volcano-hosting": "%s"\n}\n' "$sha" > source-revisions.json
+  fi
 done
 
-# ponytail: no provenance stamping or frontmatter validation here yet.
-# Validation belongs in each source repo's PR CI (schema at spec/frontmatter.schema.json);
-# add `source:` injection when the site needs "Edit this page" links.
+# Frontmatter validation belongs in each source repo's PR CI (schema at
+# spec/frontmatter.schema.json); add `source:` injection when the site needs
+# "Edit this page" links.
 # ponytail: skills/plugins keep their source tree shape (e.g. volcano-auth/SKILL.md).
 # Add a flatten/rename transform once their doc format is settled.
