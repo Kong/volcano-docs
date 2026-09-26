@@ -1,6 +1,6 @@
 ---
 title: What is Volcano?
-description: AI infrastructure for agents and applications, with functions, durable functions, databases, authentication, realtime, file storage, frontend hosting, and distributed locks.
+description: AI infrastructure for agents and applications, with functions, durable functions, databases, auth, realtime, storage, hosting, and locks.
 order: 1
 ---
 
