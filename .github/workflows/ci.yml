@@ -30,6 +30,9 @@ jobs:
           corepack enable
           pnpm install --frozen-lockfile
 
+      - name: Check hosting revision lookup
+        run: node --test scripts/find-docs-commit.test.mjs
+
       - name: Lint docs format
         run: pnpm lint:docs content
 

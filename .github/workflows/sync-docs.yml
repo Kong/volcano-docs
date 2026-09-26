@@ -105,12 +105,10 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
-          # content/{platform,sdk,cli} is committed (not gitignored) so the
-          # frontend deploy, which packages from .gitignore, keeps it. Internal
-          # docs are excluded at the source (docs/public only).
-          git add content
+          # Commit the synced pages with the hosting revision used to copy them.
+          git add content source-revisions.json
           if git diff --cached --quiet; then
-            echo "No doc changes."
+            echo "No sync changes."
             exit 0
           fi
 
