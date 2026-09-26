@@ -81,8 +81,6 @@ make check    # lint + build (pre-PR)
 make          # list all targets
 ```
 
-Canonical links and the sitemap use `https://docs.volcano.dev` in production builds and `http://localhost:3000` in `pnpm dev`. Set `SITE_URL` to override the origin.
-
 Structure:
 
 - `src/app` — App Router (`layout.tsx`, `(docs)` group, `[[...slug]]` renderer, `api/search`).
