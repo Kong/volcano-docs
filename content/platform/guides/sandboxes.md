@@ -72,7 +72,12 @@ curl "$VOLCANO_API_URL/sandbox-sessions/$SESSION_ID/exec" \
 ```
 
 The HTTP service remains alive after the command returns. Its lifetime belongs
-to the session. Suspending retains the session's state; terminating destroys it.
+to the session. The command can return before the service starts listening.
+Poll a read-only health endpoint with a timeout before sending application traffic;
+a request made before the port is listening can return `502`. Do not restart the
+command or retry a write request just to wait for readiness.
+
+Suspending retains the session's state; terminating destroys it.
 
 | Operation | Endpoint |
 | --- | --- |

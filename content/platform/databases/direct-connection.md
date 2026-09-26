@@ -82,14 +82,14 @@ When pgproxy receives a user impersonation request, it:
 ```sql
 SET LOCAL request.jwt_sub = 'abc-123-uuid';
 SET LOCAL request.jwt_email = 'user@example.com';  -- Looked up from DB
-SET LOCAL request.jwt_role = 'authenticated';       -- Looked up from DB
+SET LOCAL request.jwt_role = 'authenticated';       -- 'authenticated' or 'anonymous', looked up from DB
 ```
 
 Then:
 ```sql
 SELECT auth.uid();    -- Returns: 'abc-123-uuid'
 SELECT auth.email();  -- Returns: 'user@example.com'
-SELECT auth.role();   -- Returns: 'authenticated'
+SELECT auth.role();   -- Returns: 'authenticated' (or 'anonymous' for an anonymous user)
 ```
 
 
@@ -859,7 +859,7 @@ async function verifyAuthContext(userId, projectId) {
     console.log('Database sees:');
     console.log('  auth.uid():', rows[0].user_id);
     console.log('  auth.email():', rows[0].email);  // Looked up from DB
-    console.log('  auth.role():', rows[0].role);    // Always 'authenticated'
+    console.log('  auth.role():', rows[0].role);    // 'authenticated', or 'anonymous' for an anonymous user
     
     // Verify they match
     console.log('Expected user_id:', userId);
@@ -1079,7 +1079,7 @@ The proxy looks up email and role from the database, making this more secure.
 **Result:**
 - `auth.uid()` returns the user_id you specified
 - `auth.email()` returns the user's email (looked up from database)
-- `auth.role()` returns "authenticated" (all auth users)
+- `auth.role()` returns "authenticated", or "anonymous" for an anonymous user
 - RLS policies use these values for filtering
 
 

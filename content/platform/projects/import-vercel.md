@@ -37,6 +37,27 @@ The response contains the Vercel installation URL:
 }
 ```
 
+The command above uses the direct API callback flow. For a cookie-backed web
+app, start the connection through its same-origin edge function instead:
+
+```js
+const redirect = `${location.origin}/dashboard/new?import=vercel`;
+const response = await fetch(
+  `/api/web/user/imports/connect?provider=vercel&redirect=${encodeURIComponent(redirect)}`,
+  { method: "POST", credentials: "include" },
+);
+const { authorization_url } = await response.json();
+location.assign(authorization_url);
+```
+
+The edge function forwards the request with `callback_url` set to its
+same-origin provider callback, rewrites the binding cookie path for that route,
+and returns the cookie to the browser.
+The callback URL must share an origin with `redirect` and cannot contain a query
+string or fragment. Do not send `callback_url` directly from browser code to the
+Volcano API; that would store the binding cookie on the API origin instead of
+the application origin.
+
 To complete the interactive flow, make the start request and open the returned
 URL from the same browser client, then choose one Vercel account or team. After
 the callback completes, get the connection ID:

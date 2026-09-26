@@ -1,16 +1,22 @@
 ---
 title: "Deployment performance"
-description: "Volcano measures deployment latency from the time a deployment request is accepted until the resource is ready or the deployment fails."
+description: "Understand deployment timing and platform latency objectives."
 ---
 
-Volcano measures deployment latency from the time a deployment request is
-accepted until the resource is ready or the deployment fails. Successful,
-non-delete deployments use these latency objectives:
+Volcano reports total deployment time from acceptance until the resource is
+ready or the deployment fails. Platform overhead excludes the application
+build interval; queueing, source checkout, image publication, provisioning,
+rollout, and verification still count.
 
-| Resource | p50 target | p95 target |
-|----------|------------|------------|
-| Function | 90 seconds | 150 seconds |
-| Frontend | 180 seconds | 300 seconds |
+Successful, non-delete deployments use these platform-overhead objectives:
+
+| Resource | Platform p95 target |
+|----------|---------------------|
+| Function | 150 seconds |
+| Frontend | 180 seconds |
+
+Total deployment time and application build time remain available separately.
+A longer application build does not consume the platform-overhead budget.
 
 The objectives apply to direct deploy, update, and redeploy operations in
 staging and production. Project-wide operations and deletes are tracked
@@ -34,14 +40,15 @@ Each deployment records the same ordered phases:
 | Rollout | Regional deployment starts | Every target region is ready |
 | Verification | Final checks start | The deployment reaches a terminal state |
 
-Staging telemetry reports total and per-phase durations by resource type,
-operation, and deployment scope (`direct` or `project`). The SLO monitors select
-only direct deployments; project-wide region changes and deletes remain
-queryable without entering those percentiles. Each completed deployment uses a
-stable completion timestamp and deployment identity so retrying an acknowledged
-OTLP point overwrites the same intake point instead of double-counting it.
-Percentile alerts use the targets above so a regression is visible even when the
-average remains healthy.
+Telemetry reports total, platform, and per-phase durations by resource type,
+operation, and deployment scope (`direct` or `project`). Alerts select successful
+direct deployments; project-wide changes and deletes remain separate. If build
+timing is incomplete, the platform measurement is marked incomplete rather than
+reported as zero. Total deployment time remains available.
+
+Percentiles preserve the distribution of individual deployment durations.
+Retrying a metrics export retains its original completion timestamp and does
+not create another deployment observation.
 
 ## Deployment history statistics
 

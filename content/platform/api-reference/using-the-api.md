@@ -13,7 +13,7 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/access-tokens" \
   -d '{"name": "ci-deploy", "scope": "full"}'
 
 # 2. Save the "token" value from the response, then use it
-export VOLCANO_PROJECT_TOKEN="pt-9f3c1a8b2d47e0c5a1b8f36d92e4c7a05be18f2d6c39a4b7e0d581c2f6a9b34e"
+export VOLCANO_PROJECT_TOKEN="pt-0000000000000000000000000000000000000000000000000000000000000000"
 
 # 3. Call the API
 curl "https://api.volcano.dev/projects/$PROJECT_ID/functions" \
@@ -50,14 +50,14 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/access-tokens" \
   "id": "0b6f2f3e-8f4e-4f1e-9a3a-1f9a7c2d5b10",
   "project_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
   "name": "ci-deploy",
-  "token_prefix": "pt-9f3c1a8b2",
+  "token_prefix": "pt-000000000",
   "scope": "full",
   "status": "active",
   "token_source": "api",
   "expires_at": "2025-07-01T00:00:00Z",
   "created_at": "2024-07-02T09:14:22Z",
   "all_time_requests": 0,
-  "token": "pt-9f3c1a8b2d47e0c5a1b8f36d92e4c7a05be18f2d6c39a4b7e0d581c2f6a9b34e"
+  "token": "pt-0000000000000000000000000000000000000000000000000000000000000000"
 }
 ```
 
@@ -255,7 +255,7 @@ curl "https://api.volcano.dev/projects/$PROJECT_ID/access-tokens/$TOKEN_ID" \
 {
   "id": "0b6f2f3e-8f4e-4f1e-9a3a-1f9a7c2d5b10",
   "name": "ci-deploy",
-  "token_prefix": "pt-9f3c1a8b2",
+  "token_prefix": "pt-000000000",
   "scope": "full",
   "status": "revoked",
   "expires_at": "2025-07-01T00:00:00Z",

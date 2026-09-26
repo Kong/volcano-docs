@@ -149,16 +149,18 @@ CREATE POLICY "public_read" ON posts
   FOR SELECT
   USING (true);
 
--- Only authenticated users can insert
-CREATE POLICY "authenticated_insert" ON posts
+-- Any user session, including an anonymous user, can insert its own post
+CREATE POLICY "session_insert" ON posts
   FOR INSERT
-  WITH CHECK (auth.uid() IS NOT NULL);
+  WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid());
 
 // Users can only modify their own
 CREATE POLICY "own_update" ON posts
   FOR UPDATE
   USING (user_id = auth.uid());
 ```
+
+To allow only registered users to insert, use `auth.role() = 'authenticated'` instead. An anonymous user session has `auth.role() = 'anonymous'`, but still has a user ID. Both session types use the PostgreSQL `authenticated` role, so `TO authenticated` alone does not exclude anonymous users.
 
 ## Advanced: Public and Private Data
 
@@ -186,7 +188,7 @@ CREATE POLICY "posts_write" ON posts
   USING (user_id = auth.uid());
 
 GRANT ALL ON posts TO authenticated;
-GRANT SELECT ON posts TO anon;  -- Anon can only read
+GRANT SELECT ON posts TO anon;  -- Requests without a user session can only read
 ```
 
 ## Testing RLS

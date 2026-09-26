@@ -63,19 +63,27 @@ Returns the user's role.
 
 ```sql
 SELECT auth.role();
--- Returns: 'authenticated' or 'anon'
+-- Returns: 'authenticated', 'anonymous', or 'anon'
 ```
 
 **Possible values:**
-- `'authenticated'` - Signed-in user (has full CRUD permissions on own data)
-- `'anon'` - Not authenticated (read-only access to public data)
+- `'authenticated'` - Registered user session
+- `'anonymous'` - Anonymous user session (has a user ID)
+- `'anon'` - No user session
+
+`TO authenticated` selects the PostgreSQL role for **both** registered and anonymous user sessions. Use `auth.uid() IS NOT NULL` to allow either session type; use `auth.role() = 'authenticated'` to require a registered user.
 
 **Usage in policies:**
 ```sql
--- Only authenticated users can insert
-CREATE POLICY "authenticated_only" ON posts
-  FOR INSERT
-  WITH CHECK (auth.role() = 'authenticated');
+-- Registered users can insert their own posts
+CREATE POLICY "registered_insert" ON posts
+  FOR INSERT TO authenticated
+  WITH CHECK (auth.role() = 'authenticated' AND user_id = auth.uid());
+
+-- Both session types can read their own posts
+CREATE POLICY "own_posts" ON posts
+  FOR SELECT TO authenticated
+  USING (user_id = auth.uid());
 ```
 
 ## auth.is_authenticated()

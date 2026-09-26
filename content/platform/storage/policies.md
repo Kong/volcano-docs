@@ -32,8 +32,8 @@ Policies have access to these variables:
 
 | Variable | Type | Description |
 |----------|------|-------------|
-| `auth.uid()` | UUID | Current user's ID (null if anonymous) |
-| `auth.role()` | TEXT | User's role: `'anon'`, `'authenticated'`, or `'service_role'` |
+| `auth.uid()` | UUID | Current user's ID (null for an anon key) |
+| `auth.role()` | TEXT | Storage role: `'anon'` for an anon key, `'authenticated'` for any user session (including an anonymous user), or `'service_role'` |
 | `auth.email()` | TEXT | Current user's email |
 | `owner_id` | UUID | The user who uploaded the file |
 | `name` | TEXT | The file path/name |
@@ -85,19 +85,19 @@ more `UPDATE` policies, the owner must also satisfy one of them. Service roles
 bypass this check. Use an `UPDATE` policy with the definition `false` to reserve
 visibility changes for a trusted backend.
 
-### Authenticated users
+### User sessions
 
-Any signed-in user can perform the operation:
+Any user session, including an anonymous user session, can perform the operation:
 
 ```sql
 auth.uid() IS NOT NULL
--- or
-auth.role() = 'authenticated'
 ```
 
-### Allow all authenticated users
+Storage policies cannot distinguish registered users from anonymous user sessions by `auth.role()`: both have the storage role `authenticated`. Use a trusted backend if an operation must require a registered user.
 
-Any signed-in user can read files:
+### Allow all user sessions
+
+Any user session can read files:
 
 ```sql
 -- For SELECT operation
@@ -124,10 +124,10 @@ This matches paths like:
 Public files in `public/` folder, private files elsewhere:
 
 ```sql
--- SELECT for anonymous users (public folder only)
+-- SELECT with an anon key (public folder only)
 auth.role() = 'anon' AND name LIKE 'public/%'
 
--- SELECT for authenticated users (all files)
+-- SELECT with any user session, including an anonymous user (all files)
 auth.role() = 'authenticated'
 ```
 
@@ -181,10 +181,10 @@ storage.filename(name) = 'readme.txt'
 Use AND/OR for complex rules:
 
 ```sql
--- Authenticated users can only upload images
+-- User sessions can only upload images
 auth.uid() IS NOT NULL AND storage.extension(name) IN ('jpg', 'png', 'gif')
 
--- Owner access OR any authenticated user
+-- Owner access OR any user session
 auth.uid() = owner_id OR auth.uid() IS NOT NULL
 
 -- User's folder AND valid file types
@@ -333,7 +333,7 @@ curl -X POST "https://api.yourapp.com/storage/buckets/gallery/policies" \
     "definition": "auth.uid() IS NOT NULL AND storage.extension(name) IN ('\''jpg'\'', '\''jpeg'\'', '\''png'\'', '\''gif'\'', '\''webp'\'')"
   }'
 
-# All authenticated users can view
+# All user sessions can view
 curl -X POST "https://api.yourapp.com/storage/buckets/gallery/policies" \
   -H "Authorization: Bearer $SERVICE_KEY" \
   -d '{
