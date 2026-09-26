@@ -1,13 +1,13 @@
 ---
 title: What is Volcano?
-description: A serverless platform for functions, databases, auth, storage, and realtime, unified behind one API.
+description: AI infrastructure for agents and applications, with functions, databases, auth, storage, and realtime unified behind one API.
 order: 1
 ---
 
-Volcano is a backend platform that gives you the pieces most applications need,
-without running infrastructure yourself:
+Volcano is AI infrastructure for agents and applications. It gives you the
+pieces most applications need, without running infrastructure yourself:
 
-- **Functions** — serverless backend code (Node.js, Python, Ruby), invoked over HTTP.
+- **Functions** — backend code (Node.js, Python, Ruby), invoked over HTTP.
 - **Databases** — managed PostgreSQL with row-level security and a browser-friendly query builder.
 - **Authentication** — email/password, OAuth providers, and anonymous users.
 - **Storage** — file buckets with access-control policies.

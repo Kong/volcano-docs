@@ -4,9 +4,9 @@ description: What Volcano is, how to install it, and how to ship your first proj
 order: 0
 ---
 
-Volcano is a serverless platform for building applications with functions,
-databases, authentication, storage, and realtime — through one API, CLI, and
-SDK.
+Volcano is AI infrastructure for agents and applications. It gives you
+functions, databases, authentication, storage, and realtime — through one API,
+CLI, and SDK.
 
 New here? Follow these in order:
 
