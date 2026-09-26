@@ -11,19 +11,17 @@ const LINK_COLUMNS = [
     links: [
       { label: "Home", href: "/" },
       { label: "Pricing", href: "https://volcano.dev/pricing" },
-      { label: "Enterprise", href: "https://volcano.dev/enterprise" },
-      { label: "Educational discount", href: "https://volcano.dev/education" },
     ],
   },
   {
     heading: "Features",
     links: [
-      { label: "AI Builder", href: "/ai/skills" },
+      { label: "Agent skills", href: "/cli/setup" },
       { label: "Edge functions", href: "/platform" },
       { label: "Postgres database", href: "/platform" },
       { label: "User authentication", href: "/platform" },
       { label: "File storage", href: "/platform" },
-      { label: "Agentic workflows", href: "/ai/skills" },
+      { label: "MCP server", href: "/platform/interfaces/mcp" },
     ],
   },
   {
@@ -32,18 +30,13 @@ const LINK_COLUMNS = [
       { label: "Getting started", href: "/get-started" },
       { label: "Documentation", href: "/" },
       { label: "Tutorials", href: "/get-started" },
-      { label: "Webinars", href: "https://volcano.dev/webinars" },
-      { label: "Videos", href: "https://volcano.dev/videos" },
-      { label: "Blog", href: "https://volcano.dev/blog" },
     ],
   },
   {
     heading: "Company",
     links: [
-      { label: "About us", href: "https://volcano.dev/about" },
       { label: "Terms of service", href: "https://volcano.dev/terms" },
       { label: "Privacy policy", href: "https://volcano.dev/privacy" },
-      { label: "Contact us", href: "https://volcano.dev/contact" },
     ],
   },
 ];

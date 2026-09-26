@@ -26,6 +26,18 @@ function run(script, ...args) {
 }
 
 try {
+  for (const component of ["footer.tsx", "ide-platforms.tsx", "index.tsx"]) {
+    const jsx = fs.readFileSync(path.join(root, "src", "components", "home", component), "utf8");
+    for (const [, href] of jsx.matchAll(/\bhref(?:=|:\s*)["'](\/[^"']*)["']/g)) {
+      const route = new URL(href, "https://docs.volcano.dev").pathname.slice(1);
+      assert.ok(
+        fs.existsSync(path.join(root, "content", route, "index.md")) ||
+          fs.existsSync(path.join(root, "content", `${route}.md`)),
+        `${component}: ${href} has no docs page`,
+      );
+    }
+  }
+
   fs.writeFileSync(
     path.join(content, "index.md"),
     `---\ntitle: "Test"\ndescription: "Valid link forms."\n---\n\n[root](/)\n[root fragment](/#top)\n[fragment](/sdk#authentication)\n[query](/sdk?tab=js)\n[titled](/sdk "SDK docs")\n\`[ignored](/bogus)\`\n\n\`\`\`text\n[ignored](/bogus)\n\`\`\`\n`,
