@@ -50,16 +50,6 @@ a standalone static site and a route inside `volcano-web` stays open.
 
 The mapping is defined machine-readably in [`docs.config.yaml`](docs.config.yaml).
 
-## Select platform docs for production
-
-Each platform sync commits the hosting source SHA in [`source-revisions.json`](source-revisions.json). Given the full SHA deployed by `volcano-hosting` to production, run this from a clone with `gh` access to that repo:
-
-```bash
-node scripts/find-docs-commit.mjs <hosting-production-sha>
-```
-
-The command prints the newest `volcano-docs` commit whose recorded hosting revision is closest to, and an ancestor of, the production SHA. Enter that docs SHA in the `volcano-web` **Deploy docs to production** workflow. It fails if no ancestor was synced. Pages changed between the selected source revision and the production SHA are not included; the match is not exact. The revision file starts empty and is filled by the first platform sync.
-
 ## Editing docs
 
 - **Product docs** (platform, SDK languages, CLI): edit them in their source repo,
