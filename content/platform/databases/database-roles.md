@@ -7,9 +7,9 @@ When you create a database in Volcano, it comes with built-in roles for secure m
 
 ## Available Roles
 
-### Anonymous Users (`anon`)
+### No User Session (`anon`)
 
-**Used when:** User is not authenticated
+**Used when:** No user is signed in
 
 **Permissions:**
 - Read public data
@@ -22,9 +22,9 @@ When you create a database in Volcano, it comes with built-in roles for secure m
 // Can only SELECT from tables with public read policies
 ```
 
-### Authenticated Users (`authenticated`)
+### User Sessions (`authenticated`)
 
-**Used when:** User is signed in
+**Used when:** A registered or anonymous user is signed in. This is the PostgreSQL role; `auth.role()` returns `authenticated` for registered users and `anonymous` for anonymous users.
 
 **Permissions:**
 - Read own data
@@ -38,6 +38,32 @@ When you create a database in Volcano, it comes with built-in roles for secure m
 // Can perform CRUD operations on own data
 const result = await client.query('SELECT * FROM posts');
 // Returns only current user's posts (RLS automatic)
+```
+
+### Volcano Platform (`volcano_platform`)
+
+**Used when:** Volcano reads your database's size and query statistics, and when realtime looks up a table's primary key
+
+**Permissions:**
+- Cannot log in
+- Reads query statistics for every role (`pg_monitor`)
+- No access to your tables beyond what you grant to `PUBLIC`
+
+Statements run as `volcano_platform` never appear in [database queries](../api-reference/databases.md#get-database-queries), including your own after `SET ROLE volcano_platform`. Don't drop, alter, or grant the role:
+
+- If you drop it, Volcano recreates it the next time it needs it. Statements recorded before the drop appear under `unknown` until statistics reset.
+- Volcano checks the role when it creates or repairs it. If the role can log in or other roles are members of it at that point, Volcano refuses to use it: database queries return an error, and Volcano runs its size reads and primary-key lookups as the database owner, where they appear in database queries.
+
+```sql
+SELECT rolname, rolcanlogin
+FROM pg_roles
+WHERE rolname = 'volcano_platform';
+```
+
+```text
+     rolname      | rolcanlogin
+------------------+-------------
+ volcano_platform | f
 ```
 
 ## How It Works
@@ -104,7 +130,7 @@ ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
 
 ### 2. Create Policies
 
-**For authenticated users:**
+**For any user session, including an anonymous user:**
 ```sql
 CREATE POLICY "authenticated_users_own_data" ON posts
   FOR ALL
@@ -126,7 +152,7 @@ CREATE POLICY "public_read" ON posts
 -- Grant to authenticated users
 GRANT ALL ON posts TO authenticated;
 
--- Grant to anonymous users
+-- Grant to requests without a user session
 GRANT SELECT ON posts TO anon;
 ```
 

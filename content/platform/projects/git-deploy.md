@@ -162,6 +162,29 @@ curl -X POST "https://api.volcano.dev/user/git/connect?provider=github" \
 { "authorization_url": "https://github.com/apps/volcano/installations/new?state=..." }
 ```
 
+The curl command illustrates the direct API flow. To complete it interactively,
+the same browser client must make the start request and open the returned URL so
+its binding cookie is available at the API callback. For a cookie-backed web
+app, start through its same-origin edge function instead:
+
+```js
+const redirect = `${location.origin}/settings/git`;
+const response = await fetch(
+  `/api/web/user/git/connect?provider=github&redirect=${encodeURIComponent(redirect)}`,
+  { method: "POST", credentials: "include" },
+);
+const { authorization_url } = await response.json();
+location.assign(authorization_url);
+```
+
+The edge function forwards the request with `callback_url` set to its
+same-origin provider callback, rewrites the binding cookie path for that route,
+and returns the cookie to the browser.
+The callback URL must share an origin with `redirect` and cannot contain a query
+string or fragment. Do not send `callback_url` directly from browser code to
+`api.volcano.dev`; that would store the binding cookie on the API origin instead
+of the application origin.
+
 After the callback completes, the connection is stored against your user and is
 reusable across projects:
 

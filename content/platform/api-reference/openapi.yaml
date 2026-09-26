@@ -786,6 +786,14 @@ paths:
             type: string
             format: uri
             pattern: ^https://[^/?#]+(?:[/?][^#]*)?$|^http://(?:localhost|127\.0\.0\.1|\[::1\])(?::[0-9]+)?(?:[/?][^#]*)?$
+        - name: callback_url
+          in: query
+          required: false
+          description: Same-origin browser callback used to relay provider parameters before completing the connection.
+          schema:
+            type: string
+            format: uri
+            pattern: ^https://[^/?#]+/[^?#]*$|^http://(?:localhost|127\.0\.0\.1|\[::1\])(?::[0-9]+)?/[^?#]*$
       responses:
         '200':
           description: Provider authorization URL
@@ -1324,6 +1332,14 @@ paths:
           description: URL to redirect the browser to after the provider callback completes.
           schema:
             type: string
+        - name: callback_url
+          in: query
+          required: false
+          description: Same-origin browser callback used to relay provider parameters before completing the connection.
+          schema:
+            type: string
+            format: uri
+            pattern: ^https://[^/?#]+/[^?#]*$|^http://(?:localhost|127\.0\.0\.1|\[::1\])(?::[0-9]+)?/[^?#]*$
       responses:
         '200':
           description: Provider authorization URL
