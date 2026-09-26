@@ -69,7 +69,12 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
     return {
       title: "Volcano docs",
       description:
-        "Volcano provides a serverless cloud for engineers and researchers who want to build compute-intensive applications without thinking about infrastructure.",
+        "Build AI agents and modern applications with the platform for the AI era, fully integrated with your agentic coding tools.",
+      openGraph: {
+        title: "Volcano - AI infrastructure for agents and applications",
+        description:
+          "Build AI agents and modern applications with the platform for the AI era, fully integrated with your agentic coding tools.",
+      },
       alternates: { canonical: "/" },
     };
   }

@@ -14,13 +14,8 @@ export function Hero() {
         <div className="hero-copy-stack">
           <h1 className="hero-title">Volcano docs</h1>
           <p className="hero-lede">
-            Volcano provides a serverless cloud for engineers and researchers
-            who want to build compute-intensive applications without thinking
-            about infrastructure.
-            <br />
-            <br />
-            Run generative AI models, large-scale batch workflows, job queues,
-            and more, all faster than ever before.
+            Build AI agents and modern applications with the platform for the
+            AI era, fully integrated with your agentic coding tools.
           </p>
         </div>
         <Link href="/get-started" className="hero-cta">

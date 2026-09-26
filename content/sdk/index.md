@@ -1,6 +1,6 @@
 ---
 title: SDKs
-description: Choose a Volcano SDK for authentication, databases, storage, functions, logs, locks, and realtime events.
+description: Choose a Volcano SDK for authentication, databases, storage, functions, durable functions, logs, distributed locks, and realtime events.
 ---
 
 Use a Volcano SDK to connect your application to your project's services.
@@ -12,7 +12,7 @@ Choose your language and follow its authentication quickstart.
 | Python | Python 3.11 and later | [Python quickstart](./python/index.md) |
 | Ruby | Ruby 3.2 and later | [Ruby quickstart](./ruby/index.md) |
 
-All three SDKs cover authentication, database queries and mutations, storage, function invocation, logs, distributed locks, and realtime events.
+All three SDKs cover authentication, database queries and mutations, storage, function invocation, starting durable functions, logs, distributed locks, and realtime events. JavaScript and Python can also author durable functions.
 JavaScript returns result envelopes; Python and Ruby raise typed exceptions.
 Follow each language's guide for its API names and realtime lifecycle.
 
