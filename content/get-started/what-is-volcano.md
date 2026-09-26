@@ -7,14 +7,14 @@ order: 1
 Volcano is AI infrastructure for agents and applications. It gives you the
 pieces most applications need, without running infrastructure yourself:
 
-- **Databases** — PostgreSQL for apps and agents, with row-level security, branching, and a browser-friendly query builder.
-- **Functions** — agents and APIs in Node.js, Python, or Ruby, invoked over HTTP.
-- **Frontend hosting** — deploy Next.js from source.
-- **Durable functions** — multi-step workflows that checkpoint and resume for up to a year.
-- **Authentication** — email and password, OAuth providers (Google, GitHub, Microsoft, Apple), and anonymous users.
-- **Realtime** — database events, broadcast, and presence.
-- **File storage** — buckets with access-control policies and resumable uploads.
-- **Distributed locks** — coordinate agents, workers, and durable functions so each task is picked up once.
+- **Databases** — PostgreSQL that auto-scales, with row-level security, a browser query builder, branches, and backups with point-in-time restore on SUPERAGENT.
+- **Functions** — agents and APIs in Node.js, Python, or Ruby, invoked over HTTP from the project's regions, with cron schedules and the caller's identity on the request.
+- **Frontend hosting** — Next.js, static or server-rendered, served from the edge. A failed build never replaces the live version. Custom domains included.
+- **Durable functions** — workflows that checkpoint each step and resume for up to a year, with waits, retries, idempotent starts, and cron schedules.
+- **Authentication** — email and password, Google, GitHub, Microsoft, and Apple, plus anonymous users that convert to a permanent account. That identity is available in Postgres policies.
+- **Realtime** — Postgres changes, broadcast, and presence over WebSockets.
+- **File storage** — buckets that are private by default, with access policies, per-file public links, and resumable uploads.
+- **Distributed locks** — renewable leases so one holder runs a task, and a fencing token the protected resource can check.
 
 ## The model
 
