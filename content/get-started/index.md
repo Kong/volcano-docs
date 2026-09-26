@@ -5,8 +5,9 @@ order: 0
 ---
 
 Volcano is AI infrastructure for agents and applications. It gives you
-functions, databases, authentication, storage, and realtime — through one API,
-CLI, and SDK.
+functions, durable functions, databases, authentication, realtime, file
+storage, frontend hosting, and distributed locks — through one API, CLI, and
+SDK.
 
 New here? Follow these in order:
 

@@ -1,6 +1,6 @@
 ---
 title: Volcano Developer Docs
-description: Build, deploy, and operate applications on Volcano — functions, databases, auth, storage, and realtime.
+description: Build, deploy, and operate applications on Volcano — functions, durable functions, databases, authentication, realtime, file storage, frontend hosting, and distributed locks.
 ---
 
 Welcome to the Volcano developer documentation.
