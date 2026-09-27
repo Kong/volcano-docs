@@ -9,6 +9,7 @@ import { SectionHeading } from "./section-heading";
 
 const CARD_COPY =
   "Provision PostgreSQL databases in seconds and use them for your agentic and application workloads.";
+const AGENT_COPY = "Install Volcano skills and plugins for your coding agent.";
 
 // The Volcano docs landing page from the Figma design. Rendered inside the
 // docs layout so it shares the real header + sidebar (driven by source.ts);
@@ -34,9 +35,9 @@ export function HomePage() {
         />
         <FeatureCard
           icon={<BotIcon className="feature-card-glyph" />}
-          title="AI builder"
-          description={CARD_COPY}
-          href="/ai/skills"
+          title="Agent skills"
+          description={AGENT_COPY}
+          href="/cli/setup"
           variant="danger"
         />
       </div>
@@ -52,9 +53,9 @@ export function HomePage() {
           href="/get-started/quickstart"
         />
         <FeatureCard
-          title="AI builder"
-          description={CARD_COPY}
-          href="/ai/skills"
+          title="Agent setup"
+          description={AGENT_COPY}
+          href="/cli/setup"
           variant="danger"
         />
       </div>

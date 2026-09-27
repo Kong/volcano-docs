@@ -29,19 +29,19 @@ function CursorMark(props: ComponentProps<"svg">) {
 const PLATFORMS = [
   {
     name: "Claude Code",
-    href: "/ai/plugins",
+    href: "/platform/interfaces/mcp#claude-code",
     mark: (
       <Image src="/design/claude-code.svg" alt="" width={32} height={32} />
     ),
   },
   {
     name: "Codex",
-    href: "/ai/plugins",
+    href: "/platform/interfaces/mcp#codex",
     mark: <Image src="/design/codex.svg" alt="" width={32} height={32} />,
   },
   {
     name: "Cursor",
-    href: "/ai/plugins",
+    href: "/platform/interfaces/mcp#cursor",
     mark: <CursorMark />,
   },
 ];
