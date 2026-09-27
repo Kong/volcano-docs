@@ -1,9 +1,9 @@
 ---
 title: "Functions"
-description: "Functions are serverless code that runs on demand. You write the code, deploy it to Volcano, and invoke it via HTTP."
+description: "Functions are code that runs on demand. You write the code, deploy it to Volcano, and invoke it via HTTP."
 ---
 
-Functions are serverless code that runs on demand. You write the code, deploy it to Volcano, and invoke it via HTTP. Volcano handles provisioning, scaling, and execution.
+Functions are code that runs on demand. You write the code, deploy it to Volcano, and invoke it via HTTP. Volcano handles provisioning, scaling, and execution.
 
 ## How functions work
 

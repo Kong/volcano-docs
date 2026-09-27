@@ -1,9 +1,9 @@
 ---
 title: "Creating Projects"
-description: "Projects organize your functions, databases, and auth users."
+description: "Projects organize your functions, durable functions, databases, authentication, file storage, realtime, frontend hosting, and distributed locks."
 ---
 
-Projects organize your functions, databases, and auth users.
+Projects organize your functions, durable functions, databases, authentication, file storage, realtime, frontend hosting, and distributed locks.
 
 ## Create a Project
 

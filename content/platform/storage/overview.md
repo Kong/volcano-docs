@@ -136,12 +136,12 @@ Your plan sets the account-wide storage allowance and maximum object size. See
 
 ## Bandwidth
 
-Upload and download traffic (including public file serving) counts toward your
-platform user's billing-cycle bandwidth allowance (aggregate ingress + egress across owned
-projects), configured via `FREE_BANDWIDTH_CAP` / `PRO_BANDWIDTH_CAP` (in GB;
-`0` = unlimited). Once the platform user is over the cap, storage requests are
-rejected with `429` until the cap increases (plan/override) or the monthly meter
-resets.
+Every storage request counts toward your account's billing-cycle bandwidth
+allowance, in both directions: uploads, downloads, public file serving, and
+list, copy, move, delete, and visibility requests. The allowance is shared by all
+your projects; see [Plans and limits](../guides/plans-and-limits.md#account). On
+HOBBY, once it is spent, storage requests are rejected with `429` until the next
+allowance window or an upgrade.
 
 ## File visibility
 

@@ -1,9 +1,9 @@
 ---
 title: "Creating functions"
-description: "Deploy serverless functions to Volcano. Volcano supports Node.js, Python, and Ruby runtimes."
+description: "Deploy functions to Volcano. Volcano supports Node.js, Python, and Ruby runtimes."
 ---
 
-Deploy serverless functions to Volcano. Volcano supports Node.js, Python, and Ruby runtimes.
+Deploy functions to Volcano. Volcano supports Node.js, Python, and Ruby runtimes.
 
 ## Supported runtimes
 

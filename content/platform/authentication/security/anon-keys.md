@@ -116,7 +116,7 @@ Each anon key has a set of permissions that control what operations it allows. B
 | **Realtime** | `realtime.connect` | Allow connecting to realtime WebSocket |
 | **Realtime** | `realtime.subscribe` | Allow subscribing to realtime channels |
 | **Realtime** | `realtime.publish` | Allow publishing messages to broadcast channels |
-| **Functions** | `functions.invoke` | Allow invoking serverless functions marked `is_public: true` |
+| **Functions** | `functions.invoke` | Allow invoking functions marked `is_public: true` |
 
 ### Default permissions
 
@@ -204,7 +204,7 @@ With default permissions:
 With additional permissions configured:
 - Upload, download, list, and delete files (storage permissions)
 - Connect to WebSocket and subscribe/publish to channels (realtime permissions)
-- Invoke serverless functions (`functions.invoke`)
+- Invoke functions (`functions.invoke`)
   - Only for functions explicitly marked public (`is_public: true`)
 
 ## What anon keys cannot do

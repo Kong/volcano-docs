@@ -1,9 +1,9 @@
 ---
 title: "Function Integration"
-description: "Access authenticated user context in your serverless functions."
+description: "Access authenticated user context in your functions."
 ---
 
-Access authenticated user context in your serverless functions.
+Access authenticated user context in your functions.
 
 ## Receiving User Context
 

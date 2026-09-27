@@ -39,7 +39,7 @@ compute when it finishes. Those allowances refuse the next build or start.
 | Memory | 128 MB | 256 MB | Per runtime |
 | Ephemeral disk | 512 MB | 1 GB | Per runtime |
 | Functions per project | 10,000 | 10,000 | Absolute hard cap |
-| [Schedulers](../functions/scheduled-invocations.md) | Unavailable | 5 | Per project, counted across standard and durable functions together |
+| [Schedulers](../functions/scheduled-invocations.md) | Unavailable | 100 | Per project, counted across standard and durable functions together |
 | [Runtimes kept ready](../functions/overview.md#response-time-on-the-first-invocation) | 1 per region, for 2 days after each deploy and 1 day after the most recent invocation | Same | Not counted as invocations or bandwidth |
 
 ## Durable functions
@@ -57,7 +57,7 @@ compute when it finishes. Those allowances refuse the next build or start.
 | Result retention | 30 days | 30 days | After an execution finishes |
 | Concurrent executions | 10 | 100 | In flight at once, per project |
 | Durable functions per project | 10,000 | 10,000 | Absolute hard cap, counted separately from standard functions |
-| Schedulers | Unavailable | 5 | Per project, shared with standard function schedulers |
+| Schedulers | Unavailable | 100 | Per project, shared with standard function schedulers |
 | Runtimes kept ready | Not kept ready | Same | Durable functions are started, not called |
 
 Execution timeout and retention are the same on both plans on purpose: they are fixed when the function is created, so a plan change never leaves an existing function configured for limits its plan no longer allows. The timeout is set as high as it goes for the same reason — what actually bounds an execution is its 3,000 operations and your concurrent-execution cap, not the clock.
@@ -72,9 +72,9 @@ Functions and frontends share these counters.
 
 | Limit | HOBBY | SUPERAGENT | Scope |
 |---|---|---|---|
-| Request allowance | 100,000 / month | 1,000,000 / month | Combined across all your projects: every function invocation **and** proxied frontend request, including static assets and `/_next/image`. Durable executions have their own allowances above. HOBBY enforcement is eventual |
+| Request allowance | 100,000 / month | 1,000,000 / month | Combined across all your projects: every function invocation **and** proxied frontend request, including static assets and `/_next/image`. A request a frontend routes to a function counts once. Durable executions have their own allowances above. HOBBY enforcement is eventual |
 | Rate limit (per resource) | 100 requests / 10s | Unlimited | Each function or frontend |
-| Rate limit (per project) | 600 requests / 10s | Unlimited | Across all functions and frontends |
+| Rate limit (per project) | 600 requests / 10s | Unlimited | Across all functions and frontends; a request a frontend routes to a function counts once |
 | Build timeout | 30 min | 60 min | Per build |
 | Build-minute allowance | 60 / month | 60 / month | Combined across all your projects; HOBBY blocks new builds once finished builds reach the allowance, SUPERAGENT bills overage |
 
@@ -83,7 +83,7 @@ Functions and frontends share these counters.
 
 | Limit | HOBBY | SUPERAGENT | Scope |
 |---|---|---|---|
-| Request allowance | 100,000 / month | 200,000 / month | Combined across all your projects; HOBBY enforcement is eventual |
+| Request allowance | 100,000 / month | 200,000 / month | Combined across all your projects; each completed statement counts once, and an empty query such as a driver's connection ping does not count. HOBBY enforcement is eventual |
 | Databases per project | 1 | 10,000 | Creation cap |
 | Database-storage allowance | 1 GB / month | 10 GB / month | Peak combined storage across every database you own; HOBBY makes all owned databases read-only at the allowance |
 | [Branches](../databases/branching.md) per database | 10 | 25 | Counts branches in every state |
@@ -145,7 +145,7 @@ Revoked and expired tokens do not count against it, so cycling short-lived token
 
 | Limit | HOBBY | SUPERAGENT | Scope |
 |---|---|---|---|
-| Scheduled functions | Unavailable | 5 | Per project |
+| Scheduled functions | Unavailable | 100 | Per project |
 | Runtime log retention | 1 day | 30 days | Search / retention window |
 
 ## Enforcement

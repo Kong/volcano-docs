@@ -463,7 +463,7 @@ Each tick starts an execution rather than invoking the function, and gives it an
 
 A schedule whose tick is still running when the next one is due starts a second execution; the concurrency cap is what bounds that. Give a long-running schedule an interval comfortably longer than the work.
 
-Schedulers are a SUPERAGENT capability: on HOBBY the create answers `403`. SUPERAGENT allows 5 per project, counted across durable and standard functions together, and the sixth answers `403` as well.
+Schedulers are a SUPERAGENT capability: on HOBBY the create answers `403`. SUPERAGENT allows 100 per project, counted across durable and standard functions together, and a create past the cap answers `403` as well.
 
 ## Delete a durable function
 

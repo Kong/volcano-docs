@@ -1,15 +1,15 @@
 ---
 title: "Databases"
-description: "Serverless PostgreSQL databases that auto-scale, pause when idle, and support row-level security."
+description: "PostgreSQL databases that auto-scale, pause when idle, and support row-level security."
 ---
 
-Volcano provides serverless PostgreSQL databases. They auto-scale based on usage, pause when idle, and include built-in support for row-level security.
+Volcano provides PostgreSQL databases. They auto-scale based on usage, pause when idle, and include built-in support for row-level security.
 
 ## Features
 
 | Feature | Description |
 |---------|-------------|
-| Serverless | Auto-scales compute based on demand, pauses when idle |
+| Auto-scaling | Auto-scales compute based on demand, pauses when idle |
 | PostgreSQL | Full PostgreSQL compatibility (versions 14, 15, 16) |
 | Query Builder | Query from browsers without writing SQL |
 | Direct connection | Connect from your functions with standard PostgreSQL clients |

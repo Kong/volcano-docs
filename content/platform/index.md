@@ -1,9 +1,9 @@
 ---
 title: "Volcano Documentation"
-description: "Volcano is a serverless platform for building applications with functions, databases, and authentication."
+description: "Volcano is AI infrastructure for agents and applications: functions, durable functions, databases, auth, realtime, storage, hosting, and locks."
 ---
 
-Volcano is a serverless platform for building applications with functions, databases, and authentication. Deploy backend logic, provision PostgreSQL databases, and add user authentication—all through a unified API.
+Volcano is AI infrastructure for agents and applications. It gives you functions, durable functions, databases, authentication, realtime, file storage, frontend hosting, and distributed locks, all through one API.
 
 ## Quick start
 
@@ -23,7 +23,7 @@ MCP server are all ways of calling it — see
 |-----------|-------------------|---------------|
 | Dashboard | Exploring, one-off changes, reading logs and usage | [Dashboard](interfaces/dashboard.md) |
 | CLI | Deploying from a terminal or CI, migrations, local development | [CLI reference](/cli) |
-| SDK | Writing application code — auth, queries, storage, realtime | [JavaScript](/sdk/js), [Python](/sdk/python), [Ruby](/sdk/ruby) |
+| SDK | Writing application code — auth, queries, storage, realtime, durable functions, and distributed locks | [JavaScript](/sdk/js), [Python](/sdk/python), [Ruby](/sdk/ruby) |
 | REST API | Automating what the CLI does not cover | [API reference](api-reference/overview.md) |
 | MCP server | Letting an AI agent inspect or change one project | [MCP server](interfaces/mcp.md) |
 
@@ -31,22 +31,30 @@ MCP server are all ways of calling it — see
 
 ### Functions
 
-Serverless functions that run your backend code. Supports Node.js, Python, and Ruby.
+Agents and APIs in Node.js, Python, or Ruby, invoked over HTTP and deployed to the project's regions, with cron schedules and the caller's identity on the request.
 
 | Guide | Description |
 |-------|-------------|
 | [Overview](functions/overview.md) | What functions are and how they work |
 | [Creating functions](functions/creating-functions.md) | Deploy your first function |
-| [Durable functions](functions/durable-functions.md) | Long-running work that checkpoints and resumes |
-| [Developing durable functions locally](guides/durable-functions-locally.md) | Run one on your machine, then deploy it unchanged |
 | [Invoking functions](functions/invoking-functions.md) | Call functions from your app |
+| [Scheduled invocations](functions/scheduled-invocations.md) | Run a function on a cron schedule |
 | [User context](functions/user-context.md) | Access authenticated user data |
 | [Environment variables](functions/environment-variables.md) | Configure secrets and settings |
 | [Logs](functions/logs.md) | View and filter function logs |
 
+### Durable functions
+
+JavaScript or Python workflows that checkpoint each step and resume for up to a year, with waits, retries, idempotent starts, and cron schedules.
+
+| Guide | Description |
+|-------|-------------|
+| [Durable functions](functions/durable-functions.md) | Long-running work that checkpoints and resumes |
+| [Developing durable functions locally](guides/durable-functions-locally.md) | Run one on your machine, then deploy it unchanged |
+
 ### Databases
 
-Serverless PostgreSQL with built-in authentication and row-level security.
+PostgreSQL that auto-scales, with row-level security, a browser query builder or a direct connection, branches, and backups with point-in-time restore on SUPERAGENT.
 
 | Guide | Description |
 |-------|-------------|
@@ -56,11 +64,13 @@ Serverless PostgreSQL with built-in authentication and row-level security.
 | [REST API](databases/rest-api.md) | HTTP endpoints for database operations |
 | [Direct connection](databases/direct-connection.md) | Connect from a function with user impersonation |
 | [Row-level security](databases/row-level-security.md) | Secure data with policies |
+| [Branching](databases/branching.md) | Fork a database into an isolated copy |
+| [Backups](databases/backups.md) | Back up, and restore to a backup or a point in time (SUPERAGENT) |
 | [Auth helpers](databases/auth-helpers.md) | SQL functions for user context |
 
 ### Authentication
 
-User authentication with email/password, OAuth providers, and anonymous users.
+Email and password, Google, GitHub, Microsoft, and Apple, plus anonymous users that convert to a permanent account.
 
 | Guide | Description |
 |-------|-------------|
@@ -74,7 +84,7 @@ User authentication with email/password, OAuth providers, and anonymous users.
 
 ### Storage
 
-Durable object storage with RLS-style access control policies.
+Buckets that are private by default, with access policies, per-file public links, and resumable uploads.
 
 | Guide | Description |
 |-------|-------------|
@@ -83,9 +93,9 @@ Durable object storage with RLS-style access control policies.
 | [Policies](storage/policies.md) | RLS-style access control |
 | [Buckets](storage/buckets.md) | Creating and managing buckets |
 
-### Project locks
+### Distributed locks
 
-Renewable leases so only one backend worker runs a task at a time.
+Renewable leases so one holder runs a task, with a fencing token the protected resource can check.
 
 | Guide | Description |
 |-------|-------------|
@@ -93,7 +103,7 @@ Renewable leases so only one backend worker runs a task at a time.
 
 ### Realtime
 
-Live updates over WebSockets: Postgres changes, presence, and broadcast.
+Postgres changes, broadcast, and presence over WebSockets.
 
 | Guide | Description |
 |-------|-------------|
@@ -106,7 +116,7 @@ Live updates over WebSockets: Postgres changes, presence, and broadcast.
 
 ### Frontends
 
-Deploy static and server-rendered sites (Next.js) with build/runtime variables and custom domains.
+Next.js, static or server-rendered, served from the edge. A failed build never replaces the live version. Custom domains are on SUPERAGENT.
 
 | Guide | Description |
 |-------|-------------|
@@ -172,5 +182,4 @@ Working code examples in the [examples/](examples/README.md) directory:
 
 ## Getting help
 
-- [GitHub Issues](https://github.com/Kong/volcano-hosting/issues) — Report bugs and request features
 - [API reference](api-reference/overview.md) — REST API endpoints, authentication, and errors

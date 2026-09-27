@@ -88,7 +88,7 @@ yarn dev
 
 ### 3. Open Browser & Configure
 
-Navigate to: **http://localhost:3001**
+Navigate to: `http://localhost:3001`
 
 **The app will automatically prompt for credentials** if not configured!
 
@@ -270,7 +270,7 @@ Edit `app/globals.css` to customize:
 ### Add More Features
 
 - **Email Confirmation:** Handle email verification on signup
-- **Function Calls:** Add serverless function invocation
+- **Function Calls:** Add function invocation
 - **Multi-Factor Auth:** Add MFA/2FA support (when available)
 - **Account Deletion:** Implement account deletion flow
 

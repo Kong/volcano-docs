@@ -114,7 +114,7 @@ Choose a size based on your workload:
 | `volcano-db-xl` | Up to ~32GB | Heavy workloads |
 | `volcano-db-2xl` | Up to ~64GB | Enterprise-scale |
 
-**Serverless Scaling:** All databases automatically scale to zero when idle (after 3 minutes of inactivity) and scale up on demand within their type's limits.
+**Automatic scaling:** All databases automatically scale to zero when idle (after 3 minutes of inactivity) and scale up on demand within their type's limits.
 
 ## Update Database Type
 

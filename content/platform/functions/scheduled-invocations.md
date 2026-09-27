@@ -52,7 +52,7 @@ Scheduled invocations are a **SUPERAGENT** feature. On the HOBBY plan a schedule
 but stops firing — no runs are recorded, and its next run time keeps advancing —
 so an upgrade resumes it on its own cadence. See
 [moving from SUPERAGENT to HOBBY](../guides/plans-and-limits.md#moving-from-superagent-to-hobby).
-Creating one on HOBBY answers `403`. SUPERAGENT allows 5 per project, counted across
+Creating one on HOBBY answers `403`. SUPERAGENT allows 100 per project, counted across
 standard and [durable](durable-functions.md) functions together, and a create
 past the cap answers `403` as well.
 

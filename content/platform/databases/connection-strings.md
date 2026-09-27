@@ -85,7 +85,7 @@ When prompted, enter your password (from the connection string).
 
 ## Connection Pooling
 
-Recommended for serverless:
+Recommended for functions:
 
 ```javascript
 const { Pool } = require('pg');
@@ -93,7 +93,7 @@ const { Pool } = require('pg');
 // Create pool once (outside handler)
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  max: 1  // Limit connections in serverless
+  max: 1  // Limit connections per function instance
 });
 
 // Reuse in handlers
@@ -124,7 +124,7 @@ All database connections use SSL/TLS encryption by default for security.
 
 Databases have connection limits based on your plan.
 
-For serverless, use:
+For functions, use:
 - Connection pooling (pg.Pool)
 - max: 1 connection per function instance
 - Always release connections

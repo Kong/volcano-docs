@@ -38,7 +38,7 @@ tags:
   - name: Variables
     description: Environment variable management
   - name: Databases
-    description: Serverless PostgreSQL database provisioning and management
+    description: PostgreSQL database provisioning and management
   - name: Database Branches
     description: Short-lived forks of a database for development and testing
   - name: Database Queries
@@ -3440,7 +3440,7 @@ paths:
         - Functions
       summary: Create or update function code
       description: |
-        Upload a serverless function source bundle. Direct API clients may send the function code
+        Upload a function source bundle. Direct API clients may send the function code
         as a ZIP or tar.gz archive via multipart/form-data. The API stores a normalized tar.gz
         source archive.
         Cloud deploys should include source files and dependency manifests/lockfiles, not installed
@@ -3707,7 +3707,7 @@ paths:
         - Functions
       summary: Invoke a function
       description: |
-        Invoke a serverless function.
+        Invoke a function.
 
         **With Service Key** (admin/background operations):
         - Use for background jobs, webhooks, cron, admin operations
@@ -4115,7 +4115,9 @@ paths:
         databases. Database logs are a PRO-plan feature; `resource.type=database`
         from a FREE-plan project owner returns 403. The activity window is limited
         to the plan's retention window (FREE: 1 day, PRO: 30 days); older start
-        times are clamped to that window.
+        times are clamped to that window. Buckets are aligned to UTC clock
+        intervals and count events in the half-open window
+        `[start_time, end_time)`.
       operationId: getProjectLogActivity
       security:
         - UserToken: []
@@ -6242,9 +6244,9 @@ paths:
     post:
       tags:
         - Databases
-      summary: Create a new serverless PostgreSQL database
+      summary: Create a new PostgreSQL database
       description: |
-        Creates a serverless PostgreSQL database in the project.
+        Creates a PostgreSQL database in the project.
         Each project can hold 1 database on Free and up to 10,000 on Pro.
         Requests over the plan's cap return 403.
       operationId: createDatabase
@@ -18636,16 +18638,16 @@ components:
       additionalProperties: true
     LogActivityBucket:
       type: object
-      description: Log-event counts for one activity time bucket.
+      description: Log-event counts for one activity time bucket. The first and last buckets can extend past the requested window; they count only events inside it.
       properties:
         start_time:
           type: string
           format: date-time
-          description: Bucket start time.
+          description: Bucket start time, inclusive.
         end_time:
           type: string
           format: date-time
-          description: Bucket end time.
+          description: Bucket end time, exclusive.
         counts:
           type: object
           description: Counts grouped by activity dimension.
@@ -18691,16 +18693,16 @@ components:
         start_time:
           type: string
           format: date-time
-          description: Start time.
+          description: Start of the window, inclusive. Defaults to 24 hours before `end_time`.
         end_time:
           type: string
           format: date-time
-          description: End time.
+          description: End of the window, exclusive. Defaults to now.
         bucket_count:
           type: integer
           minimum: 1
           maximum: 96
-          description: Number of activity buckets to return.
+          description: Maximum number of buckets. Defaults to 24. Volcano picks the smallest bucket width from 1s, 2s, 5s, 10s, 15s, 30s, 1m, 2m, 5m, 10m, 15m, 30m, 1h, 2h, 3h, 6h, 12h, 1d, or a whole number of days that covers the window in at most this many buckets. Bucket edges fall on UTC multiples of the width, so they stay fixed as the window moves, and the response can contain fewer buckets. `1` returns one bucket that spans exactly the window.
       required:
         - resource
     LogActivityResponse:
@@ -18798,10 +18800,10 @@ components:
           description: Number of items requested per page.
         has_more:
           type: boolean
-          description: Whether there are more log events available.
+          description: Whether the search may have more matching log events. A page can hold fewer than `limit` events, or none, while this is true; keep paging until it is false.
         next_cursor:
           type: string
-          description: Opaque cursor for the next page. Send this value as `cursor` on the next request.
+          description: Opaque cursor for the next page, present while `has_more` is true. Send this value as `cursor` on the next request, even when `data` is empty.
       required:
         - data
         - limit

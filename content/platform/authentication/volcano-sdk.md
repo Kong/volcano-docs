@@ -1,9 +1,9 @@
 ---
 title: "Volcano SDK"
-description: "The Volcano SDK (@volcano.dev/sdk) is a JavaScript library for authentication, database queries, and serverless functions."
+description: "The Volcano SDK (@volcano.dev/sdk) is a JavaScript library for authentication, database queries, and functions."
 ---
 
-The Volcano SDK (`@volcano.dev/sdk`) is a JavaScript library for authentication, database queries, and serverless functions.
+The Volcano SDK (`@volcano.dev/sdk`) is a JavaScript library for authentication, database queries, and functions.
 
 ## Installation
 
@@ -724,7 +724,7 @@ async function handleOAuthCallback() {
 
 | Method | Description |
 |--------|-------------|
-| `invoke(functionName, payload)` | Call serverless function |
+| `invoke(functionName, payload)` | Call a function |
 
 ---
 
