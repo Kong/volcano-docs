@@ -33,7 +33,7 @@ Policies have access to these variables:
 | Variable | Type | Description |
 |----------|------|-------------|
 | `auth.uid()` | UUID | Current user's ID (null for an anon key) |
-| `auth.role()` | TEXT | Storage role: `'anon'` for an anon key, `'authenticated'` for any user session (including an anonymous user), or `'service_role'` |
+| `auth.role()` | TEXT | Request role: `'anon'` for an anon key, `'anonymous'` for an anonymous user session, `'authenticated'` for a registered user session, or `'service_role'` |
 | `auth.email()` | TEXT | Current user's email |
 | `owner_id` | UUID | The user who uploaded the file |
 | `name` | TEXT | The file path/name |
@@ -93,7 +93,13 @@ Any user session, including an anonymous user session, can perform the operation
 auth.uid() IS NOT NULL
 ```
 
-Storage policies cannot distinguish registered users from anonymous user sessions by `auth.role()`: both have the storage role `authenticated`. Use a trusted backend if an operation must require a registered user.
+To require a registered user, check the request role:
+
+```sql
+auth.role() = 'authenticated'
+```
+
+Anonymous user sessions have `auth.role() = 'anonymous'` and a user ID. Policies that used `auth.role() = 'authenticated'` to allow both session types must use `auth.uid() IS NOT NULL` instead.
 
 ### Allow all user sessions
 
@@ -128,7 +134,7 @@ Public files in `public/` folder, private files elsewhere:
 auth.role() = 'anon' AND name LIKE 'public/%'
 
 -- SELECT with any user session, including an anonymous user (all files)
-auth.role() = 'authenticated'
+auth.uid() IS NOT NULL
 ```
 
 ### Prefix-based access

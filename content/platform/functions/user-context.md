@@ -1,9 +1,9 @@
 ---
 title: "Accessing User Information in Functions"
-description: "Learn how to access authenticated user information in your serverless functions."
+description: "Learn how to access authenticated user information in your functions."
 ---
 
-Learn how to access authenticated user information in your serverless functions.
+Learn how to access authenticated user information in your functions.
 
 ## Overview
 

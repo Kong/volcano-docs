@@ -1,9 +1,9 @@
 ---
 title: "Projects"
-description: "A project is a container for your application's resources. Each project has its own functions, databases, authentication configuration, and API keys."
+description: "A project holds functions, durable functions, databases, auth, storage, realtime, frontends, locks, and API keys."
 ---
 
-A project is a container for your application's resources. Each project has its own functions, databases, authentication configuration, and API keys.
+A project is a container for your application's resources. Each project has its own functions, durable functions, databases, authentication, file storage, realtime, frontend hosting, distributed locks, and API keys.
 
 ## What's in a project
 
@@ -13,12 +13,20 @@ my-app (Project)
 │   ├── api-handler
 │   ├── process-webhook
 │   └── scheduled-task
+├── Durable functions
+│   └── order-pipeline
 ├── Databases
 │   ├── main
 │   └── analytics
 ├── Authentication
 │   ├── Auth configuration
 │   └── Auth users
+├── File storage
+│   └── uploads
+├── Realtime
+├── Frontends
+│   └── web
+├── Distributed locks
 ├── API keys
 │   ├── Anon keys (for frontend)
 │   └── Service keys (for backend)
@@ -160,6 +168,6 @@ When you delete a project, Volcano:
 | [Creating projects](creating-projects.md) | Detailed project creation guide |
 | [Importing from Vercel](import-vercel.md) | Run a read-only production preflight for a Vercel project |
 | [Export your source to GitHub](export-to-git.md) | Initialize an empty repository with a project's stored source and deploy it from Git |
-| [Functions overview](../functions/overview.md) | Deploy serverless functions |
+| [Functions overview](../functions/overview.md) | Deploy functions |
 | [Databases overview](../databases/overview.md) | Provision PostgreSQL databases |
 | [Authentication overview](../authentication/overview.md) | Add user authentication |

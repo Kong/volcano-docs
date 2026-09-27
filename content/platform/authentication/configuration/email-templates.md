@@ -111,8 +111,8 @@ All templates have access to:
 | `{{.Email}}` | Recipient email | user@example.com |
 | `{{.ProjectName}}` | Project name | My App |
 | `{{.AppName}}` | Application name | My App |
-| `{{.ConfirmationURL}}` | Confirmation link | https://app.com/confirm?token=abc |
-| `{{.ResetURL}}` | Password reset link | https://app.com/reset?token=xyz |
+| `{{.ConfirmationURL}}` | Confirmation link | `https://app.com/confirm?token=abc` |
+| `{{.ResetURL}}` | Password reset link | `https://app.com/reset?token=xyz` |
 
 ### Usage in Templates
 

@@ -1,6 +1,6 @@
 ---
 title: "Function Upload API"
-description: "Upload a serverless function as a ZIP or tar.gz archive; the API normalizes it to tar.gz and starts the cloud build."
+description: "Upload a function as a ZIP or tar.gz archive; the API normalizes it to tar.gz and starts the cloud build."
 ---
 
 ## Endpoint
@@ -9,7 +9,7 @@ description: "Upload a serverless function as a ZIP or tar.gz archive; the API n
 POST /projects/{project_id}/functions
 ```
 
-Upload a serverless function as a ZIP or `tar.gz` source archive. The API accepts either format, injects build metadata, and stores a normalized `tar.gz` source archive before starting the cloud build.
+Upload a function as a ZIP or `tar.gz` source archive. The API accepts either format, injects build metadata, and stores a normalized `tar.gz` source archive before starting the cloud build.
 
 ## Request Format
 

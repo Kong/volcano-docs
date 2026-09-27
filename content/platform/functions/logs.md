@@ -80,7 +80,7 @@ Supported request body fields:
 | --- | --- |
 | `resource.type` | Required. Use `function`. |
 | `resource.ids` | Optional function IDs. Omit or pass an empty array to search all functions in the project. |
-| `q` | Optional query. Unqualified terms search the body. Supports quoted text, implicit `AND`, `AND`/`OR`/`NOT`, parentheses, and the fields `body`, `level`, `region`, `invocation.id`, `resource.id`, and `resource.name`. The resource-name aliases `function`, `frontend`, and `database` are also supported. |
+| `q` | Optional query. Unqualified terms search the body. Supports quoted text, implicit `AND`, `AND`/`OR`/`NOT`, parentheses, and the fields `body`, `level`, `region`, `invocation.id`, `resource.id`, and `resource.name`. The resource-name aliases `function`, `frontend`, and `database` are also supported. `level` accepts `trace`, `debug`, `info`, `warn`, `error`, and `fatal`, plus the aliases `log`, `information`, `warning`, `err`, and `critical`. |
 | `limit` | Max records to return. Default `100`, max `1000`. |
 | `cursor` | Opaque cursor from the previous response. |
 | `start_time` | Inclusive lower bound as an RFC3339 timestamp. |
@@ -97,7 +97,13 @@ curl -X POST "https://api.volcano.dev/projects/PROJECT_ID/logs/search" \
 ## Pagination
 
 When `has_more` is true, pass the response `next_cursor` back as the `cursor`
-field on the next request with the same filters.
+field on the next request with the same filters. Keep paging until `has_more`
+is false.
+
+A search reads for a bounded time per request, so a page can hold fewer than
+`limit` events, or none, while `has_more` is true. This happens most with
+selective queries over a wide time range. Continue from `next_cursor` rather
+than treating a short or empty page as the end of the results.
 
 ```bash
 curl -X POST ".../logs/search" \
@@ -110,6 +116,77 @@ curl -X POST ".../logs/search" \
   -H "Content-Type: application/json" \
   -d '{"resource":{"type":"function"},"limit":100,"cursor":"eyJwayI6..."}'
 ```
+
+## Activity
+
+Count logs over time to draw a histogram. The request takes the same
+`resource` and `q` fields as search:
+
+```bash
+curl -X POST "https://api.volcano.dev/projects/PROJECT_ID/logs/activity" \
+  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"resource":{"type":"function"},"q":"level:error","start_time":"2024-01-01T12:03:10Z","end_time":"2024-01-01T13:03:10Z","bucket_count":4}'
+```
+
+**Response:**
+
+```json
+{
+  "data": [
+    {
+      "start_time": "2024-01-01T12:00:00Z",
+      "end_time": "2024-01-01T12:30:00Z",
+      "counts": {
+        "levels": {"debug": 0, "error": 3, "fatal": 0, "info": 0, "trace": 0, "warn": 0},
+        "regions": {"us-east-1": 3},
+        "resource_ids": {"550e8400-e29b-41d4-a716-446655440000": 3}
+      },
+      "total": 3
+    },
+    {
+      "start_time": "2024-01-01T12:30:00Z",
+      "end_time": "2024-01-01T13:00:00Z",
+      "counts": {
+        "levels": {"debug": 0, "error": 1, "fatal": 0, "info": 0, "trace": 0, "warn": 0},
+        "regions": {"us-east-1": 1},
+        "resource_ids": {"550e8400-e29b-41d4-a716-446655440000": 1}
+      },
+      "total": 1
+    },
+    {
+      "start_time": "2024-01-01T13:00:00Z",
+      "end_time": "2024-01-01T13:30:00Z",
+      "counts": {
+        "levels": {"debug": 0, "error": 0, "fatal": 0, "info": 0, "trace": 0, "warn": 0},
+        "regions": {},
+        "resource_ids": {}
+      },
+      "total": 0
+    }
+  ],
+  "total": 4
+}
+```
+
+Buckets follow these rules:
+
+- Counts cover the half-open window `[start_time, end_time)`. An event exactly
+  at `end_time` is not counted.
+- `bucket_count` is a maximum, `24` by default and at most `96`. Volcano picks
+  the smallest width that covers the window in that many buckets, so a response
+  can hold fewer buckets than requested.
+- Widths come from a fixed set: 1s, 2s, 5s, 10s, 15s, 30s, 1m, 2m, 5m, 10m, 15m,
+  30m, 1h, 2h, 3h, 6h, 12h, 1d, then whole days.
+- Bucket edges fall on UTC multiples of the width, so they stay put as the
+  window moves. The first and last buckets can extend past the window; they
+  count only events inside it.
+- `bucket_count: 1` returns one bucket that spans exactly the window.
+- The window is limited to the plan's log retention (FREE: 1 day, PRO: 30
+  days). An older `start_time` is moved up to the retention limit.
+- Counts across several resources or deployments come from Volcano's
+  activity index. Logs from before a region's index began are not counted;
+  search still returns them.
 
 ## Live Streaming
 

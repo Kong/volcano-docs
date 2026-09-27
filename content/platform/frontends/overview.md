@@ -113,6 +113,12 @@ export async function POST() {
 }
 ```
 
+Queued cache regeneration from an older deployment is retired after a redeploy.
+The redeploy clears that frontend's old edge pages. If that edge update did not
+complete, Volcano clears each affected page before retiring its queued work.
+Only the current build can regenerate its cache. Revalidation for other
+frontends is unaffected.
+
 Two limits come with `revalidatePath()`. It clears the exact address that was
 revalidated — both `/blog` and `/blog/`, so a site that canonicalizes the
 trailing slash still drops the stored page — and the cache treats each query

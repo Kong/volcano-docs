@@ -1,9 +1,9 @@
 ---
 title: "Functions API"
-description: "Deploy and invoke serverless functions."
+description: "Deploy and invoke functions."
 ---
 
-Deploy and invoke serverless functions.
+Deploy and invoke functions.
 
 These endpoints cover standard functions only. [Durable functions](../functions/durable-functions.md) are a separate collection under `/projects/{projectId}/durable-functions`, and a durable function's id answers `404` here.
 

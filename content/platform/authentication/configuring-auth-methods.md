@@ -861,9 +861,9 @@ If a provider is temporarily unavailable:
 
 **Yes!** Each project has independent configuration:
 
-- Dev project: http://localhost:8080/callback
-- Staging project: https://staging.yourapp.com/callback
-- Production project: https://yourapp.com/callback
+- Dev project: `http://localhost:8080/callback`
+- Staging project: `https://staging.yourapp.com/callback`
+- Production project: `https://yourapp.com/callback`
 
 ---
 
