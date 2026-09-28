@@ -221,6 +221,7 @@ See [Projects](projects.md) for details.
 | `DELETE` | `/projects/{id}/functions/{functionId}` | Delete a function |
 | `POST` | `/functions/{functionId}/invoke` | Invoke a function |
 | `GET` | `/functions/resolve` | Resolve function name to function ID |
+| `GET` | `/functions/runtimes` | List supported runtimes and their display labels |
 | `POST` | `/projects/{id}/logs/search` | Search and filter function runtime logs |
 | `GET` | `/projects/{id}/functions/{functionId}/deployments` | List function deployments |
 
@@ -239,6 +240,7 @@ See [Functions](functions.md) for details.
 | `POST` | `/projects/{id}/durable-functions/{functionId}/executions` | Start an execution as the project owner |
 | `GET` | `/projects/{id}/durable-functions/{functionId}/executions` | List executions |
 | `GET` | `/projects/{id}/durable-functions/{functionId}/executions/{executionId}` | Get an execution |
+| `GET` | `/projects/{id}/durable-functions/{functionId}/executions/{executionId}/operations` | List an execution's operations |
 | `POST` | `/projects/{id}/durable-functions/{functionId}/executions/{executionId}/stop` | Stop an execution |
 | `GET` | `/projects/{id}/durable-functions/{functionId}/schedulers` | List schedules |
 | `POST` | `/projects/{id}/durable-functions/{functionId}/schedulers` | Create a schedule |

@@ -153,7 +153,7 @@ Users banned via the Auth Admin API are automatically blocked:
 
 When a user's session is revoked:
 
-1. Revocation is broadcast via Redis to all server instances
+1. Revocation reaches every realtime server
 2. User's active connections are terminated within seconds
 3. User must re-authenticate to reconnect
 

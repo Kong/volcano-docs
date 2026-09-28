@@ -127,6 +127,7 @@ Rather than hardcoding that list, read it from `GET /functions/runtimes` and kee
   "runtimes": [
     {
       "name": "nodejs24.x",
+      "label": "Node.js 24",
       "language": "nodejs",
       "default": true,
       "durable_capable": true,
@@ -139,6 +140,7 @@ Rather than hardcoding that list, read it from `GET /functions/runtimes` and kee
     },
     {
       "name": "python3.12",
+      "label": "Python 3.12",
       "language": "python",
       "default": true,
       "durable_capable": false,
@@ -151,7 +153,9 @@ Rather than hardcoding that list, read it from `GET /functions/runtimes` and kee
     },
     {
       "name": "python3.14",
+      "label": "Python 3.14",
       "language": "python",
+      "default": false,
       "durable_capable": true,
       "deployment": {
         "file_extensions": [".py"],
@@ -163,6 +167,8 @@ Rather than hardcoding that list, read it from `GET /functions/runtimes` and kee
   ]
 }
 ```
+
+Pass `name` to the deploy. `label` is the runtime's display name, so show it in a picker instead of formatting `name` yourself.
 
 A durable function deploys to every region its project deploys to, and every one of those regions has to offer durable execution. Selecting a region that does not is rejected with `400`, on the deploy and on the project's own region change, and the message names the region.
 
@@ -401,6 +407,112 @@ curl "https://api.volcano.dev/projects/$PROJECT_ID/durable-functions/$FUNCTION_I
 ```
 
 A listing returns the last status Volcano observed for each execution rather than polling every one, so fetch a single execution when you need its live state.
+
+### Inspect an execution's operations
+
+Every operation an execution begins is recorded: each step and every attempt of it, each wait, each `waitUntil` check, and each child context, map item and parallel branch. Read them as a trace to see where an execution is, what it retried, and where the time went:
+
+```bash
+curl "https://api.volcano.dev/projects/$PROJECT_ID/durable-functions/$FUNCTION_ID/executions/$EXECUTION_ID/operations" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN"
+```
+
+```json
+{
+  "data": [
+    {
+      "id": "c3f1e0a2b4d6f8a1",
+      "type": "execution",
+      "kind": "execution",
+      "status": "succeeded",
+      "started_at": "2026-09-04T18:31:02Z",
+      "ended_at": "2026-09-04T18:31:40Z"
+    },
+    {
+      "id": "5d2c9b8a7f6e1d0c",
+      "parent_id": "c3f1e0a2b4d6f8a1",
+      "name": "charge",
+      "type": "step",
+      "kind": "step",
+      "status": "succeeded",
+      "started_at": "2026-09-04T18:31:02Z",
+      "ended_at": "2026-09-04T18:31:05Z",
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": "failed",
+          "started_at": "2026-09-04T18:31:02Z",
+          "ended_at": "2026-09-04T18:31:03Z"
+        },
+        {
+          "attempt": 2,
+          "status": "succeeded",
+          "started_at": "2026-09-04T18:31:04Z",
+          "ended_at": "2026-09-04T18:31:05Z"
+        }
+      ]
+    },
+    {
+      "id": "8e7d6c5b4a3f2e1d",
+      "parent_id": "c3f1e0a2b4d6f8a1",
+      "name": "settle",
+      "type": "wait",
+      "kind": "wait",
+      "status": "succeeded",
+      "started_at": "2026-09-04T18:31:05Z",
+      "ended_at": "2026-09-04T18:31:35Z",
+      "scheduled_end_at": "2026-09-04T18:31:35Z"
+    },
+    {
+      "id": "1a2b3c4d5e6f7a8b",
+      "parent_id": "c3f1e0a2b4d6f8a1",
+      "name": "pack",
+      "type": "context",
+      "kind": "map",
+      "status": "succeeded",
+      "started_at": "2026-09-04T18:31:35Z",
+      "ended_at": "2026-09-04T18:31:40Z"
+    },
+    {
+      "id": "9f8e7d6c5b4a3f2e",
+      "parent_id": "1a2b3c4d5e6f7a8b",
+      "name": "map-item-0",
+      "type": "context",
+      "kind": "map_item",
+      "status": "succeeded",
+      "started_at": "2026-09-04T18:31:35Z",
+      "ended_at": "2026-09-04T18:31:39Z"
+    }
+  ],
+  "invocations": [
+    { "started_at": "2026-09-04T18:31:02Z", "ended_at": "2026-09-04T18:31:05Z" },
+    { "started_at": "2026-09-04T18:31:35Z", "ended_at": "2026-09-04T18:31:40Z" }
+  ],
+  "complete": true,
+  "synced_at": "2026-09-04T18:31:52Z"
+}
+```
+
+The execution comes first and is the only operation without a `parent_id`. Everything else follows in the order it started, with `parent_id` naming what it ran inside, so the list is a tree. `kind` is the operation as you wrote it:
+
+| Your code | `kind` | Children |
+|---|---|---|
+| `ctx.step` | `step` | Each run of the body is an entry in `attempts` |
+| `ctx.wait` | `wait` | `scheduled_end_at` is when it elapses |
+| `ctx.waitUntil` | `wait_until` | Each check is an attempt; `next_attempt_at` is the next one |
+| `ctx.child` | `child` | The operations inside it |
+| `ctx.map` | `map` | One `map_item` per item |
+| `ctx.parallel` | `parallel` | One `parallel_branch` per branch |
+
+A map item or parallel branch you did not name carries the SDK's positional name, such as `map-item-0` or `parallel-branch-1`.
+
+`status` is `running`, `waiting` (a wait, or a `waitUntil` between checks), `retrying` (the last attempt failed and `next_attempt_at` is the next one), or how the operation ended. Work still open when the execution ended — a wait cut short by a stop — ends as `cancelled` at that moment. An execution whose outcome was lost ends as `unknown`, matching the execution's own status. `invocations` are the windows your code was actually running. The gaps between them are time the execution spent suspended, which is why a long wait adds no compute.
+
+A finished execution's trace is final: `complete` is `true`, and its operations no longer change. The one late addition is its last invocation window, which can land shortly after. A running one is refreshed when you read it, usually to within about ten seconds and later when many executions are being watched at once; `synced_at` says when it was last refreshed, and is absent until the first refresh, when `data` may still be empty. Poll it the way you poll the execution.
+
+The trace is metadata, never data. Inputs, step results and return values are not included, and an error carries its type and a bounded message only when one was recorded. A trace lives as long as its execution does: for the function's `retention_days`, and not past the function's deletion.
+
+The dashboard draws the same trace as a timeline when you open an execution. **Observability → Tracing** shows a durable function's recent executions beside the trace of the one you pick, and its address links to that execution.
 
 ### Stop an execution
 

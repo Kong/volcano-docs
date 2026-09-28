@@ -44,7 +44,8 @@ config apply (including dry run):
 - `AWS_ACCESS_KEY`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`
 - `AWS_LAMBDA_METADATA_API`, `AWS_LAMBDA_METADATA_TOKEN`, `LAMBDA_TASK_ROOT`, `LAMBDA_RUNTIME_DIR`
 
-Use another name. See the [full reserved-name list](https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html).
+The function runtime sets these itself, so a project variable could not
+override them. Use another name.
 
 ### Names reserved during builds
 

@@ -55,9 +55,9 @@ zip -r function.zip . -x "node_modules/*" -x "python_deps/*" -x "vendor/*" -x ".
 
 Volcano installs Node.js, Python, and Ruby dependencies during the cloud compile build from manifests such as `package.json`, `requirements.txt`, and `Gemfile`.
 
-Cloud deployments enforce two separate limits: `SOURCE_ARCHIVE_SIZE_LIMIT_MB` for uploaded source archives, and `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB` for the final container image produced by the publish build.
+Cloud deployments enforce two separate limits: 256 MB for the uploaded source archive, and 4096 MB for the final function image the build produces, dependencies included.
 
-`SOURCE_ARCHIVE_SIZE_LIMIT_MB` is enforced by the API only. The CLI does not enforce a local source archive size limit, so server-side limit changes do not require users to update the CLI. `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB` is enforced in the cloud publish build after the final image is built and before it is pushed.
+The API enforces the source archive limit. The CLI does not enforce a local source archive size limit, so a server-side limit change does not require updating the CLI. The image limit is checked in the cloud build, after dependencies are installed and the final image is built.
 
 ### DO: Keep Build Inputs Focused
 
@@ -120,7 +120,7 @@ cd dist && zip function.zip index.js
 
 **Error message**:
 ```text
-Error: function code too large (max SOURCE_ARCHIVE_SIZE_LIMIT_MB, got oversized archive from file 'function.tar.gz')
+Error: function code too large (max 256 MB, got 312475648 bytes from file 'function.tar.gz')
 ```
 
 **Solutions**:
@@ -136,9 +136,9 @@ Error: function code too large (max SOURCE_ARCHIVE_SIZE_LIMIT_MB, got oversized 
 
 4. **Split into multiple functions** if your app is too large
 
-### "Lambda target container image is too large"
+### Function image too large
 
-The publish build rejects final images larger than `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB`. Remove unnecessary runtime files, reduce dependency size, or split the function into smaller deployable units.
+A deployment fails after its build when the final function image, dependencies included, is larger than 4096 MB. Remove unnecessary runtime files, reduce dependency size, or split the function into smaller deployable units.
 
 ## Quick Start
 

@@ -54,18 +54,18 @@ JavaScript or Python workflows that checkpoint each step and resume for up to a 
 
 ### Databases
 
-PostgreSQL that auto-scales, with row-level security, a browser query builder or a direct connection, branches, and backups with point-in-time restore on SUPERAGENT.
+PostgreSQL that auto-scales and branches in under a minute, with row-level security, a browser query builder or a direct connection, and backups with point-in-time restore on SUPERAGENT.
 
 | Guide | Description |
 |-------|-------------|
 | [Overview](databases/overview.md) | Database features and access methods |
 | [Quick start](databases/quick-start.md) | Set up a database in 5 minutes |
+| [Branching](databases/branching.md) | Fork a copy of a database for every pull request, migration, or test run |
+| [Backups and restore](databases/backups.md) | Back up a database and restore it to a backup or a point in time (SUPERAGENT) |
 | [Query Builder API](databases/query-builder-api.md) | Query from the browser with the SDK |
 | [REST API](databases/rest-api.md) | HTTP endpoints for database operations |
 | [Direct connection](databases/direct-connection.md) | Connect from a function with user impersonation |
 | [Row-level security](databases/row-level-security.md) | Secure data with policies |
-| [Branching](databases/branching.md) | Fork a database into an isolated copy |
-| [Backups](databases/backups.md) | Back up, and restore to a backup or a point in time (SUPERAGENT) |
 | [Auth helpers](databases/auth-helpers.md) | SQL functions for user context |
 
 ### Authentication

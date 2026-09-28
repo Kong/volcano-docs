@@ -18,8 +18,8 @@ Multipart form fields:
 - `archive` (required): ZIP or `tar.gz` bundle of the frontend project or monorepo workspace root. The API stores a normalized `tar.gz` archive.
 
 Size limits:
-- `SOURCE_ARCHIVE_SIZE_LIMIT_MB` is enforced by the API for uploaded and normalized source archives.
-- `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB` is enforced by the publish build for the final container images.
+- Uploaded and normalized source archives are limited to 256 MB, enforced by the API.
+- Each final frontend image is limited to 4096 MB, enforced by the build.
 - The CLI uploads `tar.gz` and does not enforce its own source archive size limit.
 
 Example monorepo upload:
@@ -62,7 +62,6 @@ Build environment:
 Supported frontend environments:
 - Next.js `15.x` and `16.x`.
 - Node.js `22.x` and `24.x`, inferred from `package.json` `engines.node`.
-- OpenNext `4.x`.
 
 If `engines.node` is omitted, Volcano builds with Node.js `22.x`.
 Your selected Node.js family must satisfy the installed Next.js package's `engines.node` constraint. The runtime matrix is tested against the pinned Next versions' npm metadata: Next `15.5.26` requires `^18.18.0 || ^19.8.0 || >=20.0.0`, and Next `16.3.6` requires `>=20.9.0`.
@@ -156,6 +155,7 @@ Response fields:
 - `verification_status`
 - `verification_records[]`
 - `required_routing_record`
+- `routing_target_hostname`
 - `effective_urls[]`
 - `created_at`
 - `updated_at`
@@ -164,7 +164,7 @@ Notes:
 - When the frontend has no custom domain configured, returns `200` with a JSON `null` body (the empty state), not `404`.
 - Returns `404` only when the frontend itself does not exist.
 - `verification_records[]` is usually empty for BYOC because certificate ownership/validation comes from the uploaded cert.
-- `required_routing_record` contains the DNS record that should route traffic to Volcano (currently `CNAME`).
+- `required_routing_record` is omitted because Volcano cannot determine whether your domain is a DNS zone apex, including a delegated subdomain apex. Use `routing_target_hostname` as the DNS routing target. Configure a CNAME only if your DNS provider confirms the domain is not a zone apex; for any zone apex, use a provider-supported ALIAS, ANAME, or CNAME-flattening record.
 - `effective_urls[]` always includes the default Volcano frontend URL; it also includes the custom domain URL once active.
 
 ## Delete Frontend Custom Domain

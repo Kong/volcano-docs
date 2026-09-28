@@ -157,7 +157,7 @@ curl -X POST https://api.yourapp.com/projects/PROJECT_ID/databases \
   -H "Content-Type: application/json" \
   -d '{
     "name": "my_app_db",
-    "region": "aws-us-east-1",
+    "region": "us-east-1",
     "pg_version": "16"
   }'
 ```

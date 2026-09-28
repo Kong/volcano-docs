@@ -59,7 +59,7 @@ The CLI packages cloud function sources as `tar.gz` archives and also automatica
 
 Cloud deploys install dependencies during the function compile build. Do not upload `node_modules`, `python_deps`, or `vendor` to the cloud API. Local mode installs them too, from the same manifests, so you deploy the same sources either way.
 
-Function and frontend source archives are limited by `SOURCE_ARCHIVE_SIZE_LIMIT_MB`, which is enforced by the API. The CLI does not apply its own source archive size limit. Final container images are limited by `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB`, which is enforced in the cloud publish build before images are pushed.
+Function and frontend source archives are limited to 256 MB, which the API enforces. The CLI does not apply its own source archive size limit. The final image each build produces, dependencies included, is limited to 4096 MB and checked in the cloud build.
 
 See [Creating functions](creating-functions.md) for concrete layout examples.
 

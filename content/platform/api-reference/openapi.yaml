@@ -5224,6 +5224,61 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /projects/{id}/durable-functions/{functionId}/executions/{executionId}/operations:
+    get:
+      tags:
+        - Durable Functions
+      summary: List a durable execution's operations
+      description: |
+        Returns the execution's trace: every operation it began — each step,
+        wait, poll, child context, map item and parallel branch — with when it
+        started and ended, how it ended, and each attempt of a retried step.
+        `invocations` are the windows the function's code was actually running;
+        the gaps between them are time the execution spent suspended, which is
+        not charged.
+
+        A finished execution's trace is final and `complete` is `true`. A
+        running one is refreshed when it is read, and can be up to about ten
+        seconds behind; `synced_at` says when it was last refreshed. Inputs,
+        results and other payloads are never included.
+
+        The list is not paginated: an execution is limited to 3,000
+        operations, and a trace is read whole.
+      operationId: listDurableExecutionOperations
+      security:
+        - UserToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/DurableFunctionId'
+        - $ref: '#/components/parameters/DurableExecutionId'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DurableExecutionOperationList'
+        '404':
+          description: Durable function or execution not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: The trace could not be read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: |
+            Durable execution is not available in this environment. Either the
+            capability is paused or this deployment cannot serve it, so the
+            request is not one to retry in a loop.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /projects/{id}/durable-functions/{functionId}/executions/{executionId}/stop:
     post:
       tags:
@@ -7820,7 +7875,7 @@ paths:
         - Simple data retrieval
         - Filtered searches with sorting and pagination
 
-        **Note:** For complex queries (JOINs, CTEs), use Lambda functions with direct SQL
+        **Note:** For complex queries (JOINs, CTEs), use a function with direct SQL
 
         **Branch-targeted.** Runs against the named branch instead of the parent
         database, using the branch's own credentials. The branch must be `active`
@@ -8148,7 +8203,7 @@ paths:
                   properties:
                     id:
                       type: string
-                      example: aws-us-east-1
+                      example: us-east-1
                       description: Region identifier for API usage
                     name:
                       type: string
@@ -8195,8 +8250,9 @@ paths:
       operationId: listFunctionRuntimes
       security: []
       description: |
-        Returns the public function runtime catalog used by CLI clients to select supported runtimes,
-        language defaults, and local source packaging metadata for deployments.
+        Returns the public function runtime catalog: every runtime a deploy accepts, its display
+        label for runtime pickers, language defaults, durable capability, and local source packaging
+        metadata for deployments.
         This is a public endpoint that doesn't require authentication.
       responses:
         '200':
@@ -14541,7 +14597,8 @@ components:
             - 2048
         region:
           type: string
-          pattern: ^aws-[a-z0-9-]+$
+          pattern: ^(aws-)?[a-z]{2}(-[a-z]+)+-[0-9]+$
+          description: Region such as `us-east-1`. Region IDs issued by earlier versions of the API are still accepted.
         max_duration_seconds:
           type: integer
           minimum: 30
@@ -14604,7 +14661,8 @@ components:
             - 2048
         region:
           type: string
-          pattern: ^aws-[a-z0-9-]+$
+          pattern: ^(aws-)?[a-z]{2}(-[a-z]+)+-[0-9]+$
+          description: Region such as `us-east-1`. Region IDs issued by earlier versions of the API are still accepted.
         command:
           type: string
           minLength: 1
@@ -15795,11 +15853,12 @@ components:
         region:
           type: string
           description: |
-            Region for database hosting. The accepted values are the regions this
-            environment runs in, so read them from `GET /databases/regions` rather
-            than hardcoding a list. A region the environment does not offer is
-            rejected with 400.
-          example: aws-us-east-1
+            Region for database hosting, such as `us-east-1`. The accepted values
+            are the regions this environment runs in, so read them from
+            `GET /databases/regions` rather than hardcoding a list. A region the
+            environment does not offer is rejected with 400. Region IDs issued by
+            earlier versions of the API are still accepted.
+          example: us-east-1
         pg_version:
           type: string
           description: PostgreSQL major version
@@ -16115,7 +16174,7 @@ components:
         region:
           type: string
           description: Region where the database is hosted
-          example: aws-us-east-1
+          example: us-east-1
         pg_version:
           type: string
           description: PostgreSQL major version
@@ -17780,6 +17839,9 @@ components:
             $ref: '#/components/schemas/FrontendDomainVerificationRecord'
         required_routing_record:
           $ref: '#/components/schemas/FrontendDomainRoutingRecord'
+        routing_target_hostname:
+          type: string
+          description: DNS routing target hostname for this frontend. The DNS record type depends on whether the custom domain is a zone apex.
         effective_urls:
           type: array
           items:
@@ -17866,28 +17928,19 @@ components:
         initiated_by:
           type: string
           description: Platform user that triggered a request-initiated deployment; absent for git and system deployments.
-        artifact_bucket:
-          type: string
-        artifact_key:
-          type: string
-        artifact_version:
-          type: string
         site_url:
           type: string
-        cloudformation_stack_id:
-          type: string
-        cloudformation_stack_url:
-          type: string
-        codebuild_duration_seconds:
+        build_duration_seconds:
           type: integer
           format: int64
-          description: Total CodeBuild build duration recorded for this deployment, in seconds.
-        codebuild_build_count:
+          description: Total build time recorded for this deployment, in seconds.
+        build_count:
           type: integer
-          description: Number of completed CodeBuild builds included in codebuild_duration_seconds.
-        codebuild_duration_recorded_at:
+          description: Number of completed builds included in build_duration_seconds.
+        build_duration_recorded_at:
           type: string
           format: date-time
+          description: When the build time was last recorded.
         progress:
           $ref: '#/components/schemas/DeploymentProgress'
         error_message:
@@ -18262,8 +18315,6 @@ components:
         has_openapi_spec:
           type: boolean
           description: Whether OpenAPI metadata is configured; list responses omit the document itself.
-        aws_function_arn:
-          type: string
         invoke_url:
           type: string
           description: 'Canonical geo-routed HTTPS endpoint for invoking this function. Use it as-is: it does not share a domain with the API, so a host derived from the API URL will not reach the function. Omitted when the deployment serves no public invocation domain, as in local development, so a client testing for an empty string never matches.'
@@ -18513,6 +18564,187 @@ components:
           type: string
         message:
           type: string
+    DurableExecutionOperationList:
+      type: object
+      description: A durable execution's trace.
+      properties:
+        data:
+          type: array
+          description: |
+            Every operation the execution began. The execution itself comes
+            first and is the only operation without a `parent_id`; the rest
+            follow in the order they started.
+          items:
+            $ref: '#/components/schemas/DurableExecutionOperation'
+        invocations:
+          type: array
+          description: |
+            When the function's code was running, oldest first. An execution
+            suspended in a wait holds no runtime, so the gaps between these are
+            not charged as compute.
+          items:
+            $ref: '#/components/schemas/DurableExecutionInvocation'
+        complete:
+          type: boolean
+          description: |
+            `true` once the execution has finished and nothing more will be
+            recorded. Its operations no longer change, and it is no longer
+            refreshed on read; a final invocation window can still be added
+            shortly after.
+        synced_at:
+          type: string
+          format: date-time
+          description: |
+            When the trace was last refreshed. Absent before it has been
+            refreshed at all. A running execution's trace is usually within
+            about ten seconds of the execution, and further behind when many
+            executions are being watched at once.
+      required:
+        - data
+        - invocations
+        - complete
+    DurableExecutionOperation:
+      type: object
+      description: One operation on an execution's timeline.
+      properties:
+        id:
+          type: string
+          description: Identifies the operation within its execution.
+        parent_id:
+          type: string
+          description: |
+            The operation this one ran inside: a child context, map item or
+            parallel branch, or the execution itself for top-level work. Absent
+            only on the execution.
+        name:
+          type: string
+          description: |
+            The name the handler gave the operation. Map items and parallel
+            branches the handler did not name carry the SDK's positional name,
+            such as `map-item-0`. Absent for an unnamed operation.
+        type:
+          type: string
+          enum:
+            - execution
+            - step
+            - wait
+            - callback
+            - context
+            - chained_invoke
+          description: The kind of checkpointed operation Volcano recorded.
+        kind:
+          type: string
+          enum:
+            - execution
+            - step
+            - wait
+            - wait_until
+            - callback
+            - child
+            - map
+            - map_item
+            - parallel
+            - parallel_branch
+            - invoke
+          description: |
+            The operation as the handler wrote it: `ctx.step` is `step`,
+            `ctx.wait` is `wait`, `ctx.waitUntil` is `wait_until`, `ctx.child`
+            is `child`, `ctx.map` is `map` with one `map_item` per item, and
+            `ctx.parallel` is `parallel` with one `parallel_branch` per branch.
+        status:
+          type: string
+          enum:
+            - running
+            - waiting
+            - retrying
+            - succeeded
+            - failed
+            - cancelled
+            - timed_out
+            - stopped
+            - unknown
+          description: |
+            Where the operation stands. `waiting` holds no runtime: a wait that
+            has not elapsed, or a `waitUntil` between checks. `retrying` is a step whose last attempt failed and
+            whose next one is scheduled at `next_attempt_at`. Work still open
+            when the execution ended is `cancelled` at the moment it ended.
+            `unknown` is only ever the execution itself, when its outcome was
+            lost with its history, as in the execution's own `unknown` status.
+        started_at:
+          type: string
+          format: date-time
+        ended_at:
+          type: string
+          format: date-time
+          description: Present once the operation has ended.
+        scheduled_end_at:
+          type: string
+          format: date-time
+          description: When a wait is due to elapse.
+        next_attempt_at:
+          type: string
+          format: date-time
+          description: |
+            When a step's next attempt, or a `waitUntil`'s next check, is due.
+            Present only while one is scheduled.
+        attempts:
+          type: array
+          description: |
+            Each run of a step's body, in order. Present on steps and
+            `waitUntil` polls, where each check is an attempt.
+          items:
+            $ref: '#/components/schemas/DurableExecutionOperationAttempt'
+        error:
+          $ref: '#/components/schemas/DurableExecutionError'
+      required:
+        - id
+        - type
+        - kind
+        - status
+        - started_at
+    DurableExecutionOperationAttempt:
+      type: object
+      description: One run of a step's body.
+      properties:
+        attempt:
+          type: integer
+          minimum: 1
+          description: The attempt's number, starting at 1.
+        status:
+          type: string
+          enum:
+            - running
+            - succeeded
+            - failed
+          description: |
+            How the attempt ended. A `waitUntil` check whose condition did not
+            hold yet is `succeeded`: the check ran, and the poll continues.
+        started_at:
+          type: string
+          format: date-time
+        ended_at:
+          type: string
+          format: date-time
+          description: Present once the attempt has ended.
+        error:
+          $ref: '#/components/schemas/DurableExecutionError'
+      required:
+        - attempt
+        - status
+        - started_at
+    DurableExecutionInvocation:
+      type: object
+      description: A window in which the function's code was running.
+      properties:
+        started_at:
+          type: string
+          format: date-time
+        ended_at:
+          type: string
+          format: date-time
+      required:
+        - started_at
+        - ended_at
     FunctionInvocationMode:
       type: string
       enum:
@@ -18573,22 +18805,17 @@ components:
         initiated_by:
           type: string
           description: Platform user that triggered a request-initiated deployment; absent for git and system deployments.
-        artifact_bucket:
-          type: string
-        artifact_key:
-          type: string
-        artifact_version:
-          type: string
-        codebuild_duration_seconds:
+        build_duration_seconds:
           type: integer
           format: int64
-          description: Total CodeBuild build duration recorded for this deployment, in seconds.
-        codebuild_build_count:
+          description: Total build time recorded for this deployment, in seconds.
+        build_count:
           type: integer
-          description: Number of completed CodeBuild builds included in codebuild_duration_seconds.
-        codebuild_duration_recorded_at:
+          description: Number of completed builds included in build_duration_seconds.
+        build_duration_recorded_at:
           type: string
           format: date-time
+          description: When the build time was last recorded.
         progress:
           $ref: '#/components/schemas/DeploymentProgress'
         error_message:
@@ -18831,6 +19058,7 @@ components:
       type: object
       required:
         - name
+        - label
         - language
         - default
         - durable_capable
@@ -18840,6 +19068,10 @@ components:
           type: string
           example: nodejs24.x
           description: Runtime identifier accepted by function APIs.
+        label:
+          type: string
+          example: Node.js 24
+          description: Human-readable runtime label suitable for display in pickers.
         language:
           type: string
           example: nodejs
@@ -19051,7 +19283,7 @@ components:
           description: |
             Metric name (for example, "Function & Frontend Invocations", "Frontend Requests",
             "Durable Executions", "Durable Operations", "Durable Compute (MB-Seconds)",
-            "CodeBuild Build Seconds",
+            "Build Seconds",
             "Bandwidth Ingress (Bytes)", "Bandwidth Egress (Bytes)",
             "Bandwidth Total (Bytes)", or "Database Storage (Bytes)"). Byte-based metrics are
             reported in bytes. "Bandwidth Total (Bytes)" is derived (ingress + egress) and
@@ -19636,8 +19868,6 @@ components:
           items:
             type: string
           description: Effective region set for this project (normalized and deduplicated)
-        aws_application_name:
-          type: string
         last_invoked_at:
           type: string
           format: date-time
@@ -20139,7 +20369,7 @@ components:
           minLength: 1
         region:
           type: string
-          description: Deployed region ID (e.g. aws-us-east-1). Asserted, never written.
+          description: Deployed region ID (e.g. us-east-1). Asserted, never written; region IDs issued by earlier versions of the API match too.
         pg_version:
           type: string
           enum:
@@ -20869,8 +21099,6 @@ components:
             - system
             - unknown
           description: What initiated this deployment.
-        artifact_version:
-          type: string
         error_message:
           type: string
         completed_at:
@@ -20947,7 +21175,7 @@ components:
           format: double
           minimum: 0
           nullable: true
-          description: Median CodeBuild duration across eligible completed attempts.
+          description: Median build duration across eligible completed attempts.
       required:
         - deployment_count
         - successful_count

@@ -74,7 +74,6 @@ Authorization: Bearer <platform_token>
   "status": "active",
   "all_regions": true,
   "selected_regions": ["us-east-1", "us-west-2"],
-  "aws_application_name": "volcano-uuid",
   "created_at": "2024-01-01T00:00:00Z",
   "updated_at": "2024-01-01T00:00:00Z"
 }
