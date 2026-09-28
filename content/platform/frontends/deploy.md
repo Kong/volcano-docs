@@ -113,8 +113,8 @@ build ID and `_next/static` asset URLs. Changing any of those build inputs
 changes the ID. Build IDs are scoped to the project and frontend; do not use
 them as release identifiers.
 
-Each generated frontend runtime image must fit the configured
-`LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB`. Volcano checks an uncompressed upper
+Each generated frontend runtime image must fit within 4096 MB. Volcano checks an
+uncompressed upper
 bound—the exact pinned base-image layers plus the generated application
 layer—before publishing. A server or image-optimizer image over the limit fails
 the asynchronous deployment. Remove unused production dependencies or large
@@ -135,9 +135,13 @@ volcano cloud frontends domain create my-site \
 volcano cloud frontends domain get my-site      # status + the default URL to point DNS at
 ```
 
-Then create a `CNAME` for your domain pointing at the frontend's default
-Volcano URL (`<frontend-id>.frontends.<region-domain>`, from `domain get` /
-`frontends get`). That host is stable across redeploys:
+Check with your DNS provider whether your domain is a zone apex; even a
+delegated subdomain such as `app.example.com` can be one. If the provider
+confirms it is not an apex, create a `CNAME`. For any apex, use a
+provider-supported ALIAS, ANAME, or CNAME-flattening record. Point the record
+at the default Volcano frontend hostname
+(`<frontend-id>.frontends.<region-domain>`, from `domain get` / `frontends get`).
+That host is stable across redeploys. For a provider-confirmed non-apex:
 
 ```text
 app.example.com.  CNAME  <frontend-id>.frontends.volcano.run.
@@ -188,7 +192,7 @@ Rebuild existing deployments to enable public-file rewrites.
 
 - Use regular files in `public` for rewrite destinations. Symbolic links are not included.
 - Files reachable through rewrites increase deployment size. Unrelated public files and identity self-rewrites are excluded from the server copy.
-- The server copy is capped at 256 MiB and 20,000 files, and each file is capped at 199 MiB to leave room within Lambda's streamed-response limit. The build warning names files skipped at either byte cap. A rewrite to a skipped file returns 404; narrow the rewrite destinations or change the app to use the file's direct static URL.
+- The server copy is capped at 256 MiB and 20,000 files, and each file is capped at 199 MiB so it fits in a single streamed response. The build warning names files skipped at either byte cap. A rewrite to a skipped file returns 404; narrow the rewrite destinations or change the app to use the file's direct static URL.
 - Rewrites to public files do not support byte ranges. Use direct static URLs for seekable media and resumable downloads.
 - Configured locales work when the app has no `basePath`, and `basePath` works when i18n is disabled. The build warns that rewrites to public files do not resolve when `basePath` and i18n are combined.
 

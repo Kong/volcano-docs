@@ -17,15 +17,15 @@ curl https://api.volcano.dev/databases/regions
 ```json
 [
   {
-    "id": "aws-ap-northeast-1",
+    "id": "ap-northeast-1",
     "name": "Asia Pacific (Tokyo)"
   },
   {
-    "id": "aws-eu-central-1",
+    "id": "eu-central-1",
     "name": "Europe (Frankfurt)"
   },
   {
-    "id": "aws-us-east-1",
+    "id": "us-east-1",
     "name": "US East (N. Virginia)"
   }
 ]
@@ -69,7 +69,7 @@ curl -X POST https://api.volcano.dev/projects/PROJECT_ID/databases \
   -H "Content-Type: application/json" \
   -d '{
     "name": "main_db",
-    "region": "aws-us-east-1",
+    "region": "us-east-1",
     "pg_version": "16",
     "database_type": "volcano-db-xs"
   }'
@@ -88,7 +88,7 @@ curl -X POST https://api.volcano.dev/projects/PROJECT_ID/databases \
   "database_name": "main_db",
   "database_type": "volcano-db-xs",
   "status": "provisioning",
-  "region": "aws-us-east-1",
+  "region": "us-east-1",
   "pg_version": "16",
   "created_at": "2024-01-01T00:00:00Z"
 }
@@ -146,7 +146,7 @@ When status is `active`, includes `connection_string`:
   "database_name": "main_db",
   "status": "active",
   "connection_string": "postgresql://volcano_client_11111111-1111-1111-1111-111111111111:vpg_abc123@database.volcano.dev:5432/myapp_main?sslmode=require&application_name=volcano_full_access",
-  "region": "aws-us-east-1",
+  "region": "us-east-1",
   "pg_version": "16",
   "created_at": "2024-01-01T00:00:00Z"
 }

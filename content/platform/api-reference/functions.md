@@ -49,6 +49,42 @@ Authorization: Bearer <platform_token>
 
 The response is a `Function` resource and includes `invoke_url`, `created_at`, and `updated_at` when available.
 
+## List Runtimes
+
+```http
+GET /functions/runtimes
+```
+
+Lists every runtime a function can deploy on. The endpoint needs no authentication.
+
+**Response:**
+```json
+{
+  "runtimes": [
+    {
+      "name": "python3.14",
+      "label": "Python 3.14",
+      "language": "python",
+      "default": false,
+      "durable_capable": true,
+      "deployment": {
+        "file_extensions": [".py"],
+        "entrypoint": "main.py",
+        "handler": "handler",
+        "dependency_manifests": ["requirements.txt"]
+      }
+    }
+  ]
+}
+```
+
+- `name` - the value to pass as `runtime` when you deploy
+- `label` - display name for a runtime picker; show it rather than formatting `name`
+- `language` - language family, such as `nodejs`, `python`, or `ruby`
+- `default` - whether this is the default runtime for its language
+- `durable_capable` - whether a [durable function](../functions/durable-functions.md) can run on it
+- `deployment` - the entry file, handler, source extensions, and dependency manifests the runtime expects
+
 ## Create or Update Function Code
 
 ```http
@@ -88,13 +124,13 @@ The top-level path `.volcano-dependencies` is reserved for dependency staging.
 An uploaded function containing that path is accepted asynchronously, then its
 compile build fails with a reserved-path validation error.
 
-Direct API clients may upload ZIP or `tar.gz`; the API stores a normalized `tar.gz` source archive. Uploaded source archives cannot contain symlink entries. The API enforces `SOURCE_ARCHIVE_SIZE_LIMIT_MB` on uploaded and normalized source archives. The CLI uploads `tar.gz` and does not enforce its own source archive size limit.
+Direct API clients may upload ZIP or `tar.gz`; the API stores a normalized `tar.gz` source archive. Uploaded source archives cannot contain symlink entries. The API limits uploaded and normalized source archives to 256 MB. The CLI uploads `tar.gz` and does not enforce its own source archive size limit.
 
-After dependencies are installed and the final image is built, the publish build rejects images larger than `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB`.
+After dependencies are installed and the final image is built, the build rejects an image larger than 4096 MB.
 
 For direct API uploads, Volcano generates `.volcano/function-build.json` automatically. It infers `function_root` from the single runtime entry file (`index.js`/`index.mjs`, `main.py`, or `main.rb`), or from the only top-level directory when the archive has one. It infers `install_root` from the closest dependency manifest directory that contains the function root, otherwise it uses the function root.
 
-**Runtimes:**
+**Runtimes** ([List Runtimes](#list-runtimes) returns the current set):
 - `nodejs22.x`, `nodejs24.x`
 - `python3.10`, `python3.11`, `python3.12`, `python3.13`, `python3.14`
 - `ruby3.3`, `ruby3.4`, `ruby4.0`

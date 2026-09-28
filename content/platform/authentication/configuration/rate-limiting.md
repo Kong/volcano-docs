@@ -7,22 +7,15 @@ Prevent brute force and abuse with distributed rate limiting.
 
 ## How It Works
 
-Rate limits are enforced **across all API instances** using the database as shared state.
-
-```text
-API Instance 1 ─┐
-API Instance 2 ─┼─→ PostgreSQL (shared rate limit state)
-API Instance 3 ─┘
-
-Each request increments counter atomically.
-When limit reached, returns 429.
-```
+Every API instance shares one count, so a client can't get around a limit by
+reaching a different instance. Once the count passes the limit, requests get
+`429 Too Many Requests` until the window resets.
 
 Limits are per:
 - IP address
 - Project
 - Endpoint (signup/signin/refresh separate)
-- Hour (sliding window)
+- Clock hour (counts reset at the top of each hour)
 
 ## Signup Rate Limit
 
@@ -58,6 +51,10 @@ Prevent brute force password attacks.
 
 **Effect:** After 20 failed login attempts from same IP, further attempts blocked for remainder of hour.
 
+OAuth sign-ins use the same limit. Each provider's callback,
+`/auth/oauth/{provider}/callback`, keeps its own count, so GitHub callbacks
+don't use up Google's allowance.
+
 ## Refresh Rate Limit
 
 **Setting:** `rate_limit_token_refresh`  
@@ -71,7 +68,7 @@ Usually higher than signup/signin (legitimate users refresh frequently).
 
 ## Response Headers
 
-Signup, signin, and refresh responses carry the remaining quota:
+Signup, signin, refresh, and OAuth callback responses carry the remaining quota:
 
 ```http
 X-RateLimit-Limit: 100
@@ -108,17 +105,9 @@ curl -X PUT https://api.volcano.dev/projects/PROJECT_ID/auth/config \
   }'
 ```
 
-## Monitoring
-
-Check current rate limit usage:
-
-```sql
-SELECT identifier, endpoint, request_count
-FROM auth_rate_limits
-WHERE project_id = 'YOUR_PROJECT_ID'
-  AND window_start = date_trunc('hour', NOW())
-ORDER BY request_count DESC;
-```
+Setting `rate_limit_signup`, `rate_limit_signin`, or `rate_limit_token_refresh`
+to `0` turns that limit off. For `rate_limit_signin`, that includes OAuth
+callbacks.
 
 ## See Also
 

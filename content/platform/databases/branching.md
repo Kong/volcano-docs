@@ -62,6 +62,28 @@ Forks usually take under a minute. Volcano retries a fork that does not take, so
 keep waiting while the branch reports `provisioning`. A branch reports `failed`
 only once Volcano has stopped retrying; delete it and try again.
 
+## From the CLI
+
+Every operation on this page is also a `volcano cloud databases branches`
+command:
+
+| Task | Command |
+|------|---------|
+| Create a branch | `volcano cloud databases branches create main_db feature_checkout --ttl 24h` |
+| Show one, with its connection string | `volcano cloud databases branches get main_db feature_checkout --show-connection-string` |
+| List a database's branches | `volcano cloud databases branches list main_db` |
+| Extend its lifetime | `volcano cloud databases branches extend main_db feature_checkout --ttl 168h` |
+| Reset it to the parent's data | `volcano cloud databases branches reset main_db feature_checkout` |
+| Rotate its password | `volcano cloud databases branches rotate-password main_db feature_checkout` |
+| Delete it | `volcano cloud databases branches delete main_db feature_checkout` |
+
+`--ttl` takes a duration between `1h` and `720h`, and defaults to `168h`.
+`create` returns while the branch is still `provisioning`; run `get` until it
+reports `active` to see the connection string. `reset`, `rotate-password`, and
+`delete` ask for confirmation unless you pass `--yes`.
+
+Branching is a cloud feature. Databases in local mode have no branches.
+
 ## Every branch expires
 
 `expires_at` is a hard deadline, not a hint. When it passes, the branch stops
@@ -154,6 +176,65 @@ One thing delays a reset: for up to 24 hours after the parent database is
 [restored](backups.md#backups-and-branches), reset returns `409`. The branch
 keeps serving its own data throughout — only the rewind is refused — and a reset
 after that lands on the restored parent data.
+
+## A branch per pull request
+
+Give every pull request its own copy of the data: fork a branch on the first
+push, reset it on every later push, apply the pull request's new migrations and
+run the tests against it, and delete it when the pull request closes. This
+script is the per-push step; it needs `curl`, `jq`, `psql`, and a checkout that
+has fetched the base branch:
+
+```bash
+set -euo pipefail
+
+API="https://api.volcano.dev/projects/$PROJECT_ID/databases/main_db/branches"
+AUTH="Authorization: Bearer $VOLCANO_TOKEN"
+BRANCH="pr_${PR_NUMBER}"
+BASE="origin/${BASE_REF:-main}"
+
+# The first push forks the branch. A later push finds it already there (409)
+# and rewinds it to the parent's current data instead.
+code=$(curl -sS -o /dev/null -w '%{http_code}' -X POST "$API" \
+  -H "$AUTH" -H "Content-Type: application/json" \
+  -d "{\"name\": \"$BRANCH\", \"ttl_seconds\": 259200}")
+case "$code" in
+  202) ;;
+  409) curl -fsS -o /dev/null -X POST "$API/$BRANCH/reset" -H "$AUTH" ;;
+  *) echo "creating $BRANCH returned $code" >&2; exit 1 ;;
+esac
+
+# Both calls return while the branch is provisioning. Wait for it.
+while :; do
+  branch=$(curl -fsS "$API/$BRANCH" -H "$AUTH")
+  case "$(jq -r .status <<<"$branch")" in
+    active) break ;;
+    failed) echo "$BRANCH failed to fork" >&2; exit 1 ;;
+  esac
+  sleep 5
+done
+BRANCH_URL=$(jq -r .connection_string <<<"$branch")
+
+# The branch holds the parent's schema, so apply only the migrations this
+# pull request adds, in order, then test against the result.
+git diff --name-only --diff-filter=A "$BASE"...HEAD -- 'volcano/migrations/*.sql' \
+  | sort \
+  | while read -r f; do psql "$BRANCH_URL" -v ON_ERROR_STOP=1 -f "$f"; done
+DATABASE_URL="$BRANCH_URL" npm test
+```
+
+Run the cleanup from the job that fires when the pull request closes:
+
+```bash
+curl -fsS -X DELETE "$API/$BRANCH" -H "$AUTH"
+```
+
+Nothing is lost if that job never runs. The branch expires 72 hours after its
+last fork or reset, and each reset keeps its connection string, so a long-lived
+pull request keeps one branch rather than piling up new ones. Because every push
+starts from a fresh copy of the parent, the pull request's
+[migrations](../guides/migrations.md) run against the schema they will meet in
+production, never against the leftovers of the previous run.
 
 ## Rotating a branch's password
 

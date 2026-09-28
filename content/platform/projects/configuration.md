@@ -36,7 +36,7 @@ project:
 
 databases:                                  # must already exist; assertion-only
   - name: appdb                             # required, matches deployed database
-    region: aws-us-east-1                   # required; mismatch => error
+    region: us-east-1                   # required; mismatch => error
     pg_version: "16"                        # required; mismatch => error
     database_type: volcano-db-xs            # asserted; tier changes are NOT
                                             #   allowed via config

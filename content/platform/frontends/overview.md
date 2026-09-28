@@ -346,18 +346,24 @@ You can also attach a custom domain declaratively — see
 
 ### Point DNS at your frontend
 
-Create a `CNAME` record for your domain pointing at the frontend's **default
-Volcano URL** (the `<frontend-id>.frontends.<region-domain>` host shown by
-`volcano cloud frontends get`). That host is stable for the life of the
-frontend — it does not change across redeploys.
+Check with your DNS provider whether your domain is a zone apex; even a
+delegated subdomain such as `app.example.com` can be one. If the provider
+confirms it is not an apex, create a `CNAME`. For any apex, use a
+provider-supported ALIAS, ANAME, or CNAME-flattening record. Point the record
+at the frontend's **default Volcano hostname** (the
+`<frontend-id>.frontends.<region-domain>` host shown by
+`volcano cloud frontends get`). That host is stable across redeploys.
+
+For a provider-confirmed non-apex:
 
 ```text
 app.example.com.  CNAME  <frontend-id>.frontends.volcano.run.
 ```
 
 The domain becomes `active` once Volcano finishes attaching your certificate.
-That status does not confirm your DNS is live — verify separately (for
-example `dig CNAME app.example.com`).
+That status does not confirm your DNS is live. For a confirmed non-apex,
+inspect the CNAME with `dig CNAME app.example.com`; for an apex, check the
+ALIAS, ANAME, or flattening record with your DNS provider.
 
 To rotate the certificate later, update it through the declarative
 [`custom_domain` config](../projects/configuration.md) and re-apply; the

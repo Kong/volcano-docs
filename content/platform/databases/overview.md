@@ -1,23 +1,48 @@
 ---
 title: "Databases"
-description: "PostgreSQL databases that auto-scale, pause when idle, and support row-level security."
+description: "PostgreSQL databases you can branch in under a minute, restore to a point in time, and secure with row-level security."
 ---
 
-Volcano provides PostgreSQL databases. They auto-scale based on usage, pause when idle, and include built-in support for row-level security.
+Volcano provides PostgreSQL databases. Any database forks into a
+copy-on-write [branch](branching.md) in under a minute, so every pull request,
+migration, or test run can have its own copy of the data. Compute scales with
+load, and row-level security is built in.
 
 ## Features
 
 | Feature | Description |
 |---------|-------------|
+| [Branching](branching.md) | Fork a database into an isolated, expiring copy with its own connection string, usually in under a minute |
+| [Backups and restore](backups.md) | Back up on demand or on a schedule, and restore in place to a backup or a point in time (SUPERAGENT) |
 | Auto-scaling | Auto-scales compute based on demand, pauses when idle |
-| PostgreSQL | Full PostgreSQL compatibility (versions 14, 15, 16) |
+| PostgreSQL | Full PostgreSQL compatibility (versions 15 and 16) |
 | Query Builder | Query from browsers without writing SQL |
 | Direct connection | Connect from your functions with standard PostgreSQL clients |
 | Row-level security | Automatic data isolation per user |
 | Auth helpers | Built-in functions for user context (`auth.uid()`, `auth.email()`) |
 | Multiple databases | Create multiple databases per project |
-| Branching | Fork a database into an isolated, expiring copy for dev and CI |
-| Backups and restore | Back up on demand or on a schedule, and restore in place to a backup or a point in time (SUPERAGENT) |
+
+## Branch a database
+
+A branch starts as an exact copy of its parent — schema, rows, roles, and
+row-level security policies — and diverges from there. Writes never reach the
+parent. Each branch has its own connection string and password, is charged only
+for the data it changes, and is deleted when its lifetime ends.
+
+```bash
+# Fork main_db for pull request 482; it expires on its own after 72 hours
+volcano cloud databases branches create main_db pr_482 --ttl 72h
+
+# Once it reports active, read its connection string
+volcano cloud databases branches get main_db pr_482 --show-connection-string
+
+# Rewind it to the parent's current data, or delete it when you are done
+volcano cloud databases branches reset main_db pr_482 --yes
+volcano cloud databases branches delete main_db pr_482 --yes
+```
+
+See [Branching](branching.md) for the API, a branch-per-pull-request CI
+recipe, costs, and limits.
 
 ## Access methods
 
@@ -117,8 +142,8 @@ Response:
   "id": "db_abc123",
   "name": "main",
   "status": "provisioning",
-  "region": "aws-us-east-1",
-  "pg_version": 16
+  "region": "us-east-1",
+  "pg_version": "16"
 }
 ```
 
@@ -234,17 +259,19 @@ const { data } = await volcanoAdmin.from('posts').select('*');
 
 | Region | Location |
 |--------|----------|
-| `aws-us-east-1` | US East (N. Virginia) — Default |
-| `aws-us-west-2` | US West (Oregon) |
-| `aws-eu-west-1` | Europe (Ireland) |
-| `aws-eu-central-1` | Europe (Frankfurt) |
-| `aws-ap-southeast-1` | Asia Pacific (Singapore) |
-| `aws-ap-southeast-2` | Asia Pacific (Sydney) |
-| `aws-ap-northeast-1` | Asia Pacific (Tokyo) |
-| `aws-sa-east-1` | South America (São Paulo) |
+| `us-east-1` | US East (N. Virginia) — Default |
+| `us-west-2` | US West (Oregon) |
+| `eu-west-1` | Europe (Ireland) |
+| `eu-central-1` | Europe (Frankfurt) |
+| `ap-southeast-1` | Asia Pacific (Singapore) |
+| `ap-southeast-2` | Asia Pacific (Sydney) |
+| `ap-northeast-1` | Asia Pacific (Tokyo) |
+| `sa-east-1` | South America (São Paulo) |
 
-These are the same regions you can deploy functions to, so a project's data and
-its functions can sit in the same place. Query the list rather than hardcoding
+These are the same regions you can deploy functions to, and they use the same
+IDs, so a project's data and its functions can sit in the same place. Region IDs
+issued by earlier versions of the API are still accepted everywhere a region is,
+and responses always use the IDs above. Query the list rather than hardcoding
 it:
 
 ```bash
@@ -253,8 +280,8 @@ curl "https://api.volcano.dev/databases/regions"
 
 ```json
 [
-  { "id": "aws-ap-northeast-1", "name": "Asia Pacific (Tokyo)" },
-  { "id": "aws-us-east-1", "name": "US East (N. Virginia)" }
+  { "id": "ap-northeast-1", "name": "Asia Pacific (Tokyo)" },
+  { "id": "us-east-1", "name": "US East (N. Virginia)" }
 ]
 ```
 
@@ -264,7 +291,6 @@ curl "https://api.volcano.dev/databases/regions"
 |---------|--------|
 | 16 | Latest, recommended |
 | 15 | Stable |
-| 14 | Legacy support |
 
 Specify the version when creating a database:
 
@@ -272,7 +298,7 @@ Specify the version when creating a database:
 curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/databases" \
   -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"name": "main", "region": "aws-eu-central-1", "pg_version": 16}'
+  -d '{"name": "main", "region": "eu-central-1", "pg_version": "16"}'
 ```
 
 ## What's next

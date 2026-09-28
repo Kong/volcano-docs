@@ -31,7 +31,6 @@ curl -X POST https://api.volcano.dev/projects \
   "status": "active",
   "all_regions": true,
   "selected_regions": ["us-east-1","us-west-2"],
-  "aws_application_name": "volcano-550e8400",
   "created_at": "2024-01-01T00:00:00Z",
   "updated_at": "2024-01-01T00:00:00Z"
 }
@@ -40,7 +39,6 @@ curl -X POST https://api.volcano.dev/projects \
 **Fields:**
 - `id` - Unique project identifier (use in all API calls)
 - `status` - `active`, `provisioning`, or `failed`
-- `aws_application_name` - Internal resource name
 
 Save the `id` - you'll need it for all project operations.
 

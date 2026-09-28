@@ -10,13 +10,13 @@ curl "$VOLCANO_API_URL/projects/$PROJECT_ID/sandbox-executions" \
   -H "Authorization: Bearer $SERVICE_KEY" \
   -H "Idempotency-Key: $(uuidgen)" \
   -H "Content-Type: application/json" \
-  -d '{"preset":"python3.12","region":"aws-us-east-1","command":"python -c '\''print(42)'\''","timeout_seconds":30}'
+  -d '{"preset":"python3.12","region":"us-east-1","command":"python -c '\''print(42)'\''","timeout_seconds":30}'
 ```
 
 ```json
 {
   "session_id": "7cdbb4e3-0419-574e-8017-705734ae8d76",
-  "region": "aws-us-east-1",
+  "region": "us-east-1",
   "duration_ms": 2300,
   "stdout": "42\n",
   "stderr": "",
@@ -40,7 +40,7 @@ curl "$VOLCANO_API_URL/projects/$PROJECT_ID/sandbox-sessions" \
   -H "Authorization: Bearer $SERVICE_KEY" \
   -H "Idempotency-Key: $(uuidgen)" \
   -H "Content-Type: application/json" \
-  -d '{"preset":"python3.12","region":"aws-us-east-1","memory_mb":1024,"max_duration_seconds":3600}'
+  -d '{"preset":"python3.12","region":"us-east-1","memory_mb":1024,"max_duration_seconds":3600}'
 ```
 
 ```json
@@ -48,7 +48,7 @@ curl "$VOLCANO_API_URL/projects/$PROJECT_ID/sandbox-sessions" \
   "id": "7cdbb4e3-0419-574e-8017-705734ae8d76",
   "project_id": "8b1ec799-b9dd-4db0-8466-486d57d166f1",
   "sandbox_id": "7cdbb4e3-0419-574e-8017-705734ae8d76",
-  "region": "aws-us-east-1",
+  "region": "us-east-1",
   "memory_mb": 1024,
   "state": "starting",
   "desired_state": "running",
@@ -227,7 +227,7 @@ API at `http://localhost:8000`. Authenticate with the local service key from
 need an explicit session grant.
 
 Local mode includes `python3.12` and `node22` presets with 1024 or 2048 MB of
-memory. Use `aws-us-east-1` as the region. Docker Engine API 1.41 or newer is required. Sessions run in separate Docker
+memory. Use `us-east-1` as the region. Docker Engine API 1.41 or newer is required. Sessions run in separate Docker
 containers with private workspaces. HTTP URLs use
 `http://<session-id>--<port>.sandboxes.localhost:8000` and require Sandbox access
 credentials in the `X-Volcano-Sandbox-Token` request header. Browser cookie

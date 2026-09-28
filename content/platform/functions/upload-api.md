@@ -183,7 +183,6 @@ You may upload either ZIP or `tar.gz` source archives. The Volcano CLI always up
   "status": "provisioning",
   "runtime": "nodejs24.x",
   "handler": "index.handler",
-  "aws_function_arn": "arn:aws:lambda:us-east-1:...",
   "created_at": "2024-01-05T10:30:00Z",
   "updated_at": "2024-01-05T10:30:00Z"
 }
@@ -193,15 +192,15 @@ You may upload either ZIP or `tar.gz` source archives. The Volcano CLI always up
 
 ```json
 {
-  "error": "function code too large"
+  "error": "function code too large (max 256 MB, got 312475648 bytes from file 'function.zip')"
 }
 ```
 
 ## Size Limits
 
-Function uploads must fit within `SOURCE_ARCHIVE_SIZE_LIMIT_MB`. This source archive limit is enforced by the API only, both before storage and after ZIP-to-`tar.gz` normalization. The CLI does not enforce this limit locally.
+Function source archives are limited to 256 MB. The API enforces this limit both before storage and after ZIP-to-`tar.gz` normalization. The CLI does not enforce it locally.
 
-After upload, the cloud compile build installs dependencies from manifests such as `package.json`, `requirements.txt`, and `Gemfile`. The publish build then checks the final container image against `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB` before pushing it.
+After upload, the cloud compile build installs dependencies from manifests such as `package.json`, `requirements.txt`, and `Gemfile`. The publish build then rejects a final function image larger than 4096 MB.
 
 **Recommendations**:
 
@@ -276,14 +275,14 @@ file function.zip
 
 ### "function code too large"
 
-Your source archive exceeds `SOURCE_ARCHIVE_SIZE_LIMIT_MB`. Common solutions:
+Your source archive exceeds the 256 MB limit. Common solutions:
 1. Remove unnecessary files
 2. Bundle and minify application code
 3. Exclude installed dependencies, dependency caches, and development-only files
 
-### "Lambda target container image is too large"
+### Function image too large
 
-The cloud publish build created a final container image larger than `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB`. Remove unnecessary runtime files, reduce dependency size, or split the function into smaller functions.
+A deployment fails after its build when the built function, with its installed dependencies, is larger than 4096 MB. Remove unnecessary runtime files, reduce dependency size, or split the function into smaller functions.
 
 ## Updating a Function
 
