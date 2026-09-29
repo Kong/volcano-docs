@@ -47,14 +47,17 @@ Metric definitions:
 - `active_users_30d`: distinct current users whose latest successful session
   creation or token refresh occurred within the trailing 30 days. Activity
   history begins when collection is deployed.
-- `signups`: accounts created during the bucket. Duplicate signup responses,
-  OAuth linking/reclaim, anonymous conversion, debug users, and provisioned seed
-  users do not count. Provisioning sets a server-owned exclusion flag; user
-  metadata cannot suppress analytics. Historical counts are backfilled from
-  accounts present when collection is deployed, using their creation date.
+- `signups`: accounts created during the bucket that still exist. Deleting a
+  user removes it from the bucket of its creation date. Duplicate signup
+  responses, OAuth linking/reclaim, anonymous conversion, debug users, and
+  provisioned seed users do not count. Provisioning sets a server-owned
+  exclusion flag; user metadata cannot suppress analytics. Historical counts are
+  backfilled from accounts present when collection is deployed, using their
+  creation date.
 - `signins`: successful session creations during the bucket across email,
   OAuth, anonymous, and device flows. Failed authentication and token refresh do
-  not count. Historical sign-in counts begin when collection is deployed.
+  not count. Sign-ins by users deleted later still count. Historical sign-in
+  counts begin when collection is deployed.
 
 The existing `Auth Requests` metric remains separate because it also includes
 refreshes and other auth operations.

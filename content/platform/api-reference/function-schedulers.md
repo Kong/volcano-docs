@@ -19,6 +19,34 @@ execution instead of invoking the function.
 together. Each one carries `function_kind`, which is `standard` or `durable`, and
 tells you which collection to read the function back from.
 
+Pass `function_kind` to list one kind only. Pagination totals and cursors follow
+the filter, and a cursor from one kind is rejected for the other:
+
+```bash
+curl "$VOLCANO_API_URL/projects/$PROJECT_ID/schedulers?function_kind=durable&limit=20" \
+  -H "Authorization: Bearer $VOLCANO_TOKEN"
+```
+
+```json
+{
+  "data": [
+    {
+      "id": "2c9d1e0f-3a4b-4c5d-8e9f-0a1b2c3d4e5f",
+      "function_id": "6f1c0f6e-6b0e-4a1d-9f8a-2c3d4e5f6a7b",
+      "function_kind": "durable",
+      "name": "nightly-reconcile",
+      "enabled": true,
+      "cron_expression": "0 3 * * *"
+    }
+  ],
+  "limit": 20,
+  "total": 1,
+  "has_more": false
+}
+```
+
+Any value other than `standard` or `durable` answers `400`.
+
 Create request:
 
 ```json

@@ -1727,6 +1727,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '503':
+          description: The selected project template is not configured in this environment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /projects/{id}:
     get:
       tags:
@@ -1784,7 +1790,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '403':
-          description: Forbidden (for example, selecting subset regions on non-PRO plan)
+          description: Forbidden (for example, selecting subset regions on plan other than SUPERAGENT)
           content:
             application/json:
               schema:
@@ -3048,8 +3054,8 @@ paths:
         UPDATE, DELETE, MERGE) are listed; statements Volcano runs to operate
         the database are left out.
 
-        **PRO plan required.** This endpoint is only available to projects owned
-        by users on the PRO billing plan.
+        **SUPERAGENT plan required.** This endpoint is only available to projects owned
+        by users on the SUPERAGENT billing plan.
       operationId: getProjectDatabaseQueries
       security:
         - UserToken: []
@@ -3214,6 +3220,11 @@ paths:
         ordered most-recent first. Each item includes a normalized resource
         reference so clients can render both resource types without extra
         fetches.
+
+        Standard and durable function deployments both appear under
+        `resource.type: function`, and `resource.kind` tells them apart. Pass
+        `function_kind` to list one kind only; frontends are then excluded.
+        Combining `function_kind` with `resource_type=frontend` is rejected.
       operationId: listProjectDeployments
       security:
         - UserToken: []
@@ -3244,6 +3255,7 @@ paths:
             enum:
               - function
               - frontend
+        - $ref: '#/components/parameters/FunctionKindFilter'
       responses:
         '200':
           description: Successful response
@@ -3252,7 +3264,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedProjectDeployments'
         '400':
-          description: Bad request - invalid identifier
+          description: Bad request - invalid identifier or filter, or `function_kind` combined with `resource_type=frontend`
           content:
             application/json:
               schema:
@@ -3287,6 +3299,9 @@ paths:
         and superseded attempts are excluded. Median build duration includes
         completed, non-superseded attempts with recorded build work,
         including failed builds.
+
+        With `resource_type=function`, pass `function_kind` to summarize one
+        kind of function only. It is rejected with `resource_type=frontend`.
       operationId: summarizeProjectDeployments
       security:
         - UserToken: []
@@ -3308,6 +3323,7 @@ paths:
             enum:
               - function
               - frontend
+        - $ref: '#/components/parameters/FunctionKindFilter'
         - name: created_after
           in: query
           required: false
@@ -3323,7 +3339,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ProjectDeploymentSummary'
         '400':
-          description: Bad request - invalid identifier or filter
+          description: Bad request - invalid identifier or filter, or `function_kind` combined with `resource_type=frontend`
           content:
             application/json:
               schema:
@@ -4112,9 +4128,9 @@ paths:
         `resource.ids` to filter to one or more resources, and add
         `resource.deployments.ids` to count deployment logs instead of runtime
         logs for functions and frontends. Deployment logs are not supported for
-        databases. Database logs are a PRO-plan feature; `resource.type=database`
-        from a FREE-plan project owner returns 403. The activity window is limited
-        to the plan's retention window (FREE: 1 day, PRO: 30 days); older start
+        databases. Database logs are a SUPERAGENT feature; `resource.type=database`
+        from a HOBBY project owner returns 403. The activity window is limited
+        to the plan's retention window (HOBBY: 1 day, SUPERAGENT: 30 days); older start
         times are clamped to that window. Buckets are aligned to UTC clock
         intervals and count events in the half-open window
         `[start_time, end_time)`.
@@ -4172,10 +4188,10 @@ paths:
         `resource.ids` to filter to one or more resources, and add
         `resource.deployments.ids` to read deployment logs instead of runtime
         logs for functions and frontends. Deployment logs are not supported for
-        databases. Database logs are a PRO-plan feature; requests for
-        `resource.type=database` from a FREE-plan project owner return 403.
+        databases. Database logs are a SUPERAGENT feature; requests for
+        `resource.type=database` from a HOBBY project owner return 403.
         Log history (runtime and deployment) is limited to the plan's retention
-        window (FREE: 1 day, PRO: 30 days); older time ranges are clamped to that
+        window (HOBBY: 1 day, SUPERAGENT: 30 days); older time ranges are clamped to that
         window.
       operationId: searchProjectLogs
       security:
@@ -4230,12 +4246,12 @@ paths:
         resource selector plus `q`, `start_time`, and `limit`,
         including runtime logs and function/frontend deployment logs selected
         with `resource.deployments`. Deployment logs are not supported for
-        databases. Database logs are a PRO-plan feature; `resource.type=database`
-        from a FREE-plan project owner returns 403. The `q` field uses the same
+        databases. Database logs are a SUPERAGENT feature; `resource.type=database`
+        from a HOBBY project owner returns 403. The `q` field uses the same
         syntax as search and activity requests. Do not send `cursor` or
         `end_time`; use `/logs/search` for range backfills.
         Explicit historical `start_time` values are limited to the plan's
-        retention window (FREE: 1 day, PRO: 30 days). Resume with
+        retention window (HOBBY: 1 day, SUPERAGENT: 30 days). Resume with
         `Last-Event-ID` or the `last_event_id` query parameter. The cursor is
         bound to the request body: the resource selector and every filter must
         match the original request when reconnecting, otherwise the request is
@@ -4417,6 +4433,10 @@ paths:
         Returns schedulers across all functions in the project, ordered by
         creation time descending, with standard page/limit pagination so
         clients don't have to fan out one request per function.
+
+        Schedulers of standard and durable functions are listed together, and
+        each carries `function_kind`. Pass `function_kind` to list one kind
+        only.
       operationId: listProjectSchedulers
       security:
         - UserToken: []
@@ -4429,6 +4449,7 @@ paths:
         - $ref: '#/components/parameters/EndingBefore'
         - $ref: '#/components/parameters/Offset'
         - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/FunctionKindFilter'
       responses:
         '200':
           description: Project schedulers
@@ -4436,6 +4457,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FunctionSchedulerListResponse'
+        '400':
+          description: Bad request - invalid pagination or filter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /projects/{id}/functions/{functionId}/schedulers:
     get:
       tags:
@@ -5756,7 +5783,7 @@ paths:
     post:
       tags:
         - Frontends
-      summary: Configure frontend custom domain (PRO)
+      summary: Configure frontend custom domain (SUPERAGENT)
       description: |
         Configures one custom domain for a frontend.
         The default Volcano-generated frontend URL remains active.
@@ -5800,7 +5827,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '403':
-          description: Forbidden - custom domains require PRO plan
+          description: Forbidden - custom domains require SUPERAGENT plan
           content:
             application/json:
               schema:
@@ -6302,7 +6329,7 @@ paths:
       summary: Create a new PostgreSQL database
       description: |
         Creates a PostgreSQL database in the project.
-        Each project can hold 1 database on Free and up to 10,000 on Pro.
+        Each project can hold 1 database on HOBBY and up to 10,000 on SUPERAGENT.
         Requests over the plan's cap return 403.
       operationId: createDatabase
       security:
@@ -6782,7 +6809,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/DatabaseBackupList'
         '403':
-          description: Backups are PRO-only and the owner's plan does not include them
+          description: Backups require SUPERAGENT
           content:
             application/json:
               schema:
@@ -6846,7 +6873,7 @@ paths:
         '403':
           description: |
             The database has reached its backup allowance, or the owner's plan
-            does not include backups, which are PRO-only.
+            does not include backups, which are available only on SUPERAGENT.
           content:
             application/json:
               schema:
@@ -6893,7 +6920,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/DatabaseBackup'
         '403':
-          description: Backups are PRO-only and the owner's plan does not include them
+          description: Backups require SUPERAGENT
           content:
             application/json:
               schema:
@@ -6953,7 +6980,7 @@ paths:
                   - status
                   - message
         '403':
-          description: Backups are PRO-only and the owner's plan does not include them
+          description: Backups require SUPERAGENT
           content:
             application/json:
               schema:
@@ -7002,7 +7029,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/DatabaseBackupSchedule'
         '403':
-          description: Backups are PRO-only and the owner's plan does not include them
+          description: Backups require SUPERAGENT
           content:
             application/json:
               schema:
@@ -7067,7 +7094,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '403':
-          description: Backups are PRO-only and the owner's plan does not include them
+          description: Backups require SUPERAGENT
           content:
             application/json:
               schema:
@@ -7117,7 +7144,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/DatabaseRestoreList'
         '403':
-          description: Backups are PRO-only and the owner's plan does not include them
+          description: Backups require SUPERAGENT
           content:
             application/json:
               schema:
@@ -7183,7 +7210,7 @@ paths:
         '403':
           description: |
             The owner's plan does not include backups or point-in-time restore.
-            Both are PRO-only.
+            Both are available only on SUPERAGENT.
           content:
             application/json:
               schema:
@@ -7233,7 +7260,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/DatabaseRestore'
         '403':
-          description: Backups are PRO-only and the owner's plan does not include them
+          description: Backups require SUPERAGENT
           content:
             application/json:
               schema:
@@ -9947,8 +9974,8 @@ paths:
       summary: Create email template
       description: |
         Creates a custom email template for the project. Custom email templates
-        are a PRO-plan feature: requests from a FREE-plan project owner are
-        rejected with 403, and FREE projects always send the built-in default
+        are a SUPERAGENT feature: requests from a HOBBY project owner are
+        rejected with 403, and HOBBY projects always send the built-in default
         templates regardless of any previously saved custom rows.
         Every project is created with one template per type, so customizing one
         is usually a PUT; creating a type the project already has returns 409.
@@ -9979,7 +10006,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '403':
-          description: Custom email templates require the PRO plan
+          description: Custom email templates require the SUPERAGENT plan
           content:
             application/json:
               schema:
@@ -10025,9 +10052,9 @@ paths:
         - Auth Configuration
       summary: Update email template
       description: |
-        Updates a custom email template. Custom email templates are a PRO-plan
-        feature: requests from a FREE-plan project owner are rejected with 403
-        (including after a PRO→FREE downgrade), so a FREE project cannot modify
+        Updates a custom email template. Custom email templates are a SUPERAGENT
+        feature: requests from a HOBBY project owner are rejected with 403
+        (including after a downgrade), so a HOBBY project cannot modify
         templates and always sends the built-in defaults.
       operationId: updateEmailTemplate
       security:
@@ -10059,7 +10086,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/EmailTemplate'
         '403':
-          description: Custom email templates require the PRO plan
+          description: Custom email templates require the SUPERAGENT plan
           content:
             application/json:
               schema:
@@ -10072,7 +10099,7 @@ paths:
       summary: Delete email template
       description: |
         Deletes a custom template, reverting to the default. Custom email
-        templates are a PRO-plan feature: requests from a FREE-plan project owner
+        templates are a SUPERAGENT feature: requests from a HOBBY project owner
         are rejected with 403.
       operationId: deleteEmailTemplate
       security:
@@ -10094,7 +10121,7 @@ paths:
         '204':
           description: Template deleted
         '403':
-          description: Custom email templates require the PRO plan
+          description: Custom email templates require the SUPERAGENT plan
           content:
             application/json:
               schema:
@@ -10193,7 +10220,7 @@ paths:
           description: |
             The update would turn on, widen, or otherwise edit the email domain
             allowlist (`allowed_email_domains`, `allowed_email_domains_mode`)
-            for a project that is not on the PRO plan. A FREE project keeps
+            for a project that is not on the SUPERAGENT plan. A HOBBY project keeps
             whatever allowlist it already has — parked, enforcing nothing until
             it upgrades — and may still remove it, so a downgrade never leaves a
             project locked out of its own signups.
@@ -13480,8 +13507,8 @@ paths:
         '413':
           description: |
             File size exceeds plan-based limits. This occurs when:
-            - File exceeds the plan-based maximum file size (FREE or PRO tier)
-            - The account on the FREE plan holds its file-storage allowance.
+            - File exceeds the plan-based maximum file size (HOBBY or SUPERAGENT tier)
+            - The account on the HOBBY plan holds its file-storage allowance.
               Enforcement is eventual: uploads are accepted until Volcano's
               next allowance check sees the account at its allowance
         '429':
@@ -14272,6 +14299,15 @@ components:
         enum:
           - function
           - frontend
+    FunctionKindFilter:
+      name: function_kind
+      in: query
+      required: false
+      description: |
+        Restrict results to functions of one kind. Omit to include both
+        standard and durable functions.
+      schema:
+        $ref: '#/components/schemas/FunctionKindFilter'
     DeploymentStatus:
       name: status
       in: query
@@ -15081,9 +15117,9 @@ components:
             403, and `allowed_email_domains_mode` decides whether sign-in is
             covered as well.
 
-            The allowlist is a PRO feature to configure and to enforce. A
+            The allowlist is a SUPERAGENT feature to configure and to enforce. A
             downgrade parks it: the domains are still returned here and stop
-            being applied until the project is back on PRO.
+            being applied until the project is back on SUPERAGENT.
           items:
             type: string
           example:
@@ -15233,7 +15269,7 @@ components:
           type: integer
           format: int64
           minimum: 0
-          description: Accounts created during the bucket.
+          description: Accounts created during the bucket that still exist.
         signins:
           type: integer
           format: int64
@@ -15998,6 +16034,18 @@ components:
           minLength: 1
           maxLength: 255
           example: my-awesome-app
+        template_id:
+          type: string
+          description: Optional trusted starter template identifier. The server resolves immutable source and database initialization artifacts. Callers cannot supply artifact locations or database credentials. Creation accepts an asynchronous installation; poll the individual project until template_installation.status is ready before using the app. Use pixel-board, trellini, or collab-pad for the configured starter bundles. The official-starter legacy identifier has environment-specific availability. Cannot be combined with initialPrompt.
+          enum:
+            - pixel-board
+            - trellini
+            - collab-pad
+            - official-starter
+          example: pixel-board
+        initialPrompt:
+          type: string
+          description: Optional initial builder prompt. Cannot be combined with template_id.
         all_regions:
           type: boolean
           description: |
@@ -19093,6 +19141,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/FunctionRuntimeOption'
+    FunctionKindFilter:
+      type: string
+      enum:
+        - standard
+        - durable
+      description: |
+        A function kind to filter a list by. Unlike `FunctionKind` it has no
+        default: omitting the filter includes both kinds.
+      x-enum-varnames:
+        - FunctionKindFilterStandard
+        - FunctionKindFilterDurable
     FunctionScheduler:
       type: object
       properties:
@@ -19840,6 +19899,8 @@ components:
     Project:
       type: object
       properties:
+        template_installation:
+          $ref: '#/components/schemas/ProjectTemplateInstallation'
         id:
           type: string
           format: uuid
@@ -19854,9 +19915,9 @@ components:
         plan:
           type: string
           enum:
-            - FREE
-            - PRO
-          description: Platform plan applied to the project when available
+            - HOBBY
+            - SUPERAGENT
+          description: Plan name applied to the project when available.
         all_regions:
           type: boolean
           description: |
@@ -20256,8 +20317,8 @@ components:
             prefix) and must be bare domains such as `domain1.com`. Matching is
             exact, so subdomains need their own entry. At most 100 entries.
 
-            Restricting signups is a PRO feature to configure and to enforce: a
-            FREE project can only declare the list it already has or remove the
+            Restricting signups is a SUPERAGENT feature to configure and to enforce: a
+            HOBBY project can only declare the list it already has or remove the
             restriction, and the list it keeps is parked until it upgrades.
           items:
             type: string
@@ -20342,7 +20403,7 @@ components:
       type: object
       additionalProperties: false
       description: |
-        Custom domain with BYOC TLS (PRO plan). `tls` is required when the
+        Custom domain with BYOC TLS (SUPERAGENT plan). `tls` is required when the
         domain is first created and optional afterwards: providing new TLS
         material for the same domain rotates the certificate in place (zero
         downtime); omitting `tls` keeps the stored certificate. TLS material is
@@ -20401,11 +20462,11 @@ components:
         html_body:
           type: string
           maxLength: 262144
-          description: HTML body. Max 256 KiB. PRO plan required for custom bodies.
+          description: HTML body. Max 256 KiB. SUPERAGENT plan required for custom bodies.
         text_body:
           type: string
           maxLength: 262144
-          description: Plain-text body. Max 256 KiB. PRO plan required for custom bodies.
+          description: Plain-text body. Max 256 KiB. SUPERAGENT plan required for custom bodies.
     ProjectConfigEmailTemplates:
       type: object
       additionalProperties: false
@@ -20413,7 +20474,7 @@ components:
         Email templates keyed by type. Fully synced when declared - template
         types absent from a declared map revert to server defaults (custom
         bodies deleted, subject overrides cleared). Custom template bodies
-        require the PRO plan; subject-only changes are available on FREE.
+        require the SUPERAGENT plan; subject-only changes are available on HOBBY.
       properties:
         confirmation:
           $ref: '#/components/schemas/ProjectConfigEmailTemplate'
@@ -20538,7 +20599,7 @@ components:
       type: object
       additionalProperties: false
       description: |
-        Hosted auth pages keyed by page type (PRO plan). Upsert-only: omitted
+        Hosted auth pages keyed by page type (SUPERAGENT plan). Upsert-only: omitted
         pages are left untouched (there is no delete for hosted pages).
       properties:
         login:
@@ -20638,7 +20699,7 @@ components:
           maxLength: 255
         all_regions:
           type: boolean
-          description: Region policy. `false` requires `selected_regions` (PRO plan).
+          description: Region policy. `false` requires `selected_regions` (SUPERAGENT plan).
         selected_regions:
           type: array
           items:
@@ -21249,8 +21310,8 @@ components:
       properties:
         plan:
           type: string
-          description: Plan name (FREE or PRO)
-          example: FREE
+          description: Public plan name (HOBBY or SUPERAGENT).
+          example: HOBBY
         max_connections:
           type: integer
           description: Maximum concurrent connections allowed
@@ -21737,8 +21798,8 @@ components:
             prefix); matching is exact, so subdomains need their own entry. At
             most 100 entries.
 
-            Restricting signups is a PRO feature to configure and to enforce: a
-            FREE project can only remove the restriction and gets 403 for any
+            Restricting signups is a SUPERAGENT feature to configure and to enforce: a
+            HOBBY project can only remove the restriction and gets 403 for any
             other change, and the list it keeps is parked until it upgrades.
           items:
             type: string
@@ -22136,6 +22197,33 @@ components:
       description: |
         This OpenAPI document, with every reference resolved. Shared by the JSON
         and YAML operations, which differ only in serialization.
+    ProjectTemplateInstallation:
+      type: object
+      description: |
+        Template initialization progress, returned by project creation and the
+        individual project endpoint. Omitted for projects without a template.
+        Project creation accepts the installation; wait for `ready` before use.
+        A failed installation retains the project for inspection or deletion.
+      required:
+        - status
+        - phase
+      properties:
+        status:
+          type: string
+          enum:
+            - pending
+            - running
+            - ready
+            - failed
+        phase:
+          type: string
+          enum:
+            - database
+            - restore
+            - configure
+            - deploy
+            - verify
+            - ready
     ProjectGitConnectionSummary:
       type: object
       properties:
@@ -22406,6 +22494,14 @@ components:
           items:
             type: string
             format: uuid
+        kind:
+          allOf:
+            - $ref: '#/components/schemas/FunctionKindFilter'
+          description: |
+            Read only functions of this kind. Omit to include standard and
+            durable functions. With `ids`, the listed functions of other kinds
+            are left out, so an ID of the other kind returns no logs. Search,
+            stream, and activity cursors are bound to the kind.
         deployments:
           $ref: '#/components/schemas/LogDeploymentRequestSelector'
       required:
