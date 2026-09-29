@@ -80,6 +80,8 @@ multiple lockfile families found: pnpm:/src/pnpm-lock.yaml npm:/src/package-lock
 add packageManager to package.json or remove extra lockfiles
 ```
 
+npm installs with the version bundled with your function's Node.js runtime unless `packageManager` names a different npm major.
+
 The lockfile has to belong to the manager that ends up selected. If it does not — none shipped, or `packageManager` names one whose lockfile is missing — dependencies resolve fresh during the build instead of from your lockfile, so a deployment can pick up versions you never tested.
 
 ### DO: Bundle Your Code

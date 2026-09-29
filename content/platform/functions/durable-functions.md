@@ -577,6 +577,89 @@ A schedule whose tick is still running when the next one is due starts a second 
 
 Schedulers are a SUPERAGENT capability: on HOBBY the create answers `403`. SUPERAGENT allows 100 per project, counted across durable and standard functions together, and a create past the cap answers `403` as well.
 
+To see every durable function's schedules at once, filter the project-wide scheduler list by kind:
+
+```bash
+curl "https://api.volcano.dev/projects/$PROJECT_ID/schedulers?function_kind=durable" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN"
+```
+
+Each item has the shape shown above. See [Function Schedulers API](../api-reference/function-schedulers.md) for pagination.
+
+## Deployments and logs
+
+Each deploy of a durable function is recorded as a deployment. List one function's deployments on its own collection:
+
+```bash
+curl "https://api.volcano.dev/projects/$PROJECT_ID/durable-functions/$FUNCTION_ID/deployments" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN"
+```
+
+```json
+{
+  "data": [
+    {
+      "id": "9b1f2c3d-4e5f-4a6b-8c7d-0e1f2a3b4c5d",
+      "function_id": "6f1c0f6e-6b0e-4a1d-9f8a-2c3d4e5f6a7b",
+      "project_id": "b1d3f4a2-1c2d-4e5f-8a9b-0c1d2e3f4a5b",
+      "operation": "deploy",
+      "status": "active",
+      "deploy_source": "cli",
+      "created_at": "2026-09-04T18:20:11Z"
+    }
+  ],
+  "page": 1,
+  "limit": 20,
+  "total": 1,
+  "has_more": false
+}
+```
+
+The project deployment feed lists standard and durable functions together, with `resource.kind` telling them apart. Pass `function_kind=durable` to keep only durable functions:
+
+```bash
+curl "https://api.volcano.dev/projects/$PROJECT_ID/deployments?function_kind=durable&limit=20" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN"
+```
+
+```json
+{
+  "data": [
+    {
+      "id": "9b1f2c3d-4e5f-4a6b-8c7d-0e1f2a3b4c5d",
+      "project_id": "b1d3f4a2-1c2d-4e5f-8a9b-0c1d2e3f4a5b",
+      "resource": {
+        "type": "function",
+        "id": "6f1c0f6e-6b0e-4a1d-9f8a-2c3d4e5f6a7b",
+        "name": "order-pipeline",
+        "kind": "durable"
+      },
+      "operation": "deploy",
+      "status": "active",
+      "deploy_source": "cli",
+      "created_at": "2026-09-04T18:20:11Z",
+      "updated_at": "2026-09-04T18:22:40Z"
+    }
+  ],
+  "limit": 20,
+  "total": 1,
+  "has_more": false
+}
+```
+
+`GET /projects/{id}/deployments/summary?resource_type=function&function_kind=durable` returns the success rate and median build time for the same set.
+
+A durable function's runtime and build logs are read like any function's, by its ID. To read every durable function's logs at once, set `resource.kind` to `durable`:
+
+```bash
+curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/logs/search" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"resource":{"type":"function","kind":"durable"}}'
+```
+
+See [Logs](logs.md).
+
 ## Delete a durable function
 
 ```bash

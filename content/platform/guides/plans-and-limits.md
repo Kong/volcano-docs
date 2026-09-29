@@ -78,6 +78,8 @@ Functions and frontends share these counters.
 | Build timeout | 30 min | 60 min | Per build |
 | Build-minute allowance | 60 / month | 60 / month | Combined across all your projects; HOBBY blocks new builds once finished builds reach the allowance, SUPERAGENT bills overage |
 
+Installing dependencies and running your build command must finish at least five minutes before the build timeout, which leaves time to package the result. Each step can also run for at most 30 minutes. A step that runs out of time fails the build, and the build log names the step.
+
 
 ## Databases
 

@@ -205,6 +205,8 @@ without the version header are unaffected. See CLI Version Gating.
 | `GET` | `/projects` | List projects |
 | `GET` | `/projects/{id}` | Get a project |
 | `GET` | `/deployments` | List deployments across every project you own |
+| `GET` | `/projects/{id}/deployments` | List a project's function and frontend deployments; filter with `resource_type` and `function_kind` |
+| `GET` | `/projects/{id}/deployments/summary` | Summarize one deployment pipeline (`resource_type`, optionally `function_kind`) |
 | `PATCH` | `/projects/{id}` | Update project name/region policy |
 | `DELETE` | `/projects/{id}` | Delete a project |
 
@@ -247,6 +249,8 @@ See [Functions](functions.md) for details.
 | `GET` | `/projects/{id}/durable-functions/{functionId}/schedulers/{schedulerId}` | Get a schedule |
 | `PATCH` | `/projects/{id}/durable-functions/{functionId}/schedulers/{schedulerId}` | Update a schedule |
 | `DELETE` | `/projects/{id}/durable-functions/{functionId}/schedulers/{schedulerId}` | Delete a schedule |
+| `GET` | `/projects/{id}/schedulers?function_kind=durable` | List every durable function's schedules in the project |
+| `GET` | `/projects/{id}/deployments?function_kind=durable` | List every durable function's deployments in the project |
 
 Durable functions are a separate collection: a standard function's id is `404`
 here, and a durable function's id is `404` under `/projects/{id}/functions`. See

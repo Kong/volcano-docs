@@ -38,6 +38,16 @@ curl -X POST "https://api.volcano.dev/projects/PROJECT_ID/logs/search" \
   -d '{"resource":{"type":"function","ids":["FUNC_ID"]}}'
 ```
 
+Set `resource.kind` to `durable` or `standard` to read one kind of function,
+however many the project has:
+
+```bash
+curl -X POST "https://api.volcano.dev/projects/PROJECT_ID/logs/search" \
+  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"resource":{"type":"function","kind":"durable"}}'
+```
+
 **Response:**
 
 ```json
@@ -80,6 +90,7 @@ Supported request body fields:
 | --- | --- |
 | `resource.type` | Required. Use `function`. |
 | `resource.ids` | Optional function IDs. Omit or pass an empty array to search all functions in the project. |
+| `resource.kind` | Optional. `standard` or `durable` reads only functions of that kind; omit it for both. With `resource.ids`, IDs of the other kind return no logs. A cursor is bound to the kind. |
 | `q` | Optional query. Unqualified terms search the body. Supports quoted text, implicit `AND`, `AND`/`OR`/`NOT`, parentheses, and the fields `body`, `level`, `region`, `invocation.id`, `resource.id`, and `resource.name`. The resource-name aliases `function`, `frontend`, and `database` are also supported. `level` accepts `trace`, `debug`, `info`, `warn`, `error`, and `fatal`, plus the aliases `log`, `information`, `warning`, `err`, and `critical`. |
 | `limit` | Max records to return. Default `100`, max `1000`. |
 | `cursor` | Opaque cursor from the previous response. |
@@ -182,7 +193,7 @@ Buckets follow these rules:
   window moves. The first and last buckets can extend past the window; they
   count only events inside it.
 - `bucket_count: 1` returns one bucket that spans exactly the window.
-- The window is limited to the plan's log retention (FREE: 1 day, PRO: 30
+- The window is limited to the plan's log retention (HOBBY: 1 day, SUPERAGENT: 30
   days). An older `start_time` is moved up to the retention limit.
 - Counts across several resources or deployments come from Volcano's
   activity index. Logs from before a region's index began are not counted;

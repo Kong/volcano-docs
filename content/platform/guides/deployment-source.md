@@ -34,7 +34,7 @@ curl -H "Authorization: Bearer $VOLCANO_TOKEN" \
   "data": [
     {
       "id": "d1f8…",
-      "resource": { "type": "function", "id": "fn_…", "name": "api" },
+      "resource": { "type": "function", "id": "fn_…", "name": "api", "kind": "standard" },
       "operation": "deploy",
       "status": "active",
       "deploy_source": "git",
@@ -46,6 +46,20 @@ curl -H "Authorization: Bearer $VOLCANO_TOKEN" \
   "has_more": false
 }
 ```
+
+The feed lists functions and frontends together. Standard and
+[durable](../functions/durable-functions.md) functions both appear as
+`"type": "function"`, and `resource.kind` tells them apart. Narrow the feed with
+`resource_type=function` or `resource_type=frontend`, and with
+`function_kind=standard` or `function_kind=durable`:
+
+```bash
+curl -H "Authorization: Bearer $VOLCANO_TOKEN" \
+  "https://api.volcano.dev/projects/$PROJECT_ID/deployments?function_kind=durable&limit=20"
+```
+
+`function_kind` implies function deployments, so frontends drop out. Combining
+it with `resource_type=frontend` answers `400`.
 
 ## Attribution
 

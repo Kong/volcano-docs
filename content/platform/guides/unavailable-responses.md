@@ -127,3 +127,22 @@ If you see this on your own project, check your account and project status in th
 Volcano dashboard. The response deliberately withholds the reason from your
 visitors. See [plans and limits](plans-and-limits.md) for the limits and billing
 behavior that apply to your project.
+
+## Requests from embargoed countries
+
+Volcano does not serve requests from Cuba, Iran, or North Korea, which are under
+comprehensive US sanctions. Function invocations, realtime, and the API answer
+them with `451 Unavailable For Legal Reasons`, whatever your project's status:
+
+```json
+{
+  "error": "Not available in your region.",
+  "code": "region_unavailable"
+}
+```
+
+Volcano locates the caller by IP address. The response is never cached and
+carries the same CORS headers as the unavailable response, so an in-page
+`fetch()` can read it. A CORS preflight from such a caller succeeds, so the
+request that follows it receives this `451` rather than a CORS error. Realtime
+callers receive the `451` in place of the WebSocket upgrade.

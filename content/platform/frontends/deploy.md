@@ -66,11 +66,15 @@ package manager in this order:
 
 | Your project | Volcano installs with |
 | --- | --- |
-| declares `"packageManager": "pnpm@9.15.0"` (or `yarn@`, `npm@`) in `package.json` | the manager you declared, at that version |
+| declares `"packageManager": "pnpm@9.15.0"` (or `yarn@`, `npm@`) in `package.json` | the manager you declared, at that version (for npm, see below) |
 | declares `"packageManager"` as anything else (`bun@…`, a bare `pnpm`) | the build fails |
 | declares nothing and ships one lockfile | the manager that lockfile belongs to |
 | declares nothing and ships several lockfiles | `pnpm`, then `yarn`, then `npm` |
 | declares nothing and ships no lockfile | `npm` |
+
+npm installs with the version bundled with your Node.js runtime unless
+`packageManager` names a different npm major, so `npm@11.2.0` on a runtime that
+bundles npm 11.6.2 installs with 11.6.2.
 
 `packageManager` wins over the lockfiles, so a stale `pnpm-lock.yaml` left in a
 project that declares `npm@10` no longer changes what runs. Declaring it is the
