@@ -26,7 +26,7 @@ export default function Home() {
       <div className="card">
         <h1>🌋 Volcano Auth - Next.js Examples</h1>
         <p style={{ color: '#666', fontSize: '16px', marginBottom: '30px' }}>
-          Interactive examples demonstrating Volcano Hosting authentication patterns
+          Interactive examples demonstrating Volcano authentication patterns
         </p>
 
         <div className="alert success" style={{ padding: '24px' }}>

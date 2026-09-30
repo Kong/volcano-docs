@@ -11,15 +11,19 @@ POST /projects
 Authorization: Bearer YOUR_ACCESS_TOKEN
 Content-Type: application/json
 
-{"name":"pixel-board","template_id":"pixel-board"}
+{"name":"my-pixels","template_id":"pixel-board"}
 ```
 
 Available template IDs are `pixel-board`, `trellini`, and `collab-pad`.
+New installations use database names `pixel_board`, `trellini`, and `collab_pad`
+for the corresponding templates. The frontend and server database variables point
+to that database. Existing installations keep their original database name.
 The legacy `official-starter` ID has
 environment-specific availability; use a named template for new integrations.
 
-The template controls the project name and adds a suffix on conflicts. It installs into a new project with an
-independent database and fresh credentials. Its code and database initialization
+The `name` field sets the project name; `template_id` selects the application.
+Volcano adds a suffix if the name conflicts with another project you own.
+The template installs into a new project with an independent database and fresh credentials. Its code and database initialization
 are delivered together as one template version. No Git repository connection is
 required. The installer deploys the frontends declared by the template source.
 Normal plan limits apply to the created resources, including the frontend

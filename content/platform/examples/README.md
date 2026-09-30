@@ -1,11 +1,11 @@
 ---
-title: "Volcano Hosting Examples"
-description: "This directory contains complete examples demonstrating Volcano Hosting features."
+title: "Volcano Examples"
+description: "This directory contains complete examples demonstrating Volcano features."
 ---
 
-# Volcano Hosting Examples
+# Volcano Examples
 
-This directory contains complete examples demonstrating Volcano Hosting features.
+This directory contains complete examples demonstrating Volcano features.
 
 ## Examples
 

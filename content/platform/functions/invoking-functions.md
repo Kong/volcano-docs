@@ -214,7 +214,8 @@ signature headers are application input and are forwarded. Internal
 Proxy-derived headers (`Forwarded`, `X-Forwarded-*`, and `X-Real-IP`) are also
 removed; use `request_context.source_ip`, `request_context.host`,
 `request_context.scheme`, and `request_context.protocol` for Volcano's trusted
-connection metadata.
+connection metadata. A request that reaches the function through a frontend's
+Function route carries the visitor's address in `source_ip` too.
 
 Webhook example:
 
