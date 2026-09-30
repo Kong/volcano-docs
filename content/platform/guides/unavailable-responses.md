@@ -131,8 +131,9 @@ behavior that apply to your project.
 ## Requests from embargoed countries
 
 Volcano does not serve requests from Cuba, Iran, or North Korea, which are under
-comprehensive US sanctions. Function invocations, realtime, and the API answer
-them with `451 Unavailable For Legal Reasons`, whatever your project's status:
+comprehensive US sanctions. Frontends, function invocations, realtime, and the
+API answer them with `451 Unavailable For Legal Reasons`, whatever your
+project's status:
 
 ```json
 {
@@ -141,8 +142,19 @@ them with `451 Unavailable For Legal Reasons`, whatever your project's status:
 }
 ```
 
-Volcano locates the caller by IP address. The response is never cached and
-carries the same CORS headers as the unavailable response, so an in-page
-`fetch()` can read it. A CORS preflight from such a caller succeeds, so the
-request that follows it receives this `451` rather than a CORS error. Realtime
-callers receive the `451` in place of the WebSocket upgrade.
+Volcano locates the caller by IP address. Frontends serve a branded HTML page
+to browser navigations and this JSON otherwise; every other surface answers
+with JSON. The response is never cached and carries the same CORS headers as
+the unavailable response, so an in-page `fetch()` can read it. A CORS preflight
+from such a caller succeeds, so the request that follows it receives this `451`
+rather than a CORS error. Realtime callers receive the `451` in place of the
+WebSocket upgrade.
+
+Postgres connections are refused during startup, before authentication, with
+SQLSTATE `28000` (`invalid_authorization_specification`). Unlike `57P03`,
+drivers do not retry it:
+
+```text
+ERROR:  Not available in your region.
+SQLSTATE: 28000
+```

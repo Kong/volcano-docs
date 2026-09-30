@@ -512,7 +512,7 @@ A finished execution's trace is final: `complete` is `true`, and its operations 
 
 The trace is metadata, never data. Inputs, step results and return values are not included, and an error carries its type and a bounded message only when one was recorded. A trace lives as long as its execution does: for the function's `retention_days`, and not past the function's deletion.
 
-The dashboard draws the same trace as a timeline when you open an execution. **Observability → Tracing** shows a durable function's recent executions beside the trace of the one you pick, and its address links to that execution.
+The dashboard draws the same trace as a timeline when you open an execution. **Observability → Durable Tracing** shows a durable function's recent executions beside the trace of the one you pick, and its address links to that execution.
 
 ### Stop an execution
 

@@ -26,6 +26,10 @@ Next.js is supported today (`framework: nextjs`), including static export and
 server-side rendering. For a monorepo, point Volcano at the app with `app_root`
 (for example `apps/web`).
 
+For workspace projects, Volcano uses the workspace install root consistently
+when tracing and packaging server dependencies. An additional lockfile inside
+the app directory does not change the packaged application's root.
+
 ## Compression
 
 Responses are compressed automatically — no plugin or middleware needed. Send

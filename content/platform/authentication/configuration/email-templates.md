@@ -9,6 +9,10 @@ Customize email templates per project.
 
 Volcano provides default email templates optimized for deliverability. You can override these with custom templates per project.
 
+Default templates use your project name wherever `{{.ProjectName}}` appears,
+including the message body and footer. Emails for your Volcano account use
+`Volcano`.
+
 ## Default Templates
 
 ### Confirmation Email

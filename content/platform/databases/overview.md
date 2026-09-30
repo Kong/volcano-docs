@@ -301,6 +301,10 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/databases" \
   -d '{"name": "main", "region": "eu-central-1", "pg_version": "16"}'
 ```
 
+## Read storage usage
+
+The dashboard's Database Storage chart shows observed storage sizes. A missing sample carries an earlier sample forward. Buckets before the first available sample show zero; the current size does not fill past dates. The Current value can be available before historical samples appear.
+
 ## What's next
 
 | Guide | Description |

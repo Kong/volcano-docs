@@ -1,11 +1,11 @@
 ---
 title: "Volcano Frontend Auth - Next.js"
-description: "A production-ready Next.js application demonstrating all Volcano Hosting authentication features including email/password, anonymous users, OAuth, password r\u2026"
+description: "A production-ready Next.js application demonstrating all Volcano authentication features including email/password, anonymous users, OAuth, password r\u2026"
 ---
 
 # Volcano Frontend Auth - Next.js
 
-A production-ready Next.js application demonstrating all Volcano Hosting authentication features including email/password, anonymous users, OAuth, password recovery, and email management.
+A production-ready Next.js application demonstrating all Volcano authentication features including email/password, anonymous users, OAuth, password recovery, and email management.
 
 ## Features
 

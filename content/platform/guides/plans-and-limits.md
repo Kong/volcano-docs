@@ -31,6 +31,11 @@ compute when it finishes. Those allowances refuse the next build or start.
 | Projects | 1 | 1,000 | Per account (creation cap) |
 | Bandwidth allowance | 10 GB / month | 20 GB / month | Aggregate ingress + egress across all your projects |
 
+Once project deletion is accepted and cleanup is queued, the project stops
+counting toward your project limit. You can create a replacement while its
+resources are removed in the background. Previously recorded usage still
+counts toward your account's monthly allowances.
+
 ## Functions
 
 | Limit | HOBBY | SUPERAGENT | Scope |

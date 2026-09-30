@@ -1,9 +1,9 @@
 ---
 title: "OAuth / SSO Provider Integration"
-description: "Volcano Hosting supports third-party OAuth providers (Google, GitHub, Microsoft, Apple) for user authentication."
+description: "Volcano supports third-party OAuth providers (Google, GitHub, Microsoft, Apple) for user authentication."
 ---
 
-Volcano Hosting supports third-party OAuth providers (Google, GitHub, Microsoft, Apple) for user authentication. This allows your users to sign up and sign in using their existing accounts.
+Volcano supports third-party OAuth providers (Google, GitHub, Microsoft, Apple) for user authentication. This allows your users to sign up and sign in using their existing accounts.
 
 ## Supported Providers
 

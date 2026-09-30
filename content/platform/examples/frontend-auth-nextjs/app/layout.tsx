@@ -3,7 +3,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Volcano Auth Example - Next.js',
-  description: 'Next.js example demonstrating Volcano Hosting authentication',
+  description: 'Next.js example demonstrating Volcano authentication',
 };
 
 export default function RootLayout({
