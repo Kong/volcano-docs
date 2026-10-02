@@ -16,7 +16,11 @@ const MODES: { key: string; label: string; Icon: ComponentType<{ className?: str
   { key: "light", label: "Light theme", Icon: Sun },
 ];
 
-export function ThemeSwitcher() {
+type ThemeSwitcherProps = {
+  className?: string;
+};
+
+export function ThemeSwitcher({ className }: ThemeSwitcherProps) {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -33,7 +37,7 @@ export function ThemeSwitcher() {
   }
 
   return (
-    <div className="theme-switcher">
+    <div className={`theme-switcher ${className ?? ""}`}>
       {MODES.map(function renderMode({ key, label, Icon }) {
         const isActive = active === key;
 
