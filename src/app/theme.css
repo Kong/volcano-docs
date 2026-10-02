@@ -158,6 +158,10 @@
   --type-body: var(--font-size-base); /* 16 — body copy */
   --type-meta: var(--font-size-md); /* 14 — nav / dense UI text */
 
+  /* ── Semantic layout sizes. ── */
+  --layout-header-height: 3.5rem;
+  --layout-ide-card-min-width: 140px;
+
   /* ── System defaults all components inherit from. ── */
   --system-font: var(--font-family-sans);
   --system-mono-font: var(--font-family-mono);

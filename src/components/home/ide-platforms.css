@@ -13,8 +13,8 @@
 
 .ide-platform {
   display: flex;
-  min-width: 140px;
-  flex: 1 1 140px;
+  min-width: var(--layout-ide-card-min-width);
+  flex: 1 1 var(--layout-ide-card-min-width);
   flex-direction: column;
   align-items: center;
   justify-content: center;

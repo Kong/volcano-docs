@@ -11,10 +11,7 @@
   grid-area: header;
   display: flex;
   min-width: 0;
-  /* Literal, not var(--fd-header-height): that variable is repurposed in
-     global.css to keep fumadocs' sticky-offset math correct and no longer
-     holds this value — see the #nd-docs-layout comment there. */
-  height: 3.5rem;
+  height: var(--layout-header-height);
   align-items: center;
   justify-content: space-between;
   padding: 0 var(--space-100);
