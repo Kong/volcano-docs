@@ -40,7 +40,6 @@
   font-family: var(--system-mono-font);
   font-size: var(--type-meta);
   line-height: var(--line-height-tight);
-  background: var(--surface-background);
   color: var(--text-neutral);
   text-decoration: none;
   border-radius: 0;

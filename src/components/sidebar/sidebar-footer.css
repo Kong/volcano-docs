@@ -30,3 +30,11 @@
 .sidebar-footer-link:hover {
   color: var(--text-primary);
 }
+
+/* Desktop already has the theme switcher in the header; this copy only
+   needs to exist for the mobile drawer. */
+@media (width >= 48rem) {
+  .sidebar-footer-theme-switcher {
+    display: none;
+  }
+}

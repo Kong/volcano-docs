@@ -3,29 +3,49 @@
    feature-card rows, section headings, and IDE row.
    ══════════════════════════════════════════ */
 
+/* The home route renders this directly as DocsLayout's children, skipping
+   fumadocs' own `<DocsPage>` article wrapper (and the `[grid-area:main]` class
+   that wrapper carries) to avoid its article padding. Without an explicit
+   grid-area, this div falls to CSS Grid auto-placement, which can land it in
+   the empty sidebar/TOC gutter column instead of `main` — so it's pinned here. */
 .home-page {
   display: flex;
+  grid-area: main;
   width: 100%;
   flex-direction: column;
 }
 
-/* Feature-card rows — fixed height, content top-aligned, divider below. */
+/* Feature-card rows — stacked full-width on mobile (fixed row heights and
+   side-by-side dividers only apply once cards have room to sit in a row). */
 .home-card-row {
   display: flex;
   width: 100%;
+  flex-direction: column;
   align-items: stretch;
   border-bottom: var(--border-divider);
 }
 
-.home-card-row--primary {
-  height: 349px;
-}
-
-.home-card-row--tutorials {
-  height: 372px;
-}
-
-/* Divider between adjacent cards within a row. */
+/* Divider between stacked cards on mobile. */
 .home-card-row > .feature-card:not(:last-child) {
-  border-right: var(--border-divider);
+  border-bottom: var(--border-divider);
+}
+
+@media (width >= 48rem) {
+  .home-card-row {
+    flex-direction: row;
+  }
+
+  .home-card-row--primary {
+    height: 349px;
+  }
+
+  .home-card-row--tutorials {
+    height: 372px;
+  }
+
+  /* Divider between adjacent cards within a row. */
+  .home-card-row > .feature-card:not(:last-child) {
+    border-right: var(--border-divider);
+    border-bottom: none;
+  }
 }

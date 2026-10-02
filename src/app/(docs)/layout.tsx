@@ -5,6 +5,7 @@ import { baseOptions } from "@/lib/layout.shared";
 import { SearchBanner } from "@/components/sidebar/search-banner";
 import { SidebarQuickStartPortal } from "@/components/sidebar/sidebar-quick-start-portal";
 import { SidebarFooterPortal } from "@/components/sidebar/sidebar-footer-portal";
+import { MobileDrawerBrand } from "@/components/sidebar/mobile-drawer-brand";
 import { NavFolder, NavItem, NavSeparator } from "@/components/sidebar/nav-tree";
 import { DocsHeader } from "@/components/docs-header";
 
@@ -14,6 +15,7 @@ import { DocsHeader } from "@/components/docs-header";
 function SidebarBanner() {
   return (
     <>
+      <MobileDrawerBrand />
       <SearchBanner />
       <SidebarQuickStartPortal />
       <SidebarFooterPortal />
