@@ -93,23 +93,23 @@ body {
  * use (--fd-docs-row-1/2) from --fd-banner-height and --fd-header-height,
  * assuming its usual stacked layout: an optional banner row, then a
  * mobile-only header row, each contributing its own offset. We have neither —
- * just one full-width 3.5rem header bar that everything else must clear — so
+ * just one full-width header bar that everything else must clear — so
  * the two variables are repurposed rather than used for their namesakes:
  * --fd-banner-height carries the header's real height (so --fd-docs-row-1,
  * used by the sidebar and the xl+ TOC panel, lands right below it), and
  * --fd-header-height is zeroed (so --fd-docs-row-2, used by the mobile/tablet
  * TOC popover, doesn't add the header's height a second time on top of that —
  * otherwise the popover sticks ~56px too low and floats over the content once
- * scrolled). The header's actual height is hardcoded as a literal below
- * instead of reading --fd-header-height, since that variable no longer holds it.
+ * scrolled). --layout-header-height sets the actual header height, grid row,
+ * and sticky offset without changing --fd-header-height's zero value.
  */
 #nd-docs-layout {
   --fd-sidebar-width: 0px;
   --fd-toc-width: 0px;
   --fd-header-height: 0px;
-  --fd-banner-height: 3.5rem;
+  --fd-banner-height: var(--layout-header-height);
   grid-template:
-    "header header header header header" 3.5rem
+    "header header header header header" var(--layout-header-height)
     "sidebar sidebar toc-popover toc toc"
     "sidebar sidebar main toc toc" 1fr
     / minmax(0, 1fr) var(--fd-sidebar-col)
