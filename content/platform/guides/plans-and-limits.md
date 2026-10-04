@@ -81,7 +81,9 @@ Functions and frontends share these counters.
 | Rate limit (per resource) | 100 requests / 10s | Unlimited | Each function or frontend |
 | Rate limit (per project) | 600 requests / 10s | Unlimited | Across all functions and frontends; a request a frontend routes to a function counts once |
 | Build timeout | 30 min | 60 min | Per build |
-| Build-minute allowance | 60 / month | 60 / month | Combined across all your projects; HOBBY blocks new builds once finished builds reach the allowance, SUPERAGENT bills overage |
+| Build-minute allowance | 240 / month (4 hours) | 240 / month (4 hours) | Combined across all your projects; HOBBY blocks new builds once finished builds reach the allowance, SUPERAGENT bills overage |
+
+All accounts receive at least 240 included build minutes for monthly cycles that end after October 1, 2026, including accounts on older pricing revisions. Existing usage counts toward this allowance. Other subscription terms stay unchanged. Previously purchased overage blocks stay purchased; their unused capacity remains available. Cycles that ended on or before October 1 keep their recorded allowance.
 
 Installing dependencies and running your build command must finish at least five minutes before the build timeout, which leaves time to package the result. Each step can also run for at most 30 minutes. A step that runs out of time fails the build, and the build log names the step.
 
