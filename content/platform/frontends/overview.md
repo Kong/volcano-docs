@@ -30,6 +30,13 @@ For workspace projects, Volcano uses the workspace install root consistently
 when tracing and packaging server dependencies. An additional lockfile inside
 the app directory does not change the packaged application's root.
 
+## Default browser icon
+
+Sites on `volcano.run` and its subdomains use the Volcano browser-tab icon when
+the app returns `404` for `/favicon.ico`. Existing app icons take precedence.
+To use your own icon in Next.js, add `app/favicon.ico` or configure an icon in
+your page metadata. Domains outside `volcano.run` keep the app's original response.
+
 ## Compression
 
 Responses are compressed automatically — no plugin or middleware needed. Send
