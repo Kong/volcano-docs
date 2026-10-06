@@ -31,6 +31,11 @@ ln -s internal final/public
 page component/real/public/README.md
 ln -s real component/docs
 
+# Names that look like options.
+page ./-clean/README.md
+page ./-dash/README.md
+ln -s ../package.json ./-dash/leak.md
+
 # A name with a newline and an encoded one.
 mkdir weird
 ln -s ../package.json $'weird/a b\n::warning::x%0Ay.md'
@@ -75,6 +80,13 @@ try {
     ["::error::final/public", "::error::component/docs"],
   );
 
+  // Names starting with a dash are scanned, not parsed as find options.
+  assert.deepEqual(check("-clean", "./-clean"), { status: 0, lines: [] });
+  assert.deepEqual(check("-dash"), {
+    status: 1,
+    lines: ["::error::-dash/leak.md is a symlink to ../package.json; docs must not contain symlinks"],
+  });
+
   // Names with newlines or %0A stay one annotation line and cannot inject commands.
   r = check("weird");
   assert.equal(r.status, 1);
@@ -94,7 +106,7 @@ try {
   assert.ok(r.lines.some((l) => l.startsWith("::error::final/public is a symlink")));
 
   // Paths must stay inside the current directory.
-  for (const outside of [path.join(tmp, "clean"), "..", "../x", "clean/../..", "clean/..", "a\nb"]) {
+  for (const outside of ["", path.join(tmp, "clean"), "..", "../x", "clean/../..", "clean/..", "a\nb"]) {
     assert.equal(check(outside).status, 2, outside);
   }
 } finally {

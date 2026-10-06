@@ -22,22 +22,23 @@ quote() {
 status=0
 for root in "$@"; do
   case "$root" in
-    /* | .. | ../* | */.. | */../* | *$'\n'*)
+    '' | /* | .. | ../* | */.. | */../* | *$'\n'*)
       echo "::error::refuse-symlinks.sh takes paths inside the current directory, got $(quote "$root")" >&2
       exit 2
       ;;
   esac
 
   # A symlinked directory on the path itself (e.g. docs -> elsewhere) would make
-  # a copy read the target's real files, which find below cannot see.
-  cur=""
+  # a copy read the target's real files, which find below cannot see. cur keeps
+  # a ./ prefix so a name like -docs is never parsed as an option.
+  cur="."
   linked=""
   IFS=/ read -r -a parts <<< "$root"
   for part in "${parts[@]}"; do
     if [ -z "$part" ] || [ "$part" = "." ]; then
       continue
     fi
-    cur="${cur:+$cur/}$part"
+    cur="$cur/$part"
     if [ -L "$cur" ]; then
       printf '%s\0' "$cur" >> "$links"
       linked=1
@@ -51,14 +52,14 @@ for root in "$@"; do
   # find does not follow symlinks by default, so this lists every link under the
   # path, including dangling ones and links to directories. A scan error fails,
   # after the links found so far are reported.
-  if ! find "$root" -type l -print0 >> "$links"; then
+  if ! find "$cur" -type l -print0 >> "$links"; then
     echo "::error::could not scan $(quote "$root") for symlinks" >&2
     status=1
   fi
 done
 
 while IFS= read -r -d '' link; do
-  echo "::error::$(quote "$link") is a symlink to $(quote "$(readlink "$link")"); docs must not contain symlinks" >&2
+  echo "::error::$(quote "${link#./}") is a symlink to $(quote "$(readlink "$link")"); docs must not contain symlinks" >&2
   status=1
 done < "$links"
 exit "$status"
