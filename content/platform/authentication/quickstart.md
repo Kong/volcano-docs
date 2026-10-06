@@ -125,7 +125,17 @@ If the logout request fails, the SDK still clears the local session and returns 
 
 ## Step 6: Invoke a function with user context
 
-When a user is authenticated, the SDK automatically includes their access token when invoking functions:
+When a user is authenticated, the SDK automatically includes their access token when invoking functions. New functions are `private`, so first let signed-in users invoke the function:
+
+```yaml
+# volcano-config.yaml
+version: 1
+functions:
+  - name: my-function
+    visibility: authenticated
+```
+
+Apply it with `volcano cloud config deploy`. See [who can invoke a function](../functions/creating-functions.md#choose-who-can-invoke-it).
 
 ```javascript
 // User's identity is sent automatically

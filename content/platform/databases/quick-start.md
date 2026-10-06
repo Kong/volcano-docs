@@ -379,6 +379,18 @@ exports.handler = async (event) => {
 
 ### Step 3: Call from Frontend
 
+New functions are `private`. Let signed-in users invoke `get-posts` before calling it from the browser:
+
+```yaml
+# volcano-config.yaml
+version: 1
+functions:
+  - name: get-posts
+    visibility: authenticated
+```
+
+Apply it with `volcano cloud config deploy`.
+
 ```javascript
 import { VolcanoAuth } from '@volcano.dev/sdk';
 

@@ -95,6 +95,7 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/durable-functions" \
   "project_id": "b1d3f4a2-1c2d-4e5f-8a9b-0c1d2e3f4a5b",
   "name": "order-pipeline",
   "status": "provisioning",
+  "visibility": "private",
   "is_public": false,
   "durable": {
     "execution_timeout_seconds": 31622400,
@@ -230,7 +231,7 @@ curl -X POST "https://api.volcano.dev/durable-functions/$FUNCTION_ID/executions"
 
 The request body is the function's input and must be valid JSON if present, up to 256 KiB. An empty body starts the execution with no input.
 
-From an application, the SDKs do the same thing with the credential the client already holds:
+From an application, the SDKs do the same thing with the credential the client already holds, when the function's [visibility](#who-can-start-executions) admits it:
 
 ```javascript
 const { data, error } = await volcano.durable.start(
@@ -276,16 +277,20 @@ Starting has two endpoints, because starting and managing are done by different 
 
 | Endpoint | Credentials | Use it for |
 |---|---|---|
-| `POST /durable-functions/{functionId}/executions` | Service key, auth user token, anon key | Applications starting work |
+| `POST /durable-functions/{functionId}/executions` | Service key; auth user token or anon key as the function's [visibility](#who-can-start-executions) allows | Applications starting work |
 | `POST /projects/{id}/durable-functions/{functionId}/executions` | Project owner token | Scripts and tooling already working against a project |
 
 They behave identically otherwise: the same body, the same idempotency header, the same `202` and handle. `volcano.durable.start` calls the first one.
 
 Everything else about an execution — reading it, listing, stopping — is on the project-scoped collection and takes the owner's token only. The SDK has `volcano.durable.get`, `.list` and `.stop` for those, but they carry the owner's token, so call them from a backend rather than a browser.
 
-### Public durable functions
+### Who can start executions
 
-Set `is_public` when you create a durable function to let an anon key start executions of it:
+A durable function has the same [visibility levels](creating-functions.md#choose-who-can-invoke-it)
+as a standard one, and they decide who may start executions on the application
+endpoint. New durable functions are `private`.
+
+Set `visibility` when you deploy the function. To let an anon key start executions:
 
 ```bash
 curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/durable-functions" \
@@ -293,7 +298,7 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/durable-functions" \
   -F "name=checkout" \
   -F "runtime=nodejs24.x" \
   -F "handler=handler" \
-  -F "is_public=true" \
+  -F "visibility=public" \
   -F "code=@function.zip"
 ```
 
@@ -303,6 +308,7 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/durable-functions" \
   "project_id": "b1d3f4a2-1c2d-4e5f-8a9b-0c1d2e3f4a5b",
   "name": "checkout",
   "status": "provisioning",
+  "visibility": "public",
   "is_public": true,
   "durable": {
     "execution_timeout_seconds": 31622400,
@@ -316,15 +322,15 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/durable-functions" \
 }
 ```
 
-The anon key also needs the `functions.invoke` permission. Without `is_public` an anon key gets `403`; without the permission it gets `403` whatever the visibility.
+The anon key also needs the `functions.invoke` permission; without it the key gets `403` whatever the visibility. On an `authenticated` function an anon key gets `403`. A `private` function answers every caller but a service key with `404`, the same answer as a missing one. `volcano.durable.start` calls this endpoint directly, so it gets the same answers.
 
-Durable functions have no update endpoint, so visibility travels with a deploy. Redeploy with `is_public` to change it, or omit the field to keep what the function already has.
+Durable functions have no update endpoint, so visibility travels with a deploy. Redeploy with `visibility` to change it, or omit the field to keep what the function already has. You can also set it in [`volcano-config.yaml`](../projects/configuration.md). `is_public` still works as a deprecated alias: `true` means `public` and `false` means `authenticated`, not `private`.
 
 Three things are worth being precise about:
 
 - **Public means startable, not readable.** An anon key ships inside your pages, so everyone who loads one holds it. Reading a result or stopping an execution stays with the owner's token — otherwise any visitor could poll or cancel work started by another, since an execution is addressed by its id alone. Return results to the browser through a function or endpoint of your own that decides who may see them.
 - **Public means startable, not invocable.** A durable function is never reachable through `POST /functions/{functionId}/invoke` or a function URL, whatever its visibility; both answer `404`. A synchronous call would run it with no execution record, no idempotency, no concurrency accounting and no pinned version, which is not a durable execution however much it looks like one.
-- **Anyone can start it.** A public durable function is startable by anyone who reads your anon key out of a page, and every start counts against your [execution and operation allowances](#limits-and-billing) and your concurrency cap — a caller who cannot see the result can still spend both. Validate the input inside the function and keep the payload small.
+- **Anyone can start it.** A public durable function is startable by anyone who reads your anon key out of a page. So is an `authenticated` one when your project allows [anonymous sign-ins](../authentication/anonymous-users.md), because anyone can get one of those tokens. Every start counts against your [execution and operation allowances](#limits-and-billing) and your concurrency cap — a caller who cannot see the result can still spend both. Validate the input inside the function and keep the payload small.
 
 ## Wait for the result
 

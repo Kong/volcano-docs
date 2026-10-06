@@ -85,7 +85,7 @@ See [Project access tokens](project-access-tokens.md) for the full security mode
 - Signin endpoint  
 - Refresh endpoint
 - Logout endpoint
-- Invoking functions marked `is_public: true` (requires `functions.invoke` permission)
+- Invoking functions whose `visibility` is `public` (requires `functions.invoke` permission)
 
 **Format:** JWT (project-scoped)
 
@@ -116,7 +116,7 @@ await volcano.auth.signUp({...});  // Uses anon key
 **Created:** Returned from signup/signin
 
 **Used for:**
-- Invoking functions (with user context)
+- Invoking functions whose `visibility` is `authenticated` or `public` (with user context)
 - Accessing user profile (`GET /auth/user`)
 - Updating profile (`PUT /auth/user`)
 
@@ -139,7 +139,7 @@ await volcano.auth.signUp({...});  // Uses anon key
 // After signin, SDK stores access token
 await volcano.auth.signIn({...});
 
-// Automatically used for function calls
+// Automatically used for function calls; the function must be authenticated or public
 await volcano.functions.invoke('my-function', {
   action: 'get_data'
 });
@@ -255,7 +255,7 @@ curl -X POST https://api.volcano.dev/databases/db-id/query/select \
 → Use **Anon Key**
 
 **Frontend calling functions (as user):**
-→ Use **Access Token** (from signin)
+→ Use **Access Token** (from signin); the function must be `authenticated` or `public`
 
 **Backend admin operations / cron jobs:**
 → Use **Service Key**

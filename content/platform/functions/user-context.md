@@ -62,6 +62,12 @@ exports.handler = async (event) => {
 
 ### Public Endpoints (Optional Auth)
 
+This pattern needs a `public` function: an anon-key call arrives without
+`__volcano_auth`, and a signed-in user's call carries it. An `authenticated`
+function never receives an anon-key call, and a `private` one answers user
+tokens with `404`, so it never sees `__volcano_auth`. See
+[visibility](creating-functions.md#choose-who-can-invoke-it).
+
 ```javascript
 exports.handler = async (event) => {
   if (event.__volcano_auth) {
@@ -296,19 +302,26 @@ exports.handler = async (event) => {
 
 ## When `__volcano_auth` is NOT Present
 
-The context is `undefined` when invoked with:
+The context is `undefined` when the function is invoked by:
 
-- **service key** (service-to-service calls)
-- **No Authorization** header
-- **Invalid token**
+- **a service key** (service-to-service calls)
+- **an anon key** (a `public` function called without a user token)
+- **a [Frontend Function route](../frontends/function-routes.md)**, even when
+  the visitor sends a valid token
+- **a request to an `http_auth_mode: none` endpoint**, which Volcano doesn't
+  authenticate; an `Authorization` header reaches the function as an ordinary
+  header
+
+A request with no credential or an invalid token never reaches a function that
+uses Volcano authentication: Volcano answers `401`.
 
 ```javascript
 exports.handler = async (event) => {
   if (!event.__volcano_auth) {
     // Could be:
     // 1. Service-to-service call (service key)
-    // 2. Unauthenticated request
-    // 3. Invalid/expired token
+    // 2. Anon key on a public function
+    // 3. Frontend Function route or http_auth_mode: none
     
     // Check if this is a valid use case
     // or return 401 Unauthorized

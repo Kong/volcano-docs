@@ -235,7 +235,7 @@ volcano.auth.onAuthStateChange((user) => {
 
 ### functions.invoke()
 
-Call a Volcano function with authentication.
+Call a Volcano function with authentication. A signed-in client can invoke functions whose [visibility](../../functions/creating-functions.md#choose-who-can-invoke-it) is `authenticated` or `public`; a `private` function returns a `404` error, as if it didn't exist.
 
 ```javascript
 const { data, status, headers, version, error } = await volcano.functions.invoke('get-posts', {

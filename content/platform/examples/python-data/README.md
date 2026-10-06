@@ -9,36 +9,36 @@ A function that processes data arrays and demonstrates environment variable usag
 
 ## Deploy
 
-1. Create a ZIP file:
-   ```bash
-   zip function.zip handler.py
-   ```
+Zip the handler and upload it. New functions are `private`, so only service
+keys could call this one; `visibility=authenticated` lets your project's
+signed-in users invoke it too.
 
-2. Base64 encode it:
-   ```bash
-   CODE=$(base64 -i function.zip)
-   ```
-
-3. Deploy using the API:
-   ```bash
-   curl -X POST http://localhost:8000/projects/{project-id}/functions \
-     -H "Content-Type: application/json" \
-     -d "{\"name\":\"dataProcessor\",\"code\":\"$CODE\",\"runtime\":\"python3.11\",\"handler\":\"handler.handler\"}"
-   ```
+```bash
+zip function.zip main.py
+curl -X POST https://api.volcano.dev/projects/PROJECT_ID/functions \
+  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -F "name=data-processor" \
+  -F "code=@function.zip" \
+  -F "runtime=python3.12" \
+  -F "visibility=authenticated"
+```
 
 ## Set Environment Variables
 
 ```bash
-curl -X POST http://localhost:8000/projects/{project-id}/variables \
+curl -X POST https://api.volcano.dev/projects/PROJECT_ID/variables \
+  -H "Authorization: Bearer PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name":"API_KEY","value":"my-secret-key"}'
 ```
 
 ## Invoke
 
+Call it with a signed-in user's access token:
+
 ```bash
-curl -X POST http://localhost:8000/functions/{function-id}/invoke \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+curl -X POST https://api.volcano.dev/functions/FUNCTION_ID/invoke \
+  -H "Authorization: Bearer USER_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"payload":{"data":["item1","item2","item3"]}}'
 ```

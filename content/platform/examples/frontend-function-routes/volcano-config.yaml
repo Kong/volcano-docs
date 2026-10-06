@@ -1,0 +1,16 @@
+# volcano-config.yaml
+version: 1
+functions:
+  - name: session
+    visibility: public
+    invocation_mode: http
+    variable_scope: scoped
+    variables:
+      - AUTH_API_URL
+      - AUTH_ANON_KEY
+frontends:
+  - name: web
+    function_routes:
+      - function: session
+        path_prefix: /api/session
+        strip_prefix: true

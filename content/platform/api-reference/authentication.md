@@ -33,7 +33,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 | Property | Value |
 |----------|-------|
-| Purpose | Invoking functions, accessing user profile |
+| Purpose | Invoking `authenticated` and `public` functions, accessing user profile |
 | Source | Signup/signin response (`access_token` field) |
 | Lifetime | 1 hour (configurable) |
 | Contains | user_id, email, project_id, role |

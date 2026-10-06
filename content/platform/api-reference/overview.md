@@ -266,6 +266,10 @@ here, and a durable function's id is `404` under `/projects/{id}/functions`. See
 | `POST` | `/projects/{id}/frontends/{frontendId}/redeploy` | Redeploy latest frontend artifact |
 | `DELETE` | `/projects/{id}/frontends/{frontendId}` | Delete/deprovision a frontend |
 | `GET` | `/projects/{id}/frontends/{frontendId}/deployments` | List frontend deployments |
+| `GET` | `/projects/{id}/frontends/{frontendId}/function-routes` | List a frontend's Function routes |
+| `POST` | `/projects/{id}/frontends/{frontendId}/function-routes` | Route a frontend path to a public HTTP function |
+| `PUT` | `/projects/{id}/frontends/{frontendId}/function-routes/{routeId}` | Replace a Function route |
+| `DELETE` | `/projects/{id}/frontends/{frontendId}/function-routes/{routeId}` | Delete a Function route |
 | `POST` | `/projects/{id}/logs/search` | Search and filter frontend runtime and deployment logs |
 
 See [Frontend Endpoints](frontend-endpoints.md) for details.

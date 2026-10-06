@@ -57,3 +57,11 @@ standard and [durable](durable-functions.md) functions together, and a create
 past the cap answers `403` as well.
 
 Scheduled invocations deliver your configured payload as the function event. Volcano also injects `__volcano_schedule` with `scheduler_id`, `run_id`, `job_id`, `project_id`, `target_id`, `job_type`, and `region` so functions can distinguish manual and scheduled invocations.
+
+## Account access holds
+
+Scheduled invocations and automatic runtime warming stop while the owner is
+inactive, pending account deletion, or restricted to read-only access by Billing.
+Missed occurrences are skipped and are not replayed when access is restored;
+the schedule resumes at its next occurrence. A plan-limit hold follows the
+plan’s existing traffic allowance rules.

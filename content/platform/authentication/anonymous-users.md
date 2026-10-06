@@ -77,6 +77,10 @@ const { user, session } = await volcano.auth.signUpAnonymous();
 const result = await volcano.functions.invoke('get-posts', {});
 ```
 
+Anonymous users invoke functions as signed-in users, so the function's
+[visibility](../functions/creating-functions.md#choose-who-can-invoke-it) must be
+`authenticated` or `public`. A `private` function answers `404`.
+
 ### In functions
 
 Anonymous users have a `role` of `anonymous` in the user context:

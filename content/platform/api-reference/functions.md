@@ -25,6 +25,7 @@ Authorization: Bearer <platform_token>
       "id": "func-uuid",
       "name": "my-function",
       "status": "active",
+      "visibility": "private",
       "is_public": false,
       "invocation_mode": "rpc",
       "http_auth_mode": "volcano",
@@ -108,7 +109,8 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/functions" \
 - `code` (required) - ZIP or `tar.gz` archive containing function source code plus dependency manifests/lockfiles
 - `runtime` (required) - Runtime environment
 - `handler` (optional) - Function name to invoke; defaults to `handler`
-- `is_public` (optional) - Function visibility; defaults to `false` for a new function
+- `visibility` (optional) - `private`, `authenticated`, or `public`; defaults to `private` for a new function, and a redeploy without it keeps the current level
+- `is_public` (optional, deprecated) - `true` means `public`, `false` means `authenticated`; must agree with `visibility` when both are sent
 - `invocation_mode` (optional) - `rpc` (default) or `http`
 - `http_auth_mode` (optional) - `volcano` (default) or `none`; `none` requires a public HTTP function
 - `openapi_spec` (optional) - JSON-encoded OpenAPI 3.0 or 3.1 document for HTTP-mode metadata
@@ -138,7 +140,10 @@ For direct API uploads, Volcano generates `.volcano/function-build.json` automat
 **Response:** 201 Created
 
 If a function with the same name already exists, the same endpoint updates that
-function's runtime, handler, and source bundle and returns `200 OK`.
+function's runtime, handler, and source bundle and returns `200 OK`. A redeploy
+that would take a function with Frontend Function routes out of `public` or
+HTTP mode answers `409` before anything deploys; see
+[Update Function Invocation Settings](#update-function-invocation-settings).
 
 Deployment and code update are asynchronous. A deployment that starts
 immediately returns `status: provisioning`, then transitions to `active` or
@@ -214,13 +219,18 @@ Content-Type: application/json
 
 **Token behavior:**
 - Service key: always allowed
-- Auth user access token: always allowed
-- Anon key: allowed only when both are true:
-  - key has `functions.invoke` permission
-  - function has `is_public: true`
+- Auth user access token: allowed when the function is `authenticated` or
+  `public`; `404` on a `private` function, the same answer as a missing one
+- Anon key: needs the `functions.invoke` permission (`403` without it, before
+  the function is looked up). Allowed on a `public` function; `403` on an
+  `authenticated` one; `404` on a `private` one
+
+SDK calls by name resolve the name first, and
+[resolve](#resolve-function-name) answers `404` to an anon key on any function
+that isn't `public`, so they see `404` where a call by id sees `403`.
 
 For an HTTP function with `http_auth_mode: none`, the DNS endpoint does not
-require a Volcano token. This mode is valid only with `is_public: true` and is
+require a Volcano token. This mode is valid only with `visibility: public` and is
 intended for webhooks that validate provider signatures inside the function.
 The direct `/functions/{functionId}/invoke` RPC endpoint remains authenticated.
 
@@ -295,10 +305,10 @@ Authorization: Bearer <service_key_or_access_token_or_anon_key>
 
 **Token behavior:**
 - Service key: allowed
-- Auth user access token: allowed
-- Anon key: allowed only when:
-  - key has `functions.invoke` permission
-  - function is public (`is_public: true`)
+- Auth user access token: allowed when the function is `authenticated` or
+  `public`; `404` on a `private` function, the same answer as a missing one
+- Anon key: needs the `functions.invoke` permission (`403` without it), and the
+  function must be `public`; any other answers `404`, as if it did not exist.
 
 **Response:**
 ```json
@@ -426,7 +436,7 @@ Content-Type: application/json
 **Request:**
 ```json
 {
-  "is_public": true,
+  "visibility": "public",
   "invocation_mode": "http",
   "http_auth_mode": "none",
   "openapi_spec": {
@@ -437,17 +447,27 @@ Content-Type: application/json
 }
 ```
 
-- `is_public: false` (default): private function, anon keys cannot invoke
-- `is_public: true`: public function, anon keys with `functions.invoke` can invoke
+- `visibility: private` (default for new functions): service keys and schedulers only
+- `visibility: authenticated`: also your project's signed-in users
+- `visibility: public`: also anon keys with `functions.invoke`
+- `is_public` (deprecated): `true` means `public`, `false` means `authenticated`
 - `invocation_mode: rpc`: POST-only `{ "payload": ... }` contract
 - `invocation_mode: http`: HTTP request-event contract on the DNS endpoint
 - `http_auth_mode: volcano`: Volcano token authentication
-- `http_auth_mode: none`: no Volcano token; requires `is_public: true` and HTTP mode
+- `http_auth_mode: none`: no Volcano token; requires `visibility: public` and HTTP mode
 - `openapi_spec`: optional OpenAPI 3.0/3.1 JSON metadata, up to 256 KiB; send `null` to clear
 
-> **Security note:** `is_public: true` alone still requires a token. Tokenless
-> access occurs only for the explicit `http` + `none` combination. Public
-> functions should always be treated as internet-facing endpoints.
+While a [Frontend Function route](../frontends/function-routes.md) targets the
+function, it must stay `public` and in HTTP mode. An update or redeploy that
+changes either answers `409`: `remove attached Frontend Function routes before
+making the function non-public`, or `remove attached Frontend Function routes
+before changing invocation mode`. A redeploy is checked before it starts, so a
+refused one deploys nothing.
+
+> **Security note:** Treat a `public` function as internet-facing. An anon key
+> ships in browser code, a [Frontend Function route](../frontends/function-routes.md)
+> forwards requests with no credential, and `http` + `none` serves its DNS
+> endpoint without a token.
 
 ## Function Status
 

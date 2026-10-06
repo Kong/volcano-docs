@@ -244,6 +244,7 @@ curl -X POST https://api.volcano.dev/projects/PROJECT_ID/functions \
 - `code` (required) - ZIP or `tar.gz` file containing the function source bundle
 - `runtime` (required) - Runtime environment (see table above)
 - `handler` (optional) - Entry point; defaults based on runtime
+- `visibility` (optional) - `private`, `authenticated`, or `public`; a new function defaults to `private`, and a redeploy without it keeps the current level. See [Choose who can invoke it](#choose-who-can-invoke-it)
 
 **Handler format:**
 You only need to specify the function name (e.g., `handler`). Volcano automatically packages your code with the standard filename for your language:
@@ -259,24 +260,89 @@ You only need to specify the function name (e.g., `handler`). Volcano automatica
   "status": "provisioning",
   "runtime": "nodejs24.x",
   "handler": "index.handler",
+  "visibility": "private",
+  "is_public": false,
   "created_at": "2024-01-01T00:00:00Z"
 }
 ```
 
 Status transitions: `provisioning` → `active` (usually 5-10 seconds).
 
-## Function visibility
+## Choose who can invoke it
 
-Functions are private by default (`is_public: false`).
+A function's `visibility` decides which credentials can invoke it. New functions
+are `private`.
 
-- `private`: can be invoked with a service key or auth user access token
-- `public`: can also be invoked with anon keys that include `functions.invoke`
+| Visibility | Service keys and schedulers | Your project's signed-in users | Anon keys with `functions.invoke` |
+| --- | --- | --- | --- |
+| `private` (default) | Yes | No | No |
+| `authenticated` | Yes | Yes | No |
+| `public` | Yes | Yes | Yes |
 
-In the GUI (`Functions` table), use the lock toggle to switch between private/public:
-- closed lock = private
-- open lock = public
+[Anonymous sign-ins](../authentication/anonymous-users.md) count as signed-in
+users for `authenticated`. If your project allows them, anyone can get a token
+that invokes an `authenticated` function. Check `event.__volcano_auth.role`
+before acting for a registered account; see [user context](user-context.md).
 
-When making a function public, treat it as internet-facing if your anon key is exposed in frontend code.
+Set it in `volcano-config.yaml` and run `volcano cloud config deploy`:
+
+```yaml
+# volcano-config.yaml
+version: 1
+functions:
+  - name: nightly-report
+    visibility: private
+  - name: notes-summary
+    visibility: authenticated
+  - name: contact-form
+    visibility: public
+```
+
+Or update one function through the API:
+
+```bash
+curl -X PATCH https://api.volcano.dev/projects/PROJECT_ID/functions/FUNCTION_ID \
+  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"visibility":"authenticated"}'
+```
+
+Or with the CLI:
+
+```bash
+volcano cloud functions update notes-summary --visibility authenticated
+```
+
+The function does not run for a caller its level does not admit:
+
+| Caller | Response |
+| --- | --- |
+| Signed-in user, `private` function | `404` `function not found` |
+| Anon key, `private` function | `404` `function not found` |
+| Anon key, `authenticated` function, by id | `403` `function is not public; anon keys can only invoke public functions` |
+| Anon key, `authenticated` function, by name through an SDK | `404` `function not found` |
+| Anon key without `functions.invoke`, any function | `403` `anon key does not have functions.invoke permission` |
+
+A `private` function answers exactly like one that doesn't exist, so signed-in
+users and visitors can't discover its name or id. If your app gets `404` from a
+function you deployed, check its visibility. The JavaScript, Python, and Ruby
+SDKs report it as a not-found error, and they remember a name that wasn't found
+for about 30 seconds, so a running client can keep getting not-found for that
+long after you widen the level.
+
+Treat a `public` function as internet-facing: anon keys ship in browser code.
+A [Frontend Function route](../frontends/function-routes.md) can only target a
+`public` function. While a route targets it, an update or redeploy that would
+take the function out of `public` or HTTP mode is refused with `409`, before
+anything deploys.
+
+`is_public` is a deprecated alias that requests and responses still carry:
+`true` means `public` and `false` means `authenticated`, not `private`. Functions
+created before `visibility` existed kept their behavior: `is_public: false`
+became `authenticated`, and functions targeted by a Frontend Function route
+became `public`. A manifest that still says `public: false` applies
+`authenticated` on every deploy; see
+[project configuration](../projects/configuration.md#reconciliation-semantics).
 
 ## Using environment variables
 

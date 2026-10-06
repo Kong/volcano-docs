@@ -19,13 +19,13 @@ Production-ready example showing how to use connection pooling with Volcano SDK 
 ## Performance Comparison
 
 **Without Pool (Simple Pattern):**
-```
+```text
 Request → Create connection (50-100ms) → Query (10ms) → Close → Response
 Total: ~60-110ms per request
 ```
 
 **With Pool (Production Pattern):**
-```
+```text
 Request → Get from pool (1-5ms) → Query (10ms) → Release → Response
 Total: ~11-15ms per request
 ```
@@ -69,14 +69,22 @@ CREATE TRIGGER set_user_id_trigger
 
 ### 2. Deploy Function
 
-```bash
-# Zip source and dependency manifests.
-# Volcano installs dependencies during the function build.
-zip -r function.zip index.js package.json package-lock.json
+The browser calls this function as the signed-in user, so deploy it with
+`visibility=authenticated`. New functions are `private`, which answers user
+tokens with `404`. Volcano installs the dependencies in `package.json` during the build.
 
-# Deploy via Volcano
-# (Set DATABASE_URL as environment variable in Volcano)
+```bash
+zip -r function.zip index.js package.json
+curl -X POST https://api.volcano.dev/projects/PROJECT_ID/functions \
+  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -F "name=posts" \
+  -F "code=@function.zip" \
+  -F "runtime=nodejs24.x" \
+  -F "handler=index.handler" \
+  -F "visibility=authenticated"
 ```
+
+Then set the [environment variables](#environment-variables) it reads.
 
 ### 3. Usage
 
@@ -93,7 +101,7 @@ const volcano = new VolcanoAuth({
 await volcano.auth.signIn({ email, password });
 
 // Get posts (calls the function, which queries the database)
-const result = await volcano.functions.invoke('get-posts-function-id', {
+const result = await volcano.functions.invoke('posts', {
   action: 'get_posts',
   filter: 'recent'
 });
@@ -101,7 +109,7 @@ const result = await volcano.functions.invoke('get-posts-function-id', {
 console.log('Posts:', result.posts);
 
 // Create post
-await volcano.functions.invoke('get-posts-function-id', {
+await volcano.functions.invoke('posts', {
   action: 'create_post',
   title: 'My First Post',
   content: 'Hello World!'

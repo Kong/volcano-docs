@@ -20,7 +20,7 @@ manifest.
 
 [GitHub auto-deploy](git-deploy.md) reads the same file from your repository,
 but applies only the `functions[]` settings that belong to the code a push
-deploys: `public`, `invocation_mode`, `http_auth_mode`, `openapi_spec`,
+deploys: `visibility`, `invocation_mode`, `http_auth_mode`, `openapi_spec`,
 `variable_scope`, and `variables`. Every other section still needs `volcano
 config deploy`.
 
@@ -177,7 +177,7 @@ auth:
 functions:                                  # must already be deployed
   - name: hello
     kind: standard                          # standard (default) or durable; fixed at creation
-    public: true                            # anon-key invocation; anon-key start for durable
+    visibility: public                      # private, authenticated, or public; omit to keep the current level
     invocation_mode: http                  # rpc (default) or http
     http_auth_mode: none                   # volcano (default) or none; none requires public
     openapi_spec:                          # optional OpenAPI 3.0/3.1 metadata; HTTP mode only
@@ -197,7 +197,7 @@ frontends:                                  # must already be deployed
   - name: web
     variable_scope: shared                  # all (default), shared, or scoped
     function_routes:                        # fully synced when declared
-      - function: hello                     # standard HTTP-mode function
+      - function: hello                     # public standard HTTP-mode function
         path_prefix: /api                   # exact segment prefix; /api or /api/...
         strip_prefix: true                  # function receives / for /api
     custom_domain:                          # SUPERAGENT; BYOC TLS only
@@ -225,20 +225,37 @@ response that created it. Manage them through
 - **Patch semantics within entries.** An omitted optional field keeps its
   current server value (for example a bucket entry with only
   `file_size_limit` leaves `allowed_mime_types` alone).
+- **Function visibility.** `visibility` is `private`, `authenticated`, or
+  `public`; see
+  [who can invoke a function](../functions/creating-functions.md#choose-who-can-invoke-it).
+  Omitting it keeps the current level. `public` is a deprecated alias that
+  still applies: `public: true` means `public` and `public: false` means
+  `authenticated`, not `private`. A manifest that sets both must make them
+  agree. Export writes `visibility` and never `public`.
+  Exports made before `visibility` existed wrote `public: false`, and an entry
+  that still says so applies `authenticated` on every deploy and every push. To
+  keep the function `private`, replace it with `visibility: private`;
+  `volcano cloud config pull` writes `visibility` for every function.
 - **Function invocation metadata.** `invocation_mode`, `http_auth_mode`, and
-  `openapi_spec` use the same validation as `volcano functions update`.
+  `openapi_spec` use the same validation as
+  `PATCH /projects/{id}/functions/{functionId}`.
   Unauthenticated HTTP ingress (`http_auth_mode: none`) is allowed only when
-  the function is public. Changing such a function to private implicitly
+  the function is `public`. Moving such a function off `public` implicitly
   restores `http_auth_mode: volcano` when the auth mode is omitted.
 - **Frontend Function routes.** Declaring `frontends[].function_routes` fully
   syncs the same-origin path mappings for that frontend; routes absent from the
   list are deleted. Omitting the key preserves existing routes, while
   `function_routes: []` deletes them all. Targets must be deployed standard
-  Functions configured with `invocation_mode: http`. A route works on both the
+  Functions with `visibility: public` and `invocation_mode: http`; one apply
+  can set both on the function and add the route, and a route to a function
+  that stays non-public is a validation error. A function that keeps a route
+  cannot be made non-public or moved to `rpc` unless the same apply removes
+  that route through the frontend's `function_routes`. A route works on both the
   generated frontend hostname (including preview deployments) and a custom
   domain because routing follows the resolved frontend rather than the domain.
-  An apply may remove a function's routes and change it to `rpc` together;
-  Volcano removes the routes before changing the invocation mode.
+  An apply may remove a function's routes and change its visibility or mode
+  together; Volcano removes the routes before changing the function. See
+  [Frontend Function routes](../frontends/function-routes.md).
 - **Function kind is asserted, never written.** `kind` is fixed when a function
   is created, so the manifest compares it and reports an error when it
   disagrees with the deployed function. Omitting it means `standard`, so name
@@ -249,8 +266,8 @@ response that created it. Manage them through
   `http_auth_mode`, and `openapi_spec` describe synchronous HTTP invocation,
   which a durable function does not have — it is started through its executions
   collection. Declaring one on a durable function is a validation error, and an
-  export never writes them. `public` still applies: on a durable function it
-  lets an anon key start executions. See
+  export never writes them. `visibility` still applies: it decides who may
+  start executions. See
   [Durable functions](../functions/durable-functions.md).
 - **Shared variables.** `shared_variables: [LOG_LEVEL]` replaces the complete
   shared list using existing names only. Omission keeps membership; `[]` clears
