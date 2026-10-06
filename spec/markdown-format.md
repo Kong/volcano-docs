@@ -97,7 +97,9 @@ Functions are serverless code that runs on AWS Lambda...
 
 Frontmatter is validated against [`frontmatter.schema.json`](frontmatter.schema.json).
 CI fails the sync on: missing `title`/`description`, an H1 in the body, a
-fenced block with no language, or a non-kebab-case filename.
+fenced block with no language, or a non-kebab-case filename. The sync also
+refuses any symlink on or under a synced path; commit a copy of the file
+instead.
 
 ## Adapter responsibilities
 

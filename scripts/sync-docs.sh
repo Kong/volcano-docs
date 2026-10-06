@@ -13,6 +13,7 @@ CONFIG="docs.config.yaml"
 ONLY="${ONLY:-}"
 TOKEN="${GH_TOKEN:-}"
 
+scripts_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
@@ -40,6 +41,13 @@ for i in $(seq 0 $((n - 1))); do
   # sources' updates around them).
   if [ ! -d "$src" ]; then
     echo "::error::sync source not found: $repo '$path' at $ref" >&2
+    exit 1
+  fi
+  # Synced docs are untrusted input and the sync PR auto-merges. cp -R keeps
+  # symlinks and the build follows them, so refuse any on or under the source
+  # path. Also checked before the destination is touched.
+  if ! (cd "$clone" && bash "$scripts_dir/refuse-symlinks.sh" "$path"); then
+    echo "::error::refusing to sync $repo '$path' at $ref: see the symlink errors above" >&2
     exit 1
   fi
   rm -rf "$dest"

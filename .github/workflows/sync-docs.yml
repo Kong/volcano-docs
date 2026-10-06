@@ -91,9 +91,10 @@ jobs:
           node-version-file: .nvmrc
 
       - name: Validate synced docs (fail before committing)
-        # Same gate as PR CI: format lint, route-aware link check, real build.
-        # A broken sync fails here and never opens/merges a PR.
+        # Same gate as PR CI: no symlinks, format lint, route-aware link check,
+        # real build. A broken sync fails here and never opens/merges a PR.
         run: |
+          bash scripts/refuse-symlinks.sh content public
           corepack enable
           pnpm install --frozen-lockfile
           pnpm lint:docs content
