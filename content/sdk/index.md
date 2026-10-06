@@ -10,7 +10,7 @@ Choose your language and follow its authentication quickstart.
 | --- | --- | --- |
 | JavaScript and TypeScript | Browsers or Node.js 20 and later | [JavaScript quickstart](./js/getting-started.md) |
 | Python | Python 3.11 and later | [Python quickstart](./python/index.md) |
-| Ruby | Ruby 3.2 and later | [Ruby quickstart](./ruby/index.md) |
+| Ruby | Ruby 3.3 and later | [Ruby quickstart](./ruby/index.md) |
 
 All three SDKs cover authentication, database queries and mutations, storage, function invocation, starting durable functions, logs, distributed locks, and realtime events. JavaScript and Python can also author durable functions.
 JavaScript returns result envelopes; Python and Ruby raise typed exceptions.
