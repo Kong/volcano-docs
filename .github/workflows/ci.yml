@@ -23,6 +23,12 @@ jobs:
         with:
           persist-credentials: false
 
+      # The build and search index follow symlinks, so one could pull files
+      # from outside content/ into the public site. The sync refuses them
+      # (scripts/sync-docs.sh); this stops a hand-made PR from adding one.
+      - name: Refuse symlinks in content and public
+        run: bash scripts/refuse-symlinks.sh content public
+
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .nvmrc
