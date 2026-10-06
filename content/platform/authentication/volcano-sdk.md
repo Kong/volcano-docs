@@ -368,6 +368,8 @@ await volcano.auth.deleteAllOtherSessions();
 
 ### Function invocation
 
+A signed-in client can invoke functions whose [visibility](../functions/creating-functions.md#choose-who-can-invoke-it) is `authenticated` or `public`. New functions are `private` and return `404`, as if they didn't exist.
+
 ```javascript
 const { data, error } = await volcano.functions.invoke('get-data', {
   action: 'get_data',

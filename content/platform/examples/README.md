@@ -41,6 +41,21 @@ yarn dev
 
 ---
 
+### 🍪 frontend-function-routes (Next.js + Function routes)
+**Cookie sessions on your own origin.** A Next.js page signs users in through a
+`public` HTTP function that the frontend serves at `/api/session`, and the
+function keeps the tokens in `HttpOnly` cookies.
+
+**Features:**
+- Frontend Function route declared in `volcano-config.yaml`
+- `__Host-` session cookies the page can't read
+- CSRF token on every state change
+
+See [frontend-function-routes](frontend-function-routes/README.md) and the
+[Frontend Function routes guide](../frontends/function-routes.md).
+
+---
+
 ### 🐍 python-data
 **Python function example** showing data processing.
 

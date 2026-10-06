@@ -375,7 +375,7 @@ configured frontend. It does not apply the rest of your project configuration.
 |---------|------------------|------------------|
 | Function source | Yes | Push |
 | Frontend source | Yes | Push |
-| Function invocation settings (`public`, modes, OpenAPI metadata) | Yes, from `volcano-config.yaml` | Push, or `volcano config deploy` |
+| Function invocation settings (`visibility`, modes, OpenAPI metadata) | Yes, from `volcano-config.yaml` | Push, or `volcano config deploy` |
 | Function kind (`standard` or `durable`) | Yes, from `volcano-config.yaml`, on the push that creates it | Fixed once created |
 | Function variable scope (`variable_scope`, `variables`) | Yes, from `volcano-config.yaml` | Push, or `volcano config deploy` |
 | Variables, buckets, auth, OAuth, email templates, schedulers, databases | No | `volcano config deploy` — see the [configuration manifest](configuration.md) |
@@ -394,7 +394,7 @@ deploys: function kind, visibility, invocation/auth modes, and OpenAPI metadata:
 version: 1
 functions:
   - name: hello
-    public: true
+    visibility: public
     invocation_mode: http
     http_auth_mode: none
     openapi_spec:
@@ -424,10 +424,12 @@ your repository does not describe, and no later push could correct it.
 Invocation settings are current function state, not properties of a code version:
 the declared values take effect when Volcano processes the push, before any code
 deploys and regardless of whether that code deploy later succeeds. That is the
-same behavior as `volcano config deploy` and
-`volcano functions update <name> --public`, which also flip it immediately. A
-function the commit creates gets its declared settings as the function is
-created.
+same behavior as `volcano cloud config deploy` and
+`volcano cloud functions update <name> --visibility <level>`, which also flip it
+immediately. A function the commit creates gets its declared settings as the
+function is created. A push that would take a function with
+[Frontend Function routes](../frontends/function-routes.md) out of `public` or
+HTTP mode is refused before anything deploys; remove the routes first.
 
 Precedence is fixed: the project's deploy settings decide **whether** a resource
 deploys, and the manifest fills in **details** for the resources that do. A
@@ -551,9 +553,17 @@ supported source file.
 `package.json` at `root_directory` + `frontend_app_root`. A configured frontend
 that is not found in the source is skipped, not failed.
 
-**A function deployed private.** Add it to `volcano-config.yaml` with
-`public: true`, or set visibility through the API. New functions default to
-private.
+**Signed-in users or anon keys get `404` from a function you deployed.** New
+functions are `private`, which admits only service keys and schedulers and
+looks missing to everyone else. An anon key on an `authenticated` function gets
+`403` when it invokes by id, and `404` when it calls by name through an SDK.
+Declare the level the function needs in `volcano-config.yaml`, such as
+`visibility: authenticated` for functions your signed-in pages call, or set it
+through the API. An entry that still says `public: false` sets `authenticated`
+on every push; use `visibility: private` to keep a function private. The SDKs
+remember a name that wasn't found for about 30 seconds, so a running client can
+keep getting not-found for that long after you widen the level. See
+[who can invoke a function](../functions/creating-functions.md#choose-who-can-invoke-it).
 
 ## Related
 

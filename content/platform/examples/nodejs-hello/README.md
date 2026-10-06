@@ -9,28 +9,28 @@ This is a simple function that demonstrates the Volcano platform.
 
 ## Deploy
 
-1. Create a ZIP file:
-   ```bash
-   zip function.zip index.js
-   ```
+From `volcano/functions`, zip the handler and upload it. New functions are
+`private`, so only service keys could call this one; `visibility=authenticated`
+lets your project's signed-in users invoke it too.
 
-2. Base64 encode it:
-   ```bash
-   CODE=$(base64 -i function.zip)
-   ```
-
-3. Deploy using the API:
-   ```bash
-   curl -X POST http://localhost:8000/projects/{project-id}/functions \
-     -H "Content-Type: application/json" \
-     -d "{\"name\":\"helloWorld\",\"code\":\"$CODE\",\"runtime\":\"nodejs24.x\",\"handler\":\"index.handler\"}"
-   ```
+```bash
+zip function.zip index.js
+curl -X POST https://api.volcano.dev/projects/PROJECT_ID/functions \
+  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -F "name=hello-world" \
+  -F "code=@function.zip" \
+  -F "runtime=nodejs24.x" \
+  -F "handler=index.handler" \
+  -F "visibility=authenticated"
+```
 
 ## Invoke
 
+Call it with a signed-in user's access token:
+
 ```bash
-curl -X POST http://localhost:8000/functions/{function-id}/invoke \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+curl -X POST https://api.volcano.dev/functions/FUNCTION_ID/invoke \
+  -H "Authorization: Bearer USER_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"payload":{"name":"Volcano"}}'
 ```

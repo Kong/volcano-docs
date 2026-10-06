@@ -18,9 +18,11 @@ Every function has an invocation contract:
 
 HTTP mode has a separate `http_auth_mode`:
 
-- `volcano` (default) requires an auth-user token, service key, or permitted anon key.
+- `volcano` (default) requires a service key, or an auth-user token or permitted
+  anon key that the function's [visibility](creating-functions.md#choose-who-can-invoke-it)
+  admits.
 - `none` skips Volcano authentication so third-party webhooks can reach the
-  function. It is valid only when `is_public` is also `true`; your function must
+  function. It is valid only when `visibility` is `public`; your function must
   verify the provider's signature or application credential.
 
 Configure an existing function with the management API:
@@ -30,7 +32,7 @@ curl -X PATCH "https://api.volcano.dev/projects/$PROJECT_ID/functions/$FUNC_ID" 
   -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "is_public": true,
+    "visibility": "public",
     "invocation_mode": "http",
     "http_auth_mode": "none",
     "openapi_spec": {
@@ -49,15 +51,18 @@ document to route or validate runtime requests.
 
 Invocation metadata is control-plane configuration, so switching back does not
 redeploy or replace the function runtime. Patch the function back to `rpc`; Volcano
-atomically restores `http_auth_mode: volcano` and clears `openapi_spec`. Making
-the function private at the same time closes anon-key access as well. Remove any
-Frontend Function routes attached to the function before switching it to `rpc`:
+atomically restores `http_auth_mode: volcano` and clears `openapi_spec`. Moving
+the function off `public` at the same time closes anon-key access as well.
+
+Remove any Frontend Function routes attached to the function first. While a
+route targets it, the function must stay `public` and in HTTP mode, and this
+update answers `409`. Then patch it:
 
 ```bash
 curl -X PATCH "https://api.volcano.dev/projects/$PROJECT_ID/functions/$FUNC_ID" \
   -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"is_public":false,"invocation_mode":"rpc"}'
+  -d '{"visibility":"authenticated","invocation_mode":"rpc"}'
 ```
 
 After the update, the DNS endpoint again accepts only `POST /` with the
@@ -67,53 +72,9 @@ same RPC/Volcano defaults.
 
 ## Mount an HTTP Function on a Frontend path
 
-A Frontend can route a path prefix directly to an HTTP-mode Function. This is
-useful for same-origin web and billing APIs, and it lets a private Function act
-as an authentication backend without adding a browser SDK:
-
-```bash
-curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/frontends/$FRONTEND_ID/function-routes" \
-  -H "Authorization: Bearer $PLATFORM_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "{\"function_id\":\"$FUNC_ID\",\"path_prefix\":\"/api/auth\",\"strip_prefix\":true}"
-```
-
-The Frontend and Function must belong to the same project, and the Function
-must use HTTP invocation mode. The Function may remain private because only the
-trusted Frontend route bypasses its public Function-DNS authentication. With
-`strip_prefix: true`, a request to `/api/auth/signin` reaches the Function as
-`/signin`; query parameters, request headers, body bytes, and cookies are
-preserved.
-
-Routes belong to the Frontend rather than to a particular hostname. They apply
-equally to its generated hostname, custom domain, local generated hostname, and
-any preview hostname that resolves to that Frontend. Responses are always
-marked `Cache-Control: private, no-store`. A Frontend can have up to 64 Function
-routes.
-
-To issue same-origin sessions, return each cookie as a separate `Set-Cookie`
-value. Omit `Domain` to make it host-only, use `HttpOnly` and `SameSite=Lax` (or
-the policy your application requires), and add `Secure` when
-`event.request_context.scheme` is `https`. For example:
-
-```javascript
-return {
-  statusCode: 200,
-  multiValueHeaders: {
-    'Set-Cookie': [
-      `volcano_access=${accessToken}; Path=/; HttpOnly; Secure; SameSite=Lax`,
-      `volcano_refresh=${refreshToken}; Path=/api/auth; HttpOnly; Secure; SameSite=Lax`
-    ]
-  },
-  body: JSON.stringify({ signed_in: true })
-};
-```
-
-In local mode, use the Frontend URL returned by Volcano, such as
-`http://FRONTEND_ID.frontends.localhost:8080`. Local HTTP cookies must omit
-`Secure`. A development server at `http://localhost:3000` does not pass through
-Volcano ingress by itself; configure that server to proxy `/api/auth` to the
-local Frontend URL if you want to keep using port 3000.
+A frontend can send a path prefix, such as `/api/session`, to a `public`
+HTTP-mode function, so your web app calls it on its own origin and can keep
+sessions in cookies. See [Frontend Function routes](../frontends/function-routes.md).
 
 ## Two ways to consume an RPC function
 
@@ -147,7 +108,14 @@ curl -X POST "$INVOKE_URL" \
 
 ## Invocation methods by token type
 
-Functions are **private by default** (`is_public: false`).
+Which tokens a function accepts depends on its
+[visibility](creating-functions.md#choose-who-can-invoke-it). New functions are
+`private`: only service keys and schedulers can invoke them until you set
+`authenticated` or `public`.
+
+In local mode, a request with no `Authorization` header is treated as the local
+service key, so it reaches every function. Send a user's access token or an
+anon key to see the refusals your app will get in the cloud.
 
 ### With service key (admin/background)
 
@@ -256,7 +224,8 @@ reserialize it first.
 
 ### With auth user token (user context)
 
-For user-facing operations:
+For user-facing operations. The function must be `authenticated` or `public`;
+a `private` function answers `404`, as if it didn't exist.
 
 ```bash
 curl -X POST "$INVOKE_URL" \
@@ -291,11 +260,13 @@ curl -X POST "$INVOKE_URL" \
 ```
 
 Requirements:
-- Function must be public (`is_public: true`)
+- Function `visibility` must be `public`
 - Anon key must include `functions.invoke` permission
 
-> **Security note:** Public functions still require a valid anon key, but anon keys are usually embedded in frontend apps.  
-> If your frontend exposes the anon key, treat `is_public: true` functions as internet-facing endpoints.
+> **Security note:** Treat a `public` function as internet-facing. An anon key
+> ships in browser code, a [Frontend Function route](../frontends/function-routes.md)
+> forwards requests with no credential, and `http` + `none` serves its DNS
+> endpoint without a token.
 
 Everything on this page is about standard functions. A [durable function](durable-functions.md) is not invocable through any of these: it answers `404` on this endpoint and on a function URL, whatever its visibility, because it runs as an execution you start and then poll.
 
@@ -496,6 +467,17 @@ event.__volcano_auth = {
 
 ## Using frontend SDK
 
+A signed-in client can invoke `authenticated` and `public` functions. Set the
+level in `volcano-config.yaml` for every function your pages call:
+
+```yaml
+# volcano-config.yaml
+version: 1
+functions:
+  - name: get-data
+    visibility: authenticated
+```
+
 ```javascript
 const volcano = new VolcanoAuth({...});
 
@@ -517,8 +499,14 @@ console.log(result.data);     // Parsed response body
 | Status | Description |
 |--------|-------------|
 | 401 Unauthorized | Missing Authorization header, invalid token, or token for wrong project |
-| 404 Not Found | Function doesn't exist in your project |
+| 403 Forbidden | Anon key without `functions.invoke`: `anon key does not have functions.invoke permission` |
+| 403 Forbidden | Anon key invoking an `authenticated` function by id: `function is not public; anon keys can only invoke public functions` |
+| 404 Not Found | Function doesn't exist in your project; is `private` and the caller isn't a service key; or an anon key calls a non-`public` function by name through an SDK |
 | 503 Service Unavailable | Function still provisioning; check status and retry |
+
+An SDK reports these `404`s as a not-found error, and may keep doing so for
+about 30 seconds after you widen a function's visibility. See
+[Choose who can invoke it](creating-functions.md#choose-who-can-invoke-it).
 
 ## What's next
 

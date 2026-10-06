@@ -1,29 +1,42 @@
 ---
-title: Delete your account
-description: Permanently close your Volcano account and delete its cloud resources.
+title: Delete or keep your account
+description: Stop account resources and automatic payments, with 30 days to change your mind.
 ---
 
-Open **Settings → Your account → Delete my account**, read the warning, and
-confirm **Delete my account**.
+Open **Settings → Your account → Delete my account** and confirm the request.
+Volcano stops serving your projects, revokes existing sign-in sessions and access
+tokens, turns off automatic credit recharge, and stops subscription renewal.
+Running work finishes within its runtime limits. Your account then has a 30-day
+recovery period, with the exact deletion date shown in the confirmation.
 
-Deletion is final. You immediately lose access and cannot reactivate the
-account. Volcano turns off subscription renewal and automatic recharge, so
-your current subscription term is the last term. Previous payments are not
-refunded, and charges already incurred remain payable.
+## Keep your account within 30 days
 
-Volcano schedules your cloud resources and their application data for deletion
-within 30 days. Your deactivated account and its metadata, financial
-transactions, and related usage records required for billing and financial
-reporting are retained. Data stored on your own machine is unaffected.
+Sign in using your existing email or OAuth provider and choose **Restore my account**
+in the confirmation dialog. After recovery succeeds, you continue to the page you
+were opening. Choose **Log out** to leave deletion scheduled.
+Signing in alone does not cancel deletion. Your existing account and retained data
+are restored. Previously revoked access tokens stay revoked; create new tokens
+when needed. Automatic recharge and subscription renewal remain off until you
+explicitly enable them again.
 
-A success message appears after access is disabled and renewal cancellation
-is recorded. If completion cannot be confirmed, the operation may already be
-in progress; Volcano retries interrupted processing. Contact Support if you
-need help confirming the outcome. Support cannot reactivate a deleted account.
+Credit arrears and other billing restrictions still apply. An account with unpaid
+credits returns in `read_only` status. Administrative restrictions also remain.
 
-## Request your personal data
+## After the recovery period
 
-Choose **Request my data** before closing your account. Support handles the
-export while archive contents are being defined. Save the request reference
-for follow-up; your recent data-request reference also appears after refreshing
-the account page.
+Once the deadline passes, you cannot restore the account. Volcano marks its auth
+user `deleted`, releases email and OAuth bindings, and queues its resources for
+permanent removal. After bindings are released, you can register a new account
+using the same email or provider. It receives a new user ID and does not inherit
+old resources, subscriptions, or credit balance.
+
+Deletion does not refund previous payments or forgive existing debt. Retained
+storage may incur charges during the recovery period. Financial and usage records
+remain associated with the old account for reconciliation.
+
+If shutdown or payment cancellation cannot finish immediately, Volcano retries
+and displays a pending state. Once a deletion date is confirmed, you can still
+restore your account before that date while shutdown retries continue. Remaining
+automatic-payment cancellation finishes in the background; payment changes become
+available when it completes. Contact Support if the request remains pending.
+Accounts deleted under the earlier irreversible policy cannot be recovered.

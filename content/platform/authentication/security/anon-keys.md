@@ -116,7 +116,7 @@ Each anon key has a set of permissions that control what operations it allows. B
 | **Realtime** | `realtime.connect` | Allow connecting to realtime WebSocket |
 | **Realtime** | `realtime.subscribe` | Allow subscribing to realtime channels |
 | **Realtime** | `realtime.publish` | Allow publishing messages to broadcast channels |
-| **Functions** | `functions.invoke` | Allow invoking functions marked `is_public: true` |
+| **Functions** | `functions.invoke` | Allow invoking functions whose `visibility` is `public` |
 
 ### Default permissions
 
@@ -174,9 +174,9 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/anon-keys" \
 - **Auth endpoints**: Check the relevant auth permission (e.g., `auth.signup` for `/auth/signup`)
 - **Storage endpoints**: Check the relevant storage permission (e.g., `storage.upload` for file uploads)
 - **Realtime connections**: Check `realtime.connect` on WebSocket connection, `realtime.subscribe` on channel subscription, `realtime.publish` on message publishing
-- **Function invocation**: Check `functions.invoke` permission and require target function `is_public: true`
+- **Function invocation**: Check `functions.invoke` permission and require the target function's `visibility` to be `public`
 
-If an anon key doesn't have the required permission, the request is rejected with a 403 Forbidden error.
+If an anon key doesn't have the required permission, the request is rejected with a 403 Forbidden error. A function that isn't `public` answers an anon key with `403` when invoked by id on an `authenticated` function, and `404` otherwise; see [who can invoke a function](../../functions/creating-functions.md#choose-who-can-invoke-it).
 
 ## Anon key vs service key
 
@@ -205,7 +205,7 @@ With additional permissions configured:
 - Upload, download, list, and delete files (storage permissions)
 - Connect to WebSocket and subscribe/publish to channels (realtime permissions)
 - Invoke functions (`functions.invoke`)
-  - Only for functions explicitly marked public (`is_public: true`)
+  - Only for functions whose `visibility` is `public` ([function visibility](../../functions/creating-functions.md#choose-who-can-invoke-it))
 
 ## What anon keys cannot do
 

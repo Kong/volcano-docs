@@ -91,6 +91,7 @@ Response includes:
 - `custom_domain` (when configured)
 - `custom_domain_status` (when configured)
 - `current_deployment_id` (latest deployment operation ID for logs/status)
+- `function_routes` (the frontend's [Function routes](#function-routes), most specific first; also in each item of the list response)
 
 Frontend status values:
 - `provisioning`: a deployment is building or provisioning.
@@ -173,6 +174,67 @@ Notes:
 
 Removes custom-domain configuration from the frontend and frees shard capacity.
 Returns `204` when the detach request is queued successfully.
+
+## Function routes
+
+Send every request under a path of the frontend to a `public` HTTP-mode
+function. See [Frontend Function routes](../frontends/function-routes.md) for
+how matching works and how to keep sessions in cookies.
+
+### Create a route
+
+`POST /projects/{project_id}/frontends/{frontend_id}/function-routes`
+
+```bash
+curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/frontends/$FRONTEND_ID/function-routes" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"function_id":"9a3e5c71-0b2d-4f6e-8c1a-7d4b2e9f0a13","path_prefix":"/api/session","strip_prefix":true}'
+```
+
+JSON body:
+- `function_id` (required): a standard function in the same project with `visibility: public` and `invocation_mode: http`.
+- `path_prefix` (required): starts with `/`, isn't `/` alone, doesn't end with `/`, and is at most 512 bytes.
+- `strip_prefix` (optional, default `false`): remove the prefix from the path the function sees.
+
+Returns `201` with the route:
+
+```json
+{
+  "id": "6f1c2a9e-3b0d-4a51-9a39-0c6f2f1e8d42",
+  "project_id": "c4e8a1f2-7d3b-4e9a-b6c0-1f2e3d4c5b6a",
+  "frontend_id": "2d6b1c0e-8f4a-4b7e-9d3a-5e1f0c2b7a64",
+  "function_id": "9a3e5c71-0b2d-4f6e-8c1a-7d4b2e9f0a13",
+  "path_prefix": "/api/session",
+  "strip_prefix": true,
+  "created_at": "2026-10-01T12:00:00Z",
+  "updated_at": "2026-10-01T12:00:00Z"
+}
+```
+
+Errors:
+- `400`: the path prefix is invalid, or the function is durable or not in HTTP mode.
+- `404`: the frontend or function isn't in the project.
+- `409`: the path is already routed, the frontend has 64 routes, or the function isn't `public`.
+
+### List routes
+
+`GET /projects/{project_id}/frontends/{frontend_id}/function-routes`
+
+Returns `{"data": [...]}` with the routes ordered from most to least specific.
+
+### Replace a route
+
+`PUT /projects/{project_id}/frontends/{frontend_id}/function-routes/{route_id}`
+
+Takes the same body as create and replaces the route's target, path, and prefix
+handling. The new target must meet the same rules. Returns `200` with the route.
+
+### Delete a route
+
+`DELETE /projects/{project_id}/frontends/{frontend_id}/function-routes/{route_id}`
+
+Returns `204`.
 
 ## List Frontend Deployments
 

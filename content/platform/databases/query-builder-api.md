@@ -937,7 +937,7 @@ exports.handler = async (event) => {
   return { statusCode: 200, body: JSON.stringify({ posts: rows }) };
 };
 
-// Call from frontend
+// Call from the browser as a signed-in user; the function's visibility must be authenticated or public
 const result = await volcano.functions.invoke('get-popular-posts', {});
 ```
 

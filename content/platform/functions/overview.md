@@ -32,7 +32,7 @@ Functions:
 - Scale automatically based on demand
 - Run only when invoked (no idle costs)
 - Can access databases with user context
-- Receive authenticated user identity when invoked with user tokens
+- Receive the user's identity when a signed-in user invokes them, once their [visibility](creating-functions.md#choose-who-can-invoke-it) admits signed-in users
 - Can be invoked automatically on a cron schedule with [scheduled invocations](scheduled-invocations.md)
 
 Work that runs longer than one invocation allows, or that has to wait on something, belongs in a [durable function](durable-functions.md) instead. Those checkpoint their progress and resume from the last completed step.
@@ -170,7 +170,7 @@ const dbUrl = process.env.DATABASE_URL;
 
 ## User context
 
-When a function is invoked with a user's access token, it receives the user's identity in `event.__volcano_auth`:
+When a function is invoked with a user's access token, it receives the user's identity in `event.__volcano_auth`. The function's [visibility](creating-functions.md#choose-who-can-invoke-it) must be `authenticated` or `public`; new functions are `private` and answer user tokens with `404`.
 
 ```javascript
 exports.handler = async (event) => {

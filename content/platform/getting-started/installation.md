@@ -18,14 +18,14 @@ brew install Kong/volcano/volcano
 
 **Linux:**
 ```bash
-curl -fsSL https://github.com/Kong/volcano-cli/releases/latest/download/install.sh | bash
+curl -fsSL https://download.volcano.dev/builds/install.sh | bash
 ```
 
 **Or download directly:**
-- [macOS (Intel)](https://github.com/Kong/volcano-cli/releases/latest/download/volcano-macos-amd64)
-- [macOS (Apple Silicon)](https://github.com/Kong/volcano-cli/releases/latest/download/volcano-macos-arm64)
-- [Linux](https://github.com/Kong/volcano-cli/releases/latest/download/volcano-linux-amd64)
-- [Windows](https://github.com/Kong/volcano-cli/releases/latest/download/volcano-windows-amd64.exe)
+- [macOS (Intel)](https://download.volcano.dev/builds/releases/latest/download/volcano-macos-amd64)
+- [macOS (Apple Silicon)](https://download.volcano.dev/builds/releases/latest/download/volcano-macos-arm64)
+- [Linux](https://download.volcano.dev/builds/releases/latest/download/volcano-linux-amd64)
+- [Windows](https://download.volcano.dev/builds/releases/latest/download/volcano-windows-amd64.exe)
 
 ### Authenticate
 

@@ -580,6 +580,8 @@ exports.handler = async (event) => {
 
 ### User Invokes Function
 
+The function's [visibility](../functions/creating-functions.md#choose-who-can-invoke-it) must be `authenticated` or `public` for a signed-in user to invoke it.
+
 ```javascript
 // Browser code
 import { VolcanoAuth } from '@volcano.dev/sdk';

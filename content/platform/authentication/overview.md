@@ -197,7 +197,8 @@ console.log('User created:', user.id);
 // The SDK stores the session automatically
 // Future requests include the access token
 
-// Invoke a function with user context
+// Invoke a function with user context; the function's visibility
+// must be authenticated or public
 const result = await volcano.functions.invoke('my-function', {
   payload: { action: 'get_profile' }
 });

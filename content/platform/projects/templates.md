@@ -29,6 +29,12 @@ required. The installer deploys the frontends declared by the template source.
 Normal plan limits apply to the created resources, including the frontend
 allowance.
 
+A template function that declares no
+[visibility](../functions/creating-functions.md#choose-who-can-invoke-it)
+installs as `authenticated` in the current template versions, because their
+pages call it as a signed-in user. In any other version it installs as
+`private`, like any new function.
+
 ## Wait for installation
 
 A successful creation response means installation was accepted, not that the

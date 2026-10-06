@@ -321,9 +321,21 @@ error response instead; `Accept` quality values are honored.
 
 ## Variables
 
-All project variables are available to the **build**. Variables prefixed with
-`NEXT_PUBLIC_` are also available to the deployed frontend at **runtime**. Manage
-them with `volcano variables …` or the [declarative config](../projects/configuration.md).
+A frontend gets the project variables it selects. New frontends select none;
+choose them with `variable_scope` and `variables` in the
+[declarative config](../projects/configuration.md) or on deploy.
+
+Selected variables are available to the **build**. Next.js inlines
+`NEXT_PUBLIC_` values into the browser bundle, so changing one takes a
+redeploy. Every other selected variable is also available to the deployed
+frontend's server **runtime**. See the
+[frontend API reference](../api-reference/frontend-endpoints.md#create-frontend-deployment).
+
+## Function routes
+
+A frontend can send a path such as `/api/session` to a `public` HTTP-mode
+function, so your pages call it on the same origin and can keep a session in
+`HttpOnly` cookies. See [Frontend Function routes](function-routes.md).
 
 ## Custom domains
 
@@ -384,5 +396,6 @@ already attached is a no-op and won't replace the certificate.
 ## Next
 
 - [Deploy a frontend](deploy.md) — step-by-step with the CLI.
+- [Frontend Function routes](function-routes.md) — serve a function under a frontend path.
 - [Frontend API reference](../api-reference/frontend-endpoints.md) — the HTTP surface.
 - [CLI reference](/cli) — every `volcano cloud frontends` command.

@@ -29,14 +29,20 @@ This is critical for multi-tenant applications where data isolation is essential
 
 ## Deployment
 
-```bash
-# From this example's directory
-cd realtime-function-test
-npm install
-zip -r function.zip .
+From this example's directory, zip the handler and its `package.json` and upload
+them. Volcano installs the dependencies during the build. New functions are
+`private`, so only service keys could call this one; `visibility=authenticated`
+lets your project's signed-in users invoke it.
 
-# Deploy using Volcano CLI or API
-volcano functions deploy realtime-test --file function.zip
+```bash
+zip function.zip index.js package.json
+curl -X POST https://api.volcano.dev/projects/PROJECT_ID/functions \
+  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -F "name=realtime-test" \
+  -F "code=@function.zip" \
+  -F "runtime=nodejs24.x" \
+  -F "handler=index.handler" \
+  -F "visibility=authenticated"
 ```
 
 ## Environment Variables
@@ -51,10 +57,9 @@ Set these in your Volcano project:
 
 ## Invocation
 
-This function requires an authenticated user context:
-
-Invoke the `invoke_url` the API returns for the function rather than building a
-host, which differs between deployments:
+This function requires an authenticated user context, so call it with a
+signed-in user's access token. Invoke the `invoke_url` the API returns for the
+function rather than building a host, which differs between deployments:
 
 ```bash
 INVOKE_URL=$(curl -s "$VOLCANO_API_URL/projects/$PROJECT_ID/functions/$FUNCTION_ID" \

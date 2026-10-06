@@ -160,8 +160,8 @@ A **platform token (`pk-`) is refused with `403`.** The endpoint takes its proje
 | Tool | Scope | What it does | Endpoint |
 |------|-------|--------------|----------|
 | `get_project` | `read_only` | Returns the project's name, status, plan, and region | `GET /projects/{id}` |
-| `list_functions` | `read_only` | Lists the project's functions, with runtime and status | `GET /projects/{id}/functions` |
-| `list_frontends` | `read_only` | Lists the project's frontends, with status and live URLs | `GET /projects/{id}/frontends` |
+| `list_functions` | `read_only` | Lists the project's functions, with runtime, status, and visibility | `GET /projects/{id}/functions` |
+| `list_frontends` | `read_only` | Lists the project's frontends, with status, live URLs, and function routes | `GET /projects/{id}/frontends` |
 | `list_deployments` | `read_only` | Lists recent deployments, newest first | `GET /projects/{id}/deployments` |
 | `search_logs` | `read_only` | Searches the project's logs | `POST /projects/{id}/logs/search` |
 | `list_databases` | `full` | Lists the project's databases. Returns connection strings | `GET /projects/{id}/databases` |

@@ -3534,12 +3534,19 @@ paths:
                     - Ruby: def handler() (in main.rb)
                   default: handler
                   example: handler
+                visibility:
+                  allOf:
+                    - $ref: '#/components/schemas/FunctionVisibility'
+                  description: |
+                    Who can invoke the function. Omit it to keep the function's
+                    current visibility; a new function starts `private`.
                 is_public:
                   type: boolean
+                  deprecated: true
                   description: |
-                    Whether the function can be reached through public invocation
-                    ingress. Omit it to keep the function's current visibility; a
-                    new function starts private.
+                    Deprecated alias for `visibility`: `true` means `public` and
+                    `false` means `authenticated`. Sending both with different
+                    meanings returns 400.
                 invocation_mode:
                   $ref: '#/components/schemas/FunctionInvocationMode'
                 http_auth_mode:
@@ -3575,7 +3582,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Function'
         '400':
-          description: Bad request (invalid file, too large, etc.)
+          description: |
+            Bad request (invalid file, too large, etc.), an unknown
+            `visibility`, or `visibility` and `is_public` disagree
           content:
             application/json:
               schema:
@@ -3588,8 +3597,11 @@ paths:
                 $ref: '#/components/schemas/Error'
         '409':
           description: |
-            Function deletion is queued or running, or the name is already held
-            by a durable function — a function cannot change kind.
+            Function deletion is queued or running, the name is already held
+            by a durable function — a function cannot change kind — or the
+            redeploy would take a function with Frontend Function routes out
+            of `public` or out of HTTP invocation mode. The request is refused
+            before the deploy starts, so nothing is deployed.
           content:
             application/json:
               schema:
@@ -3660,13 +3672,17 @@ paths:
               $ref: '#/components/schemas/UpdateFunctionRequest'
             examples:
               makePublic:
-                summary: Make function public (anon keys can invoke)
+                summary: Let anon keys invoke the function
                 value:
-                  is_public: true
+                  visibility: public
+              allowSignedInUsers:
+                summary: Let signed-in users of the project invoke the function
+                value:
+                  visibility: authenticated
               makePrivate:
-                summary: Make function private (default behavior)
+                summary: Allow only service keys and schedulers (the default)
                 value:
-                  is_public: false
+                  visibility: private
       responses:
         '200':
           description: Function updated
@@ -3675,7 +3691,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Function'
         '400':
-          description: Bad request
+          description: |
+            Invalid settings: an unknown `visibility`, `visibility` and
+            `is_public` disagree, or `http_auth_mode: none` on a function that
+            is not `public`
           content:
             application/json:
               schema:
@@ -3687,7 +3706,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '409':
-          description: Function settings conflict with attached Frontend Function routes
+          description: |
+            Function settings conflict with attached Frontend Function routes:
+            a routed function must stay `public` and in HTTP invocation mode.
           content:
             application/json:
               schema:
@@ -3723,15 +3744,22 @@ paths:
         - Functions
       summary: Invoke a function
       description: |
-        Invoke a function.
+        Invoke a function. The function's `visibility` decides which credentials
+        may call it, and the function does not run for any other. A `private`
+        function answers every credential but a service key exactly as a
+        missing one, with 404, so its name and id cannot be discovered; an anon
+        key on an `authenticated` function gets 403. An SDK calling by name
+        resolves it first through `GET /functions/resolve`, which answers that
+        anon key with 404 instead.
 
-        **With Service Key** (admin/background operations):
+        **With Service Key** (admin/background operations, every visibility):
         - Use for background jobs, webhooks, cron, admin operations
         - Function receives payload only (no user context)
         - Database queries bypass RLS (admin access)
 
-        **With Auth User Token** (user-facing):
+        **With Auth User Token** (user-facing, `authenticated` or `public` functions):
         - Use for user-initiated actions
+        - Includes users from anonymous sign-ins
         - Function receives payload + `__volcano_auth` context:
           ```javascript
           {
@@ -3743,9 +3771,9 @@ paths:
           ```
         - Database queries enforce RLS (user-scoped data)
 
-        **With Anon Key** (public function only):
+        **With Anon Key** (`public` functions only):
         - Requires anon key permission: `functions.invoke`
-        - Function must have `is_public: true`
+        - Function must have `visibility: public`
         - Function receives payload only (no `__volcano_auth`)
 
         **Transport and CORS:**
@@ -3843,13 +3871,17 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '403':
-          description: Forbidden - CORS blocked, missing `functions.invoke`, or private function with anon key
+          description: |
+            Forbidden - CORS blocked, missing `functions.invoke`, or an anon key
+            on an `authenticated` function
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '404':
-          description: Function not found
+          description: |
+            Function not found. Also returned for a `private` function to any
+            credential but a service key.
           content:
             application/json:
               schema:
@@ -3921,11 +3953,16 @@ paths:
         `/projects/{id}/durable-functions/...` remains the owner's management
         surface.
 
-        **With a service key or an auth user token:** any durable function in
-        the project.
+        **With a service key:** any durable function in the project.
+
+        **With an auth user token:** a durable function whose `visibility` is
+        `authenticated` or `public`.
 
         **With an anon key:** requires the `functions.invoke` permission, and
-        the function must have `is_public: true`.
+        the function must have `visibility: public`.
+
+        A `private` durable function answers every credential but a service key
+        exactly as a missing one, with 404.
 
         Starting is all this endpoint does. Reading a result or stopping an
         execution requires the project owner's token, because an anon key is
@@ -3992,8 +4029,9 @@ paths:
                 $ref: '#/components/schemas/Error'
         '403':
           description: |
-            The anon key lacks `functions.invoke`, the function is not public,
-            or the request's origin is refused by the project's CORS policy.
+            The anon key lacks `functions.invoke` or the function is
+            `authenticated`, or the request's origin is refused by the project's
+            CORS policy.
           content:
             application/json:
               schema:
@@ -4001,8 +4039,9 @@ paths:
         '404':
           description: |
             Durable function not found. Also returned for a standard function's
-            id and for a durable function in another project, so the response
-            cannot be used to tell those apart.
+            id, for a durable function in another project, and for a `private`
+            one to any credential but a service key, so the response cannot be
+            used to tell those apart.
           content:
             application/json:
               schema:
@@ -4063,11 +4102,12 @@ paths:
         - Allowed
 
         **With Auth User Token**:
-        - Allowed
+        - Allowed for `authenticated` and `public` functions
+        - A `private` function answers 404, exactly as a missing one
 
         **With Anon Key**:
         - Requires anon key permission: `functions.invoke`
-        - Function must have `is_public: true`
+        - Function must have `visibility: public`; any other answers 404
       operationId: resolveFunctionForInvocation
       security:
         - AnonKey: []
@@ -4103,14 +4143,17 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '403':
-          description: Forbidden - CORS blocked or missing `functions.invoke` permission for anon key
+          description: |
+            Forbidden - CORS blocked, or missing `functions.invoke` permission
+            for anon key
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '404':
           description: |
-            Function not found (or private function with anon key). A durable
+            Function not found. Also returned for a `private` function with an
+            auth user token, and a non-public one with an anon key. A durable
             function is never resolvable here: it is started through
             `POST /durable-functions/{functionId}/executions`, not invoked.
           content:
@@ -4750,18 +4793,26 @@ paths:
                   description: The name of the function to invoke. Defaults to "handler" if not specified.
                   default: handler
                   example: handler
-                is_public:
-                  type: boolean
+                visibility:
+                  allOf:
+                    - $ref: '#/components/schemas/FunctionVisibility'
                   description: |
-                    Whether anon keys with `functions.invoke` may start an
-                    execution. Redeploying is the only way to change it, since
-                    the collection has no update endpoint; omit it to keep the
-                    current visibility, and a new function starts private.
+                    Who may start an execution. Redeploying is the only way to
+                    change it, since the collection has no update endpoint; omit
+                    it to keep the current visibility, and a new function starts
+                    `private`.
 
                     The standard collection's synchronous invocation fields —
                     `invocation_mode`, `http_auth_mode`, `openapi_spec` —
                     configure a request path no durable route serves, and are
                     rejected with 400 rather than ignored.
+                is_public:
+                  type: boolean
+                  deprecated: true
+                  description: |
+                    Deprecated alias for `visibility`: `true` means `public` and
+                    `false` means `authenticated`. Sending both with different
+                    meanings returns 400.
                 variable_scope:
                   type: string
                   enum:
@@ -4791,7 +4842,8 @@ paths:
                 $ref: '#/components/schemas/DurableFunction'
         '400':
           description: |
-            Bad request (invalid archive, unsupported runtime, invalid name, or a
+            Bad request (invalid archive, unsupported runtime, invalid name, an
+            unknown `visibility`, `visibility` and `is_public` disagree, or a
             project region that does not offer durable execution — a durable
             function deploys to every region of its project)
           content:
@@ -4805,7 +4857,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '409':
-          description: Name is held by a standard function, or a deletion is queued or running
+          description: |
+            Name is held by a standard function, or a deletion is queued or
+            running. The request is refused before the deploy starts, so
+            nothing is deployed.
           content:
             application/json:
               schema:
@@ -6061,7 +6116,13 @@ paths:
         - Frontends
       summary: Route a Frontend path to an HTTP Function
       operationId: createFrontendFunctionRoute
-      description: The Frontend and Function must belong to this Project. The Function may be private but must use HTTP invocation mode. The route applies to every hostname that resolves to the Frontend, including generated, custom-domain, preview, and local hostnames.
+      description: |
+        The Frontend and Function must belong to this Project. The Function must be a standard
+        Function with `visibility: public` and HTTP invocation mode, because requests through the
+        route carry no credential: Volcano does not check a token sent to a route path or add
+        `__volcano_auth`, so the Function authenticates its callers itself. A Function cannot leave `public`
+        while a route targets it. The route applies to every hostname that resolves to the
+        Frontend, including generated, custom-domain, preview, and local hostnames.
       security:
         - UserToken: []
         - ProjectAccessToken: []
@@ -6103,7 +6164,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '409':
-          description: Path is already routed or the Frontend has reached its 64-route limit
+          description: Path is already routed, the Frontend has reached its 64-route limit, or the Function is not public
           content:
             application/json:
               schema:
@@ -6123,6 +6184,7 @@ paths:
       tags:
         - Frontends
       summary: Replace a Frontend Function route
+      description: 'Replaces the route''s target, path, and prefix handling. The new target must meet the same rules as on create, including `visibility: public`.'
       operationId: updateFrontendFunctionRoute
       security:
         - UserToken: []
@@ -6165,7 +6227,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '409':
-          description: Path is already routed or the Frontend has reached its 64-route limit
+          description: Path is already routed, the Frontend has reached its 64-route limit, or the Function is not public
           content:
             application/json:
               schema:
@@ -9872,6 +9934,7 @@ paths:
       description: |
         Bans a user temporarily or permanently. Banned users cannot sign in
         and all their active sessions are immediately revoked.
+        Omitting banned_until clears any previous expiry. Deleted accounts cannot be banned.
 
         - Omit `banned_until` for a permanent ban
         - Provide `banned_until` ISO timestamp for a temporary ban
@@ -9911,6 +9974,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '409':
+          description: Deleted accounts cannot be banned or restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /projects/{id}/auth/users/{userId}/unban:
     post:
       tags:
@@ -9918,7 +9987,7 @@ paths:
       summary: Unban a user
       description: |
         Removes a ban from a user, restoring their ability to sign in.
-        The user's status is set back to 'active'.
+        The user's status is set back to 'active'. Deleted accounts cannot be restored.
       operationId: unbanAuthUser
       security:
         - UserToken: []
@@ -9940,6 +10009,12 @@ paths:
                 $ref: '#/components/schemas/UnbanUserResponse'
         '404':
           description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Deleted accounts cannot be banned or restored
           content:
             application/json:
               schema:
@@ -17773,6 +17848,15 @@ components:
             - detaching
             - failed
             - deleted
+        function_routes:
+          type: array
+          maxItems: 64
+          items:
+            $ref: '#/components/schemas/FrontendFunctionRoute'
+          description: |
+            Paths on this frontend that forward to a public function, ordered
+            from most to least specific. Anyone who can load the frontend can
+            reach the target function at these paths without a credential.
         last_invoked_at:
           type: string
           format: date-time
@@ -17789,6 +17873,7 @@ components:
         - framework
         - status
         - deployed_regions
+        - function_routes
         - created_at
         - updated_at
     FrontendFunctionRoute:
@@ -18345,12 +18430,12 @@ components:
           type: string
           format: date-time
           description: Timestamp when the current provisioning phase started
+        visibility:
+          $ref: '#/components/schemas/FunctionVisibility'
         is_public:
           type: boolean
-          description: |
-            Function visibility for anon-key invocation.
-            - `false` (default): only auth user tokens and service keys can invoke
-            - `true`: anon keys with `functions.invoke` can invoke
+          deprecated: true
+          description: Deprecated. `true` exactly when `visibility` is `public`.
         invocation_mode:
           $ref: '#/components/schemas/FunctionInvocationMode'
         http_auth_mode:
@@ -18398,6 +18483,7 @@ components:
         - project_id
         - name
         - status
+        - visibility
         - is_public
         - invocation_mode
         - http_auth_mode
@@ -18436,23 +18522,27 @@ components:
           type: string
           format: date-time
           description: Timestamp when the current provisioning phase started
-        is_public:
-          type: boolean
+        visibility:
+          allOf:
+            - $ref: '#/components/schemas/FunctionVisibility'
           description: |
-            Whether anon keys may start executions of this function through
-            `POST /durable-functions/{functionId}/executions`.
+            Who may start executions of this function through
+            `POST /durable-functions/{functionId}/executions`: service keys at
+            every level, signed-in users of the project from `authenticated`,
+            and anon keys holding `functions.invoke` only at `public`. Reading
+            and stopping an execution always require the project owner's
+            token, whatever this is set to.
 
-            When `true`, an anon key holding `functions.invoke` can start an
-            execution. When `false` (the default) only service keys and auth
-            user tokens can. Reading and stopping an execution always require
-            the project owner's token, whatever this is set to.
-
-            Set it when the function is created. Durable functions have no
+            Set it when the function is deployed. Durable functions have no
             update endpoint, so changing visibility later means redeploying.
 
-            A public durable function is startable, never invocable: it is not
+            A durable function is startable, never invocable: it is not
             reachable through `POST /functions/{functionId}/invoke` or a
-            function URL, which answer `404` for either visibility.
+            function URL, which answer `404` at every level.
+        is_public:
+          type: boolean
+          deprecated: true
+          description: Deprecated. `true` exactly when `visibility` is `public`.
         durable:
           $ref: '#/components/schemas/DurableFunctionConfig'
         deployed_regions:
@@ -18487,6 +18577,7 @@ components:
         - project_id
         - name
         - status
+        - visibility
         - is_public
         - durable
         - deployed_regions
@@ -18807,8 +18898,29 @@ components:
         - volcano
         - none
       description: |
-        Authentication applied by the HTTP ingress. `none` is valid only for public
-        HTTP-mode functions and is intended for externally signed webhooks.
+        Authentication applied by the HTTP ingress. `none` is valid only for
+        HTTP-mode functions with `visibility: public` and is intended for
+        externally signed webhooks.
+    FunctionVisibility:
+      type: string
+      enum:
+        - private
+        - authenticated
+        - public
+      x-enum-varnames:
+        - FunctionVisibilityPrivate
+        - FunctionVisibilityAuthenticated
+        - FunctionVisibilityPublic
+      description: |
+        Who can invoke the function. Each level admits everything the one
+        before it does.
+        - `private`: service keys and the project's schedulers only. The
+          default for a new function. To any other credential the function
+          does not exist: it answers 404, like a missing one.
+        - `authenticated`: also any signed-in user of the project, including
+          anonymous sign-ins. The function receives their auth context.
+        - `public`: also anon keys holding `functions.invoke`, and Frontend
+          Function routes, which forward requests without a credential.
     FunctionDeployment:
       type: object
       properties:
@@ -20535,9 +20647,18 @@ components:
           minLength: 1
         kind:
           $ref: '#/components/schemas/FunctionKind'
+        visibility:
+          $ref: '#/components/schemas/FunctionVisibility'
         public:
           type: boolean
-          description: Function visibility for anon-key invocation
+          deprecated: true
+          description: |
+            Deprecated alias for `visibility`: `true` means `public` and
+            `false` means `authenticated`, not `private`, so an entry left at
+            `false` applies `authenticated` on every apply; declare
+            `visibility: private` to keep a function private. Declaring both
+            with different meanings is an error. Exports write `visibility`
+            only.
         variable_scope:
           type: string
           enum:
@@ -21939,12 +22060,15 @@ components:
       additionalProperties: false
       minProperties: 1
       properties:
+        visibility:
+          $ref: '#/components/schemas/FunctionVisibility'
         is_public:
           type: boolean
+          deprecated: true
           description: |
-            Function visibility for anon-key invocation.
-            - `false` (default): private function
-            - `true`: public function (anon keys with `functions.invoke` can invoke)
+            Deprecated alias for `visibility`: `true` means `public` and
+            `false` means `authenticated`. Sending both with different meanings
+            returns 400.
         invocation_mode:
           $ref: '#/components/schemas/FunctionInvocationMode'
         http_auth_mode:
@@ -22324,7 +22448,7 @@ components:
         function:
           type: string
           minLength: 1
-          description: Name of an existing standard Function configured for HTTP invocation.
+          description: Name of an existing public standard Function configured for HTTP invocation.
         path_prefix:
           type: string
           minLength: 2
