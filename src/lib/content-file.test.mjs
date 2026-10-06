@@ -9,26 +9,28 @@ const tmp = fs.realpathSync(
   fs.mkdtempSync(path.join(os.tmpdir(), "volcano-docs-content-file-")),
 );
 const root = path.join(tmp, "content");
-fs.mkdirSync(path.join(root, "get-started"), { recursive: true });
-fs.writeFileSync(path.join(root, "index.md"), "home");
-fs.writeFileSync(path.join(root, "get-started", "install.md"), "install");
-fs.writeFileSync(path.join(root, "100%.md"), "percent");
-fs.writeFileSync(path.join(tmp, "secret.txt"), "outside");
-// Sibling directory sharing the root's name as a prefix ("content" vs "content-evil").
-fs.mkdirSync(path.join(tmp, "content-evil"));
-fs.writeFileSync(path.join(tmp, "content-evil", "x.md"), "sibling");
-// Symlinks: two escaping the root, one staying inside it.
-fs.symlinkSync(
-  path.join(tmp, "secret.txt"),
-  path.join(root, "get-started", "leak.md"),
-);
-fs.symlinkSync(path.join(tmp, "content-evil"), path.join(root, "evil-dir"));
-fs.symlinkSync(
-  path.join(root, "index.md"),
-  path.join(root, "get-started", "alias.md"),
-);
 
 try {
+  fs.mkdirSync(path.join(root, "get-started"), { recursive: true });
+  fs.writeFileSync(path.join(root, "index.md"), "home");
+  fs.writeFileSync(path.join(root, "get-started", "install.md"), "install");
+  fs.writeFileSync(path.join(root, "100%.md"), "percent");
+  fs.writeFileSync(path.join(root, "v1..v2.md"), "dots");
+  fs.writeFileSync(path.join(tmp, "secret.txt"), "outside");
+  // Sibling directory sharing the root's name as a prefix ("content" vs "content-evil").
+  fs.mkdirSync(path.join(tmp, "content-evil"));
+  fs.writeFileSync(path.join(tmp, "content-evil", "x.md"), "sibling");
+  // Symlinks: two escaping the root, one staying inside it.
+  fs.symlinkSync(
+    path.join(tmp, "secret.txt"),
+    path.join(root, "get-started", "leak.md"),
+  );
+  fs.symlinkSync(path.join(tmp, "content-evil"), path.join(root, "evil-dir"));
+  fs.symlinkSync(
+    path.join(root, "index.md"),
+    path.join(root, "get-started", "alias.md"),
+  );
+
   // Real page paths read their file, with or without a trailing slash on the root.
   assert.equal(await readContentFile(root, "index.md"), "home");
   assert.equal(
@@ -46,7 +48,6 @@ try {
     "get-started/../../secret.txt",
     "get-started/../index.md", // `..` is refused even when it would stay inside
     "get-started/..",
-    "foo..bar.md", // any `..`, not just whole segments
     "..\\secret.txt",
     "get-started\\..\\..\\secret.txt",
     "%2e%2e/secret.txt",
@@ -97,7 +98,9 @@ try {
     );
   }
 
-  // A malformed percent sequence is not traversal: the literal file is read.
+  // `..` inside a name is not a traversal segment, and a malformed percent
+  // sequence is not encoding: both read the literal file.
+  assert.equal(await readContentFile(root, "v1..v2.md"), "dots");
   assert.equal(await readContentFile(root, "100%.md"), "percent");
 
   // Missing files and directories read as null.

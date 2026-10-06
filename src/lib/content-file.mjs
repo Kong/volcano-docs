@@ -39,12 +39,9 @@ function isInside(root, target) {
 
 /**
  * Reads a UTF-8 file at `relativePath` under `root`. Returns null when the
- * path is empty or absolute, contains `..` or a NUL byte (raw or
+ * path is empty or absolute, has a `..` segment or a NUL byte (raw or
  * percent-encoded), resolves outside `root`, does not exist, is not a file, or
  * is a symlink whose real target is outside `root`.
- *
- * Any `..` is refused, not just whole `..` segments: content filenames are
- * kebab-case (scripts/lint-docs.mjs), so it never appears in a real page path.
  *
  * @param {string} root
  * @param {string} relativePath
@@ -53,7 +50,8 @@ function isInside(root, target) {
 export async function readContentFile(root, relativePath) {
   if (typeof relativePath !== "string" || relativePath === "") return null;
   const decoded = percentDecoded(relativePath);
-  if (relativePath.includes("..") || decoded.includes("..")) return null;
+  const segments = [...relativePath.split(/[\\/]/), ...decoded.split(/[\\/]/)];
+  if (segments.includes("..")) return null;
   if (relativePath.includes("\0") || decoded.includes("\0")) return null;
   if (path.posix.isAbsolute(decoded) || path.win32.isAbsolute(decoded))
     return null;
