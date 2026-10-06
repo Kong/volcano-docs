@@ -7,8 +7,10 @@ import { BotIcon, FlameIcon, TerminalIcon } from "./icons";
 import { IdePlatforms } from "./ide-platforms";
 import { SectionHeading } from "./section-heading";
 
-const CARD_COPY =
-  "Provision PostgreSQL databases in seconds and use them for your agentic and application workloads.";
+const QUICKSTART_COPY =
+  "Sign up, create a project, and pick a surface to build on.";
+const CLI_COPY =
+  "Deploy and manage functions, frontends, and databases from your terminal or CI.";
 const AGENT_COPY = "Install Volcano skills and plugins for your coding agent.";
 
 // The Volcano docs landing page from the Figma design. Rendered inside the
@@ -24,13 +26,13 @@ export function HomePage() {
         <FeatureCard
           icon={<FlameIcon className="feature-card-glyph" />}
           title="Quick start"
-          description={CARD_COPY}
+          description={QUICKSTART_COPY}
           href="/get-started/quickstart"
         />
         <FeatureCard
           icon={<TerminalIcon className="feature-card-glyph" />}
           title="Volcano CLI"
-          description={CARD_COPY}
+          description={CLI_COPY}
           href="/cli"
         />
         <FeatureCard
@@ -49,7 +51,7 @@ export function HomePage() {
       <div className="home-card-row home-card-row--tutorials">
         <FeatureCard
           title="Quick start"
-          description={CARD_COPY}
+          description={QUICKSTART_COPY}
           href="/get-started/quickstart"
         />
         <FeatureCard

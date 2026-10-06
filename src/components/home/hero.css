@@ -62,6 +62,15 @@
   color: var(--text-primary);
 }
 
+.hero-link {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.hero-link code {
+  font-family: var(--system-mono-font);
+}
+
 .hero-cta {
   display: flex;
   width: fit-content;
