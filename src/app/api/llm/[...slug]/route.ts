@@ -1,5 +1,5 @@
-import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { readContentFile } from "@/lib/content-file.mjs";
 import { source } from "@/lib/source";
 import { notFound } from "next/navigation";
 
@@ -11,12 +11,9 @@ export async function GET(
   const page = source.getPage(slug);
   if (!page) notFound();
 
-  // Read the raw markdown source file from disk.
-  const contentPath = join(process.cwd(), "content", page.path);
-  let raw: string;
-  try {
-    raw = await readFile(contentPath, "utf-8");
-  } catch {
+  // Read the raw markdown source file from disk, contained to content/.
+  const raw = await readContentFile(join(process.cwd(), "content"), page.path);
+  if (raw === null) {
     return new Response("Page content not found", { status: 404 });
   }
 
