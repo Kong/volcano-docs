@@ -11,11 +11,11 @@ import zlib from "node:zlib";
 import { SEARCH_INDEX_PATH, searchIndexClient } from "../src/lib/search-index-client.mjs";
 
 // Budget for the bytes a reader downloads on their first search. When it was
-// set, the index was 1.66 MB gzip (9.98 MB JSON), just under the 10 MB raw
-// ceiling that applied while CloudFront compressed it. 3 MB leaves room for
-// about 80% more indexed content. At the index's 6:1 gzip ratio, that is about
-// 18 MB of JSON for the browser to parse and load into Orama, so past this
-// point shrink or split the index rather than raise the budget.
+// set, the index was 1.48 MB gzip (8.92 MB JSON), under the 10 MB raw ceiling
+// that applied while CloudFront compressed it. 3 MB leaves room for about twice
+// today's indexed content. At the index's 6:1 gzip ratio, that is about 18 MB
+// of JSON for the browser to parse and load into Orama, so past this point
+// shrink or split the index rather than raise the budget.
 const GZIP_SIZE_BUDGET = 3_000_000;
 const searchTerm = "browser-friendly";
 const expectedUrl = "/get-started/what-is-volcano";

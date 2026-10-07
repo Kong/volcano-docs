@@ -36,8 +36,6 @@ function decodedIndexUrl(from) {
   if (!url) {
     url = fetchDecodedIndex(from).then((json) => URL.createObjectURL(json));
     decodedIndexUrls.set(from, url);
-    // Let the next query retry a failed download.
-    url.catch(() => decodedIndexUrls.delete(from));
   }
   return url;
 }
@@ -52,16 +50,24 @@ export function searchIndexClient(from = SEARCH_INDEX_PATH) {
   return {
     deps: [from],
     async search(query) {
-      const [url, { oramaStaticClient }] = await Promise.all([
-        decodedIndexUrl(from),
-        import("fumadocs-core/search/client/orama-static"),
-      ]);
+      const pending = decodedIndexUrl(from);
       try {
-        return await oramaStaticClient({ from: url }).search(query);
-      } finally {
-        // Fumadocs caches the loaded database by URL, so later queries never
-        // fetch this blob again; release the decompressed JSON it holds.
-        URL.revokeObjectURL(url);
+        const [url, { oramaStaticClient }] = await Promise.all([
+          pending,
+          import("fumadocs-core/search/client/orama-static"),
+        ]);
+        try {
+          return await oramaStaticClient({ from: url }).search(query);
+        } finally {
+          // Fumadocs caches the loaded database by URL, so later queries never
+          // fetch this blob again; release the decompressed JSON it holds.
+          URL.revokeObjectURL(url);
+        }
+      } catch (error) {
+        // Fumadocs also caches a failed load by URL, so start the next query
+        // over with a fresh download and a new blob URL.
+        if (decodedIndexUrls.get(from) === pending) decodedIndexUrls.delete(from);
+        throw error;
       }
     },
   };
