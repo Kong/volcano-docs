@@ -320,6 +320,75 @@ app.get('/api/posts', async (req, res) => {
 
 ---
 
+## Session Settings
+
+Volcano shares server connections between clients. A statement you send outside a transaction can run on a different server connection from your last one, and Volcano resets a server connection before it runs another statement. Session state therefore lasts only for the statement that created it, and never reaches another client. That includes a session-level `SET` or `set_config(..., false)`, `SET ROLE`, a temporary table, a session advisory lock, `LISTEN`, a `WITH HOLD` cursor, the values `currval()` and `lastval()` return, and a statement you `PREPARE` in SQL. The exception is a statement that a function you created earlier prepares in its body: `DEALLOCATE` it before the function returns.
+
+Volcano reads only the `user` and `application_name` startup parameters. It ignores the others, including `options=-c search_path=...`.
+
+### Scope settings to a transaction
+
+To apply a setting to several statements, run them in a transaction and use `SET LOCAL`. A transaction keeps one server connection from `BEGIN` to `COMMIT` or `ROLLBACK`:
+
+```sql
+BEGIN;
+SET LOCAL search_path TO reporting, public;
+SET LOCAL statement_timeout = '30s';
+SELECT count(*) FROM daily_totals;
+COMMIT;
+```
+
+### Settings your driver sends when it connects
+
+Some ORMs and drivers run session-level statements once, right after connecting, and expect them to last for the connection. Through Volcano they last for that one statement. Examples include Django's `SET TIME ZONE` when `USE_TZ` is on, Rails' `SET intervalstyle = iso_8601` and `variables:` in `database.yml`, and a pool's connect hook that runs `SET search_path`. Set the value in each transaction with `SET LOCAL`, or qualify names in your SQL, such as `reporting.daily_totals` and `now() AT TIME ZONE 'UTC'`.
+
+When you can't change the statements, such as the queries an ORM writes for you, make the value the database's default. Volcano resets a setting to its default, so a database default applies to every statement. Run this with the full-access connection string:
+
+```sql
+DO $$
+BEGIN
+  EXECUTE format('ALTER DATABASE %I SET intervalstyle = %L', current_database(), 'iso_8601');
+END
+$$;
+```
+
+Server connections that were already open keep the old default until Volcano replaces them, within 30 minutes.
+
+### Read a generated ID
+
+`lastval()` or `currval()` in a statement after an `INSERT` fails with `... is not yet defined in this session`. Return the ID from the `INSERT` instead:
+
+```sql
+INSERT INTO listings (title) VALUES ('Loft') RETURNING id;
+```
+
+To read it in a later statement, run both in one transaction.
+
+### Advisory locks
+
+A session advisory lock is released when the statement that took it finishes, so a later `pg_advisory_unlock` returns `false`. Take the lock with `pg_advisory_xact_lock` inside the transaction that needs it. Postgres releases it at `COMMIT` or `ROLLBACK`:
+
+```sql
+BEGIN;
+SELECT pg_advisory_xact_lock(42);
+UPDATE counters SET value = value + 1 WHERE id = 1;
+COMMIT;
+```
+
+Rails migrations hold a session advisory lock across statements. They run, then fail with `ActiveRecord::ConcurrentMigrationError: Failed to release advisory lock`. Set `advisory_locks: false` for the database in `database.yml`, and run migrations from one place at a time.
+
+### Restore a pg_dump
+
+A `pg_dump` script starts with session-level settings, such as `SELECT pg_catalog.set_config('search_path', '', false)`, that the rest of the script depends on. Restore the script in one transaction so its settings reach every statement:
+
+```bash
+psql "$VOLCANO_DATABASE_URL" --single-transaction --set ON_ERROR_STOP=1 --file dump.sql
+```
+
+[Importing data](importing-data.md) covers the `pg_dump` options to use, the `SET transaction_timeout` line that a database on PostgreSQL 15 or 16 rejects, and loading rows with `COPY`.
+
+---
+
 ## Any PostgreSQL Client
 
 The `application_name` parameter works with **any** PostgreSQL client!
@@ -1092,4 +1161,5 @@ The proxy looks up email and role from the database, making this more secure.
 - [Query Builder API](query-builder-api.md) - Browser query builder
 - [Row-Level Security](row-level-security.md) - Using auth.uid() in policies
 - [Auth Helpers](auth-helpers.md) - Database helper functions
+- [Importing Data](importing-data.md) - Restore a dump and bulk-load rows with COPY
 - [Examples](../examples/database-pool-example/README.md) - Production patterns

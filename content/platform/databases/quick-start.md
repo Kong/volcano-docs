@@ -158,7 +158,7 @@ curl -X POST https://api.volcano.dev/projects/PROJECT_ID/databases \
   -d '{
     "name": "my_app_db",
     "region": "us-east-1",
-    "pg_version": "16"
+    "pg_version": "18"
   }'
 ```
 

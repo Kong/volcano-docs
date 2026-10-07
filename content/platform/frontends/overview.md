@@ -425,6 +425,11 @@ Custom domains are a **SUPERAGENT** feature and support Volcano-managed TLS or
 bring-your-own-certificate (BYOC) TLS. With managed TLS, Volcano issues and
 renews the certificate after you publish the returned validation records.
 
+Your account must own a domain before a frontend serves it. Verify a domain once
+with a `_volcano` TXT record, and every hostname below it attaches to any of your
+frontends, in either TLS mode, without another record. See
+[Verify domain ownership](domain-verification.md).
+
 On the HOBBY plan an attached domain is kept but stops serving: requests to it
 return `404` while the frontend's `*.frontends.volcano.run` URL keeps working. Upgrading
 puts the domain back in service without re-attaching it. See
@@ -447,16 +452,20 @@ volcano config deploy
 volcano cloud frontends domain get my-site
 ```
 
-If Volcano returns a `_volcano` TXT record, add it to prove hostname ownership.
-Volcano skips that proof when the same account reuses a hostname it has
-claimed. It then returns a certificate validation CNAME; add that CNAME and keep
-it in DNS for issuance and renewal. You can remove the TXT record after the
-CNAME appears.
+If your account has not verified the domain, the response's
+`verification_records` names a `_volcano` TXT record for the hostname's
+registrable domain, such as `_volcano.example.com` for `app.example.com`.
+Publish it; Volcano holds the hostname for your account while it waits. Once
+the account owns the domain, Volcano returns a certificate validation CNAME;
+add that CNAME and keep it in DNS for issuance and renewal. Keep the TXT record
+too: the domain moves to another account only once DNS stops serving it.
 Volcano cannot yet switch a BYOC domain to managed TLS in place. To keep the
 hostname, delete the BYOC domain and declare it again with `tls.mode: managed`;
 HTTPS for the hostname is unavailable until the managed certificate is issued.
 To use BYOC instead, attach the domain with your certificate, then point DNS at
-the frontend:
+the frontend. A certificate does not prove ownership, so BYOC also needs a
+verified domain; until then the attach fails with `409` and the
+`required_record` to publish:
 
 ```bash
 # 1. Attach the domain with your PEM certificate + unencrypted private key

@@ -15,7 +15,7 @@ load, and row-level security is built in.
 | [Branching](branching.md) | Fork a database into an isolated, expiring copy with its own connection string, usually in under a minute |
 | [Backups and restore](backups.md) | Back up on demand or on a schedule, and restore in place to a backup or a point in time (SUPERAGENT) |
 | Auto-scaling | Auto-scales compute based on demand, pauses when idle |
-| PostgreSQL | Full PostgreSQL compatibility (versions 15 and 16) |
+| PostgreSQL | Full PostgreSQL compatibility (versions 15, 16, 17, and 18) |
 | Query Builder | Query from browsers without writing SQL |
 | Direct connection | Connect from your functions with standard PostgreSQL clients |
 | Row-level security | Automatic data isolation per user |
@@ -143,7 +143,7 @@ Response:
   "name": "main",
   "status": "provisioning",
   "region": "us-east-1",
-  "pg_version": "16"
+  "pg_version": "18"
 }
 ```
 
@@ -289,16 +289,18 @@ curl "https://api.volcano.dev/databases/regions"
 
 | Version | Status |
 |---------|--------|
-| 16 | Latest, recommended |
-| 15 | Stable |
+| 18 | Latest; marked `default` in the version list |
+| 17 | Supported |
+| 16 | Supported; the only version in local mode |
+| 15 | Supported |
 
-Specify the version when creating a database:
+A create request must name the version:
 
 ```bash
 curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/databases" \
   -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"name": "main", "region": "eu-central-1", "pg_version": "16"}'
+  -d '{"name": "main", "region": "eu-central-1", "pg_version": "18"}'
 ```
 
 ## Read storage usage
@@ -313,6 +315,7 @@ The dashboard's Database Storage chart shows observed storage sizes. A missing s
 | [Creating databases](creating-databases.md) | Database provisioning options |
 | [Branching](branching.md) | Fork a database for development, testing, and CI |
 | [Backups and restore](backups.md) | Back up a database and roll it back |
+| [Importing data](importing-data.md) | Restore a `pg_dump` and bulk-load rows with `COPY` |
 | [Query Builder API](query-builder-api.md) | Complete SDK query reference |
 | [REST API](rest-api.md) | HTTP endpoints for queries |
 | [Direct connection](direct-connection.md) | Connect from your functions |

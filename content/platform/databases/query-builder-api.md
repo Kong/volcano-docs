@@ -110,10 +110,10 @@ volcano.from('posts')    →  4. Builds query request
                             10. Connects to pgproxy
 
                          →  11. pgproxy parses auth context
-                            12. Sets session variables:
-                                SET request.jwt_sub = 'user_id'
-                                SET request.jwt_email = 'email'
-                                SET request.jwt_role = 'role'
+                            12. Sets transaction variables:
+                                SET LOCAL request.jwt_sub = 'user_id'
+                                SET LOCAL request.jwt_email = 'email'
+                                SET LOCAL request.jwt_role = 'role'
 
                          →  13. Query executes
                             14. auth.uid() returns user_id

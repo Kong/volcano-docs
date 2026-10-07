@@ -37,7 +37,7 @@ project:
 databases:                                  # must already exist; assertion-only
   - name: appdb                             # required, matches deployed database
     region: us-east-1                   # required; mismatch => error
-    pg_version: "16"                        # required; mismatch => error
+    pg_version: "18"                        # required; mismatch => error
     database_type: volcano-db-xs            # asserted; tier changes are NOT
                                             #   allowed via config
 
@@ -312,18 +312,24 @@ response that created it. Manage them through
   never written; a `database_type` mismatch is an explicit error because tier
   changes must go through `volcano databases` or the dashboard.
 - **Custom domains** belong to their declared frontend entry. Set
-  `tls.mode: managed` to have Volcano issue and renew the certificate. Add a
-  returned `_volcano` TXT ownership proof when required, then keep the
-  certificate validation CNAME in DNS for renewal. Volcano omits the TXT proof
-  when the same account reuses a hostname it has claimed. If another account has
-  only reserved the hostname, an apply that adds a managed domain to a
-  frontend without one reports your account's `_volcano` TXT record; publish
-  it and apply again to take over the reservation. A dry run does not look
-  up DNS, so it reports that domain as created and only the apply names the
-  record. Replacing an existing
-  domain never takes over a reservation: delete the existing domain in one
-  apply, wait for its removal to finish, then declare the managed hostname.
-  BYOC entries never take over a reservation. Add the
+  `tls.mode: managed` to have Volcano issue and renew the certificate. Your
+  account must own the hostname's domain in either TLS mode; see
+  [Verify domain ownership](../frontends/domain-verification.md). Both an apply
+  and a dry run refuse a hostname another account owns, and a BYOC hostname
+  your account has not verified, naming the `_volcano` TXT record to publish.
+  When DNS does not answer an ownership check, they refuse the hostname with a
+  message to retry later.
+  A managed hostname nobody owns is reserved for your account until you publish
+  the record that `volcano cloud frontends domain get` reports; then keep the
+  certificate validation CNAME in DNS for renewal. Domains already attached
+  keep applying unchanged. If another account has only reserved the hostname,
+  an apply that adds a domain to a frontend without one releases the
+  reservation once your account owns the domain; for a managed domain it
+  otherwise reports your account's `_volcano` TXT record, so publish it and
+  apply again. A reservation is not ownership, so a dry run reports that
+  domain as created and only the apply names the record. Replacing an
+  existing domain never takes over a reservation: delete the existing domain
+  in one apply, wait for its removal to finish, then declare the hostname. Add the
   separate routing record to direct traffic to the frontend. Use CNAME unless
   the hostname is the apex of your DNS zone, including a separately delegated
   subdomain. At an apex, use your provider's ALIAS, ANAME, or CNAME-flattening

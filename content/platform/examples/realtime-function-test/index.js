@@ -24,8 +24,6 @@ const { VolcanoRealtime } = require('@volcano.dev/sdk/realtime');
 
 // Bounds each step, so one stalled step doesn't use up the function timeout.
 const STEP_TIMEOUT_MS = 5000;
-// How long to keep watching for the other user's change after the caller's.
-const ISOLATION_GRACE_MS = 1000;
 const OTHER_USER_ID = '00000000-0000-0000-0000-000000000000';
 
 exports.handler = async (event) => {
@@ -147,8 +145,8 @@ async function testPostgresChanges(realtime, databaseUrl, userId, addResult) {
     await withTimeout(pgChannel.subscribe(), 'Postgres subscribe');
     addResult('Postgres Subscribe', true, { channel: pgChannel.name });
 
-    // Insert the other user's row first, so a leaked change has at least as
-    // long to arrive as the caller's own.
+    // Insert the other user's row first, so its change is in the same batch as
+    // the caller's or an earlier one (see the marker below).
     const otherRowId = await insertRow(db, OTHER_USER_ID, 'This should be invisible to us');
     insertedIds.push(otherRowId);
     const ownRowId = await insertRow(db, userId, `Function test at ${new Date().toISOString()}`);
@@ -159,7 +157,19 @@ async function testPostgresChanges(realtime, databaseUrl, userId, addResult) {
       receivedCount: receivedIds.size,
     });
 
-    await sleep(ISOLATION_GRACE_MS);
+    // A Realtime server takes up a database's changes in batches, one batch at
+    // a time, but in no set order within a batch, so the other user's change
+    // can come after the caller's. Once the caller's change has arrived, a
+    // marker row lands in a later batch, so the server checks the other user's
+    // row, and sends any leaked change, before the marker's. With several
+    // servers, that holds for each server's own deliveries; see the README.
+    let markerChangeReceived = false;
+    if (ownChangeReceived) {
+      const markerRowId = await insertRow(db, userId, 'Marker');
+      insertedIds.push(markerRowId);
+      markerChangeReceived = await waitFor(() => receivedIds.has(markerRowId));
+    }
+
     const otherUserChangeReceived = receivedIds.has(otherRowId);
     let message = 'Correctly did not receive change for other user';
     if (otherUserChangeReceived) {
@@ -167,8 +177,10 @@ async function testPostgresChanges(realtime, databaseUrl, userId, addResult) {
     } else if (!ownChangeReceived) {
       // Without the caller's own change, a missing event proves nothing.
       message = 'Inconclusive: no change arrived for the caller either';
+    } else if (!markerChangeReceived) {
+      message = "Inconclusive: the marker row's change didn't arrive";
     }
-    addResult('RLS Isolation', ownChangeReceived && !otherUserChangeReceived, { message });
+    addResult('RLS Isolation', markerChangeReceived && !otherUserChangeReceived, { message });
 
     pgChannel.unsubscribe();
   } catch (error) {
@@ -182,36 +194,44 @@ async function testPostgresChanges(realtime, databaseUrl, userId, addResult) {
   }
 }
 
-// Runs once: after the policy exists, invocations skip the DDL, whose table
-// locks would hold up Realtime's RLS checks. One statement per query, because
-// the database proxy rejects multi-statement queries. If a statement fails,
-// closing the connection rolls the transaction back.
+// Once the policy exists the DDL is skipped, so its table locks don't hold up
+// Realtime's RLS checks. Until then, the advisory lock serializes concurrent
+// first invocations, which check again under it. One statement per query,
+// because the database proxy rejects multi-statement queries. If a statement
+// fails, closing the connection rolls the transaction back.
 async function createTestTable(db) {
-  const { rows } = await db.query(`
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public' AND tablename = 'realtime_test' AND policyname = 'realtime_test_user_only'
-  `);
-  if (rows.length > 0) {
+  if (await testPolicyExists(db)) {
     return;
   }
 
   await db.query('BEGIN');
-  await db.query(`
-    CREATE TABLE IF NOT EXISTS public.realtime_test (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      user_id UUID NOT NULL,
-      data TEXT,
-      created_at TIMESTAMPTZ DEFAULT NOW()
-    )
-  `);
-  await db.query('ALTER TABLE public.realtime_test ENABLE ROW LEVEL SECURITY');
-  // Realtime checks this policy as each subscriber before delivering a change.
-  await db.query(`
-    CREATE POLICY realtime_test_user_only ON public.realtime_test
-      FOR SELECT
-      USING (user_id = auth.uid())
-  `);
+  await db.query("SELECT pg_advisory_xact_lock(hashtextextended('realtime-function-test:public.realtime_test', 0))");
+  if (!(await testPolicyExists(db))) {
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS public.realtime_test (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL,
+        data TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await db.query('ALTER TABLE public.realtime_test ENABLE ROW LEVEL SECURITY');
+    // Realtime checks this policy as each subscriber before delivering a change.
+    await db.query(`
+      CREATE POLICY realtime_test_user_only ON public.realtime_test
+        FOR SELECT
+        USING (user_id = auth.uid())
+    `);
+  }
   await db.query('COMMIT');
+}
+
+async function testPolicyExists(db) {
+  const { rows } = await db.query(`
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'realtime_test' AND policyname = 'realtime_test_user_only'
+  `);
+  return rows.length > 0;
 }
 
 async function insertRow(db, userId, data) {
