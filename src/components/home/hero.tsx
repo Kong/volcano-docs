@@ -17,6 +17,18 @@ export function Hero() {
             Build AI agents and modern applications with the platform for the
             AI era, fully integrated with your agentic coding tools.
           </p>
+          <p className="hero-lede">
+            Functions, frontends, databases, and the rest of the platform are
+            documented under{" "}
+            <Link href="/platform" className="hero-link">
+              Platform
+            </Link>
+            . The same docs are in your terminal with{" "}
+            <Link href="/cli/docs-search" className="hero-link">
+              <code>volcano docs</code>
+            </Link>
+            .
+          </p>
         </div>
         <Link href="/get-started" className="hero-cta">
           Get started
