@@ -65,7 +65,7 @@ This is a public endpoint (no authentication required).
 
 ```bash
 curl -X POST https://api.volcano.dev/projects/PROJECT_ID/databases \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "main_db",
@@ -122,7 +122,7 @@ Change the compute size of an existing database:
 
 ```bash
 curl -X PATCH https://api.volcano.dev/projects/PROJECT_ID/databases/DB_ID/type \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "database_type": "volcano-db-s"
@@ -135,7 +135,7 @@ curl -X PATCH https://api.volcano.dev/projects/PROJECT_ID/databases/DB_ID/type \
 
 ```bash
 curl https://api.volcano.dev/projects/PROJECT_ID/databases/DB_ID \
-  -H "Authorization: Bearer PLATFORM_TOKEN"
+  -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
 
 When status is `active`, includes `connection_string`:
@@ -212,14 +212,14 @@ project returns `409 Conflict`; names are compared case-insensitively.
 
 ```bash
 curl https://api.volcano.dev/projects/PROJECT_ID/databases \
-  -H "Authorization: Bearer PLATFORM_TOKEN"
+  -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
 
 ## Delete a Database
 
 ```bash
 curl -X DELETE https://api.volcano.dev/projects/PROJECT_ID/databases/DB_ID \
-  -H "Authorization: Bearer PLATFORM_TOKEN"
+  -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
 
 This permanently deletes the database. Cannot be undone.
@@ -228,7 +228,7 @@ This permanently deletes the database. Cannot be undone.
 
 ```bash
 curl -X POST https://api.volcano.dev/projects/PROJECT_ID/databases/DB_ID/reset-password \
-  -H "Authorization: Bearer PLATFORM_TOKEN"
+  -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
 
 **Response:**

@@ -16,6 +16,8 @@ This example demonstrates using Volcano Realtime with a **service role key** for
 
 ## Quick Start
 
+Requires Node.js 20 or later.
+
 ```bash
 # Install dependencies
 yarn install

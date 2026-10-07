@@ -120,11 +120,11 @@ if (!error) {
 ```bash
 # Get first page (default: 20 per page)
 curl https://api.volcano.dev/auth/user/sessions \
-  -H "Authorization: Bearer ACCESS_TOKEN"
+  -H "Authorization: Bearer $ACCESS_TOKEN"
 
 # Get specific page with custom limit
 curl "https://api.volcano.dev/auth/user/sessions?page=2&limit=10" \
-  -H "Authorization: Bearer ACCESS_TOKEN"
+  -H "Authorization: Bearer $ACCESS_TOKEN"
 ```
 
 **Query Parameters:**
@@ -170,7 +170,7 @@ const { error } = await volcano.auth.deleteSession('session-uuid');
 
 ```bash
 curl -X DELETE https://api.volcano.dev/auth/user/sessions/SESSION_ID \
-  -H "Authorization: Bearer ACCESS_TOKEN"
+  -H "Authorization: Bearer $ACCESS_TOKEN"
 ```
 
 ### Sign Out from All Other Devices (SDK)
@@ -184,7 +184,7 @@ const { error } = await volcano.auth.deleteAllOtherSessions();
 
 ```bash
 curl -X DELETE https://api.volcano.dev/auth/user/sessions \
-  -H "Authorization: Bearer ACCESS_TOKEN"
+  -H "Authorization: Bearer $ACCESS_TOKEN"
 ```
 
 ## Admin Session Management

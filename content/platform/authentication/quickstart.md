@@ -27,7 +27,7 @@ You can find your anon key in the project settings or by calling the API:
 
 ```bash
 curl "https://api.volcano.dev/projects/YOUR_PROJECT_ID/anon-keys" \
-  -H "Authorization: Bearer YOUR_PLATFORM_TOKEN"
+  -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
 
 ## Step 2: Sign up a user
@@ -60,7 +60,7 @@ The response includes the user object and a session with tokens:
     "created_at": "2024-01-15T10:30:00Z"
   },
   "session": {
-    "access_token": "eyJhbGciOiJIUzI1NiIs...",
+    "access_token": "eyJhbGci...",
     "refresh_token": "rt_xyz789...",
     "expires_in": 3600
   }

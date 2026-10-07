@@ -33,7 +33,7 @@ stored logs using structured filters only.
 
 ```bash
 curl -X POST "https://api.volcano.dev/projects/PROJECT_ID/logs/search" \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"resource":{"type":"function","ids":["FUNC_ID"]}}'
 ```
@@ -43,7 +43,7 @@ however many the project has:
 
 ```bash
 curl -X POST "https://api.volcano.dev/projects/PROJECT_ID/logs/search" \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"resource":{"type":"function","kind":"durable"}}'
 ```
@@ -100,7 +100,7 @@ Supported request body fields:
 ```bash
 # Find "checkout_failed" in warn and error logs in one region
 curl -X POST "https://api.volcano.dev/projects/PROJECT_ID/logs/search" \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"resource":{"type":"function","ids":["FUNC_ID"]},"q":"level:(warn OR error) region:us-east-1 body:checkout_failed","start_time":"2024-01-01T12:00:00Z","end_time":"2024-01-01T13:00:00Z"}'
 ```
@@ -117,13 +117,13 @@ selective queries over a wide time range. Continue from `next_cursor` rather
 than treating a short or empty page as the end of the results.
 
 ```bash
-curl -X POST ".../logs/search" \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+curl -X POST "https://api.volcano.dev/projects/PROJECT_ID/logs/search" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"resource":{"type":"function"},"limit":100}'
 
-curl -X POST ".../logs/search" \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+curl -X POST "https://api.volcano.dev/projects/PROJECT_ID/logs/search" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"resource":{"type":"function"},"limit":100,"cursor":"eyJwayI6..."}'
 ```
@@ -135,7 +135,7 @@ Count logs over time to draw a histogram. The request takes the same
 
 ```bash
 curl -X POST "https://api.volcano.dev/projects/PROJECT_ID/logs/activity" \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"resource":{"type":"function"},"q":"level:error","start_time":"2024-01-01T12:03:10Z","end_time":"2024-01-01T13:03:10Z","bucket_count":4}'
 ```
@@ -216,7 +216,7 @@ field uses the same syntax as search requests. Do not send `cursor` or
 
 ```bash
 curl -N -X POST "https://api.volcano.dev/projects/PROJECT_ID/logs/stream" \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -H "Accept: text/event-stream" \
   -d '{"resource":{"type":"function","ids":["FUNC_ID"]},"q":"level:error"}'
@@ -268,7 +268,7 @@ Authorization: Bearer PLATFORM_TOKEN
 
 ```bash
 curl -X POST "https://api.volcano.dev/projects/PROJECT_ID/logs/search" \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"resource":{"type":"function","ids":["FUNC_ID"],"deployments":{"ids":["DEPLOYMENT_ID"]}},"limit":100}'
 ```

@@ -149,6 +149,12 @@ For production applications requiring migration tracking, consider using dedicat
 - [Liquibase](https://www.liquibase.org/)
 - [golang-migrate](https://github.com/golang-migrate/migrate)
 
+golang-migrate sends each file as one query, so a file with more than one
+statement is [refused](../databases/connection-strings.md#one-statement-per-query).
+Add `x-multi-statement=true` to the database URL to have it send them one at a
+time. That mode splits on every `;`, including one inside a `$$` function body,
+so apply such functions with `volcano` migrations or `psql -f` instead.
+
 ## See Also
 
 - [Creating Databases](../databases/creating-databases.md)

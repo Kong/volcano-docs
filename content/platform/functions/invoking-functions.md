@@ -179,8 +179,13 @@ the event reaches the function; authenticated-user context remains available as
 `event.__volcano_auth`. In `http_auth_mode: none`, `Authorization` and provider
 signature headers are application input and are forwarded. Internal
 `X-Volcano-*` headers are never forwarded.
-Proxy-derived headers (`Forwarded`, `X-Forwarded-*`, and `X-Real-IP`) are also
-removed; use `request_context.source_ip`, `request_context.host`,
+Proxy-derived headers (`Forwarded`, `X-Forwarded-For`, `X-Forwarded-Host`,
+`X-Forwarded-Port`, `X-Forwarded-Proto`, and `X-Real-IP`) are also removed. So
+are lookalikes of these and of `X-Volcano-*` that put another character, such
+as `_` or `.`, in place of `-`: frameworks that map headers to CGI-style
+variables read `X_Forwarded_For` as `X-Forwarded-For`. Other names with `_` or
+`.`, such as `X_Api_Key`, are forwarded. Use
+`request_context.source_ip`, `request_context.host`,
 `request_context.scheme`, and `request_context.protocol` for Volcano's trusted
 connection metadata. A request that reaches the function through a frontend's
 Function route carries the visitor's address in `source_ip` too.
@@ -229,7 +234,7 @@ a `private` function answers `404`, as if it didn't exist.
 
 ```bash
 curl -X POST "$INVOKE_URL" \
-  -H "Authorization: Bearer ACCESS_TOKEN" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"payload":{"action":"get_profile"}}'
 ```

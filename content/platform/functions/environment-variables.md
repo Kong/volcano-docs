@@ -24,7 +24,7 @@ For private npm registry access, prefer `NODE_AUTH_TOKEN` together with `NPM_CON
 
 ```bash
 curl -X POST https://api.volcano.dev/projects/PROJECT_ID/variables \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name":"API_KEY","value":"sk_live_12345"}'
 ```
@@ -235,7 +235,7 @@ Set `variable_scope: all` to go back to receiving everything.
 
 ```bash
 curl https://api.volcano.dev/projects/PROJECT_ID/variables \
-  -H "Authorization: Bearer PLATFORM_TOKEN"
+  -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
 
 List responses include the latest project variable propagation status. During
@@ -247,7 +247,7 @@ status becomes `active` or `failed`.
 
 ```bash
 curl https://api.volcano.dev/projects/PROJECT_ID/variables/API_KEY \
-  -H "Authorization: Bearer PLATFORM_TOKEN"
+  -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
 
 **Response:**
@@ -268,7 +268,7 @@ curl https://api.volcano.dev/projects/PROJECT_ID/variables/API_KEY \
 
 ```bash
 curl -X PUT https://api.volcano.dev/projects/PROJECT_ID/variables/API_KEY \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"value":"sk_live_67890"}'
 ```
@@ -279,7 +279,7 @@ Functions and frontend server runtimes pick up new values after variable propaga
 
 ```bash
 curl -X DELETE https://api.volcano.dev/projects/PROJECT_ID/variables/API_KEY \
-  -H "Authorization: Bearer PLATFORM_TOKEN"
+  -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
 
 ## Common Variables

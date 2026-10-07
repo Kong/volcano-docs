@@ -48,7 +48,8 @@ export default function PasswordResetPage() {
     setMessage('');
 
     try {
-      const { message: responseMessage } = await volcano.auth.forgotPassword(email);
+      const { message: responseMessage, error } = await volcano.auth.resetPasswordForEmail(email);
+      if (error) throw error;
       setMessage(responseMessage || 'If the email exists, a password reset link has been sent');
       setMessageType('success');
       setEmail('');
@@ -87,10 +88,11 @@ export default function PasswordResetPage() {
     setMessage('');
 
     try {
-      const { message: responseMessage } = await volcano.auth.resetPassword({
+      const { message: responseMessage, error } = await volcano.auth.resetPassword({
         token,
         newPassword
       });
+      if (error) throw error;
       
       setMessage(responseMessage || 'Password reset successfully! You can now sign in with your new password.');
       setMessageType('success');

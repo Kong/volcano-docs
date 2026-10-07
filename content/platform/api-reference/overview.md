@@ -23,7 +23,7 @@ All API requests require authentication. Include your token in the `Authorizatio
 
 ```bash
 curl "https://api.volcano.dev/projects" \
-  -H "Authorization: Bearer YOUR_TOKEN"
+  -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
 
 Different endpoints require different token types:

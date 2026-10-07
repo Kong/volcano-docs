@@ -1,22 +1,9 @@
 // Custom hook for Volcano SDK with dynamic configuration
 import { useState, useEffect } from 'react';
+import type { User, VolcanoAuth } from '@volcano.dev/sdk';
 import { getConfig, isConfigured } from './config';
 
-// Minimal type for user object (used by pages for type hints)
-export interface VolcanoUser {
-  id: string;
-  email: string;
-  email_confirmed: boolean;
-  status: string;
-  user_metadata: Record<string, unknown>;
-  created_at: string;
-  updated_at: string;
-  last_sign_in_at?: string;
-  email_change?: string;
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type VolcanoClient = any;
+export type VolcanoUser = User;
 
 export interface PasswordPolicy {
   effective_min_length: number;
@@ -49,7 +36,7 @@ export function validatePasswordAgainstPolicy(password: string, policy: Password
 }
 
 export function useVolcano() {
-  const [volcano, setVolcano] = useState<VolcanoClient | null>(null);
+  const [volcano, setVolcano] = useState<VolcanoAuth | null>(null);
   const [configured, setConfigured] = useState(false);
   const [loading, setLoading] = useState(true);
   const [passwordPolicy, setPasswordPolicy] = useState<PasswordPolicy | null>(null);

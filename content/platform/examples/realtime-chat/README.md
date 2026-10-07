@@ -32,11 +32,12 @@ The entire app is in `app/page.tsx` (~250 lines):
 import { VolcanoAuth } from '@volcano.dev/sdk';
 import { VolcanoRealtime } from '@volcano.dev/sdk/realtime';
 
-// 1. Sign up anonymously with display_name
+// 1. Sign in anonymously with display_name
 const volcano = new VolcanoAuth({ apiUrl, anonKey });
-const { session } = await volcano.auth.signUpAnonymous({ 
+const { session, error } = await volcano.auth.signInAnonymously({ 
   display_name: 'Alice'  // This appears in presence events!
 });
+if (error || !session) throw error ?? new Error('No session returned');
 
 // 2. Connect to realtime
 const realtime = new VolcanoRealtime({ 
@@ -49,19 +50,19 @@ await realtime.connect();
 // 3. Subscribe to chat (broadcast channel)
 const chat = realtime.channel('chat-general');
 chat.on('message', (msg) => {
-  console.log(`${msg.username}: ${msg.text}`);
+  console.log('New message:', msg); // payloads are untyped; app/page.tsx checks their shape
 });
 await chat.subscribe();
 
 // 4. Subscribe to presence (see who's online)
 const presence = realtime.channel('chat-general', { type: 'presence' });
 
-presence.on('presence_sync', () => {
-  const state = presence.getPresenceState();
-  const users = Object.values(state).map(info => ({
-    id: info.client,
-    name: info.connInfo?.user_metadata?.display_name || 'Anonymous'
-  }));
+presence.onPresenceSync((state) => {
+  const users = Object.values(state).map(info => {
+    // connInfo is untyped; app/page.tsx checks each field's type
+    const metadata = info.connInfo?.user_metadata as { display_name?: string } | undefined;
+    return { id: info.client, name: metadata?.display_name || 'Anonymous' };
+  });
   console.log('Online users:', users);
 });
 
@@ -80,11 +81,11 @@ await chat.send({
 
 ### User Metadata in Presence
 
-Display names come from **anonymous signup metadata**:
+Display names come from **anonymous sign-in metadata**:
 
 ```javascript
-// Signup with display_name
-await volcano.auth.signUpAnonymous({ display_name: 'Alice' });
+// Sign in with display_name
+await volcano.auth.signInAnonymously({ display_name: 'Alice' });
 
 // It appears in presence events automatically:
 presence.on('join', (info) => {

@@ -11,7 +11,7 @@ Get your database connection string from the API:
 
 ```bash
 curl https://api.volcano.dev/projects/PROJECT_ID/databases/DB_ID \
-  -H "Authorization: Bearer PLATFORM_TOKEN"
+  -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
 
 **Response:**
@@ -56,7 +56,7 @@ Volcano doesn't set `DATABASE_URL` (or any variable) automatically. Set it yours
 
 ```bash
 curl -X POST https://api.volcano.dev/projects/PROJECT_ID/variables \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -d '{"name":"DATABASE_URL","value":"postgresql://..."}'
 ```
 
@@ -108,6 +108,43 @@ exports.handler = async (event) => {
 };
 ```
 
+## One Statement per Query
+
+Each query you send holds one SQL statement. A query string with several
+statements separated by semicolons is refused before any of it runs:
+
+```javascript
+await client.query('SELECT 1; SELECT 2');
+// error: Multiple statements are not supported
+//   code: '0A000'
+//   hint: 'Send one statement per query. To apply several together, send them one at a time between BEGIN and COMMIT.'
+```
+
+Semicolons inside a single statement are fine, such as in a string literal or a
+function body between `$$` quotes.
+
+This mostly affects migration tools that send a whole file as one query. Send
+the statements one at a time instead, inside a transaction when they must apply
+together:
+
+```javascript
+const client = await pool.connect();
+try {
+  await client.query('BEGIN');
+  await client.query('CREATE TABLE posts (id bigserial PRIMARY KEY, title text NOT NULL)');
+  await client.query('CREATE INDEX posts_title_idx ON posts (title)');
+  await client.query('COMMIT');
+} catch (err) {
+  await client.query('ROLLBACK');
+  throw err;
+} finally {
+  client.release();
+}
+```
+
+`psql -f` and [`volcano` migrations](../guides/migrations.md) already send a
+file statement by statement. `psql -c` with several statements does not.
+
 ## Security
 
 **SSL/TLS:**
@@ -135,7 +172,7 @@ If connection string is compromised:
 
 ```bash
 curl -X POST https://api.volcano.dev/projects/PROJECT_ID/databases/DB_ID/reset-password \
-  -H "Authorization: Bearer PLATFORM_TOKEN"
+  -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
 
 Rotates the Volcano-managed client password and returns a new connection string. Within a few seconds the old password stops authenticating through pgproxy. Connections already open keep working until they close, so anything still holding the old string has to be pointed at the new one to reconnect. Internal credentials are not reset or exposed.

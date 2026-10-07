@@ -271,7 +271,7 @@ WHERE provider = 'google';
 ```bash
 # Refresh Google token
 curl -X POST https://api.volcano.dev/auth/oauth/google/refresh-token \
-  -H "Authorization: Bearer USER_ACCESS_TOKEN"
+  -H "Authorization: Bearer $USER_ACCESS_TOKEN"
 
 # Response:
 {

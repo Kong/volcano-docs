@@ -302,6 +302,63 @@ A static asset served from cache typically reports single digits. A page your
 server-side code renders reports whatever that render costs, plus a startup if
 the request arrived cold — see the section above.
 
+## Time limits for server-rendered routes
+
+A server-rendered page or route handler has 60 seconds to start its response.
+One that has not started by then gets a `504` at 60 seconds, on every method:
+
+```bash
+curl -sS -o /dev/null -D - "https://your-site.frontends.volcano.run/api/report"
+# HTTP/2 504
+# x-volcano-origin-ms: 60012
+```
+
+The request is not retried, so your route runs once per request. The `504`
+does not stop it, though: it keeps running until it returns or reaches the
+runtime limit below. Put a timeout on the outbound calls a route makes so it
+can fail inside the window with an error of your own.
+
+| Limit | HOBBY | SUPERAGENT |
+| --- | --- | --- |
+| Time to start a response | 60 s | 60 s |
+| Time between chunks of a streamed response | 60 s | 60 s |
+| Total time the runtime gives one request | 30 s | 180 s |
+
+On HOBBY the runtime limit comes first, so a route that has not answered fails
+at 30 seconds. Next.js's `maxDuration` export does not change any of these.
+
+### Stream work that takes longer than 60 seconds
+
+A streamed response is not held to the 60-second start: it only has to send
+something at least every 60 seconds, for as long as the runtime limit allows.
+Send the headers and a first chunk right away, then the rest as it is ready:
+
+```js
+// app/api/report/route.js
+export const dynamic = "force-dynamic";
+
+export async function GET() {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      for (let step = 1; step <= 9; step++) {
+        controller.enqueue(encoder.encode(`data: step ${step}\n\n`));
+        await new Promise((resolve) => setTimeout(resolve, 10_000));
+      }
+      controller.enqueue(encoder.encode("data: done\n\n"));
+      controller.close();
+    },
+  });
+  return new Response(stream, {
+    headers: { "content-type": "text/event-stream", "cache-control": "no-store" },
+  });
+}
+```
+
+That route answers for 90 seconds on SUPERAGENT. On HOBBY it is cut off at 30.
+For work that has to outlast the runtime limit, start a
+[durable function](../functions/durable-functions.md) and poll its result.
+
 ## Platform error pages
 
 When Volcano cannot route or serve a frontend request, browsers receive a
@@ -318,6 +375,31 @@ self-contained HTML error page. The status code identifies the failure:
 The page may include a reference ID for support. `502` and `503` pages link to
 the platform status page. Clients that prefer `application/json` receive a JSON
 error response instead; `Accept` quality values are honored.
+
+## Read the visitor's address
+
+Your server-side code finds the visitor's IP address in the usual headers:
+
+```javascript
+// app/api/whoami/route.js
+export function GET(request) {
+  return Response.json({ ip: request.headers.get("x-real-ip") });
+}
+```
+
+| Header | Value |
+| --- | --- |
+| `X-Real-IP` | The visitor's address |
+| `X-Forwarded-For` | The visitor's address, followed by Volcano's own hops |
+
+Volcano replaces any `X-Real-IP` or `X-Forwarded-For` the visitor sends, so
+neither can be spoofed. Use the first `X-Forwarded-For` entry, not the last.
+
+Headers starting with `CloudFront-` are removed before your code runs. Their
+address and location values describe Volcano's network rather than the
+visitor. To detect the visitor's device, read `User-Agent`. A frontend deployed
+before they were removed receives them until its next deployment; do not rely
+on them.
 
 ## Variables
 
@@ -339,17 +421,42 @@ function, so your pages call it on the same origin and can keep a session in
 
 ## Custom domains
 
-Custom domains are a **SUPERAGENT** feature and use **bring-your-own-certificate
-(BYOC)** TLS: you supply the certificate and private key, and Volcano serves
-your domain with them. Volcano does not issue the certificate for you.
+Custom domains are a **SUPERAGENT** feature and support Volcano-managed TLS or
+bring-your-own-certificate (BYOC) TLS. With managed TLS, Volcano issues and
+renews the certificate after you publish the returned validation records.
 
 On the HOBBY plan an attached domain is kept but stops serving: requests to it
 return `404` while the frontend's `*.frontends.volcano.run` URL keeps working. Upgrading
 puts the domain back in service without re-attaching it. See
 [moving from SUPERAGENT to HOBBY](../guides/plans-and-limits.md#moving-from-superagent-to-hobby).
 
-Attaching a custom domain takes two steps — attach the domain (with your cert),
-then point DNS at your frontend:
+For managed TLS, declare the domain in `volcano-config.yaml` and deploy it:
+
+```yaml
+version: 1
+frontends:
+  - name: my-site
+    custom_domain:
+      domain: app.example.com
+      tls:
+        mode: managed
+```
+
+```bash
+volcano config deploy
+volcano cloud frontends domain get my-site
+```
+
+If Volcano returns a `_volcano` TXT record, add it to prove hostname ownership.
+Volcano skips that proof when the same account reuses a hostname it has
+claimed. It then returns a certificate validation CNAME; add that CNAME and keep
+it in DNS for issuance and renewal. You can remove the TXT record after the
+CNAME appears.
+Volcano cannot yet switch a BYOC domain to managed TLS in place. To keep the
+hostname, delete the BYOC domain and declare it again with `tls.mode: managed`;
+HTTPS for the hostname is unavailable until the managed certificate is issued.
+To use BYOC instead, attach the domain with your certificate, then point DNS at
+the frontend:
 
 ```bash
 # 1. Attach the domain with your PEM certificate + unencrypted private key
@@ -367,6 +474,10 @@ volcano cloud frontends domain get my-site
 You can also attach a custom domain declaratively — see
 [`custom_domain` in the configuration reference](../projects/configuration.md).
 
+Removing a domain can take up to a minute to take effect everywhere. Until it
+does, attaching the same hostname again, to this or any other frontend, returns
+a domain conflict. Retry after the previous routing assignment expires.
+
 ### Point DNS at your frontend
 
 Check with your DNS provider whether your domain is a zone apex; even a
@@ -383,7 +494,7 @@ For a provider-confirmed non-apex:
 app.example.com.  CNAME  <frontend-id>.frontends.volcano.run.
 ```
 
-The domain becomes `active` once Volcano finishes attaching your certificate.
+The domain becomes `active` once Volcano finishes attaching the certificate.
 That status does not confirm your DNS is live. For a confirmed non-apex,
 inspect the CNAME with `dig CNAME app.example.com`; for an apex, check the
 ALIAS, ANAME, or flattening record with your DNS provider.

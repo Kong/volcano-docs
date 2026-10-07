@@ -205,7 +205,7 @@ Projects created before this change:
 
 ```bash
 curl -X PUT https://api.volcano.dev/projects/PROJECT_ID/auth/config \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -d '{
     "enable_signup": true,
     "enable_email_password": false
@@ -216,7 +216,7 @@ curl -X PUT https://api.volcano.dev/projects/PROJECT_ID/auth/config \
 
 ```bash
 curl -X PUT https://api.volcano.dev/projects/PROJECT_ID/auth/config \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -d '{
     "enable_signup": false
   }'
@@ -226,7 +226,7 @@ curl -X PUT https://api.volcano.dev/projects/PROJECT_ID/auth/config \
 
 ```bash
 curl https://api.volcano.dev/projects/PROJECT_ID/auth/methods \
-  -H "Authorization: Bearer PLATFORM_TOKEN"
+  -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
 
 Response shows which providers are currently available.

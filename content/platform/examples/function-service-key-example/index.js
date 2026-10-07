@@ -79,7 +79,7 @@ async function getAnalytics(volcano) {
 		.select('id, title, status, user_id, created_at');
 	
 	if (error) {
-		throw new Error(error);
+		throw error;
 	}
 	
 	// Calculate analytics
@@ -153,7 +153,7 @@ async function moderateContent(volcano, params) {
 			.eq('id', postId);
 		
 		if (error) {
-			results.push({ id: postId, success: false, error });
+			results.push({ id: postId, success: false, error: error.message });
 		} else {
 			results.push({ id: postId, success: true, data: data[0] });
 		}
@@ -195,7 +195,7 @@ async function bulkUpdate(volcano, params) {
 	const { data, error } = await query;
 	
 	if (error) {
-		throw new Error(error);
+		throw error;
 	}
 	
 	return {
@@ -219,7 +219,7 @@ async function exportAllData(volcano) {
 		.order('created_at', { ascending: false });
 	
 	if (postsError) {
-		throw new Error(postsError);
+		throw postsError;
 	}
 	
 	// Could also export other tables
@@ -257,7 +257,7 @@ async function cleanupOldPosts(volcano, params) {
 		.lt('created_at', cutoffDate.toISOString());
 	
 	if (findError) {
-		throw new Error(findError);
+		throw findError;
 	}
 	
 	if (dry_run) {

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import type { UpdateUserOptions, UserMetadata } from '@volcano.dev/sdk';
 import { useVolcano, validatePasswordAgainstPolicy, VolcanoUser } from '../../lib/useVolcano';
 import ConfigPrompt from '../../components/ConfigPrompt';
 
@@ -104,11 +105,11 @@ export default function DashboardPage() {
     setMessage('');
 
     try {
-      const updates: Record<string, unknown> = {};
+      const updates: UpdateUserOptions = {};
       if (updatePassword) updates.password = updatePassword;
 
       // Build metadata object with name and custom fields
-      const metadata: Record<string, unknown> = {};
+      const metadata: UserMetadata = {};
       if (updateName) metadata.name = updateName;
 
       // Add custom metadata fields
@@ -127,7 +128,8 @@ export default function DashboardPage() {
         updates.metadata = metadata;
       }
 
-      const { user: updatedUser } = await volcano.auth.updateUser(updates);
+      const { user: updatedUser, error } = await volcano.auth.updateUser(updates);
+      if (error) throw error;
       setUser(updatedUser);
       setMessage('Profile updated successfully!');
       setMessageType('success');

@@ -88,7 +88,7 @@ OAuth provider calls this endpoint after user authorization.
 **Response Body:**
 ```json
 {
-  "access_token": "eyJhbGciOiJIUzI1NiIs...",
+  "access_token": "eyJhbGci...",
   "token_type": "bearer",
   "expires_in": 3600,
   "refresh_token": "refresh_abc123...",

@@ -102,7 +102,7 @@ SELECT auth.role();   -- Returns: 'authenticated' (or 'anonymous' for an anonymo
 ```bash
 # Via API
 curl https://api.volcano.dev/projects/PROJECT_ID/databases/DATABASE_NAME \
-  -H "Authorization: Bearer PLATFORM_TOKEN"
+  -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
 
 **Response includes:**
@@ -753,9 +753,10 @@ Errors that Volcano itself raises, rather than PostgreSQL, are the exception:
 | `53400` | The account is over its billing-cycle database request allowance |
 | `25006` | The database is over its storage allowance; writes are blocked |
 | `57P03` | The platform is briefly unable to accept connections — retry |
+| `0A000` | The query holds more than one statement; see [One Statement per Query](connection-strings.md#one-statement-per-query). PostgreSQL raises this code too, for features it does not support; the message says which |
 
-Anything else Volcano refuses (an unsupported operation, a failed connection)
-arrives with no SQLSTATE at all.
+Anything else Volcano refuses, such as a failed connection or an unsupported
+statement like `COMMIT AND CHAIN`, arrives with no SQLSTATE at all.
 
 ---
 

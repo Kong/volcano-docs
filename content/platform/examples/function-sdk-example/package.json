@@ -4,7 +4,7 @@
   "description": "Volcano function using @volcano.dev/sdk",
   "main": "index.js",
   "dependencies": {
-    "@volcano.dev/sdk": "nightly"
+    "@volcano.dev/sdk": "^1.15.1"
   },
   "scripts": {
     "test": "node index.js"

@@ -5843,6 +5843,8 @@ paths:
         Configures one custom domain for a frontend.
         The default Volcano-generated frontend URL remains active.
         Wildcard Volcano frontend TLS remains valid and isolated from custom-domain certificate changes.
+        Managed TLS returns the DNS records currently required for setup. Volcano may require a tenant-specific TXT ownership challenge before returning the certificate authority's validation record. After ownership verification succeeds, Volcano permanently assigns the hostname to the account, including after the domain is deleted. A required but unverified ownership reservation expires after 72 hours.
+        An unverified reservation does not block an account that proves ownership. When another account holds one, a managed TLS request gets `409` with `code: ownership_verification_required` and the caller's own `required_record`; after publishing it, the same request takes over the reservation. A BYOC request with a publicly trusted certificate and key for the hostname also takes it over; other BYOC requests get a `409` without `code`. Hostnames claimed through ownership verification and BYOC domains are never taken over.
       operationId: createFrontendCustomDomain
       security:
         - UserToken: []
@@ -5894,11 +5896,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '409':
-          description: Conflict - custom domain already in use, still detaching, or frontend already has a custom domain
+          description: Conflict - custom domain already in use, reserved by another account until ownership is proven, still detaching, or frontend already has a custom domain
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/FrontendCustomDomainConflictError'
         '500':
           description: Internal server error
           content:
@@ -9569,12 +9571,15 @@ paths:
         - Auth Admin
       summary: Get auth user insights
       description: |
-        Returns current auth-user totals, rolling 30-day active users, and
-        zero-filled signup and successful sign-in counts for an inclusive UTC
-        date range. Weeks start on Monday. Sign-in counts and active-user
-        activity begin when collection is deployed. Historical signup counts
-        are backfilled from users present at deployment. Token refreshes affect
-        active users but not the sign-in series.
+        Returns current and deleted auth-user totals, rolling 24-hour and 30-day
+        active users, and zero-filled signup, deletion, net-growth, and successful
+        sign-in counts for an inclusive UTC date range. Weeks start on Monday.
+        Signups remain counted after deletion; net growth is signups minus
+        deletions. Deleted users contribute to active counts until their last
+        activity leaves the rolling window. Token refreshes affect active users
+        but not the sign-in series. Collection starts at deployment, with signup
+        history backfilled from accounts still present then. Earlier hard-deleted
+        accounts cannot be recovered.
       operationId: getAuthInsights
       security:
         - UserToken: []
@@ -9614,11 +9619,15 @@ paths:
                   interval: day
                 summary:
                   total_users: 1234
+                  deleted_users: 42
+                  active_users_1d: 83
                   active_users_30d: 418
                 series:
                   - bucket_start: '2026-07-20'
                     signups: 12
                     signins: 97
+                    deletions: 3
+                    net_growth: 9
                     is_partial: true
         '400':
           description: Invalid date range or interval
@@ -14615,9 +14624,7 @@ components:
           pattern: ^[a-z][a-z0-9-]{0,62}$
         preset:
           type: string
-          enum:
-            - python3.12
-            - node22
+          description: Preset ID from the available Sandbox preset catalog.
         memory_mb:
           type: integer
           enum:
@@ -14695,9 +14702,7 @@ components:
       properties:
         preset:
           type: string
-          enum:
-            - python3.12
-            - node22
+          description: Preset ID from the available Sandbox preset catalog.
         sandbox_id:
           type: string
           format: uuid
@@ -14759,9 +14764,7 @@ components:
       properties:
         preset:
           type: string
-          enum:
-            - python3.12
-            - node22
+          description: Preset ID from the available Sandbox preset catalog.
         sandbox_id:
           type: string
           format: uuid
@@ -15344,12 +15347,21 @@ components:
           type: integer
           format: int64
           minimum: 0
-          description: Accounts created during the bucket that still exist.
+          description: Registrations during the bucket. Subsequent deletion does not subtract from this count. Historical counts removed before deletion-history collection cannot be reconstructed.
         signins:
           type: integer
           format: int64
           minimum: 0
           description: Successful session creations during the bucket.
+        deletions:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Accounts deleted during this bucket, counted once across soft and hard deletion.
+        net_growth:
+          type: integer
+          format: int64
+          description: Registrations minus deletions during this bucket. May be negative.
         is_partial:
           type: boolean
           description: Whether the requested window or observation time clips this bucket.
@@ -15358,6 +15370,8 @@ components:
         - signups
         - signins
         - is_partial
+        - deletions
+        - net_growth
     AuthInsightsSummary:
       type: object
       additionalProperties: false
@@ -15366,15 +15380,27 @@ components:
           type: integer
           format: int64
           minimum: 0
-          description: Current auth-user count, matching the auth-user list total.
+          description: Current auth-user count, excluding accounts with deleted status.
+        deleted_users:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Recorded deletions, excluding internal test identities. Includes soft and hard deletion, counted once per account.
+        active_users_1d:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Distinct users active in the trailing 24 hours, including activity before account deletion.
         active_users_30d:
           type: integer
           format: int64
           minimum: 0
-          description: Users with a successful session creation or refresh in the trailing 30 days since activity collection was deployed.
+          description: Distinct users with a successful session creation or refresh in the trailing 30 days, including activity before account deletion.
       required:
         - total_users
         - active_users_30d
+        - active_users_1d
+        - deleted_users
     AuthInsightsWindow:
       type: object
       additionalProperties: false
@@ -16027,10 +16053,12 @@ components:
         - text_body
     CreateFrontendCustomDomainRequest:
       type: object
+      additionalProperties: false
       properties:
         domain:
           type: string
-          description: Fully-qualified domain name (hostname only, no scheme/path)
+          maxLength: 253
+          description: 'Fully-qualified domain name (hostname only, no scheme/path). Managed TLS (`tls.mode: managed`) accepts at most 219 characters; BYOC accepts 253.'
           example: app.example.com
         tls:
           $ref: '#/components/schemas/FrontendCustomDomainTLSConfig'
@@ -17942,6 +17970,62 @@ components:
       required:
         - function_id
         - path_prefix
+    FrontendCustomDomainTLSConfig:
+      type: object
+      description: 'TLS for a new custom domain. With `mode: managed`, Volcano issues and renews the certificate; omit every PEM field. With `mode: byoc`, send both `certificate_pem` and `private_key_pem`, plus an optional `certificate_chain_pem`.'
+      additionalProperties: false
+      not:
+        anyOf:
+          - allOf:
+              - properties:
+                  mode:
+                    enum:
+                      - managed
+                required:
+                  - mode
+              - anyOf:
+                  - required:
+                      - certificate_pem
+                  - required:
+                      - private_key_pem
+                  - required:
+                      - certificate_chain_pem
+          - allOf:
+              - properties:
+                  mode:
+                    enum:
+                      - byoc
+                required:
+                  - mode
+              - anyOf:
+                  - not:
+                      required:
+                        - certificate_pem
+                  - not:
+                      required:
+                        - private_key_pem
+      properties:
+        mode:
+          type: string
+          enum:
+            - managed
+            - byoc
+          default: byoc
+          description: managed for a Volcano-issued certificate; byoc to supply your own.
+        certificate_pem:
+          type: string
+          maxLength: 65536
+          description: PEM-encoded certificate. Required when mode is byoc; not allowed when mode is managed.
+        private_key_pem:
+          type: string
+          maxLength: 65536
+          description: PEM-encoded private key. Required when mode is byoc; not allowed when mode is managed.
+        certificate_chain_pem:
+          type: string
+          maxLength: 65536
+          description: Optional PEM-encoded certificate chain when mode is byoc; not allowed when mode is managed.
+      required:
+        - mode
     FrontendCustomDomainResponse:
       type: object
       properties:
@@ -17966,12 +18050,20 @@ components:
           enum:
             - pending
             - verified
+            - failed
+          description: '`verified`: the domain is served by a validated certificate. `pending`: it is not served yet, is being re-validated after its certificate material was withdrawn, or Volcano is retrying after a failure. `failed`: a failure left the domain unserved, alongside `domain_status: failed`; managed domains report the cause in `failure_reason`.'
+        failure_reason:
+          type: string
+          description: Failure category, present only when managed TLS setup has failed. Current values are provider, certificate, ownership, and internal; ownership means another account has already claimed the hostname through ownership verification. Treat unrecognized values as internal.
         verification_records:
           type: array
           items:
             $ref: '#/components/schemas/FrontendDomainVerificationRecord'
         required_routing_record:
-          $ref: '#/components/schemas/FrontendDomainRoutingRecord'
+          allOf:
+            - $ref: '#/components/schemas/FrontendDomainRoutingRecord'
+          deprecated: true
+          description: Deprecated and no longer returned. Use routing_target_hostname as the DNS routing target.
         routing_target_hostname:
           type: string
           description: DNS routing target hostname for this frontend. The DNS record type depends on whether the custom domain is a zone apex.
@@ -17993,28 +18085,6 @@ components:
         - effective_urls
         - created_at
         - updated_at
-    FrontendCustomDomainTLSConfig:
-      type: object
-      properties:
-        mode:
-          type: string
-          enum:
-            - byoc
-          default: byoc
-          description: BYOC is mandatory for custom domain creation.
-        certificate_pem:
-          type: string
-          description: Required. PEM-encoded certificate.
-        private_key_pem:
-          type: string
-          description: Required. PEM-encoded private key.
-        certificate_chain_pem:
-          type: string
-          description: Optional PEM-encoded certificate chain.
-      required:
-        - mode
-        - certificate_pem
-        - private_key_pem
     FrontendDeployment:
       type: object
       properties:
@@ -18110,6 +18180,7 @@ components:
         - value
     FrontendDomainVerificationRecord:
       type: object
+      description: The DNS records currently required for managed TLS. Volcano may require a tenant-specific TXT ownership record before returning a CNAME that authorizes certificate issuance and renewal. Clients must follow the records returned for the current lifecycle state instead of assuming a fixed sequence.
       properties:
         name:
           type: string
@@ -18121,6 +18192,14 @@ components:
         - name
         - type
         - value
+    FrontendCustomDomainConflictError:
+      description: 'Custom domain create conflict. With `code: ownership_verification_required`, another account holds an unverified managed TLS reservation for the hostname: publish `required_record` in DNS and send the same request again. The retry succeeds once Volcano can see the record. Other conflicts omit both fields.'
+      allOf:
+        - $ref: '#/components/schemas/Error'
+        - type: object
+          properties:
+            required_record:
+              $ref: '#/components/schemas/FrontendDomainVerificationRecord'
     FrontendUsageDailyEntry:
       type: object
       description: One day of request and error counts for a single frontend.
@@ -19465,6 +19544,13 @@ components:
             started in. "Durable Compute (MB-Seconds)" reports the memory the execution ran
             at times the time it spent running, in megabyte-seconds; the allowance for it is
             published in gigabyte-seconds, which is 1024 of these.
+            "Sandbox Running (MiB-Seconds)", "Sandbox Suspended (Seconds)", and
+            "Sandbox Uncertain (MiB-Seconds)" are preview-only usage; they do not
+            debit credits. Running reports configured memory times observed runtime,
+            not measured CPU or elastic memory consumption. Uncertain includes
+            observation gaps and unconfirmed state transitions. Suspended reports
+            duration, not snapshot size. Local sessions do not contribute.
+            Totals are rounded down after aggregating millisecond measurements.
             "Database Storage (Bytes)" is a current observed gauge,
             not a cumulative counter. It is the sum of the latest samples exposed as
             `storage_bytes` by the project's database list, so it includes what each
@@ -20515,17 +20601,21 @@ components:
       type: object
       additionalProperties: false
       description: |
-        Custom domain with BYOC TLS (SUPERAGENT plan). `tls` is required when the
-        domain is first created and optional afterwards: providing new TLS
-        material for the same domain rotates the certificate in place (zero
-        downtime); omitting `tls` keeps the stored certificate. TLS material is
-        write-only and omitted from config export.
+        Custom domain with managed or BYOC TLS (SUPERAGENT plan). `tls` is required
+        when the domain is first created and optional afterwards. For an existing
+        domain, omitting `tls` or sending only `tls.mode` keeps the stored
+        certificate; new BYOC material for the same domain rotates the
+        certificate in place (zero downtime). Changing `tls.mode` for the same
+        hostname, or the hostname of a managed domain, requires deleting the
+        domain first. BYOC TLS material is write-only; exports render only
+        `tls.mode`.
       properties:
         domain:
           type: string
-          description: Fully-qualified domain name (hostname only, no scheme/path)
+          maxLength: 253
+          description: 'Fully-qualified domain name (hostname only, no scheme/path). Managed TLS (`tls.mode: managed`) accepts at most 219 characters; BYOC accepts 253.'
         tls:
-          $ref: '#/components/schemas/FrontendCustomDomainTLSConfig'
+          $ref: '#/components/schemas/ProjectConfigFrontendCustomDomainTLSConfig'
       required:
         - domain
     ProjectConfigDatabase:
@@ -22441,6 +22531,62 @@ components:
           $ref: '#/components/schemas/AuthPageTheme'
         layouts:
           $ref: '#/components/schemas/ProjectConfigAuthPageLayouts'
+    ManagedProjectConfigFrontendCustomDomainTLSConfig:
+      type: object
+      description: Volcano issues and renews the certificate. Certificate fields are not allowed.
+      additionalProperties: false
+      properties:
+        mode:
+          type: string
+          enum:
+            - managed
+      required:
+        - mode
+    BYOCProjectConfigFrontendCustomDomainTLSConfig:
+      type: object
+      description: 'Your own certificate. Send `certificate_pem` and `private_key_pem` together, with an optional `certificate_chain_pem`, to create the domain or rotate its certificate. For an existing BYOC domain, `mode: byoc` without certificate fields keeps the stored certificate; exports render only the mode.'
+      additionalProperties: false
+      not:
+        anyOf:
+          - required:
+              - certificate_pem
+            not:
+              required:
+                - private_key_pem
+          - required:
+              - private_key_pem
+            not:
+              required:
+                - certificate_pem
+          - required:
+              - certificate_chain_pem
+            not:
+              required:
+                - certificate_pem
+                - private_key_pem
+      properties:
+        mode:
+          type: string
+          enum:
+            - byoc
+          description: Optional; a TLS block without `mode` is BYOC.
+        certificate_pem:
+          type: string
+          maxLength: 65536
+          description: PEM-encoded certificate for create or rotation. Requires private_key_pem. Omitted from exports.
+        private_key_pem:
+          type: string
+          maxLength: 65536
+          description: PEM-encoded private key for create or rotation. Requires certificate_pem. Omitted from exports.
+        certificate_chain_pem:
+          type: string
+          maxLength: 65536
+          description: Optional PEM-encoded certificate chain. Requires certificate_pem and private_key_pem. Omitted from exports.
+    ProjectConfigFrontendCustomDomainTLSConfig:
+      description: TLS for the custom domain. `mode` defaults to `byoc` when omitted.
+      oneOf:
+        - $ref: '#/components/schemas/ManagedProjectConfigFrontendCustomDomainTLSConfig'
+        - $ref: '#/components/schemas/BYOCProjectConfigFrontendCustomDomainTLSConfig'
     ProjectConfigFrontendFunctionRoute:
       type: object
       additionalProperties: false

@@ -53,6 +53,21 @@ curl -fsSL https://download.volcano.dev/builds/install.sh -o install-volcano.sh
 VOLCANO_VERSION="$(curl -fsSL https://download.volcano.dev/builds/releases/latest-version)" sh install-volcano.sh
 ```
 
+To verify the script itself before it runs, download the release's script and
+signature bundle, and run the script only if `cosign` accepts it:
+
+```bash
+version="$(curl -fsSL https://download.volcano.dev/builds/releases/latest-version)"
+release="https://download.volcano.dev/builds/releases/download/${version}"
+curl -fsSL -o install-volcano.sh "${release}/install.sh"
+curl -fsSL -o install-volcano.sh.sigstore.json "${release}/install.sh.sigstore.json"
+cosign verify-blob install-volcano.sh \
+  --bundle install-volcano.sh.sigstore.json \
+  --certificate-identity "https://github.com/Kong/volcano-cli/.github/workflows/publish-cli.yml@refs/tags/${version}" \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  && VOLCANO_VERSION="$version" sh install-volcano.sh
+```
+
 The install script, the latest-version lookup, and the CLI and signature
 downloads all use `download.volcano.dev`, and `cosign` can also contact Sigstore
 for trust metadata. On a network that allows GitHub but not
@@ -62,6 +77,17 @@ for trust metadata. On a network that allows GitHub but not
 Versions released before Volcano downloads are only on
 [GitHub Releases](https://github.com/Kong/volcano-cli/releases); to install one
 with `VOLCANO_VERSION`, also set `VOLCANO_GITHUB_RELEASES_URL` to that URL.
+
+## Windows downloads
+
+Choose the executable for your Windows architecture:
+
+- [Windows x64 (amd64)](https://download.volcano.dev/builds/releases/latest/download/volcano-windows-amd64.exe)
+- [Windows ARM64](https://download.volcano.dev/builds/releases/latest/download/volcano-windows-arm64.exe)
+
+Rename the downloaded file to `volcano.exe` and add its directory to your `PATH`. The npm, pnpm, and Bun installers select the executable for the architecture of your JavaScript runtime. Use an ARM64 runtime to install the native ARM64 executable.
+
+For manual Windows installs, download the matching executable again to upgrade. Self-upgrade does not replace a running Windows executable.
 
 ## Upgrading
 

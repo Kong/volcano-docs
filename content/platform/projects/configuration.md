@@ -200,13 +200,10 @@ frontends:                                  # must already be deployed
       - function: hello                     # public standard HTTP-mode function
         path_prefix: /api                   # exact segment prefix; /api or /api/...
         strip_prefix: true                  # function receives / for /api
-    custom_domain:                          # SUPERAGENT; BYOC TLS only
+    custom_domain:                          # SUPERAGENT
       domain: app.myapp.com
       tls:                                  # optional for an existing domain
-        mode: byoc
-        certificate_pem: ${TLS_CERT_PEM}          # write-only
-        private_key_pem: ${TLS_KEY_PEM}           # write-only
-        certificate_chain_pem: ${TLS_CHAIN_PEM}   # optional, write-only
+        mode: managed
 ```
 
 Not in the manifest: project logo, anon/service keys, project access tokens,
@@ -314,13 +311,50 @@ response that created it. Manage them through
   assertion-only — `region`, `pg_version`, and `database_type` are compared,
   never written; a `database_type` mismatch is an explicit error because tier
   changes must go through `volcano databases` or the dashboard.
-- **Custom domains** belong to their declared frontend entry: omitting
-  `custom_domain` on a declared frontend deletes an existing domain. The same
-  domain with new TLS material rotates the certificate **in place with zero
-  downtime** — the frontend proxies pick up the new certificate within seconds
-  (cache invalidation, 5-minute TTL backstop) while the old still-valid
-  certificate keeps serving handshakes. A different domain name is a
-  detach-and-recreate: the new domain serves after provisioning/verification.
+- **Custom domains** belong to their declared frontend entry. Set
+  `tls.mode: managed` to have Volcano issue and renew the certificate. Add a
+  returned `_volcano` TXT ownership proof when required, then keep the
+  certificate validation CNAME in DNS for renewal. Volcano omits the TXT proof
+  when the same account reuses a hostname it has claimed. If another account has
+  only reserved the hostname, an apply that adds a managed domain to a
+  frontend without one reports your account's `_volcano` TXT record; publish
+  it and apply again to take over the reservation. A dry run does not look
+  up DNS, so it reports that domain as created and only the apply names the
+  record. Replacing an existing
+  domain never takes over a reservation: delete the existing domain in one
+  apply, wait for its removal to finish, then declare the managed hostname.
+  BYOC entries never take over a reservation. Add the
+  separate routing record to direct traffic to the frontend. Use CNAME unless
+  the hostname is the apex of your DNS zone, including a separately delegated
+  subdomain. At an apex, use your provider's ALIAS, ANAME, or CNAME-flattening
+  feature.
+  Omitting `custom_domain` on a
+  declared frontend deletes an existing domain. Moving a hostname to another
+  of the project's frontends takes two applies: omit it from its current
+  frontend, wait for that removal to finish, then declare it on the new one.
+  After a served domain is removed, proxies can keep serving its hostname for
+  about a minute. An apply that declares that hostname within the minute fails
+  validation; apply again once it has passed.
+  Changing the hostname or TLS
+  mode of a managed domain requires one apply to delete it and a later apply to
+  create the replacement. Replacing a BYOC domain with a managed domain for a
+  different hostname takes one apply; if Volcano cannot admit the new hostname,
+  the BYOC domain keeps serving. Switching the same hostname from BYOC to
+  managed TLS in place is not supported yet: keep BYOC, or remove the custom
+  domain in one apply and declare it with `tls.mode: managed` in the next.
+  HTTPS for that hostname is unavailable until the managed certificate is
+  issued. Managed domains retain their certificate quota until
+  deletion finishes. At the account limit, apply the deletion, wait for cleanup,
+  then apply the replacement; planning a deletion does not grant capacity early.
+- **BYOC certificates** use `tls.mode: byoc` with `certificate_pem` and
+  `private_key_pem` together, plus optional `certificate_chain_pem`. A `tls`
+  block without `mode` is BYOC. New
+  material for the same domain rotates the certificate **in place with zero
+  downtime**: the frontend proxies pick up the new certificate within seconds
+  while the old one keeps serving handshakes. Omitting `tls`, or sending only
+  `tls.mode: byoc` as an export does, keeps the stored certificate. A different
+  BYOC domain name is a detach-and-recreate; the new domain serves after
+  provisioning.
 - **Hosted pages are upsert-only.** There is no delete API for hosted pages,
   so pages omitted from `managed_pages.pages` are left untouched.
 - **Managed-page appearance is also upsert-only in the manifest.** Omitted
@@ -441,10 +475,11 @@ to one secret no longer restarts every function in the project.
 ## Secrets
 
 Write-only secrets — `auth.email.smtp.password`, OAuth `client_secret`, and
-custom domain TLS material — are omitted from exports and stay unchanged
-unless you set them explicitly. The CLI interpolates `${ENV_VAR}` references
-before upload, so keep secrets in your environment, not in the file. Variable
-values are included in exports (they are readable through the API).
+BYOC certificate material — are omitted from exports and stay unchanged unless
+you set them explicitly. Custom-domain exports keep only `tls.mode`, for both
+managed and BYOC domains. The CLI interpolates `${ENV_VAR}` references before
+upload, so keep secrets in your environment, not in the file. Variable values
+are included in exports (they are readable through the API).
 
 ## Asynchronous side effects
 

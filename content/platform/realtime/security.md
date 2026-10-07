@@ -229,7 +229,7 @@ All client inputs are validated before processing:
 ```javascript
 // ❌ DON'T: Hardcode tokens
 const realtime = new VolcanoRealtime({
-  accessToken: 'eyJhbGciOiJIUzI1NiI...'
+  accessToken: 'eyJhbGci...'
 });
 
 // ✅ DO: Get token from auth flow

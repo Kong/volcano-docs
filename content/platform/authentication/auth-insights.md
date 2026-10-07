@@ -27,6 +27,8 @@ window or the current observation time.
   },
   "summary": {
     "total_users": 1234,
+    "deleted_users": 42,
+    "active_users_1d": 83,
     "active_users_30d": 418
   },
   "series": [
@@ -34,6 +36,8 @@ window or the current observation time.
       "bucket_start": "2026-07-20",
       "signups": 12,
       "signins": 97,
+      "deletions": 3,
+      "net_growth": 9,
       "is_partial": true
     }
   ]
@@ -42,18 +46,20 @@ window or the current observation time.
 
 Metric definitions:
 
-- `total_users`: current auth-user inventory. It matches the total returned by
-  the auth-user list.
-- `active_users_30d`: distinct current users whose latest successful session
-  creation or token refresh occurred within the trailing 30 days. Activity
-  history begins when collection is deployed.
-- `signups`: accounts created during the bucket that still exist. Deleting a
-  user removes it from the bucket of its creation date. Duplicate signup
-  responses, OAuth linking/reclaim, anonymous conversion, debug users, and
-  provisioned seed users do not count. Provisioning sets a server-owned
-  exclusion flag; user metadata cannot suppress analytics. Historical counts are
-  backfilled from accounts present when collection is deployed, using their
-  creation date.
+- `total_users`: current auth-user inventory, excluding deleted accounts.
+- `deleted_users`: recorded deleted accounts, counted once even if a soft-deleted
+  account is later permanently removed. Internal test identities are excluded.
+- `active_users_1d` and `active_users_30d`: distinct users whose latest successful
+  session creation or refresh occurred in the trailing 24 hours or 30 days.
+  Activity before deletion still counts until it leaves that window. These are
+  rolling DAU/MAU snapshots, not historical daily active-user series.
+- `signups`: registrations during the bucket. Deleting an account does not
+  rewrite its signup bucket. Duplicate signup responses, OAuth linking,
+  anonymous conversion, debug users and provisioned seed users do not count.
+- `deletions`: accounts deleted during the bucket, counted once across soft and
+  hard deletion. A new account using a released email is a separate signup.
+- `net_growth`: signups minus deletions in the bucket. Unlike signup and deletion
+  counts, net growth can be negative.
 - `signins`: successful session creations during the bucket across email,
   OAuth, anonymous, and device flows. Failed authentication and token refresh do
   not count. Sign-ins by users deleted later still count. Historical sign-in
@@ -61,3 +67,11 @@ Metric definitions:
 
 The existing `Auth Requests` metric remains separate because it also includes
 refreshes and other auth operations.
+
+Deletion history begins with deployment of deletion-history collection. Existing
+soft-deleted records are included using their recorded update timestamp. Accounts
+already hard-deleted, and signup counts previously subtracted by the old deletion
+policy, cannot be reconstructed. Retained deletion metrics contain only account
+and project identifiers, timestamps and flags needed for aggregation. The account
+identifier is also removed on hard deletion. Email addresses and OAuth credentials
+are not retained in these metrics.
