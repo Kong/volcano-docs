@@ -14,8 +14,8 @@ updates:
       semver-major-days: 14
     # No dependency labels exist in this repo; [] stops Dependabot creating them.
     labels: []
-    # Conventional Commits (commitlint): fix(deps) when a runtime dependency
-    # changes, chore(deps-dev) otherwise.
+    # Conventional Commits, as the commitlint commit-msg hook expects: fix(deps)
+    # when a runtime dependency changes, chore(deps-dev) otherwise.
     commit-message:
       prefix: "fix"
       prefix-development: "chore"
