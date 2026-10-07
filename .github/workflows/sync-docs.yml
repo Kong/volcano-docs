@@ -127,6 +127,7 @@ jobs:
             --body "Automated docs sync. Sources: docs.config.yaml."
           # Arm auto-merge so it lands once any required checks pass; if the repo
           # has no auto-merge / no required checks, GitHub rejects --auto, so
-          # fall back to an immediate squash.
-          gh pr merge "$branch" --auto --squash --delete-branch \
-            || gh pr merge "$branch" --squash --delete-branch
+          # fall back to an immediate squash. gh refuses --delete-branch with a
+          # merge queue; the repo deletes merged branches instead.
+          gh pr merge "$branch" --auto --squash \
+            || gh pr merge "$branch" --squash
