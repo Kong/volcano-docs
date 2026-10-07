@@ -1,6 +1,6 @@
 ---
 title: Quickstart
-description: Sign up, create a project, and pick a surface to build on.
+description: Install the CLI, sign up, create a project, and start building.
 order: 3
 ---
 

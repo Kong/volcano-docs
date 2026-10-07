@@ -18,7 +18,8 @@ export function Hero() {
             AI era, fully integrated with your agentic coding tools.
           </p>
           <p className="hero-lede">
-            Functions, frontends, and databases are covered under{" "}
+            Functions, frontends, databases, and the rest of the platform are
+            documented under{" "}
             <Link href="/platform" className="hero-link">
               Platform
             </Link>

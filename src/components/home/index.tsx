@@ -8,7 +8,7 @@ import { IdePlatforms } from "./ide-platforms";
 import { SectionHeading } from "./section-heading";
 
 const QUICKSTART_COPY =
-  "Sign up, create a project, and pick a surface to build on.";
+  "Install the CLI, sign up, create a project, and start building.";
 const CLI_COPY =
   "Deploy and manage functions, frontends, and databases from your terminal or CI.";
 const AGENT_COPY = "Install Volcano skills and plugins for your coding agent.";
