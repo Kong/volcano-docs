@@ -1,119 +1,93 @@
 /**
  * Function: Realtime Test
- * 
- * This function tests Volcano Realtime capabilities:
- * 1. Connects to realtime server
- * 2. Subscribes to postgres changes
- * 3. Creates a record and verifies the change event is received
- * 4. Tests RLS isolation by ensuring only authorized records are visible
- * 
- * Environment Variables (set in Volcano):
- * - VOLCANO_API_URL: The API server URL
- * - VOLCANO_ANON_KEY: Project anon key
- * - VOLCANO_REALTIME_URL: Realtime WebSocket URL (optional)
- * 
- * Context Variables (from Volcano):
- * - context.user: The authenticated user making the request
- * - context.projectId: The project ID
- * - context.db: Database client with RLS context
+ *
+ * Tests Volcano Realtime from inside a function, as the user who invoked it:
+ * 1. Connects to the realtime server with the caller's access token
+ * 2. Subscribes to a broadcast channel and sends a message
+ * 3. Joins a presence channel and finds the caller in its presence state
+ * 4. Subscribes to Postgres changes and receives the change to the caller's row
+ * 5. Checks RLS isolation: no change arrives for another user's row
+ *
+ * Project variables (set in Volcano):
+ * - REALTIME_TEST_API_URL: The Volcano API URL
+ * - REALTIME_TEST_ANON_KEY: An anon key with the realtime permissions
+ * - REALTIME_TEST_DATABASE_URL: The database's connection_string
+ *
+ * Volcano passes the caller in event.__volcano_auth when a signed-in user's
+ * access token invokes the function.
  */
 
+const { setTimeout: sleep } = require('node:timers/promises');
+const { Client } = require('pg');
+const { databaseConnectionString } = require('@volcano.dev/sdk');
 const { VolcanoRealtime } = require('@volcano.dev/sdk/realtime');
 
-// Test timeout in milliseconds
-const TEST_TIMEOUT = 10000;
+// Bounds each step, so one stalled step doesn't use up the function timeout.
+const STEP_TIMEOUT_MS = 5000;
+// How long to keep watching for the other user's change after the caller's.
+const ISOLATION_GRACE_MS = 1000;
+const OTHER_USER_ID = '00000000-0000-0000-0000-000000000000';
 
-exports.handler = async (event, context) => {
-  const results = {
-    tests: [],
-    passed: 0,
-    failed: 0,
-    errors: [],
-  };
+exports.handler = async (event) => {
+  const auth = event.__volcano_auth;
+  if (!auth) {
+    return respond(401, { error: "Invoke this function with a signed-in user's access token" });
+  }
 
+  const apiUrl = process.env.REALTIME_TEST_API_URL;
+  const anonKey = process.env.REALTIME_TEST_ANON_KEY;
+  const databaseUrl = process.env.REALTIME_TEST_DATABASE_URL;
+  if (!apiUrl || !anonKey || !databaseUrl) {
+    return respond(500, {
+      error:
+        'Set the REALTIME_TEST_API_URL, REALTIME_TEST_ANON_KEY and REALTIME_TEST_DATABASE_URL project variables',
+    });
+  }
+
+  const tests = [];
   const addResult = (name, passed, details = {}) => {
-    results.tests.push({ name, passed, ...details });
-    if (passed) results.passed++;
-    else results.failed++;
+    tests.push({ name, passed, ...details });
   };
+
+  // Connecting as the caller makes Realtime apply their RLS policies.
+  const realtime = new VolcanoRealtime({ apiUrl, anonKey, accessToken: auth.access_token });
+  const connection = { clientId: '', disconnectReason: '' };
+  realtime.onConnect((context) => {
+    connection.clientId = context.client ?? '';
+  });
+  // The server refuses a connection, such as one from a key without
+  // realtime.connect, by disconnecting it, which connect() doesn't report.
+  realtime.onDisconnect((context) => {
+    connection.disconnectReason = context.reason ?? '';
+  });
 
   try {
-    // Get configuration from environment
-    const apiUrl = process.env.VOLCANO_API_URL;
-    const anonKey = process.env.VOLCANO_ANON_KEY;
-    const realtimeUrl = process.env.VOLCANO_REALTIME_URL || apiUrl;
-
-    if (!apiUrl || !anonKey) {
-      throw new Error('Missing required environment variables: VOLCANO_API_URL, VOLCANO_ANON_KEY');
-    }
-
-    // Get user context from Volcano
-    const user = context.user;
-    const accessToken = context.accessToken;
-
-    if (!user || !accessToken) {
-      throw new Error('This function requires authenticated user context');
-    }
-
-    console.log(`Running realtime tests for user: ${user.id}`);
-
     // ==========================
     // Test 1: Connection
     // ==========================
-    let realtime;
     try {
-      realtime = new VolcanoRealtime({
-        apiUrl: realtimeUrl,
-        anonKey,
-        accessToken,
-      });
-
-      await Promise.race([
-        realtime.connect(),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Connection timeout')), 5000)
-        ),
-      ]);
-
-      addResult('Connection', realtime.isConnected(), {
-        message: 'Successfully connected to realtime server',
-      });
+      await withTimeout(realtime.connect(), 'Connection');
+      addResult('Connection', realtime.isConnected());
     } catch (error) {
-      addResult('Connection', false, {
-        message: `Failed to connect: ${error.message}`,
-      });
-      results.errors.push(error.message);
-      return formatResponse(results);
+      const reason = connection.disconnectReason || error.message;
+      addResult('Connection', false, { message: `Failed to connect: ${reason}` });
+      return report(tests);
     }
 
     // ==========================
-    // Test 2: Broadcast Channel Subscription
+    // Test 2: Broadcast Channel
     // ==========================
     try {
       const broadcastChannel = realtime.channel('test-function-broadcast');
-      
-      await Promise.race([
-        broadcastChannel.subscribe(),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Subscribe timeout')), 5000)
-        ),
-      ]);
+      await withTimeout(broadcastChannel.subscribe(), 'Broadcast subscribe');
+      addResult('Broadcast Subscribe', true, { channel: broadcastChannel.name });
 
-      addResult('Broadcast Subscribe', true, {
-        channel: broadcastChannel.name,
-      });
-
-      // Test sending a message
       await broadcastChannel.send({ event: 'test', from: 'function', timestamp: Date.now() });
-      addResult('Broadcast Send', true, {
-        message: 'Successfully sent broadcast message',
-      });
+      addResult('Broadcast Send', true);
 
       broadcastChannel.unsubscribe();
     } catch (error) {
-      addResult('Broadcast Channel', false, {
-        message: `Broadcast failed: ${error.message}`,
-      });
+      addResult('Broadcast Channel', false, { message: `Broadcast failed: ${error.message}` });
     }
 
     // ==========================
@@ -121,159 +95,166 @@ exports.handler = async (event, context) => {
     // ==========================
     try {
       const presenceChannel = realtime.channel('test-function-presence', { type: 'presence' });
-      
-      await Promise.race([
-        presenceChannel.subscribe(),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Subscribe timeout')), 5000)
-        ),
-      ]);
+      await withTimeout(presenceChannel.subscribe(), 'Presence subscribe');
 
-      // Track presence
-      await presenceChannel.track({ 
-        status: 'testing',
-        function: 'realtime-function-test',
-        userId: user.id,
-      });
-
-      const presenceState = presenceChannel.getPresenceState();
-      
-      addResult('Presence Channel', true, {
+      // Subscribing adds this connection to the presence state, keyed by client,
+      // which the SDK fetches shortly afterwards.
+      const present = await waitFor(() => connection.clientId in presenceChannel.getPresenceState());
+      addResult('Presence Channel', present, {
         channel: presenceChannel.name,
-        presenceKeys: Object.keys(presenceState).length,
+        presenceKeys: Object.keys(presenceChannel.getPresenceState()).length,
       });
 
       presenceChannel.unsubscribe();
     } catch (error) {
-      addResult('Presence Channel', false, {
-        message: `Presence failed: ${error.message}`,
-      });
+      addResult('Presence Channel', false, { message: `Presence failed: ${error.message}` });
     }
 
     // ==========================
-    // Test 4: Postgres Changes with RLS
+    // Tests 4 and 5: Postgres Changes and RLS Isolation
     // ==========================
-    try {
-      // First, ensure the test table exists and has RLS
-      const db = context.db;
-      
-      await db.query(`
-        CREATE TABLE IF NOT EXISTS realtime_test (
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          user_id UUID NOT NULL,
-          data TEXT,
-          created_at TIMESTAMPTZ DEFAULT NOW()
-        );
-        
-        -- Enable RLS if not already enabled
-        ALTER TABLE realtime_test ENABLE ROW LEVEL SECURITY;
-        
-        -- Create or replace the RLS policy
-        DROP POLICY IF EXISTS realtime_test_user_only ON realtime_test;
-        CREATE POLICY realtime_test_user_only ON realtime_test
-          FOR ALL
-          USING (user_id::text = current_setting('request.jwt.claim.sub', true));
-      `);
-
-      // Subscribe to postgres changes
-      const pgChannel = realtime.channel('public:realtime_test', { type: 'postgres' });
-      
-      const receivedChanges = [];
-      pgChannel.onPostgresChanges('*', 'public', 'realtime_test', (change) => {
-        receivedChanges.push(change);
-      });
-
-      await Promise.race([
-        pgChannel.subscribe(),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Subscribe timeout')), 5000)
-        ),
-      ]);
-
-      addResult('Postgres Subscribe', true, {
-        channel: pgChannel.name,
-      });
-
-      // Insert a record for this user
-      const testData = `Function test at ${new Date().toISOString()}`;
-      await db.query(
-        'INSERT INTO realtime_test (user_id, data) VALUES ($1, $2)',
-        [user.id, testData]
-      );
-
-      // Wait for the change event
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Check if we received the change
-      const ourChange = receivedChanges.find(c => 
-        c.record?.user_id === user.id && c.record?.data === testData
-      );
-
-      addResult('Postgres Change Received', receivedChanges.length > 0, {
-        receivedCount: receivedChanges.length,
-        receivedOurChange: !!ourChange,
-      });
-
-      // ==========================
-      // Test 5: RLS Isolation
-      // ==========================
-      // Insert a record for a different user and verify we DON'T receive it
-      const otherUserId = '00000000-0000-0000-0000-000000000000';
-      await db.query(
-        'INSERT INTO realtime_test (user_id, data) VALUES ($1, $2)',
-        [otherUserId, 'This should be invisible to us']
-      );
-
-      // Wait for potential change event
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      const otherUserChange = receivedChanges.find(c => 
-        c.record?.user_id === otherUserId
-      );
-
-      addResult('RLS Isolation', !otherUserChange, {
-        message: otherUserChange 
-          ? 'SECURITY ISSUE: Received change for other user' 
-          : 'Correctly did not receive change for other user',
-        otherUserChangeReceived: !!otherUserChange,
-      });
-
-      pgChannel.unsubscribe();
-    } catch (error) {
-      addResult('Postgres Changes', false, {
-        message: `Postgres changes failed: ${error.message}`,
-      });
-      results.errors.push(error.message);
-    }
-
-    // Disconnect
+    await testPostgresChanges(realtime, databaseUrl, auth.user_id, addResult);
+  } finally {
     realtime.disconnect();
-
-    // ==========================
-    // Test 6: Verify Disconnect
-    // ==========================
-    addResult('Disconnect', !realtime.isConnected(), {
-      message: 'Successfully disconnected from realtime server',
-    });
-
-  } catch (error) {
-    results.errors.push(error.message);
-    console.error('Test error:', error);
   }
 
-  return formatResponse(results);
+  return report(tests);
 };
 
-function formatResponse(results) {
-  const allPassed = results.failed === 0;
-  
+async function testPostgresChanges(realtime, databaseUrl, userId, addResult) {
+  let db;
+  const insertedIds = [];
+  try {
+    // Full access bypasses RLS, which the setup and the other user's row need.
+    db = new Client({
+      connectionString: databaseConnectionString(databaseUrl),
+      connectionTimeoutMillis: STEP_TIMEOUT_MS,
+      query_timeout: STEP_TIMEOUT_MS,
+    });
+    // A dropped connection fails the next query, which reports it.
+    db.on('error', () => {});
+    await db.connect();
+    await createTestTable(db);
+
+    // A change event carries only the row's primary key.
+    const receivedIds = new Set();
+    const pgChannel = realtime.channel('public:realtime_test', { type: 'postgres' });
+    pgChannel.onPostgresChanges('INSERT', 'public', 'realtime_test', (change) => {
+      receivedIds.add(change.id);
+    });
+
+    // Subscribe before inserting: earlier writes produce no events.
+    await withTimeout(pgChannel.subscribe(), 'Postgres subscribe');
+    addResult('Postgres Subscribe', true, { channel: pgChannel.name });
+
+    // Insert the other user's row first, so a leaked change has at least as
+    // long to arrive as the caller's own.
+    const otherRowId = await insertRow(db, OTHER_USER_ID, 'This should be invisible to us');
+    insertedIds.push(otherRowId);
+    const ownRowId = await insertRow(db, userId, `Function test at ${new Date().toISOString()}`);
+    insertedIds.push(ownRowId);
+
+    const ownChangeReceived = await waitFor(() => receivedIds.has(ownRowId));
+    addResult('Postgres Change Received', ownChangeReceived, {
+      receivedCount: receivedIds.size,
+    });
+
+    await sleep(ISOLATION_GRACE_MS);
+    const otherUserChangeReceived = receivedIds.has(otherRowId);
+    let message = 'Correctly did not receive change for other user';
+    if (otherUserChangeReceived) {
+      message = 'SECURITY ISSUE: Received change for other user';
+    } else if (!ownChangeReceived) {
+      // Without the caller's own change, a missing event proves nothing.
+      message = 'Inconclusive: no change arrived for the caller either';
+    }
+    addResult('RLS Isolation', ownChangeReceived && !otherUserChangeReceived, { message });
+
+    pgChannel.unsubscribe();
+  } catch (error) {
+    addResult('Postgres Changes', false, { message: `Postgres changes failed: ${error.message}` });
+  } finally {
+    if (db && insertedIds.length > 0) {
+      // Best effort: a failed cleanup doesn't change the results.
+      await db.query('DELETE FROM public.realtime_test WHERE id = ANY($1)', [insertedIds]).catch(() => {});
+    }
+    await db?.end();
+  }
+}
+
+// Runs once: after the policy exists, invocations skip the DDL, whose table
+// locks would hold up Realtime's RLS checks. One statement per query, because
+// the database proxy rejects multi-statement queries. If a statement fails,
+// closing the connection rolls the transaction back.
+async function createTestTable(db) {
+  const { rows } = await db.query(`
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'realtime_test' AND policyname = 'realtime_test_user_only'
+  `);
+  if (rows.length > 0) {
+    return;
+  }
+
+  await db.query('BEGIN');
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS public.realtime_test (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID NOT NULL,
+      data TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+  await db.query('ALTER TABLE public.realtime_test ENABLE ROW LEVEL SECURITY');
+  // Realtime checks this policy as each subscriber before delivering a change.
+  await db.query(`
+    CREATE POLICY realtime_test_user_only ON public.realtime_test
+      FOR SELECT
+      USING (user_id = auth.uid())
+  `);
+  await db.query('COMMIT');
+}
+
+async function insertRow(db, userId, data) {
+  const { rows } = await db.query(
+    'INSERT INTO public.realtime_test (user_id, data) VALUES ($1, $2) RETURNING id',
+    [userId, data]
+  );
+  return rows[0].id;
+}
+
+async function waitFor(condition) {
+  const deadline = Date.now() + STEP_TIMEOUT_MS;
+  while (!condition() && Date.now() < deadline) {
+    await sleep(100);
+  }
+  return condition();
+}
+
+async function withTimeout(promise, step) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${step} timed out`)), STEP_TIMEOUT_MS);
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function report(tests) {
+  const failed = tests.filter((test) => !test.passed).length;
+  return respond(failed === 0 ? 200 : 500, {
+    success: failed === 0,
+    summary: `${tests.length - failed} passed, ${failed} failed`,
+    tests,
+  });
+}
+
+function respond(statusCode, body) {
   return {
-    statusCode: allPassed ? 200 : 500,
-    body: {
-      success: allPassed,
-      summary: `${results.passed} passed, ${results.failed} failed`,
-      tests: results.tests,
-      errors: results.errors,
-    },
+    statusCode,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
   };
 }

@@ -41,14 +41,14 @@ Customize authentication settings per project.
 
 ```bash
 curl https://api.volcano.dev/projects/PROJECT_ID/auth/config \
-  -H "Authorization: Bearer PLATFORM_TOKEN"
+  -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
 
 ## Update Configuration
 
 ```bash
 curl -X PUT https://api.volcano.dev/projects/PROJECT_ID/auth/config \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "access_token_lifetime": 7200,

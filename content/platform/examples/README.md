@@ -21,7 +21,7 @@ This directory contains complete examples demonstrating Volcano features.
 - ✅ Protected routes
 - ✅ Session management
 - ✅ **File storage** with upload, download, and delete
-- ✅ TypeScript + Next.js 15
+- ✅ TypeScript + Next.js 16
 
 **Quick Start:**
 ```bash
@@ -85,7 +85,7 @@ See [frontend-function-routes](frontend-function-routes/README.md) and the
 - ✅ Anonymous authentication - no account required
 - ✅ User metadata - display names from signup
 - ✅ In-browser configuration
-- ✅ Built with Next.js 15 and Volcano SDK
+- ✅ Built with Next.js 16 and Volcano SDK
 
 **Quick Start:**
 ```bash

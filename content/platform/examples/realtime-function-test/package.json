@@ -7,10 +7,10 @@
     "start": "node index.js"
   },
   "dependencies": {
-    "@volcano.dev/sdk": "nightly",
-    "centrifuge": "^5.2.2"
+    "@volcano.dev/sdk": "^1.15.1",
+    "pg": "8.23.1"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   }
 }

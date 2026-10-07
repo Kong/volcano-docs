@@ -29,7 +29,7 @@ First, configure OAuth credentials for your project through the Volcano API:
 ```bash
 # Create OAuth configuration for Google
 curl -X POST https://api.volcano.dev/projects/{project_id}/oauth/configs \
-  -H "Authorization: Bearer YOUR_PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "provider": "google",

@@ -26,7 +26,7 @@ Volcano uses different token types for different purposes.
 **Example:**
 ```bash
 curl -X GET https://api.volcano.dev/projects \
-  -H "Authorization: Bearer pk-your-platform-token"
+  -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
 
 ---
@@ -53,13 +53,13 @@ curl -X GET https://api.volcano.dev/projects \
 ```bash
 # Create (platform token required)
 curl -X POST https://api.volcano.dev/projects/abc-123/access-tokens \
-  -H "Authorization: Bearer pk-your-platform-token" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name":"ci-deploy","scope":"full"}'
 
 # Use
 curl -X POST https://api.volcano.dev/projects/abc-123/functions \
-  -H "Authorization: Bearer pt-your-project-token" \
+  -H "Authorization: Bearer $VOLCANO_PROJECT_TOKEN" \
   -F "name=checkout" -F "runtime=nodejs24.x" -F "code=@checkout.zip"
 ```
 
@@ -210,17 +210,17 @@ const response = await fetch('/auth/refresh', {
 ```bash
 # Create service key
 curl -X POST https://api.volcano.dev/projects/abc-123/service-keys \
-  -H "Authorization: Bearer platform-token" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -d '{"name":"admin-key"}'
 
 # Use for function invocation (admin operation)
-curl -X POST http://api.volcano.dev/functions/func-id/invoke \
-  -H "Authorization: Bearer service-key" \
+curl -X POST https://api.volcano.dev/functions/func-id/invoke \
+  -H "Authorization: Bearer $SERVICE_KEY" \
   -d '{"action":"cleanup_all_users"}'
 
 # Use for database query (bypasses RLS)
 curl -X POST https://api.volcano.dev/databases/db-id/query/select \
-  -H "Authorization: Bearer service-key" \
+  -H "Authorization: Bearer $SERVICE_KEY" \
   -d '{"table":"posts"}'  # Sees ALL users' posts
 ```
 

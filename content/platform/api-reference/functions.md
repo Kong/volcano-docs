@@ -30,7 +30,7 @@ Authorization: Bearer <platform_token>
       "invocation_mode": "rpc",
       "http_auth_mode": "volcano",
       "openapi_spec": null,
-      "invoke_url": "https://func-uuid.functions.staging.volcano.run/",
+      "invoke_url": "https://func-uuid.functions.volcano.run/",
       "deployed_regions": ["us-east-1", "us-west-2"],
       "runtime": "nodejs24.x",
       "handler": "index.handler",

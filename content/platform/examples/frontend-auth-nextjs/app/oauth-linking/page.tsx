@@ -3,19 +3,15 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import type { OAuthProvider, OAuthProviderName } from '@volcano.dev/sdk';
 import { useVolcano, VolcanoUser } from '../../lib/useVolcano';
 import ConfigPrompt from '../../components/ConfigPrompt';
-
-interface LinkedProvider {
-  provider: string;
-  linked_at: string;
-}
 
 export default function OAuthLinkingPage() {
   const router = useRouter();
   const { volcano, configured, loading: sdkLoading, reload } = useVolcano();
   const [user, setUser] = useState<VolcanoUser | null>(null);
-  const [linkedProviders, setLinkedProviders] = useState<LinkedProvider[]>([]);
+  const [linkedProviders, setLinkedProviders] = useState<OAuthProvider[]>([]);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('success');
   const [loading, setLoading] = useState(false);
@@ -46,8 +42,8 @@ export default function OAuthLinkingPage() {
     const loadProviders = async () => {
       if (!volcano) return;
       try {
-        const providers = await volcano.auth.getLinkedOAuthProviders();
-        setLinkedProviders(providers);
+        const { providers, error } = await volcano.auth.getLinkedOAuthProviders();
+        if (!error) setLinkedProviders(providers ?? []);
       } catch {
         // Silently fail - user will see empty providers list
       }
@@ -77,26 +73,28 @@ export default function OAuthLinkingPage() {
     if (!volcano) return;
 
     try {
-      const providers = await volcano.auth.getLinkedOAuthProviders();
-      setLinkedProviders(providers);
+      const { providers, error } = await volcano.auth.getLinkedOAuthProviders();
+      if (!error) setLinkedProviders(providers ?? []);
     } catch {
       // Silently fail - user will see empty providers list
     }
   };
 
-  const handleLinkProvider = async (provider: string) => {
+  const handleLinkProvider = async (provider: OAuthProviderName) => {
     if (!volcano) return;
 
     setLoading(true);
     setMessage('');
 
     try {
-      const { authorization_url } = await volcano.auth.linkOAuthProvider(provider);
+      const { data, error } = await volcano.auth.linkOAuthProvider(provider);
+      if (error) throw error;
+      if (!data?.authorization_url) throw new Error(`No authorization URL returned for ${provider}`);
       setMessage(`Redirecting to ${provider}...`);
       setMessageType('info');
       
       // Redirect to OAuth provider
-      window.location.href = authorization_url;
+      window.location.assign(data.authorization_url);
     } catch (error) {
       setMessage((error as Error).message || `Failed to link ${provider}`);
       setMessageType('error');
@@ -104,7 +102,7 @@ export default function OAuthLinkingPage() {
     }
   };
 
-  const handleUnlinkProvider = async (provider: string) => {
+  const handleUnlinkProvider = async (provider: OAuthProviderName) => {
     if (!volcano) return;
     if (!confirm(`Are you sure you want to unlink ${provider}?`)) return;
 
@@ -112,7 +110,8 @@ export default function OAuthLinkingPage() {
     setMessage('');
 
     try {
-      await volcano.auth.unlinkOAuthProvider(provider);
+      const { error } = await volcano.auth.unlinkOAuthProvider(provider);
+      if (error) throw error;
       setMessage(`${provider} unlinked successfully`);
       setMessageType('success');
       loadLinkedProviders();
@@ -124,7 +123,7 @@ export default function OAuthLinkingPage() {
     }
   };
 
-  const providers = [
+  const providers: { id: OAuthProviderName; name: string; icon: string; color: string }[] = [
     { id: 'google', name: 'Google', icon: '🔵', color: '#4285f4' },
     { id: 'github', name: 'GitHub', icon: '⚫', color: '#333' },
     { id: 'microsoft', name: 'Microsoft', icon: '🔷', color: '#00a4ef' },
@@ -132,7 +131,7 @@ export default function OAuthLinkingPage() {
   ];
 
   const isLinked = (providerId: string): boolean => {
-    return linkedProviders.some((p: LinkedProvider) => p.provider === providerId);
+    return linkedProviders.some((p) => p.provider === providerId);
   };
 
   return (
@@ -237,10 +236,10 @@ export default function OAuthLinkingPage() {
           <div style={{ marginTop: '30px' }}>
             <h2>Your Linked Providers</h2>
             <div style={{ background: '#e7f3ff', padding: '15px', borderRadius: '8px' }}>
-              {linkedProviders.map((provider: LinkedProvider, index: number) => (
+              {linkedProviders.map((provider, index) => (
                 <div key={index} style={{ marginBottom: index < linkedProviders.length - 1 ? '10px' : '0' }}>
                   <p style={{ fontSize: '14px' }}>
-                    <strong>{provider.provider}:</strong> Linked on {new Date(provider.linked_at).toLocaleDateString()}
+                    <strong>{provider.provider}:</strong> Linked on {provider.linked_at ? new Date(provider.linked_at).toLocaleDateString() : 'an unknown date'}
                   </p>
                 </div>
               ))}

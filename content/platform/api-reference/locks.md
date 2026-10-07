@@ -16,7 +16,7 @@ rejected.
 ```http
 POST /locks/{key}/lease
 Authorization: Bearer SERVICE_ROLE_KEY
-X-Volcano-Lock-Token: 4f83efc2-8fe7-42e8-8347-43493dc5bd8f
+X-Volcano-Lock-Token: 00000000-0000-4000-8000-000000000001
 X-Volcano-Request-Id: 139241af-f4e8-4bdb-8494-dc0804c380a7
 Content-Type: application/json
 
@@ -46,7 +46,7 @@ A `409` distinguishes the two ways an acquire can fail:
 ```http
 PATCH /locks/{key}/lease
 Authorization: Bearer SERVICE_ROLE_KEY
-X-Volcano-Lock-Token: 4f83efc2-8fe7-42e8-8347-43493dc5bd8f
+X-Volcano-Lock-Token: 00000000-0000-4000-8000-000000000001
 X-Volcano-Request-Id: 38795528-9ab7-48ea-85fa-33833460717a
 Content-Type: application/json
 
@@ -67,7 +67,7 @@ shortens the lease.
 ```http
 DELETE /locks/{key}/lease
 Authorization: Bearer SERVICE_ROLE_KEY
-X-Volcano-Lock-Token: 4f83efc2-8fe7-42e8-8347-43493dc5bd8f
+X-Volcano-Lock-Token: 00000000-0000-4000-8000-000000000001
 X-Volcano-Request-Id: 58481ef8-ae31-40bd-a9d6-19a61f063866
 ```
 

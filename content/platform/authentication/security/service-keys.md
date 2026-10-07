@@ -32,7 +32,7 @@ Response:
   "id": "sk_abc123",
   "project_id": "proj_xyz789",
   "name": "Admin Key",
-  "key_value": "sk-eyJhbGciOiJIUzI1NiIs...",
+  "key_value": "sk-eyJhbGci...",
   "key_prefix": "sk-eyJhbGciO",
   "permissions": ["*"],
   "created_at": "2024-01-15T10:00:00Z"
@@ -46,7 +46,7 @@ Response:
 ### Invoke a function
 
 ```bash
-curl -X POST "http://api.volcano.dev/functions/$FUNCTION_ID/invoke" \
+curl -X POST "https://api.volcano.dev/functions/$FUNCTION_ID/invoke" \
   -H "Authorization: Bearer $SERVICE_KEY" \
   -H "Content-Type: application/json" \
   -d '{"payload": {"action": "admin_report"}}'
@@ -105,7 +105,7 @@ const response = await fetch('/api/admin/posts', {
 
 ```bash
 # .env (server-side only, not committed to git)
-SERVICE_KEY=vk_live_eyJhbGciOiJIUzI1NiIs...
+SERVICE_KEY=sk-your-service-key-here
 ```
 
 ```javascript

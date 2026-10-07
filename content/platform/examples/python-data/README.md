@@ -16,7 +16,7 @@ signed-in users invoke it too.
 ```bash
 zip function.zip main.py
 curl -X POST https://api.volcano.dev/projects/PROJECT_ID/functions \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -F "name=data-processor" \
   -F "code=@function.zip" \
   -F "runtime=python3.12" \
@@ -27,7 +27,7 @@ curl -X POST https://api.volcano.dev/projects/PROJECT_ID/functions \
 
 ```bash
 curl -X POST https://api.volcano.dev/projects/PROJECT_ID/variables \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name":"API_KEY","value":"my-secret-key"}'
 ```
@@ -38,7 +38,7 @@ Call it with a signed-in user's access token:
 
 ```bash
 curl -X POST https://api.volcano.dev/functions/FUNCTION_ID/invoke \
-  -H "Authorization: Bearer USER_ACCESS_TOKEN" \
+  -H "Authorization: Bearer $USER_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"payload":{"data":["item1","item2","item3"]}}'
 ```

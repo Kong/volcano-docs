@@ -8,10 +8,8 @@ The Volcano Realtime JavaScript SDK provides a simple interface for WebSocket co
 ## Installation
 
 ```bash
-npm install @volcano.dev/sdk centrifuge
+npm install @volcano.dev/sdk
 ```
-
-The SDK requires the `centrifuge` package as a peer dependency for WebSocket communication.
 
 ## Quick start
 

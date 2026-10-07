@@ -2,29 +2,63 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { VolcanoAuth } from '@volcano.dev/sdk';
-import { VolcanoRealtime } from '@volcano.dev/sdk/realtime';
+import { VolcanoRealtime, type PresenceInfo, type RealtimeChannel } from '@volcano.dev/sdk/realtime';
+
+const ROOM_NAME = 'general';
+
+interface ChatConfig {
+  apiUrl: string;
+  anonKey: string;
+}
+
+interface ChatMessage {
+  username: string;
+  text: string;
+}
+
+// Broadcast payloads are untyped; render only messages with a sender and text.
+function isChatMessage(value: unknown): value is ChatMessage {
+  if (typeof value !== 'object' || value === null) return false;
+  const { username, text } = value as Record<string, unknown>;
+  return typeof username === 'string' && typeof text === 'string';
+}
+
+function stringField(value: unknown, key: string): string | undefined {
+  if (typeof value !== 'object' || value === null) return undefined;
+  const field = (value as Record<string, unknown>)[key];
+  return typeof field === 'string' && field !== '' ? field : undefined;
+}
+
+// connInfo.user_metadata carries the metadata the user signed up with.
+function displayName(info: PresenceInfo): string {
+  const metadata = info.connInfo?.user_metadata;
+  return (
+    stringField(metadata, 'display_name') ??
+    stringField(metadata, 'name') ??
+    stringField(info.connInfo, 'email') ??
+    'Anonymous'
+  );
+}
 
 export default function Chat() {
   const [screen, setScreen] = useState<'config' | 'join' | 'chat'>('config');
-  const [config, setConfig] = useState({ apiUrl: 'http://localhost:8000', anonKey: '' });
+  const [config, setConfig] = useState<ChatConfig>({ apiUrl: 'http://localhost:8000', anonKey: '' });
   const [username, setUsername] = useState('');
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState('');
   const [joinName, setJoinName] = useState('');
   const [onlineUsers, setOnlineUsers] = useState<Array<{ id: string; username: string }>>([]);
-  const [roomName, setRoomName] = useState('general');
   
-  const channelRef = useRef<any>(null);
-  const presenceRef = useRef<any>(null);
-  const userRef = useRef<any>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
+  const userRef = useRef<{ id: string; name: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem('volcano_config');
     if (stored) {
-      const parsed = JSON.parse(stored);
+      const parsed: ChatConfig = JSON.parse(stored);
       setConfig(parsed);
       if (parsed.anonKey) setScreen('join');
     }
@@ -45,7 +79,7 @@ export default function Chat() {
       
       // Sign up anonymously
       const volcano = new VolcanoAuth(config);
-      const result = await volcano.auth.signUpAnonymous({ name });
+      const result = await volcano.auth.signInAnonymously({ name });
       
       if (result.error) {
         throw new Error(result.error.message);
@@ -61,7 +95,10 @@ export default function Chat() {
         accessToken: result.session.access_token 
       });
       
-      realtime.onConnect(() => setConnected(true));
+      realtime.onConnect(() => {
+        setConnected(true);
+        setError('');
+      });
       realtime.onDisconnect(() => setConnected(false));
       realtime.onError(() => setError('Connection error'));
       
@@ -69,66 +106,48 @@ export default function Chat() {
       
       // Subscribe to chat channel
       const channel = realtime.channel('chat-general');
-      channel.on('message', (msg: any) => setMessages(m => [...m, msg]));
+      channel.on('message', (msg) => {
+        if (isChatMessage(msg)) setMessages(m => [...m, msg]);
+      });
       await channel.subscribe();
       channelRef.current = channel;
       
       // Subscribe to presence channel to track online users
       const presence = realtime.channel('chat-general', { type: 'presence' });
       
-      presence.on('join', (info: any) => {
-        // connInfo.user_metadata contains display_name from signup
-        const displayName = info.connInfo?.user_metadata?.display_name || 
-                           info.connInfo?.user_metadata?.name || 
-                           info.connInfo?.email || 
-                           'Anonymous';
-        const user = { id: info.client, username: displayName };
-        setOnlineUsers(users => {
-          if (users.some(u => u.id === user.id)) return users;
-          return [...users, user];
-        });
-      });
-      
-      presence.on('leave', (info: any) => {
-        setOnlineUsers(users => users.filter(u => u.id !== info.client));
-      });
-      
-      presence.on('presence_sync', () => {
-        const state = presence.getPresenceState();
-        // Each entry has connInfo with user_metadata
-        const users = Object.entries(state).map(([id, info]: [string, any]) => ({
-          id,
-          username: info.connInfo?.user_metadata?.display_name || 
-                   info.connInfo?.user_metadata?.name || 
-                   info.connInfo?.email || 
-                   'Anonymous',
-        }));
-        setOnlineUsers(users);
+      // Fires with the full state on subscribe and on every join or leave.
+      presence.onPresenceSync((state) => {
+        setOnlineUsers(Object.entries(state).map(([id, info]) => ({ id, username: displayName(info) })));
       });
       
       await presence.subscribe();
-      presenceRef.current = presence;
       
       userRef.current = { id: result.user.id, name };
       setUsername(name);
       setScreen('chat');
-    } catch (err: any) {
+    } catch (err) {
       console.error('Join error:', err);
-      setError(err.message || 'Failed to join');
+      setError((err instanceof Error && err.message) || 'Failed to join');
     }
   };
 
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || !channelRef.current) return;
+    if (!input.trim() || !channelRef.current || !userRef.current) return;
     
-    await channelRef.current.send({
-      userId: userRef.current.id,
-      username: userRef.current.name,
-      text: input,
-      time: new Date().toISOString()
-    });
-    setInput('');
+    try {
+      // Throws while the channel is resubscribing after a reconnect.
+      await channelRef.current.send({
+        userId: userRef.current.id,
+        username: userRef.current.name,
+        text: input,
+        time: new Date().toISOString()
+      });
+      setError('');
+      setInput('');
+    } catch (err) {
+      setError((err instanceof Error && err.message) || 'Failed to send message');
+    }
   };
 
   if (screen === 'config') {
@@ -186,7 +205,7 @@ export default function Chat() {
       <div style={{ width: '250px', background: 'var(--bg-secondary)', borderRight: '1px solid var(--bg-tertiary)', display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '1rem', borderBottom: '1px solid var(--bg-tertiary)' }}>
           <h2 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>🌋 Chat</h2>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>#{roomName}</p>
+          <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>#{ROOM_NAME}</p>
         </div>
         <div style={{ padding: '1rem', flex: 1, overflow: 'auto' }}>
           <h3 style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
@@ -209,6 +228,7 @@ export default function Chat() {
           <strong>{username}</strong>
           <span>{connected ? '🟢 Connected' : '🔴 Disconnected'}</span>
         </div>
+        {error && <div className="alert error" style={{ margin: '1rem 1rem 0' }}>{error}</div>}
         
         <div style={{ flex: 1, overflow: 'auto', padding: '1rem' }}>
           {messages.map((msg, i) => (

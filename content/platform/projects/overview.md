@@ -71,6 +71,10 @@ curl -X POST "https://api.volcano.dev/projects" \
   -d '{"name": "my-app"}'
 ```
 
+Project names contain letters, numbers, underscores, or hyphens and must be
+1–255 characters after trimming surrounding whitespace. Invalid names return
+`400 Bad Request`, including when creating a project from a template.
+
 To constrain function deployment to a subset of regions (SUPERAGENT plan):
 
 ```bash
@@ -166,7 +170,6 @@ When you delete a project, Volcano:
 | Guide | Description |
 |-------|-------------|
 | [Creating projects](creating-projects.md) | Detailed project creation guide |
-| [Importing from Vercel](import-vercel.md) | Run a read-only production preflight for a Vercel project |
 | [Export your source to GitHub](export-to-git.md) | Initialize an empty repository with a project's stored source and deploy it from Git |
 | [Functions overview](../functions/overview.md) | Deploy functions |
 | [Databases overview](../databases/overview.md) | Provision PostgreSQL databases |

@@ -126,9 +126,51 @@ generated files from the frontend bundle to reduce its size.
 
 ## 4. Add a custom domain
 
-Custom domains are **SUPERAGENT** and use **bring-your-own-certificate (BYOC)** TLS —
-supply your own PEM certificate and unencrypted private key (`--chain` is
-optional):
+Custom domains are **SUPERAGENT** and support Volcano-managed TLS or
+bring-your-own-certificate (BYOC) TLS. For managed TLS, add the domain to
+`volcano-config.yaml` and deploy it:
+
+```yaml
+version: 1
+frontends:
+  - name: my-site
+    custom_domain:
+      domain: app.example.com
+      tls:
+        mode: managed
+```
+
+```bash
+volcano config deploy
+volcano cloud frontends domain get my-site
+```
+
+If Volcano returns a `_volcano` TXT record, add it within 72 hours to prove
+hostname ownership. Volcano then returns the certificate validation CNAME;
+add that CNAME and keep it in DNS for renewal. You can remove the TXT record
+after the CNAME appears. If ownership verification expires, Volcano removes the
+domain; once it is gone, submit it again for a new challenge. Certificate
+validation also expires after 72 hours.
+If setup fails with `failure_reason: certificate`, check the validation CNAME,
+delete the failed domain, wait for deletion to finish, and submit it again.
+Volcano does not repeatedly request certificates for an abandoned setup.
+An `ownership` failure means another account has already claimed the hostname;
+retrying under the same account will not resolve that conflict.
+If another account has only reserved the hostname, deploying the domain to a
+frontend without one reports the `_volcano` TXT record your account must
+publish. Add it and deploy again to take over the reservation; a claimed
+hostname is never taken over.
+
+If a live domain's certificate becomes unavailable, the domain returns to
+`pending_verification`, with `verification_status: pending`, while Volcano
+re-validates it. Validation records can be
+temporarily empty during this transition; keep polling and follow any records
+returned. Temporary provider failures are retried automatically. When issuance
+resumes after a failure, `verification_status` returns to `pending`. A terminal
+certificate-validation failure requires the delete-and-create retry above.
+
+To use BYOC instead, supply your own PEM certificate
+and unencrypted private key (`--chain` is optional):
 
 ```bash
 volcano cloud frontends domain create my-site \
@@ -151,9 +193,9 @@ That host is stable across redeploys. For a provider-confirmed non-apex:
 app.example.com.  CNAME  <frontend-id>.frontends.volcano.run.
 ```
 
-The domain goes `active` once Volcano finishes attaching your certificate —
-that status doesn't confirm DNS is live, so verify it separately. See
-[custom domains](overview.md#custom-domains) for rotation and other details.
+The domain goes `active` once Volcano finishes attaching the certificate —
+that status doesn't confirm routing DNS is live, so verify it separately. See
+[custom domains](overview.md#custom-domains) for lifecycle and BYOC rotation.
 
 ## 5. View logs
 

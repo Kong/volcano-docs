@@ -217,7 +217,7 @@ Upload as binary file via multipart/form-data:
 ```bash
 # Node.js function
 curl -X POST https://api.volcano.dev/projects/PROJECT_ID/functions \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -F "name=my-node-function" \
   -F "code=@function.zip" \
   -F "runtime=nodejs24.x" \
@@ -225,14 +225,14 @@ curl -X POST https://api.volcano.dev/projects/PROJECT_ID/functions \
 
 # Python function (handler defaults to "handler" if not specified)
 curl -X POST https://api.volcano.dev/projects/PROJECT_ID/functions \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -F "name=my-python-function" \
   -F "code=@function.zip" \
   -F "runtime=python3.12"
 
 # Ruby function (handler defaults to "handler" if not specified)
 curl -X POST https://api.volcano.dev/projects/PROJECT_ID/functions \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -F "name=my-ruby-function" \
   -F "code=@function.zip" \
   -F "runtime=ruby3.4"
@@ -302,7 +302,7 @@ Or update one function through the API:
 
 ```bash
 curl -X PATCH https://api.volcano.dev/projects/PROJECT_ID/functions/FUNCTION_ID \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"visibility":"authenticated"}'
 ```
@@ -451,21 +451,21 @@ end
 
 ```bash
 curl https://api.volcano.dev/projects/PROJECT_ID/functions \
-  -H "Authorization: Bearer PLATFORM_TOKEN"
+  -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
 
 ### Get function details
 
 ```bash
 curl https://api.volcano.dev/projects/PROJECT_ID/functions/FUNC_ID \
-  -H "Authorization: Bearer PLATFORM_TOKEN"
+  -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
 
 ### Delete a function
 
 ```bash
 curl -X DELETE https://api.volcano.dev/projects/PROJECT_ID/functions/FUNC_ID \
-  -H "Authorization: Bearer PLATFORM_TOKEN"
+  -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
 
 This permanently removes the function.

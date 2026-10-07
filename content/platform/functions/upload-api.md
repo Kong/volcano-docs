@@ -43,7 +43,7 @@ Upload a function as a ZIP or `tar.gz` source archive. The API accepts either fo
 
 ```bash
 curl -X POST https://api.volcano.dev/projects/PROJECT_ID/functions \
-  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -F "name=my-api" \
   -F "code=@function.zip" \
   -F "runtime=nodejs24.x" \

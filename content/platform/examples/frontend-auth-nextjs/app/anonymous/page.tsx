@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import type { UserMetadata } from '@volcano.dev/sdk';
 import { useVolcano, validatePasswordAgainstPolicy, VolcanoUser } from '../../lib/useVolcano';
 import ConfigPrompt from '../../components/ConfigPrompt';
 
@@ -60,8 +61,8 @@ export default function AnonymousPage() {
     setMessage('');
 
     try {
-      const metadata = anonName ? { name: anonName, anonymous: true } : { anonymous: true };
-      const { user: anonUser, error } = await volcano.auth.signUpAnonymous(metadata);
+      const metadata: UserMetadata = anonName ? { name: anonName, anonymous: true } : { anonymous: true };
+      const { user: anonUser, error } = await volcano.auth.signInAnonymously(metadata);
       
       if (error) {
         throw error;
@@ -105,7 +106,7 @@ export default function AnonymousPage() {
     setMessage('');
 
     try {
-      const metadata = convertName ? { name: convertName } : {};
+      const metadata: UserMetadata = convertName ? { name: convertName } : {};
       const { user: convertedUser, error } = await volcano.auth.convertAnonymous({
         email: convertEmail,
         password: convertPassword,

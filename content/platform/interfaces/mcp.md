@@ -27,8 +27,6 @@ POST https://api.volcano.dev/mcp
 Authorization: Bearer pt-your-project-access-token
 ```
 
-Against staging, use `https://api.staging.volcano.dev/mcp`.
-
 Every client below reads the token from an environment variable, so the secret
 stays out of a file you might commit. Export it first:
 
@@ -160,6 +158,7 @@ A **platform token (`pk-`) is refused with `403`.** The endpoint takes its proje
 | Tool | Scope | What it does | Endpoint |
 |------|-------|--------------|----------|
 | `get_project` | `read_only` | Returns the project's name, status, plan, and region | `GET /projects/{id}` |
+| `get_project_usage` | `read_only` | Reads project totals and time series, including uncharged Sandbox preview metrics | `GET /projects/{id}/usage` |
 | `list_functions` | `read_only` | Lists the project's functions, with runtime, status, and visibility | `GET /projects/{id}/functions` |
 | `list_frontends` | `read_only` | Lists the project's frontends, with status, live URLs, and function routes | `GET /projects/{id}/frontends` |
 | `list_deployments` | `read_only` | Lists recent deployments, newest first | `GET /projects/{id}/deployments` |

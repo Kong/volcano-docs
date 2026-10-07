@@ -94,7 +94,7 @@ async function getPosts(volcano, auth, params) {
 	const { data, error } = await query;
 	
 	if (error) {
-		throw new Error(error);
+		throw error;
 	}
 	
 	return {
@@ -129,7 +129,7 @@ async function createPost(volcano, auth, params) {
 	});
 	
 	if (error) {
-		throw new Error(error);
+		throw error;
 	}
 	
 	return {
@@ -165,7 +165,7 @@ async function updatePost(volcano, auth, params) {
 		.eq('id', id);
 	
 	if (error) {
-		throw new Error(error);
+		throw error;
 	}
 	
 	if (!data || data.length === 0) {
@@ -203,7 +203,7 @@ async function deletePost(volcano, auth, params) {
 		.eq('id', id);
 	
 	if (error) {
-		throw new Error(error);
+		throw error;
 	}
 	
 	if (!data || data.length === 0) {

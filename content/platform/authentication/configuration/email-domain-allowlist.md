@@ -34,7 +34,7 @@ first, because saving it signs out every account outside the list.
 
 ```bash
 curl -X PUT https://api.volcano.dev/projects/PROJECT_ID/auth/config \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "allowed_email_domains": ["domain1.com", "domain2.com"],
@@ -194,13 +194,13 @@ Two ways, depending on whether you want to keep the list:
 ```bash
 # Park the list — the domains stay, nothing is enforced.
 curl -X PUT https://api.volcano.dev/projects/PROJECT_ID/auth/config \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"allowed_email_domains_mode": "disabled"}'
 
 # Clear the list — the domains are gone.
 curl -X PUT https://api.volcano.dev/projects/PROJECT_ID/auth/config \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"allowed_email_domains": []}'
 ```

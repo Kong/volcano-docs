@@ -9,7 +9,7 @@ Projects organize your functions, durable functions, databases, authentication, 
 
 ```bash
 curl -X POST https://api.volcano.dev/projects \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name":"my-app"}'
 ```
@@ -18,7 +18,7 @@ Create a project restricted to one region (SUPERAGENT plan):
 
 ```bash
 curl -X POST https://api.volcano.dev/projects \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name":"my-app","all_regions":false,"selected_regions":["us-east-1"]}'
 ```
@@ -46,7 +46,7 @@ Save the `id` - you'll need it for all project operations.
 
 ```bash
 curl -X PATCH https://api.volcano.dev/projects/PROJECT_ID \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name":"my-app-renamed"}'
 ```
@@ -55,7 +55,7 @@ Switch to a single-region policy:
 
 ```bash
 curl -X PATCH https://api.volcano.dev/projects/PROJECT_ID \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"all_regions":false,"selected_regions":["us-east-1"]}'
 ```
@@ -64,27 +64,27 @@ curl -X PATCH https://api.volcano.dev/projects/PROJECT_ID \
 
 ```bash
 curl https://api.volcano.dev/projects \
-  -H "Authorization: Bearer PLATFORM_TOKEN"
+  -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
 
 With pagination:
 ```bash
 curl "https://api.volcano.dev/projects?page=1&limit=20" \
-  -H "Authorization: Bearer PLATFORM_TOKEN"
+  -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
 
 ## Get Project Details
 
 ```bash
 curl https://api.volcano.dev/projects/PROJECT_ID \
-  -H "Authorization: Bearer PLATFORM_TOKEN"
+  -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
 
 ## Delete a Project
 
 ```bash
 curl -X DELETE https://api.volcano.dev/projects/PROJECT_ID \
-  -H "Authorization: Bearer PLATFORM_TOKEN"
+  -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
 
 **Warning:** This deletes:

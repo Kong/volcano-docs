@@ -48,7 +48,7 @@ A production-ready Next.js application demonstrating all Volcano authentication 
 - Sign out functionality
 
 ✅ **Modern Next.js Patterns**
-- App Router (Next.js 15)
+- App Router (Next.js 16)
 - TypeScript
 - Client-side auth state
 - Protected routes
@@ -200,7 +200,7 @@ frontend-auth-nextjs/
 2. Switch to "Sign Up" tab
 3. Enter email, password, and optional name
 4. Click "Create Account"
-5. Redirected to dashboard
+5. Redirected to dashboard, or asked to confirm your email first if the project requires confirmation
 
 ### Anonymous User Flow
 
@@ -227,12 +227,16 @@ import VolcanoAuth from '@volcano.dev/sdk';
 
 const volcano = new VolcanoAuth({
   apiUrl: process.env.NEXT_PUBLIC_VOLCANO_API_URL,
-  anonKey: process.env.NEXT_PUBLIC_VOLCANO_ANON_KEY,
+  anonKey: process.env.NEXT_PUBLIC_VOLCANO_ANON_KEY!,
 });
 
 // Use SDK methods
-await volcano.auth.signUp({ email, password });
-await volcano.auth.signUpAnonymous();
+// Signup returns no session; sign in unless the project requires email confirmation
+const { confirmationRequired, error } = await volcano.auth.signUp({ email, password });
+if (!error && !confirmationRequired) {
+  await volcano.auth.signIn({ email, password });
+}
+await volcano.auth.signInAnonymously();
 await volcano.auth.convertAnonymous({ email, password });
 ```
 
@@ -244,9 +248,6 @@ yarn build
 
 # Start production server
 yarn start
-
-# Or deploy to Vercel
-vercel deploy
 ```
 
 ## Environment Variables

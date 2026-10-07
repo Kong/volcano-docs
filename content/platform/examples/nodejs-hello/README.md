@@ -16,7 +16,7 @@ lets your project's signed-in users invoke it too.
 ```bash
 zip function.zip index.js
 curl -X POST https://api.volcano.dev/projects/PROJECT_ID/functions \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -F "name=hello-world" \
   -F "code=@function.zip" \
   -F "runtime=nodejs24.x" \
@@ -30,7 +30,7 @@ Call it with a signed-in user's access token:
 
 ```bash
 curl -X POST https://api.volcano.dev/functions/FUNCTION_ID/invoke \
-  -H "Authorization: Bearer USER_ACCESS_TOKEN" \
+  -H "Authorization: Bearer $USER_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"payload":{"name":"Volcano"}}'
 ```

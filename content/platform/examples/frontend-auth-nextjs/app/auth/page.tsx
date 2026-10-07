@@ -72,20 +72,48 @@ export default function AuthPage() {
 
     try {
       if (mode === 'signup') {
-        await volcano.auth.signUp({
+        // Signup never returns a session, so sign in separately once the
+        // project allows it.
+        const { confirmationRequired, message: signUpMessage, error: signUpError } = await volcano.auth.signUp({
           email,
           password,
-          metadata: name ? { name } : {}
+          metadata: name ? { name } : {},
         });
-        setMessage(`Account created! Redirecting to dashboard...`);
+        if (signUpError) throw signUpError;
+        if (confirmationRequired) {
+          // Signup answers the same way for new and existing addresses, so
+          // show its conditional wording rather than promising an email.
+          setMessage(
+            signUpMessage ||
+              'If the account was created, a confirmation email has been sent. Confirm your email, then sign in.'
+          );
+          setMessageType('success');
+          setMode('signin');
+          setLoading(false);
+          return;
+        }
+        const { error: signInError } = await volcano.auth.signIn({ email, password });
+        if (signInError) {
+          // Signup also succeeds for an existing address without creating an
+          // account, so don't claim one was created.
+          setMessage(
+            `Signing in failed: ${signInError.message}. If you already have an account, sign in with its password.`
+          );
+          setMessageType('error');
+          setMode('signin');
+          setLoading(false);
+          return;
+        }
+        setMessage(`Signed in! Redirecting to dashboard...`);
         setMessageType('success');
         // Redirect immediately after successful signup
         router.push('/dashboard');
       } else {
-        await volcano.auth.signIn({
+        const { error } = await volcano.auth.signIn({
           email,
           password
         });
+        if (error) throw error;
         setMessage(`Welcome back! Redirecting...`);
         setMessageType('success');
         // Redirect immediately after successful signin

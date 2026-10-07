@@ -3,6 +3,8 @@ title: Sandboxes
 description: Run isolated commands and keep temporary sessions alive for files and HTTP services.
 ---
 
+## Run a command
+
 Run a command in a temporary Sandbox:
 
 ```bash
@@ -29,6 +31,7 @@ curl "$VOLCANO_API_URL/projects/$PROJECT_ID/sandbox-executions" \
 
 Sandbox access is available only in enabled environments. An unavailable environment
 returns `503`. Discover published presets and regions with `GET /sandboxes/presets`.
+Use the returned preset IDs when creating templates, sessions, or one-shot executions.
 An empty catalog means no verified preset has been published yet.
 
 ## Keep a session alive
@@ -110,10 +113,17 @@ One-shot commands have a one-minute execution limit, with separate provisioning
 and cleanup budgets. A successful response follows confirmed termination. Use a session
 for longer work or a service that must remain available.
 
+A one-shot command timeout returns `504`; retrying its key returns `409`
+because no completed result was stored. A session command timeout instead
+returns execution data with `timed_out: true`.
+
 ## Retry without repeating a command
 
 Creation and command requests require a UUID `Idempotency-Key`. Keep the same
 key and body when retrying. Keys are scoped to the project and operation.
+
+An unknown preset returns `400` before reserving the execution key. Repeating
+that invalid request returns `400` again and never runs a command.
 
 A completed command returns its stored result. Changed intent returns `409`.
 An in-progress command or lost result returns `409` with
@@ -147,6 +157,10 @@ auth-user JWT can only read, execute commands, access files, or connect to a
 session explicitly granted to that user. It cannot create, suspend, resume,
 terminate, or grant sessions. Anonymous keys and project access tokens are not
 accepted by these APIs.
+
+An invalid or expired auth-user JWT returns `401`; refresh the user's login and
+retry with the same execution key. A valid user without a matching grant or
+project scope receives `403`, which token refresh does not resolve.
 
 ```bash
 curl -X PUT "$VOLCANO_API_URL/sandbox-sessions/$SESSION_ID/grants/$AUTH_USER_ID" \
@@ -183,8 +197,11 @@ Ports 65533 and above are reserved.
 For browser navigation, submit the token in a form POST to
 `{url}_volcano/access`. The response sets a secure, HTTP-only, host-only cookie
 and redirects to `/`. Keep credentials out of query strings. The guest never
-receives the access header or reserved cookie. Application authorization headers
-and cookies remain available to the application.
+receives the access header or reserved cookie. Volcano also removes
+client-sent `X-Volcano-*`, `Forwarded`, and `X-Forwarded-*` headers, and
+lookalikes that put `_` or `.` in place of `-`, such as `X_Forwarded_For`.
+Application authorization headers, other headers such as `X_Api_Key`, and
+cookies remain available to the application.
 
 HTTP, WebSocket, SSE, and gRPC use the same authenticated URL. Revocation closes
 active connections; clients must obtain fresh access and reconnect after expiry.
@@ -213,9 +230,9 @@ List named Sandboxes, sessions, and deployment history with:
 Lists return `data` and `pagination`. Pass `pagination.next_cursor` as `cursor`
 and keep `limit` unchanged; the default is 10, with a maximum of 100.
 
-Custom images, manifest configuration, and client
-workflows are not included in this API release. This release does not enable
-Sandbox metering or billing.
+Custom images and manifest configuration are not included in this API release.
+Sandbox usage is available as preview counters; it does not debit credits or
+enable billing.
 
 Renaming a sandbox to an existing name in the same project returns `409 Conflict`.
 
@@ -225,6 +242,13 @@ Start your local environment with `volcano start`, then use the same Sandbox
 API at `http://localhost:8000`. Authenticate with the local service key from
 `volcano status`. Anonymous credentials remain rejected; signed-in users still
 need an explicit session grant.
+
+Local app services still start if the Sandbox service cannot start. Sandbox
+APIs return `503` until that service is ready. Initialization retries in the
+background when the Sandbox service becomes available. If the service failed
+to start, fix local Docker access and run `volcano start` again. A local reset
+still requires successful Sandbox cleanup so running containers are not left
+behind.
 
 Local mode includes `python3.12` and `node22` presets with 1024 or 2048 MB of
 memory. Use `us-east-1` as the region. Docker Engine API 1.41 or newer is required. Sessions run in separate Docker
@@ -239,3 +263,81 @@ the Sandbox service, or running `volcano reset` terminates existing sessions.
 Local mode supports up to four sessions per owner and 8 GiB of total reserved
 memory. Containers share the local Docker kernel; use hosted Sandboxes when
 you need VM isolation.
+
+## Inspect preview usage
+
+```bash
+curl "$VOLCANO_API_URL/projects/$PROJECT_ID/usage" \
+  -H "Authorization: Bearer $VOLCANO_TOKEN"
+```
+
+The `metrics` array includes these preview counters. Agents can read the same
+response with the `get_project_usage` [MCP tool](../interfaces/mcp.md):
+
+| Metric | Meaning |
+| --- | --- |
+| `Sandbox Running (MiB-Seconds)` | Configured memory multiplied by observed running time |
+| `Sandbox Suspended (Seconds)` | Observed time with the session suspended |
+| `Sandbox Uncertain (MiB-Seconds)` | Configured memory multiplied by time awaiting verification |
+
+**Preview usage does not debit credits and will not be charged retroactively.**
+These counters are not a price estimate. Running includes time between commands
+and idle HTTP requests. Several commands in one session do not multiply its
+runtime. Paused sessions do not accumulate running usage. Local sessions do not
+contribute cloud usage.
+
+Totals cover the current UTC calendar month; `all_time` is cumulative. Hourly
+and daily series use the same units. Measurements retain milliseconds and round
+down after aggregation for display. State changes and observation gaps are
+estimates: unconfirmed transitions and gaps longer than 30 seconds appear as
+uncertain usage. Usage stops accumulating at the session's expiry, even if
+cleanup or confirmation takes longer. Elastic CPU/memory consumption, snapshot
+bytes, build costs, and outbound transfer are not included in these counters.
+
+### Preview budget limits
+
+If your account has a preview test budget, it is shared across your projects
+and uses the monthly account anniversary recorded when cloud usage metering
+first starts for your account. Subscription changes do not reset this preview
+budget. It does not reserve or spend real credits.
+
+New sessions and resumes reserve up to one minute of configured-memory runtime.
+An exhausted budget returns `429` with `sandbox_shadow_budget_exhausted`.
+Running sessions are asked to pause before their next reservation would exceed
+the budget. Uncertain usage also consumes the test budget. A budget-paused
+session is retained for at most one hour, or until its existing expiry if
+sooner, then terminated. Increasing the test budget permits an explicit resume;
+it does not automatically resume paused workloads. Termination stays available.
+
+Budget enforcement is asynchronous. Provider delays and worker outages can
+exceed the reservation; the existing maximum session lifetime remains the hard
+backstop. Session concurrency, regional capacity, and lifetime limits continue
+to apply when test budgets are disabled.
+
+## Use the CLI and SDKs
+
+The CLI exposes the same commands locally and in the cloud:
+
+```bash
+volcano sandboxes exec --preset python3.12 -- python -c 'print(42)'
+volcano cloud sandboxes exec --preset python3.12 -- python -c 'print(42)'
+```
+
+See [CLI Sandboxes](/cli/sandboxes) for sessions, files, saved templates, and
+request IDs. See [JavaScript Sandboxes](/sdk/js/sandboxes),
+[Python Sandboxes](/sdk/python/sandboxes), and [Ruby Sandboxes](/sdk/ruby/sandboxes) for the
+`client.sandboxes` facade, binary files, scoped HTTP credentials, and automatic
+session cleanup in each language.
+
+## Manage sessions in the Dashboard
+
+Select a project and open **Sandboxes**. The **Sessions** view lists each
+session's state, region, and expiry. Choose a preset, memory size, and region to
+start a session. Suspend a running session to retain its processes and files;
+resume it before running another command. Termination requires confirmation
+and permanently removes the session's files.
+
+The **Templates** view saves named preset and memory combinations. Deleting a
+template terminates its sessions and permanently removes their files. Lists support pagination and refresh.
+The Dashboard reports a platform refusal while Sandbox access is unavailable;
+it does not bypass the rollout gate.

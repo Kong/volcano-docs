@@ -76,7 +76,7 @@ tokens with `404`. Volcano installs the dependencies in `package.json` during th
 ```bash
 zip -r function.zip index.js package.json
 curl -X POST https://api.volcano.dev/projects/PROJECT_ID/functions \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -F "name=posts" \
   -F "code=@function.zip" \
   -F "runtime=nodejs24.x" \

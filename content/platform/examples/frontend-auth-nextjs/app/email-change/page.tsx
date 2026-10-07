@@ -30,10 +30,6 @@ export default function EmailChangePage() {
           return;
         }
         setUser(currentUser);
-        // Check if there's a pending email change
-        if (currentUser.email_change) {
-          setPendingEmail(currentUser.email_change);
-        }
       } catch {
         // Server unreachable
         router.push('/auth');
@@ -81,7 +77,7 @@ export default function EmailChangePage() {
         throw result.error;
       }
 
-      setPendingEmail(result.newEmail);
+      setPendingEmail(result.newEmail ?? newEmail);
       setMessage(result.message || 'Confirmation email sent to new address');
       setMessageType('info');
       
@@ -109,8 +105,8 @@ export default function EmailChangePage() {
     try {
       const { user: updatedUser, error } = await volcano.auth.confirmEmailChange(emailChangeToken);
       
-      if (error) {
-        throw error;
+      if (error || !updatedUser) {
+        throw error ?? new Error('Email change confirmation returned no user');
       }
 
       setUser(updatedUser);

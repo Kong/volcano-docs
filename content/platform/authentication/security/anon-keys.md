@@ -67,7 +67,7 @@ Response:
     {
       "id": "ak_abc123",
       "name": "Default",
-      "key_value": "vk_anon_eyJhbGciOiJIUzI1NiIs...",
+      "key_value": "ak-eyJhbGci...",
       "created_at": "2024-01-15T10:00:00Z"
     }
   ]

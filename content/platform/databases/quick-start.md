@@ -152,8 +152,8 @@ You're now querying PostgreSQL from the browser with Query Builder syntax.
 ### Step 1: Create a Database
 
 ```bash
-curl -X POST https://api.yourapp.com/projects/PROJECT_ID/databases \
-  -H "Authorization: Bearer PLATFORM_TOKEN" \
+curl -X POST https://api.volcano.dev/projects/PROJECT_ID/databases \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "my_app_db",

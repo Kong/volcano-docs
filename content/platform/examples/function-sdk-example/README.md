@@ -55,13 +55,14 @@ const volcano = new VolcanoAuth({
 });
 
 // Sign in user
-await volcano.auth.signIn({ email, password });
+const { session, error } = await volcano.auth.signIn({ email, password });
+if (error) throw error;
 
-// Call the function
+// Call the function with the user's access token
 const response = await fetch('https://your-function-url.com', {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+    'Authorization': `Bearer ${session.access_token}`,
     'Content-Type': 'application/json'
   },
   body: JSON.stringify({
@@ -169,7 +170,8 @@ console.log('User posts:', posts);
 When a frontend user signs in with Volcano, they receive a JWT access token:
 
 ```javascript
-const { session } = await volcano.auth.signIn({ email, password });
+const { session, error } = await volcano.auth.signIn({ email, password });
+if (error) throw error;
 // session.access_token is the JWT
 ```
 

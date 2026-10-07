@@ -3,21 +3,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import type { StorageObject } from '@volcano.dev/sdk';
 import { useVolcano } from '../../lib/useVolcano';
 import ConfigPrompt from '../../components/ConfigPrompt';
-
-interface StorageObject {
-  id: string;
-  bucket_id: string;
-  name: string;
-  owner_id?: string;
-  is_public: boolean;
-  size: number;
-  mime_type: string;
-  created_at: string;
-  updated_at: string;
-  public_url?: string; // Set by API for public files - shareable URL requiring no authentication
-}
 
 // Default bucket name
 const DEFAULT_BUCKET_NAME = 'user-files';
@@ -215,8 +203,8 @@ export default function FilesPage() {
         .from(bucketName)
         .download(file.name);
 
-      if (error) {
-        setMessage(`Failed to download: ${error.message}`);
+      if (error || !data) {
+        setMessage(`Failed to download: ${error?.message ?? 'empty response'}`);
         setMessageType('error');
         return;
       }
@@ -514,7 +502,7 @@ export default function FilesPage() {
                       </div>
                     </td>
                     <td style={{ padding: '12px 8px', color: '#666', fontSize: '14px' }}>
-                      {new Date(file.updated_at).toLocaleDateString()}
+                      {file.updated_at ? new Date(file.updated_at).toLocaleDateString() : ''}
                     </td>
                     <td style={{ padding: '12px 8px', textAlign: 'right' }}>
                       <button

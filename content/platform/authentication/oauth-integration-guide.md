@@ -22,7 +22,7 @@ Complete guide for integrating OAuth/SSO authentication in your application.
 ```bash
 # Example: Configure Google OAuth
 curl -X POST https://api.volcano.dev/projects/YOUR_PROJECT_ID/oauth/configs \
-  -H "Authorization: Bearer YOUR_PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "provider": "google",
@@ -83,7 +83,7 @@ When Google redirects back to your callback URL, Volcano automatically:
 
 ```bash
 curl -X POST https://api.volcano.dev/projects/YOUR_PROJECT_ID/oauth/configs \
-  -H "Authorization: Bearer YOUR_PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "provider": "google",
@@ -122,7 +122,7 @@ curl -X POST https://api.volcano.dev/projects/YOUR_PROJECT_ID/oauth/configs \
 
 ```bash
 curl -X POST https://api.volcano.dev/projects/YOUR_PROJECT_ID/oauth/configs \
-  -H "Authorization: Bearer YOUR_PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "provider": "github",
@@ -172,7 +172,7 @@ curl -X POST https://api.volcano.dev/projects/YOUR_PROJECT_ID/oauth/configs \
 
 ```bash
 curl -X POST https://api.volcano.dev/projects/YOUR_PROJECT_ID/oauth/configs \
-  -H "Authorization: Bearer YOUR_PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "provider": "microsoft",
@@ -228,7 +228,7 @@ curl -X POST https://api.volcano.dev/projects/YOUR_PROJECT_ID/oauth/configs \
 
 ```bash
 curl -X POST https://api.volcano.dev/projects/YOUR_PROJECT_ID/oauth/configs \
-  -H "Authorization: Bearer YOUR_PLATFORM_TOKEN" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "provider": "apple",

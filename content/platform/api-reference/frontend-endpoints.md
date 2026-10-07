@@ -120,30 +120,173 @@ Returns `202 Accepted` and schedules asynchronous deprovisioning. If another dep
 
 `POST /projects/{project_id}/frontends/{frontend_id}/domain`
 
-JSON body:
-- `domain` (required): fully-qualified hostname like `mydomain.com`.
-- `tls.mode` (required): must be `byoc`.
-- `tls.certificate_pem` (required): PEM-encoded certificate.
-- `tls.private_key_pem` (required): PEM-encoded private key.
-- `tls.certificate_chain_pem` (optional): PEM-encoded chain.
+Ask Volcano to issue and renew the certificate:
+
+```bash
+curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/frontends/$FRONTEND_ID/domain" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "domain": "app.example.com",
+    "tls": {
+      "mode": "managed"
+    }
+  }'
+```
+
+For a hostname this account has not claimed, the create response starts in
+`pending_verification` and includes a tenant-specific TXT ownership challenge in
+`verification_records`. Volcano omits that challenge when the same account
+reuses a hostname it has claimed.
+
+```json
+{
+  "domain": "app.example.com",
+  "tls_mode": "managed",
+  "domain_status": "pending_verification",
+  "verification_status": "pending",
+  "verification_records": [
+    {
+      "name": "_volcano.app.example.com",
+      "type": "TXT",
+      "value": "volcano-domain-verification=0123456789abcdef0123456789abcdef"
+    }
+  ],
+  "routing_target_hostname": "my-frontend.frontends.volcano.run",
+  "effective_urls": [
+    "https://my-frontend.frontends.volcano.run/"
+  ],
+  "created_at": "2026-09-02T12:00:00Z",
+  "updated_at": "2026-09-02T12:00:00Z"
+}
+```
+
+When the response includes a TXT record, add it within 72 hours. Until Volcano
+sees the exact value, the hostname is only reserved. If the proof does not appear
+in that window, Volcano removes the reservation so the hostname can be requested
+again.
+
+A reservation does not lock out the hostname's real owner. The TXT value is
+derived from your account and the hostname, so each account has its own. If
+another account holds an unverified reservation, a managed TLS create returns
+`409` with the record your account must publish:
+
+```json
+{
+  "error": "custom domain is reserved by another account until its ownership is verified",
+  "code": "ownership_verification_required",
+  "required_record": {
+    "name": "_volcano.app.example.com",
+    "type": "TXT",
+    "value": "volcano-domain-verification=fedcba9876543210fedcba9876543210"
+  }
+}
+```
+
+Publish that record and send the same request again. Once Volcano can see the
+record, the retry replaces the other account's reservation and returns `201`,
+and the other account's domain is removed. A BYOC request whose certificate and
+key are publicly trusted for the hostname replaces such a reservation the same
+way. Self-signed and private-CA certificates are accepted only for hostnames no
+other account has claimed, and they never replace a reservation.
+
+Once the TXT proof succeeds, the hostname stays claimed to that Volcano account,
+including after the domain is deleted. After verification succeeds you can
+delete the `_volcano` TXT record; Volcano checks it only once, and the claim does
+not depend on it. Keep the certificate validation CNAME, which issuance and
+renewal use. The same account can reuse the hostname in another project without
+repeating the TXT proof. Other accounts receive `409` for both
+managed TLS and BYOC requests for that hostname. A claimed hostname is never
+taken over; to move one to another account, contact Volcano support. BYOC
+domains are never taken over either, including ones created with a self-signed
+certificate before any account claimed the hostname.
+
+After adding the TXT record, or immediately when Volcano does not require one,
+poll the domain endpoint for the certificate validation CNAME. Stop early if
+provisioning fails:
+
+```bash
+deadline=$((SECONDS + 300))
+while (( SECONDS < deadline )); do
+  DOMAIN_RESPONSE="$(curl --fail-with-body -sS \
+    -H "Authorization: Bearer $PLATFORM_TOKEN" \
+    "https://api.volcano.dev/projects/$PROJECT_ID/frontends/$FRONTEND_ID/domain")"
+  if jq -e '.verification_records[]? | select(.type == "CNAME")' >/dev/null <<<"$DOMAIN_RESPONSE"; then
+    break
+  fi
+  if jq -e '.domain_status == "failed" or .verification_status == "failed"' >/dev/null <<<"$DOMAIN_RESPONSE"; then
+    jq . <<<"$DOMAIN_RESPONSE" >&2
+    exit 1
+  fi
+  sleep 2
+done
+
+if ! jq -e '.verification_records[]? | select(.type == "CNAME")' >/dev/null <<<"$DOMAIN_RESPONSE"; then
+  echo "timed out waiting for certificate validation record" >&2
+  exit 1
+fi
+
+jq . <<<"$DOMAIN_RESPONSE"
+```
+
+After Volcano verifies or recognizes ownership, `verification_records` changes
+to the certificate validation CNAME:
+
+```json
+{
+  "domain": "app.example.com",
+  "tls_mode": "managed",
+  "domain_status": "pending_verification",
+  "verification_status": "pending",
+  "verification_records": [
+    {
+      "name": "_acme-challenge.app.example.com",
+      "type": "CNAME",
+      "value": "7d7b8a4e-7418-4a86-8e16-670870f00fa0.acme.frontends.volcano.run"
+    }
+  ],
+  "routing_target_hostname": "my-frontend.frontends.volcano.run",
+  "effective_urls": [
+    "https://my-frontend.frontends.volcano.run/"
+  ],
+  "created_at": "2026-09-02T12:00:00Z",
+  "updated_at": "2026-09-02T12:00:00Z"
+}
+```
+
+Create the CNAME and keep it in DNS so Volcano can issue and renew the
+certificate. Issuance can wait in a queue when many domains are added together.
+You can remove the earlier `_volcano` TXT record after the CNAME
+appears. Point your hostname at `routing_target_hostname` separately to send
+traffic to the frontend.
 
 Behavior:
 - HOBBY plan: returns `403` (custom domains are SUPERAGENT-only).
 - SUPERAGENT plan: configures one custom domain per frontend.
-- BYOC is mandatory for custom-domain creation.
-- Your uploaded certificate is used to secure the custom domain.
+- Managed TLS issues and renews the certificate without accepting or returning certificate material.
+- Managed TLS accepts hostnames up to 219 characters; BYOC accepts up to 253.
+- Route traffic with a `CNAME` to `routing_target_hostname` only if your DNS provider confirms the hostname is not a zone apex. At any zone apex, including a delegated subdomain apex, use a provider-supported ALIAS, ANAME, or CNAME-flattening record.
 - Both the custom domain and default Volcano frontend URL continue to work.
 - The default `*.frontends.<env>.volcano.run` URL keeps strict valid TLS and is not replaced by BYOC certificates from other domains.
 - Returns `201` when a new custom domain is queued, and `200` when the same domain is already configured.
-- Returns `409` when the frontend already has a different domain, the requested domain is attached elsewhere, or a previous attachment is still detaching.
+- Returns `409` when the frontend already has a different domain, the requested domain is attached elsewhere or claimed by another account, or a previous attachment is still detaching. When another account only holds an unverified managed TLS reservation, a managed TLS request gets a `409` with `code: ownership_verification_required` and the `required_record` to publish before retrying. A BYOC request gets a plain `409` unless its certificate is publicly trusted for the hostname, which replaces the reservation.
 - Returns `503` when custom domain provisioning is temporarily unavailable.
+- Changing between managed TLS and BYOC requires deleting the existing domain and creating it again. Moving a hostname from BYOC to managed TLS this way leaves it without HTTPS until the managed certificate is issued.
+- Hostnames under `volcano.dev` cannot be registered as custom domains.
+- Local mode does not provide managed certificate issuance. Use BYOC when running locally.
 
 Provisioning lifecycle:
-- `pending_verification`: waiting for required domain checks to complete.
-- `provisioning`: verification done; domain activation is in progress.
+- `pending_verification`: waiting for the ownership TXT record or the later certificate validation CNAME.
+- An ownership reservation expires after 72 hours and the domain moves to `detaching`. Once it is removed, submit the domain again to receive a new TXT challenge.
+- `provisioning`: validation succeeded and activation is in progress.
 - `active`: domain is live and serving traffic.
 - `detaching`: domain removal has been requested and is being processed.
-- `failed`: provisioning or detach operation failed and requires retry/user action.
+- `failed`: setup or removal failed. For managed TLS, check `failure_reason`, correct the problem, then delete and recreate the domain.
+
+To use your own certificate instead, set `tls.mode` to `byoc` and provide
+`certificate_pem`, `private_key_pem`, and optionally `certificate_chain_pem`.
+A request that omits `tls.mode` is treated as `byoc`.
+Volcano validates the key pair and hostname before accepting it.
 
 ## Get Frontend Custom Domain
 
@@ -153,9 +296,13 @@ Response fields:
 - `domain`
 - `domain_status`
 - `tls_mode`
-- `verification_status`
+- `verification_status`:
+  - `verified`: the domain is served by a validated certificate.
+  - `pending`: the domain is not served yet, is being re-validated after its certificate material was withdrawn, or Volcano is retrying after a failure.
+  - `failed`: a failure left the domain unserved, alongside `domain_status: failed`. Managed domains report the cause in `failure_reason`.
+- `failure_reason` when managed TLS provisioning fails
 - `verification_records[]`
-- `required_routing_record`
+- `required_routing_record` (deprecated; no longer returned)
 - `routing_target_hostname`
 - `effective_urls[]`
 - `created_at`
@@ -165,7 +312,9 @@ Notes:
 - When the frontend has no custom domain configured, returns `200` with a JSON `null` body (the empty state), not `404`.
 - Returns `404` only when the frontend itself does not exist.
 - `verification_records[]` is usually empty for BYOC because certificate ownership/validation comes from the uploaded cert.
-- `required_routing_record` is omitted because Volcano cannot determine whether your domain is a DNS zone apex, including a delegated subdomain apex. Use `routing_target_hostname` as the DNS routing target. Configure a CNAME only if your DNS provider confirms the domain is not a zone apex; for any zone apex, use a provider-supported ALIAS, ANAME, or CNAME-flattening record.
+- `failure_reason` reports `provider`, `certificate`, `ownership`, or `internal`; treat any other value as `internal`. An `ownership` failure means another account has already claimed the hostname. Volcano omits provider details and never returns stored BYOC errors.
+- `verification_records[]` entries have `name`, `type`, and `value`. Managed TLS may return a tenant-specific ownership TXT record before the certificate validation CNAME, so follow the records in the current response. Keep the CNAME in DNS for renewal.
+- `required_routing_record` is deprecated and no longer returned because Volcano cannot determine whether your domain is a DNS zone apex, including a delegated subdomain apex. Use `routing_target_hostname` as the DNS routing target. Configure a CNAME only if your DNS provider confirms the domain is not a zone apex; for any zone apex, use a provider-supported ALIAS, ANAME, or CNAME-flattening record.
 - `effective_urls[]` always includes the default Volcano frontend URL; it also includes the custom domain URL once active.
 
 ## Delete Frontend Custom Domain

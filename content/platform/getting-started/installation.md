@@ -21,6 +21,10 @@ brew install Kong/volcano/volcano
 curl -fsSL https://download.volcano.dev/builds/install.sh | bash
 ```
 
+The script requires `cosign` and verifies the CLI's signature before installing
+it. To verify the script itself before it runs, or to install with npm, pnpm, or
+Bun, see [CLI installation](/cli/installation).
+
 **Or download directly:**
 - [macOS (Intel)](https://download.volcano.dev/builds/releases/latest/download/volcano-macos-amd64)
 - [macOS (Apple Silicon)](https://download.volcano.dev/builds/releases/latest/download/volcano-macos-arm64)
@@ -103,7 +107,7 @@ You can find your project ID and anon key in the Volcano dashboard or by queryin
 ```bash
 # Get project details including default anon key
 curl "https://api.volcano.dev/projects/YOUR_PROJECT_ID" \
-  -H "Authorization: Bearer YOUR_PLATFORM_TOKEN"
+  -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
 
 ## Framework setup
