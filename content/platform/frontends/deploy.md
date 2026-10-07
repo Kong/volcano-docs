@@ -205,8 +205,14 @@ volcano cloud frontends logs my-site
 
 Build logs show the selected Node.js and package-manager versions, dependency
 installation, Next.js detection, the build command, and your Next.js build
-output. Validation failures include an actionable message. Platform
-setup, packaging, and publishing diagnostics stay in internal operator logs.
+output. Validation failures include an actionable message. If Volcano cannot
+prepare prerendered pages, the build log names the installed Next.js version.
+For an unfamiliar cache format, it recommends a supported version for that major
+when it differs from the installed version. If the log recommends a version,
+pin `next` to it, update your lockfile, and rebuild, or contact support.
+For other packaging failures, or failures on the recommended version, contact support.
+Detailed platform setup, packaging, and publishing diagnostics stay in internal
+operator logs.
 
 ## Next
 

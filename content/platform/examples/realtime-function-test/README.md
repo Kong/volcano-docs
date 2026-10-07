@@ -20,6 +20,9 @@ This test specifically validates **Row-Level Security (RLS) isolation**:
 - Creates a test table with an RLS policy
 - Inserts a record for a different user, then one for the current user
 - Verifies the user receives the change event for their own record
+- Inserts a marker record for the current user and waits for its event. Each
+  Realtime server checks the other user's record before the marker and sends
+  any leaked event first
 - **Verifies the user does NOT receive the change event for the other user's record**
 
 This is critical for multi-tenant applications where data isolation is essential.
@@ -32,7 +35,7 @@ checks the table's RLS policy as that user before delivering each change.
 
 The function writes over its own `pg` connection to
 `REALTIME_TEST_DATABASE_URL`. The first invocation creates the table, and every
-invocation deletes its two records after the checks:
+invocation deletes its records after the checks:
 
 ```sql
 CREATE TABLE IF NOT EXISTS public.realtime_test (
@@ -53,15 +56,22 @@ A database's `connection_string` has full access and bypasses RLS, which lets
 the function create the table and insert a record for another user. Any
 signed-in user who invokes the function writes through that connection, so when
 you finish testing, delete the function, the `realtime-test` anon keys and the
-`REALTIME_TEST_*` variables, and drop `realtime_test`. Use full access only for
-setup like this. To query as the invoking user, pass their `user_id` to
+`REALTIME_TEST_*` variables, and drop `realtime_test`. Then send the Realtime
+settings the setup script printed back to `PUT .../realtime/config`. Use full
+access only for setup like this. To query as the invoking user, pass their
+`user_id` to
 `databaseConnectionString(connectionString, { userId })`; see
 [Accessing user information in functions](../../functions/user-context.md#row-level-security-rls).
 
 ## Project Variables
 
 Set these project variables before you deploy. Their names are specific to
-this test, so they don't replace values your project already uses.
+this test, so they don't replace values your project already uses. They aren't
+shared, so functions on the default `all` scope don't receive the full-access
+connection string. This function uses `variable_scope=scoped` and declares
+them; any other `scoped` function that declares or references them receives
+them too. A frontend whose `variable_scope` is `all` receives every project
+variable, these included; new frontends are `scoped`.
 
 | Variable | Description |
 |----------|-------------|
@@ -70,10 +80,22 @@ this test, so they don't replace values your project already uses.
 | `REALTIME_TEST_DATABASE_URL` | The `connection_string` of the database Realtime watches |
 
 Realtime watches one database per project: the newest one that is active or
-being restored. The commands below expect `PROJECT_ID`, `PLATFORM_TOKEN` and
-that database's name in `DATABASE_NAME`.
+being restored. Realtime is off until you enable it, so the script below prints
+your current Realtime settings, then turns Realtime on with the broadcast,
+presence and Postgres changes features the test uses. It expects `PROJECT_ID`,
+`PLATFORM_TOKEN` and that database's name in `DATABASE_NAME`.
 
 ```bash
+# Your current Realtime settings, to put back when you clean up
+curl -fsS "https://api.volcano.dev/projects/$PROJECT_ID/realtime/config" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  | jq -c '{enabled, broadcast_enabled, presence_enabled, postgres_changes_enabled}'
+
+curl -fsS -o /dev/null -X PUT "https://api.volcano.dev/projects/$PROJECT_ID/realtime/config" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"enabled":true,"broadcast_enabled":true,"presence_enabled":true,"postgres_changes_enabled":true}'
+
 ANON_KEY=$(curl -fsS -X POST "https://api.volcano.dev/projects/$PROJECT_ID/anon-keys" \
   -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
@@ -85,16 +107,23 @@ CONNECTION_STRING=$(curl -fsS "https://api.volcano.dev/projects/$PROJECT_ID/data
 
 set_variable() {
   [ -n "$2" ] || { echo "No value for $1" >&2; return 1; }
-  curl -fsS -o /dev/null -X POST "https://api.volcano.dev/projects/$PROJECT_ID/variables" \
+  local response
+  response=$(curl -sS --fail-with-body -X POST "https://api.volcano.dev/projects/$PROJECT_ID/variables" \
     -H "Authorization: Bearer $PLATFORM_TOKEN" \
     -H "Content-Type: application/json" \
-    -d "$(jq -n --arg name "$1" --arg value "$2" '{name: $name, value: $value}')"
+    -d "$(jq -n --arg name "$1" --arg value "$2" '{name: $name, value: $value, shared: false}')") \
+    || { echo "Setting $1 failed: $response" >&2; return 1; }
 }
 
 set_variable REALTIME_TEST_API_URL https://api.volcano.dev
 set_variable REALTIME_TEST_ANON_KEY "$ANON_KEY"
 set_variable REALTIME_TEST_DATABASE_URL "$CONNECTION_STRING"
 ```
+
+If a variable fails with "shared variable membership changes are temporarily
+unavailable", Volcano can't create unshared variables yet. Don't deploy, and
+don't set the variables as shared instead: every function on the `all` scope
+would then receive the full-access connection string.
 
 ## Deployment
 
@@ -111,30 +140,39 @@ FUNCTION_ID=$(curl -fsS -X POST "https://api.volcano.dev/projects/$PROJECT_ID/fu
   -F "code=@function.zip" \
   -F "runtime=nodejs24.x" \
   -F "handler=index.handler" \
-  -F "visibility=authenticated" | jq -er '.id')
+  -F "visibility=authenticated" \
+  -F "variable_scope=scoped" \
+  -F 'variables=["REALTIME_TEST_API_URL","REALTIME_TEST_ANON_KEY","REALTIME_TEST_DATABASE_URL"]' \
+  | jq -er '.id')
 ```
 
 ## Invocation
 
 This function requires an authenticated user context, so call it with a
-signed-in user's access token. Wait for the build to finish, then invoke the
-`invoke_url` the API returns for the function rather than building a host,
-which differs between deployments:
+signed-in user's access token. Wait for the build to finish. Once the function
+is `active`, invoke the `invoke_url` the API returns for it rather than building
+a host, which differs between deployments:
 
 ```bash
-while [ "$(curl -fsS "https://api.volcano.dev/projects/$PROJECT_ID/functions/$FUNCTION_ID" \
-  -H "Authorization: Bearer $PLATFORM_TOKEN" | jq -r '.status')" = provisioning ]; do
+STATUS=provisioning
+while [ "$STATUS" = provisioning ]; do
   sleep 5
+  STATUS=$(curl -fsS "https://api.volcano.dev/projects/$PROJECT_ID/functions/$FUNCTION_ID" \
+    -H "Authorization: Bearer $PLATFORM_TOKEN" | jq -er '.status') || STATUS="unknown (status request failed)"
 done
 
-INVOKE_URL=$(curl -fsS "https://api.volcano.dev/projects/$PROJECT_ID/functions/$FUNCTION_ID" \
-  -H "Authorization: Bearer $PLATFORM_TOKEN" | jq -er '.invoke_url')
+if [ "$STATUS" = active ]; then
+  INVOKE_URL=$(curl -fsS "https://api.volcano.dev/projects/$PROJECT_ID/functions/$FUNCTION_ID" \
+    -H "Authorization: Bearer $PLATFORM_TOKEN" | jq -er '.invoke_url')
 
-# Invoke with user authentication
-curl -X POST "$INVOKE_URL" \
-  -H "Authorization: Bearer $ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"payload":{}}'
+  # Invoke with user authentication
+  curl -X POST "$INVOKE_URL" \
+    -H "Authorization: Bearer $ACCESS_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"payload":{}}'
+else
+  echo "Not invoking: function status is $STATUS" >&2
+fi
 ```
 
 ## Expected Output
@@ -160,9 +198,15 @@ curl -X POST "$INVOKE_URL" \
 ```
 
 Any failed test sets `success` to `false` and the status to `500`.
-`RLS Isolation` fails as inconclusive when no change arrived for the caller's
-own record. Without `__volcano_auth` the function answers `401`; with a project
-variable missing, `500` naming the variables it needs.
+`RLS Isolation` fails as inconclusive when the change for the caller's own
+record or the marker record didn't arrive. Without `__volcano_auth` the
+function answers `401`; with a project variable missing, `500` naming the
+variables it needs.
+
+The marker orders events within one Realtime server. With several servers, one
+that missed the other record's notification, for example while reconnecting,
+can deliver the marker before another server delivers a leaked event. A pass
+is strong evidence of isolation, not proof.
 
 In local mode, send a user's access token too. A call without one runs as the
 local service key, which Realtime doesn't accept, so `Connection` fails.

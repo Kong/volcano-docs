@@ -22,7 +22,7 @@ Authorization: Bearer <platform_token>
       "status": "active",
       "connection_string": "postgresql://volcano_client_11111111-1111-1111-1111-111111111111:vpg_abc123@database.volcano.dev:5432/myapp_main?sslmode=require&application_name=volcano_full_access",
       "region": "us-east-1",
-      "pg_version": "16",
+      "pg_version": "18",
       "storage_bytes": 1610612736,
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
@@ -55,7 +55,7 @@ Authorization: Bearer <platform_token>
   "status": "active",
   "connection_string": "postgresql://volcano_client_11111111-1111-1111-1111-111111111111:vpg_abc123@database.volcano.dev:5432/myapp_main?sslmode=require&application_name=volcano_full_access",
   "region": "us-east-1",
-  "pg_version": "16",
+  "pg_version": "18",
   "created_at": "2024-01-01T00:00:00Z",
   "updated_at": "2024-01-01T00:00:00Z"
 }

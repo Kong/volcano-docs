@@ -64,8 +64,9 @@ When you query your Volcano database, **your identity is automatically passed to
 │ 5. pgproxy Parses    │
 │    - Extracts auth   │
 │    - Sets variables: │
-│      SET request.    │
-│      jwt_sub='id'    │
+│      SET LOCAL       │
+│      request.jwt_sub │
+│      = 'id'          │
 └──────────┬───────────┘
            │
            ↓

@@ -219,7 +219,8 @@ Use the returned ID as `sandbox_id` in later session or execution requests.
 `PATCH /projects/{id}/sandboxes/{sandboxId}` changes its name. `DELETE` stops
 new sessions and requests termination of its existing sessions. You can reuse
 the name with a new idempotency key. Replaying the deleted Sandbox’s creation
-request returns `409 Conflict`.
+request returns `409 Conflict`. Deleting a named Sandbox keeps the shared preset
+available to other Sandboxes.
 
 List named Sandboxes, sessions, and deployment history with:
 

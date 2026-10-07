@@ -37,7 +37,7 @@ instead of hardcoding a list.
 
 ## List Available PostgreSQL Versions
 
-Get the list of supported PostgreSQL versions:
+Get the list of supported PostgreSQL versions, newest first:
 
 ```bash
 curl https://api.volcano.dev/databases/postgres-versions
@@ -47,10 +47,18 @@ curl https://api.volcano.dev/databases/postgres-versions
 ```json
 [
   {
-    "version": "16",
-    "name": "PostgreSQL 16",
+    "version": "18",
+    "name": "PostgreSQL 18",
     "recommended": true,
     "default": true
+  },
+  {
+    "version": "17",
+    "name": "PostgreSQL 17"
+  },
+  {
+    "version": "16",
+    "name": "PostgreSQL 16"
   },
   {
     "version": "15",
@@ -59,7 +67,14 @@ curl https://api.volcano.dev/databases/postgres-versions
 ]
 ```
 
-This is a public endpoint (no authentication required).
+This is a public endpoint (no authentication required). These are the only
+values `pg_version` accepts. The entry marked `default`, PostgreSQL 18, is the
+version the dashboard preselects; a create request must still name its version. A
+database keeps the major version it was created with; to move to a newer one,
+create a database on that version and migrate your data into it.
+
+In local mode, the list holds one entry: PostgreSQL 16, the version the local
+server runs. Creating a database on any other version is rejected.
 
 ## Create a Database
 
@@ -70,16 +85,24 @@ curl -X POST https://api.volcano.dev/projects/PROJECT_ID/databases \
   -d '{
     "name": "main_db",
     "region": "us-east-1",
-    "pg_version": "16",
+    "pg_version": "18",
     "database_type": "volcano-db-xs"
   }'
 ```
 
 **Request Body:**
 - `name` (required): Database name (lowercase, underscores)
-- `region` (optional): Region ID (from `/databases/regions`)
-- `pg_version` (optional): PostgreSQL version (from `/databases/postgres-versions`)
+- `region` (required): Region ID (from `/databases/regions`)
+- `pg_version` (required): PostgreSQL major version (from `/databases/postgres-versions`)
 - `database_type` (optional): Compute size tier (default: `volcano-db-xs`)
+
+A `pg_version` outside that list returns `400 Bad Request`:
+
+```json
+{
+  "error": "unsupported pg_version \"14\": supported versions are 15, 16, 17, 18"
+}
+```
 
 **Response:**
 ```json
@@ -89,7 +112,7 @@ curl -X POST https://api.volcano.dev/projects/PROJECT_ID/databases \
   "database_type": "volcano-db-xs",
   "status": "provisioning",
   "region": "us-east-1",
-  "pg_version": "16",
+  "pg_version": "18",
   "created_at": "2024-01-01T00:00:00Z"
 }
 ```
@@ -147,7 +170,7 @@ When status is `active`, includes `connection_string`:
   "status": "active",
   "connection_string": "postgresql://volcano_client_11111111-1111-1111-1111-111111111111:vpg_abc123@database.volcano.dev:5432/myapp_main?sslmode=require&application_name=volcano_full_access",
   "region": "us-east-1",
-  "pg_version": "16",
+  "pg_version": "18",
   "created_at": "2024-01-01T00:00:00Z"
 }
 ```

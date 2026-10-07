@@ -62,6 +62,7 @@ PostgreSQL that auto-scales and branches in under a minute, with row-level secur
 | [Quick start](databases/quick-start.md) | Set up a database in 5 minutes |
 | [Branching](databases/branching.md) | Fork a copy of a database for every pull request, migration, or test run |
 | [Backups and restore](databases/backups.md) | Back up a database and restore it to a backup or a point in time (SUPERAGENT) |
+| [Importing data](databases/importing-data.md) | Move an existing PostgreSQL database in with `pg_dump`, and bulk-load rows with `COPY` |
 | [Query Builder API](databases/query-builder-api.md) | Query from the browser with the SDK |
 | [REST API](databases/rest-api.md) | HTTP endpoints for database operations |
 | [Direct connection](databases/direct-connection.md) | Connect from a function with user impersonation |

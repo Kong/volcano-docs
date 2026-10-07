@@ -143,13 +143,15 @@ psql $DATABASE_URL -f examples/auth-helpers.sql
 
 ## Testing
 
-You can test auth helpers by manually setting session variables:
+You can test auth helpers by setting the claims for one transaction. Volcano resets session settings after every statement outside a transaction, so use `SET LOCAL` inside one (see [Session Settings](direct-connection.md#session-settings)):
 
 ```sql
+BEGIN;
+
 -- Set test user
-SET request.jwt_sub = '123e4567-e89b-12d3-a456-426614174000';
-SET request.jwt_email = 'test@example.com';
-SET request.jwt_role = 'authenticated';
+SET LOCAL request.jwt_sub = '123e4567-e89b-12d3-a456-426614174000';
+SET LOCAL request.jwt_email = 'test@example.com';
+SET LOCAL request.jwt_role = 'authenticated';
 
 -- Test functions
 SELECT auth.uid();           -- Returns the UUID
@@ -157,10 +159,7 @@ SELECT auth.email();         -- Returns 'test@example.com'
 SELECT auth.role();          -- Returns 'authenticated'
 SELECT auth.is_authenticated();  -- Returns true
 
--- Reset
-RESET request.jwt_sub;
-RESET request.jwt_email;
-RESET request.jwt_role;
+ROLLBACK;
 ```
 
 **Note:** In production, Volcano automatically sets these based on the authenticated user.

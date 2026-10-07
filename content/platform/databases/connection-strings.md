@@ -22,7 +22,7 @@ curl https://api.volcano.dev/projects/PROJECT_ID/databases/DB_ID \
   "status": "active",
   "connection_string": "postgresql://volcano_client_11111111-1111-1111-1111-111111111111:vpg_abc123@database.volcano.dev:5432/mydb?sslmode=require&application_name=volcano_full_access",
   "region": "us-east-1",
-  "pg_version": "16"
+  "pg_version": "18"
 }
 ```
 

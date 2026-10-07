@@ -64,7 +64,7 @@ Supported frontend environments:
 - Node.js `22.x` and `24.x`, inferred from `package.json` `engines.node`.
 
 If `engines.node` is omitted, Volcano builds with Node.js `22.x`.
-Your selected Node.js family must satisfy the installed Next.js package's `engines.node` constraint. The runtime matrix is tested against the pinned Next versions' npm metadata: Next `15.5.27` requires `^18.18.0 || ^19.8.0 || >=20.0.0`, and Next `16.3.8` requires `>=20.9.0`.
+Your selected Node.js family must satisfy the installed Next.js package's `engines.node` constraint. The runtime matrix is tested against the pinned Next versions' npm metadata: Next `15.5.27` requires `^18.18.0 || ^19.8.0 || >=20.0.0`, and Next `16.4.0` requires `>=20.9.0`.
 
 Plan limits:
 - HOBBY users can create one frontend per project.
@@ -269,6 +269,7 @@ Behavior:
 - Both the custom domain and default Volcano frontend URL continue to work.
 - The default `*.frontends.<env>.volcano.run` URL keeps strict valid TLS and is not replaced by BYOC certificates from other domains.
 - Returns `201` when a new custom domain is queued, and `200` when the same domain is already configured.
+- Returns `403` when a managed TLS request would exceed the account's [managed TLS certificate limit](../guides/plans-and-limits.md#frontends).
 - Returns `409` when the frontend already has a different domain, the requested domain is attached elsewhere or claimed by another account, or a previous attachment is still detaching. When another account only holds an unverified managed TLS reservation, a managed TLS request gets a `409` with `code: ownership_verification_required` and the `required_record` to publish before retrying. A BYOC request gets a plain `409` unless its certificate is publicly trusted for the hostname, which replaces the reservation.
 - Returns `503` when custom domain provisioning is temporarily unavailable.
 - Changing between managed TLS and BYOC requires deleting the existing domain and creating it again. Moving a hostname from BYOC to managed TLS this way leaves it without HTTPS until the managed certificate is issued.
