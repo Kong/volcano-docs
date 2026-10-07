@@ -19,7 +19,10 @@ async function buildIndex(page: Page) {
   if (!structuredData) {
     throw new Error(`search index: no structured data for ${page.url}`);
   }
-  const headingsOnly = page.url === HEADINGS_ONLY_PREFIX || page.url.startsWith(`${HEADINGS_ONLY_PREFIX}/`);
+  // A page without headings would keep only its title, so index it in full.
+  const headingsOnly =
+    (page.url === HEADINGS_ONLY_PREFIX || page.url.startsWith(`${HEADINGS_ONLY_PREFIX}/`)) &&
+    structuredData.headings.length > 0;
   return {
     id: page.url,
     url: page.url,
