@@ -1,11 +1,15 @@
 #!/usr/bin/env node
-// Copies the prebuilt search index into public/ so it deploys as a static
-// asset (S3/CloudFront) instead of the Lambda-backed .open-next/cache path.
+// Writes the prebuilt search index into public/, gzip-compressed, so it deploys
+// as a static asset (S3/CloudFront) instead of the Lambda-backed
+// .open-next/cache path. See src/lib/search-index-client.mjs for why the file
+// is compressed here rather than by CloudFront.
 import fs from "node:fs";
 import path from "node:path";
+import zlib from "node:zlib";
+import { SEARCH_INDEX_PATH } from "../src/lib/search-index-client.mjs";
 
 const source = path.join(".next", "server", "app", "api", "search.body");
-const dest = path.join("public", "search-index.json");
+const dest = path.join("public", SEARCH_INDEX_PATH.replace(/^\//, ""));
 
 if (!fs.existsSync(source)) {
   console.error(
@@ -15,7 +19,10 @@ if (!fs.existsSync(source)) {
   process.exit(1);
 }
 
-fs.copyFileSync(source, dest);
+const json = fs.readFileSync(source);
+const gzip = zlib.gzipSync(json, { level: zlib.constants.Z_BEST_COMPRESSION });
+fs.writeFileSync(dest, gzip);
 
-const { size } = fs.statSync(dest);
-console.log(`emit-search-index: wrote ${dest} (${size} bytes)`);
+console.log(
+  `emit-search-index: wrote ${dest} (${gzip.length} bytes gzip, ${json.length} bytes JSON)`,
+);
