@@ -1,0 +1,59 @@
+version: 2
+updates:
+  # The docs site's root pnpm project. The examples under
+  # content/platform/examples/ are synced from volcano-hosting
+  # (docs.config.yaml), so their dependencies are updated there, not here.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    # Supply-chain safeguard: skip releases until they have aged.
+    cooldown:
+      default-days: 5
+      semver-major-days: 14
+    # No dependency labels exist in this repo; [] stops Dependabot creating them.
+    labels: []
+    # Conventional Commits (commitlint): fix(deps) when a runtime dependency
+    # changes, chore(deps-dev) otherwise.
+    commit-message:
+      prefix: "fix"
+      prefix-development: "chore"
+      include: "scope"
+    groups:
+      # Minor and patch updates share one PR; each major gets its own PR.
+      npm-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      # Tracks the Node.js major in .nvmrc; move it with a Node upgrade.
+      - dependency-name: "@types/node"
+        update-types:
+          - "version-update:semver-major"
+
+  # Keep SHA-pinned GitHub Actions (and their `# vX.Y.Z` comments) current,
+  # including the reusable lint-docs composite action.
+  - package-ecosystem: "github-actions"
+    directories:
+      - "/"
+      - "/.github/actions/*"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    # GitHub Actions supports only default-days, not per-SemVer cooldowns.
+    cooldown:
+      default-days: 5
+    labels: []
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
