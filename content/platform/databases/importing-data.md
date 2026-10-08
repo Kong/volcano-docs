@@ -38,11 +38,11 @@ every row without row-level security getting in the way.
 - **Skip the `auth` schema.** Every Volcano database already has an `auth`
   schema with the [auth helpers](auth-helpers.md). If the source has its own,
   add `--exclude-schema=auth` to `pg_dump`.
-- **Into PostgreSQL 15 or 16, remove `SET transaction_timeout`.** A dump made
-  with `pg_dump` 17 or later starts with `SET transaction_timeout = 0`, which
-  those versions reject as an unrecognized parameter. Check your database's
+- **Into PostgreSQL 16, remove `SET transaction_timeout`.** A dump made with
+  `pg_dump` 17 or later starts with `SET transaction_timeout = 0`, which
+  PostgreSQL 16 rejects as an unrecognized parameter. Check your database's
   [version](overview.md#postgresql-versions), and delete the line before
-  restoring into either:
+  restoring into it:
 
   ```bash
   sed -i.bak '/^SET transaction_timeout/d' dump.sql
