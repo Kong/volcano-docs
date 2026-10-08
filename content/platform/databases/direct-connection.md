@@ -385,7 +385,7 @@ A `pg_dump` script starts with session-level settings, such as `SELECT pg_catalo
 psql "$VOLCANO_DATABASE_URL" --single-transaction --set ON_ERROR_STOP=1 --file dump.sql
 ```
 
-[Importing data](importing-data.md) covers the `pg_dump` options to use, the `SET transaction_timeout` line that a database on PostgreSQL 15 or 16 rejects, and loading rows with `COPY`.
+[Importing data](importing-data.md) covers the `pg_dump` options to use, the `SET transaction_timeout` line that a database on PostgreSQL 16 rejects, and loading rows with `COPY`.
 
 ---
 

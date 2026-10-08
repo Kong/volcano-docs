@@ -202,7 +202,7 @@ generated files from the frontend bundle to reduce its size.
 
 ## 4. Add a custom domain
 
-Custom domains are **SUPERAGENT** and support Volcano-managed TLS or
+Custom domains are available on every plan and support Volcano-managed TLS or
 bring-your-own-certificate (BYOC) TLS. For managed TLS, add the domain to
 `volcano-config.yaml` and deploy it:
 

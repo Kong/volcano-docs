@@ -118,7 +118,7 @@ Triggers a new deployment using the latest uploaded artifact. If `app_root` is c
 
 Returns `202 Accepted` and schedules asynchronous deprovisioning. If another deployment is running, list/get responses keep the frontend's current status and expose the queued deletion as `pending_deployment_id`. The status changes to `deleting` when cleanup starts. When cleanup finishes, the frontend no longer appears in lists and `GET /projects/{project_id}/frontends/{frontend_id}` returns `404`.
 
-## Create Frontend Custom Domain (SUPERAGENT)
+## Create Frontend Custom Domain
 
 `POST /projects/{project_id}/frontends/{frontend_id}/domain`
 
@@ -263,8 +263,7 @@ appears. Point your hostname at `routing_target_hostname` separately to send
 traffic to the frontend.
 
 Behavior:
-- HOBBY plan: returns `403` (custom domains are SUPERAGENT-only).
-- SUPERAGENT plan: configures one custom domain per frontend.
+- Configures one custom domain per frontend on every plan.
 - Managed TLS issues and renews the certificate without accepting or returning certificate material.
 - Managed TLS accepts hostnames up to 219 characters; BYOC accepts up to 253.
 - Route traffic with a `CNAME` to `routing_target_hostname` only if your DNS provider confirms the hostname is not a zone apex. At any zone apex, including a delegated subdomain apex, use a provider-supported ALIAS, ANAME, or CNAME-flattening record.

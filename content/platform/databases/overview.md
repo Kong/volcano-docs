@@ -15,7 +15,7 @@ load, and row-level security is built in.
 | [Branching](branching.md) | Fork a database into an isolated, expiring copy with its own connection string, usually in under a minute |
 | [Backups and restore](backups.md) | Back up on demand or on a schedule, and restore in place to a backup or a point in time (SUPERAGENT) |
 | Auto-scaling | Auto-scales compute based on demand, pauses when idle |
-| PostgreSQL | Full PostgreSQL compatibility (versions 15, 16, 17, and 18) |
+| PostgreSQL | Full PostgreSQL compatibility (versions 16, 17, and 18) |
 | Query Builder | Query from browsers without writing SQL |
 | Direct connection | Connect from your functions with standard PostgreSQL clients |
 | Row-level security | Automatic data isolation per user |
@@ -292,7 +292,6 @@ curl "https://api.volcano.dev/databases/regions"
 | 18 | Latest; marked `default` in the version list |
 | 17 | Supported |
 | 16 | Supported; the only version in local mode |
-| 15 | Supported |
 
 A create request must name the version:
 

@@ -59,10 +59,6 @@ curl https://api.volcano.dev/databases/postgres-versions
   {
     "version": "16",
     "name": "PostgreSQL 16"
-  },
-  {
-    "version": "15",
-    "name": "PostgreSQL 15"
   }
 ]
 ```
@@ -103,7 +99,7 @@ A `pg_version` outside that list returns `400 Bad Request`:
 
 ```json
 {
-  "error": "unsupported pg_version \"14\": supported versions are 15, 16, 17, 18"
+  "error": "unsupported pg_version \"14\": supported versions are 16, 17, 18"
 }
 ```
 

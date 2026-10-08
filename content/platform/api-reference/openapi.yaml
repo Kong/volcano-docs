@@ -6222,7 +6222,7 @@ paths:
     post:
       tags:
         - Frontends
-      summary: Configure frontend custom domain (SUPERAGENT)
+      summary: Configure frontend custom domain
       description: |
         Configures one custom domain for a frontend.
         The default Volcano-generated frontend URL remains active.
@@ -6270,7 +6270,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '403':
-          description: Forbidden - custom domains require SUPERAGENT plan, or a managed TLS request would exceed the account's managed TLS certificate limit
+          description: Forbidden - the plan does not include custom domains, or a managed TLS request would exceed the account's managed TLS certificate limit
           content:
             application/json:
               schema:
@@ -16415,7 +16415,6 @@ components:
             version its server runs. Any other value is rejected with 400.
           example: '18'
           enum:
-            - '15'
             - '16'
             - '17'
             - '18'
@@ -21061,7 +21060,7 @@ components:
       type: object
       additionalProperties: false
       description: |
-        Custom domain with managed or BYOC TLS (SUPERAGENT plan). `tls` is required
+        Custom domain with managed or BYOC TLS. `tls` is required
         when the domain is first created and optional afterwards. For an existing
         domain, omitting `tls` or sending only `tls.mode` keeps the stored
         certificate; new BYOC material for the same domain rotates the
@@ -21100,7 +21099,10 @@ components:
             - '16'
             - '17'
             - '18'
-          description: PostgreSQL major version. Asserted, never written.
+          description: |
+            PostgreSQL major version. Asserted, never written. Also accepts
+            versions new databases can no longer be created on, so an export
+            of an existing database re-applies.
         database_type:
           type: string
           enum:
