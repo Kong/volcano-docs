@@ -66,7 +66,9 @@ their lockfiles) are taken from the function's own directory when it has any,
 otherwise from the build root. The two sets are never mixed — a function with
 its own `package.json` is not paired with the build root's lockfile.
 
-**The frontend** is detected by a `package.json` at the app root. Its archive
+**The frontend** is detected by a `package.json` at the app root, or by the
+nearest `package.json` above it when its `build` script runs `next build <dir>`
+on the app root, as `volcano init nextjs` sets up for `web/`. Its archive
 excludes `node_modules`, `vendor`, `.git`, and `.volcano`. Function archives
 exclude those plus the Python artifact directories `.venv`, `venv`,
 `site-packages`, `__pycache__`, and `python_deps` — a frontend build root
@@ -104,8 +106,9 @@ To move an exported frontend, move its files and update
 `workspace` is relative to the configured project root. `app_root` is relative
 to that workspace. Volcano packages the entire workspace, including shared
 packages and dependency manifests, subject to the normal source exclusions.
-Both paths must be clean relative paths contained within their parent. Missing
-workspaces or apps without `package.json` fail deployment.
+Both paths must be clean relative paths contained within their parent. A
+missing workspace, or an app root the frontend is not detected at, fails
+deployment.
 
 Omitting `workspace` keeps `frontends/<name>`. An explicit `"workspace": ""`
 selects the project root. For a shared monorepo, give both frontends an empty
@@ -375,10 +378,10 @@ configured frontend. It does not apply the rest of your project configuration.
 |---------|------------------|------------------|
 | Function source | Yes | Push |
 | Frontend source | Yes | Push |
-| Function invocation settings (`visibility`, modes, OpenAPI metadata) | Yes, from `volcano-config.yaml` | Push, or `volcano config deploy` |
+| Function invocation settings (`visibility`, modes, OpenAPI metadata) | Yes, from `volcano-config.yaml` | Push, or `volcano cloud config deploy` |
 | Function kind (`standard` or `durable`) | Yes, from `volcano-config.yaml`, on the push that creates it | Fixed once created |
-| Function variable scope (`variable_scope`, `variables`) | Yes, from `volcano-config.yaml` | Push, or `volcano config deploy` |
-| Variables, buckets, auth, OAuth, email templates, schedulers, databases | No | `volcano config deploy` — see the [configuration manifest](configuration.md) |
+| Function variable scope (`variable_scope`, `variables`) | Yes, from `volcano-config.yaml` | Push, or `volcano cloud config deploy` |
+| Variables, buckets, auth, OAuth, email templates, schedulers, databases | No | `volcano cloud config deploy` — see the [configuration manifest](configuration.md) |
 
 Variables are read at build and run time from the project, so a variable you
 change through the API or the dashboard applies to the next deployment without a
@@ -438,9 +441,9 @@ created, and the manifest cannot switch on a frontend that `frontend_name` does
 not name.
 
 Every other section of the manifest is ignored by auto-deploy and still requires
-`volcano config deploy` — those sections sync destructively (entries absent from
-the file are deleted) and can carry secrets, which is not something a `git push`
-should do implicitly.
+`volcano cloud config deploy` — those sections sync destructively (entries
+absent from the file are deleted) and can carry secrets, which is not something
+a `git push` should do implicitly.
 
 `volcano-config.yaml` must be a regular file at the build root. Symbolic and
 hard links are not followed.
@@ -449,7 +452,7 @@ A manifest that is present but unusable fails the run without retrying, rather
 than deploying with its settings silently dropped: malformed YAML, an empty
 file, an unsupported `version`, a function entry with no `name` or a duplicate
 one, a file over 4 MiB, or a link rather than a regular file.
-`volcano config deploy` rejects the same file.
+`volcano cloud config deploy` rejects the same file.
 
 ## Deployment behavior
 
@@ -549,9 +552,11 @@ sits directly under `volcano/functions/` inside `root_directory`, that its name
 is DNS-safe and not reserved, and that a directory function contains at least one
 supported source file.
 
-**The frontend did not deploy.** `frontend_name` must be set, and there must be a
-`package.json` at `root_directory` + `frontend_app_root`. A configured frontend
-that is not found in the source is skipped, not failed.
+**The frontend did not deploy.** `frontend_name` must be set, and
+`root_directory` + `frontend_app_root` must contain a `package.json`, or the
+nearest `package.json` above it must build it with `next build <dir>`. A
+`volcano init nextjs` project with `frontend_app_root: web` works this way. A
+configured frontend that is not found in the source is skipped, not failed.
 
 **Signed-in users or anon keys get `404` from a function you deployed.** New
 functions are `private`, which admits only service keys and schedulers and

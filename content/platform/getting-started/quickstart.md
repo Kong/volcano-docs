@@ -69,9 +69,10 @@ volcano cloud functions deploy --all
 volcano cloud functions invoke hello --payload '{"name":"Ada"}'
 ```
 
-Your function now runs on Volcano's managed infrastructure. To deploy the whole
-project (functions, variables, databases, and more) from one manifest, use
-`volcano config deploy` — see [declarative config](../projects/configuration.md).
+Your function now runs on Volcano's managed infrastructure. To manage the
+project's settings (variables, schedules, auth, and function and frontend
+settings) from one manifest, use `volcano cloud config deploy` — see
+[declarative config](../projects/configuration.md).
 
 ## What's next
 
@@ -82,7 +83,7 @@ project (functions, variables, databases, and more) from one manifest, use
 | [Add authentication](../authentication/quickstart.md) | Let users sign up and sign in |
 | [Deploy a frontend](../frontends/overview.md) | Host a Next.js site on Volcano |
 | [Deploy to production](../guides/production.md) | Ship your project to the cloud |
-| [View logs](../functions/logs.md) | Debug with `volcano functions logs` |
+| [View logs](../functions/logs.md) | Debug with `volcano cloud functions logs` |
 
 For the full command set, see the [CLI reference](/cli) or run
 `volcano <command> --help`.

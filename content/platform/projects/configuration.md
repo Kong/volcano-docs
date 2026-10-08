@@ -4,9 +4,10 @@ description: "volcano-config.yaml is the declarative manifest for a project's us
 ---
 
 `volcano-config.yaml` is the declarative manifest for a project's user-facing
-configuration. The CLI uploads it with `volcano config deploy`, downloads the
-current state with `volcano config pull`, and the dashboard offers the same
-download on the Projects page. All reconciliation happens server-side through
+configuration. The CLI uploads it with `volcano cloud config deploy`, downloads
+the current state with `volcano cloud config pull`, and the dashboard offers the
+same download on the Projects page. Without `cloud`, both commands target local
+development. All reconciliation happens server-side through
 two endpoints:
 
 - `GET /projects/{id}/config` — export current configuration (JSON, or
@@ -22,7 +23,7 @@ manifest.
 but applies only the `functions[]` settings that belong to the code a push
 deploys: `visibility`, `invocation_mode`, `http_auth_mode`, `openapi_spec`,
 `variable_scope`, and `variables`. Every other section still needs `volcano
-config deploy`.
+cloud config deploy`.
 
 ## Full schema (version 1)
 
@@ -299,7 +300,7 @@ response that created it. Manage them through
   `buckets[].policies`, `auth.providers.oauth`, `auth.email.templates`,
   `functions[].variables`, and `functions[].schedulers`. The declared list is the source of truth: entries
   absent from the manifest are deleted; an explicit empty list deletes
-  everything. Run `volcano config pull` before your first deploy and check the
+  everything. Run `volcano cloud config pull` before your first deploy and check the
   `--dry-run` report to see what a partial list would remove.
 - **Email templates and built-in defaults.** Template content that still
   matches the built-in defaults is not a customization: exports omit the
@@ -310,7 +311,7 @@ response that created it. Manage them through
   buckets. The manifest only updates their configuration. Databases are
   assertion-only — `region`, `pg_version`, and `database_type` are compared,
   never written; a `database_type` mismatch is an explicit error because tier
-  changes must go through `volcano databases` or the dashboard.
+  changes must go through `volcano cloud databases` or the dashboard.
 - **Custom domains** belong to their declared frontend entry. Set
   `tls.mode: managed` to have Volcano issue and renew the certificate. Your
   account must own the hostname's domain in either TLS mode; see
@@ -382,11 +383,20 @@ buckets, the apply report tells you when your file and your deployed resources
 disagree:
 
 - `skipped` — the manifest configures a resource that does not exist. Deploy
-  or create it first, then re-run `volcano config deploy`.
+  or create it first, then re-run `volcano cloud config deploy`.
 - `missing` — a deployed resource has no entry in its declared manifest
   section.
 
 Both are warnings: the rest of the manifest still applies and the CLI exits 0.
+
+For a new frontend, deploy it with the variables its entry selects, then apply
+the manifest (see
+[First deploy with `volcano-config.yaml`](../frontends/deploy.md#first-deploy-with-volcano-configyaml)):
+
+```bash
+volcano cloud frontends deploy --variable-scope scoped --variable NEXT_PUBLIC_API_URL
+volcano cloud config deploy
+```
 
 ## Validation, plan limits, and partial failures
 
@@ -408,9 +418,10 @@ Both are warnings: the rest of the manifest still applies and the CLI exits 0.
 ## Function variables
 
 By default a function receives the project variables marked `shared: true`.
-Keep this list small: the platform caps a function's environment at **4096 bytes**, summed
-across the names and values it is configured with, and a project can hold more
-than that.
+Keep this list small: the platform caps a function's environment at **4096 bytes**,
+measured as its variables encoded as JSON, and a project can hold more than that.
+See [environment variables](../functions/environment-variables.md) for how the
+size is counted.
 
 Scoping a function narrows it to the variables it actually reads:
 
@@ -427,7 +438,7 @@ has to exist:
 
 - **Declared** — the names in `variables`. **Required:** a declared name the
   project does not define fails the apply. These round-trip through
-  `volcano config pull`, so the manifest stays the source of truth for them.
+  `volcano cloud config pull`, so the manifest stays the source of truth for them.
 - **Detected** — the names Volcano finds in the source you deploy.
   **Optional:** a detected name is included when the project defines it and
   ignored when it does not, because a direct reference is often to something
@@ -492,8 +503,8 @@ are included in exports (they are readable through the API).
 Apply starts long-running work and returns immediately: variable changes
 propagate to functions and frontends through one batched workflow, region
 changes trigger function redeploys, and new custom domains provision
-asynchronously. Check convergence with the usual commands (`volcano variables
-list`, `volcano frontends domain get`, ...).
+asynchronously. Check convergence with the usual commands (`volcano cloud
+variables list`, `volcano cloud frontends domain get`, ...).
 
 ## Frontend variable selection
 
@@ -530,9 +541,46 @@ frontend does not select do not trigger its runtime synchronization.
 
 Selected runtime values, platform metadata, and reserved space for the largest
 cache metadata and proxy-token rotation must fit the 4,096-byte
-environment limit before a variable or scope change is saved. This conservative
-reservation includes 1,024 bytes for the next proxy token plus its key, even
-when no rotation is staged. It keeps updates safe without reading deployed runtimes. Deployment
-also checks the final environment including platform-managed values; an oversized
-environment fails before the runtime configuration is updated. Error messages
-report byte counts without exposing variable values.
+environment limit before a variable or scope change is saved. The platform's
+share is about 900 bytes, reserved even when no rotation is staged, so roughly
+3,100 bytes remain for selected variables. The reservation keeps updates safe
+without reading deployed runtimes. Deployment also checks the final environment
+including platform-managed values; an oversized environment fails before the
+runtime configuration is updated. Error messages report byte counts without
+exposing variable values.
+
+## Sandbox template settings
+
+Declare existing sandbox templates by name:
+
+```yaml
+version: 1
+sandboxes:
+  - name: browser-worker
+    memory_mb: 1024
+    ports: [8080]
+    ttl_seconds: 3600
+    idle_timeout_seconds: 300
+```
+
+`config deploy --dry-run` previews changes. Applying updates the default lifetime
+and idle timeout for newly created sessions; existing sessions keep their original
+limits. An explicit session timeout overrides the template default. Set
+`idle_timeout_seconds: 0` to disable idle expiry. The idle timeout must not exceed
+`ttl_seconds`; lifetime is 30–28,800 seconds, subject to the environment's session
+limit. Local sessions have a one-hour maximum.
+
+`memory_mb` (1024 or 2048) and `ports` describe the deployed image. Config apply
+asserts these values and reports a validation error if they differ; deploy the
+sandbox source to rebuild an image with different values. Omitted fields preserve
+current settings. Missing templates are reported as skipped; templates absent from
+the manifest are reported as missing and are never deleted. Export includes the
+current settings and can be applied unchanged. A project without sandbox
+templates exports no `sandboxes` section.
+
+Git deployments discover each `volcano/sandboxes/<name>/Dockerfile` and its isolated
+build context. Matching `sandboxes` entries supply memory, readiness ports, and
+session defaults. Each push records a durable deployment for every discovered
+sandbox and waits for image validation before reporting success. An entry without
+a source directory does not create a template. Undeclared source directories use
+the existing template's settings, or 1024 MB with no service ports for a new template.

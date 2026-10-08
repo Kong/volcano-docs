@@ -91,7 +91,10 @@ curl -X POST https://api.volcano.dev/projects/PROJECT_ID/databases \
 ```
 
 **Request Body:**
-- `name` (required): Database name (lowercase, underscores)
+- `name` (required): Database name. Lowercase letters, digits, and underscores
+  only, up to 64 characters. Uppercase letters are lowercased; hyphens, spaces,
+  and other characters return `400`. `builder_debug` is reserved, and so is
+  `volcano` in local mode.
 - `region` (required): Region ID (from `/databases/regions`)
 - `pg_version` (required): PostgreSQL major version (from `/databases/postgres-versions`)
 - `database_type` (optional): Compute size tier (default: `volcano-db-xs`)

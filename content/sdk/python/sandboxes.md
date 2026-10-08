@@ -114,3 +114,42 @@ that management scope for reads, commands, files, and HTTP access, even if the
 client signs in or switches users. Handles returned by `get()` use the current
 signed-in user's grant when available. Public preset discovery requires no
 service key or signed-in session.
+
+## Custom image deployments
+
+Upload a tar.gz source archive containing a root Dockerfile fragment. Volcano
+supplies the base image; use `RUN`, `COPY`, and `CMD` without `FROM`, `USER`, or
+`ENTRYPOINT`.
+
+```python
+from pathlib import Path
+from uuid import uuid4
+
+sandbox_id = str(uuid4())
+request_id = str(uuid4())
+deployment = client.sandboxes.deploy(
+    project_id,
+    sandbox_id,
+    Path("source.tar.gz").read_bytes(),
+    name="custom-image",
+    memory_mb=1024,
+    ports=[8080],
+    request_id=request_id,
+)
+state = client.sandboxes.deployment(project_id, sandbox_id, deployment.id)
+```
+
+Retain both IDs, the source bytes, and build options when retrying a request.
+Wait for status `active` before creating sessions with this `sandbox_id`.
+Redeploy with the same template ID and a new request ID to update the image;
+existing sessions retain their original image.
+
+`deployments(project_id, sandbox_id, cursor=..., limit=10)` returns history and a
+`next_cursor`. `source(project_id, sandbox_id, deployment_id)` returns the
+original archive bytes. `logs(project_id, sandbox_id, deployment_id,
+region="aws-us-east-1", cursor=..., limit=100)` returns regional build messages.
+`delete_template(project_id, sandbox_id)` deletes the template and terminates
+its sessions and requires the `sandboxes.terminate` permission. History page
+limits range from 1 to 100. Archives are limited to 32 MiB compressed and expanded.
+
+Custom deployments accept at most 16 unique ports, from 1 through 65532.

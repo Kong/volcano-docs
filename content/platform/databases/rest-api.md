@@ -163,6 +163,8 @@ console.log('Posts:', data);
 
 **Note:** If your table has a trigger that auto-sets `user_id` using `auth.uid()`, it will be set to the authenticated user automatically!
 
+JSON objects and arrays in `values` are stored as JSON, so send them to `json` or `jsonb` columns. For a Postgres array column such as `text[]`, send an array literal string like `"{support,urgent}"`. Update `values` follow the same rule.
+
 ---
 
 ### UPDATE - Modify Data

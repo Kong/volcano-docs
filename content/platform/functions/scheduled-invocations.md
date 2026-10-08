@@ -40,10 +40,10 @@ Every requested region must already have the function deployed. Function schedul
 ## Manage Schedulers
 
 ```bash
-volcano functions schedulers list my-function
-volcano functions schedulers create my-function --cron "*/5 * * * *" --payload payload.json
-volcano functions schedulers disable my-function <scheduler-id>
-volcano functions schedulers delete my-function <scheduler-id>
+volcano cloud functions schedulers list my-function
+volcano cloud functions schedulers create my-function --cron "*/5 * * * *" --payload payload.json
+volcano cloud functions schedulers disable my-function <scheduler-id>
+volcano cloud functions schedulers delete my-function <scheduler-id>
 ```
 
 Schedulers are disabled or removed when their target function is deleted. When project region policy shrinks, scheduler rows for removed regions are disabled so stale regional workers cannot keep invoking removed functions.
