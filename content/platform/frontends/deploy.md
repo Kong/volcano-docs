@@ -26,11 +26,20 @@ volcano use my-app
 ## 2. Set variables
 
 Values your build needs go in project variables. Prefix anything the browser
-needs with `NEXT_PUBLIC_`:
+needs with `NEXT_PUBLIC_`. Put them in `volcano/volcano.env`:
 
 ```bash
-volcano variables deploy NEXT_PUBLIC_API_URL=https://api.example.com
+NEXT_PUBLIC_API_URL=https://api.example.com
 ```
+
+Then save them to your cloud project:
+
+```bash
+volcano cloud variables deploy
+```
+
+Without `cloud`, `volcano variables deploy` writes to local development
+(`volcano start`), not to your cloud project.
 
 ## 3. Deploy
 
@@ -58,6 +67,73 @@ ready:
 ```bash
 volcano cloud frontends redeploy my-site
 ```
+
+### First deploy with `volcano-config.yaml`
+
+`volcano cloud config deploy` configures frontends but never creates one. An entry
+for a frontend that does not exist yet is reported as `skipped`, and nothing
+else happens for it. Create the frontend first, then apply the manifest:
+
+```bash
+volcano cloud frontends deploy --variable-scope scoped --variable NEXT_PUBLIC_API_URL
+volcano cloud config deploy
+```
+
+Pass the same variables on that first deploy that the manifest's frontend entry
+selects. The manifest updates the selection afterwards, but a `NEXT_PUBLIC_`
+value only reaches the browser bundle through a build, so a variable added by
+`cloud config deploy` alone needs a redeploy before the browser sees it.
+
+### What the CLI uploads
+
+The CLI archives the project directory (`--path`, the current directory by
+default) and skips:
+
+- `node_modules`, `.next`, `dist`, and `build`, at any depth
+- `.env.local` and other `.env*.local` files
+- `.git`, editor and OS files (`.vscode`, `.idea`, `.DS_Store`, `*.swp`), and
+  `*.log`
+- anything matched by the root `.gitignore`
+
+When the app uses `workspace:` dependencies, the CLI archives the workspace root
+instead of `--path`, so these rules, the root `.gitignore`, and the file limit
+below apply to the whole workspace. Pass `--app-root` to archive only `--path`.
+
+Symbolic links are skipped with a warning. More than 10,000 files fails the
+deploy with `too many files`. `.env` and `.env.production` are uploaded, so
+Next.js reads them during the build; keep secrets in project variables instead.
+
+### Build environment
+
+| Tool | Version |
+| --- | --- |
+| Node.js | 22, or 24 when `package.json` `engines.node` asks for it |
+| npm | The version bundled with that Node.js (npm 10 on Node.js 22), unless `packageManager` pins another; see [Dependencies](#dependencies) |
+| Next.js | 15 or 16 |
+
+Volcano runs your `build` script, or `next build` when there is none. On
+Next.js 16, where Turbopack is the default, it adds `--webpack` to `next build`.
+The server runtime uses the same Node.js major as the build, but its patch
+version can differ. The build log prints the exact versions. See
+[supported frontend environments](../api-reference/frontend-endpoints.md#create-frontend-deployment)
+for the `engines.node` rules.
+
+### Environment size
+
+A frontend's server runtime environment is capped at 4096 bytes, the same limit
+as a function's, counted as the UTF-8 bytes of every name and value. It holds
+the selected variables other than `NEXT_PUBLIC_*` plus about 900 bytes of
+values Volcano sets for the runtime, so plan for roughly 3,100 bytes of your
+own. A variable write, scope change, or deploy that would exceed the limit is
+rejected, and the running deployment keeps serving:
+
+```text
+function environment exceeds the maximum size: frontend "web" environment is 5809 bytes (max 4096)
+```
+
+The error response puts more context in front of this message. Select fewer
+variables with `--variable-scope scoped`, or move large values out of the
+runtime environment.
 
 ### Dependencies
 
@@ -141,7 +217,7 @@ frontends:
 ```
 
 ```bash
-volcano config deploy
+volcano cloud config deploy
 volcano cloud frontends domain get my-site
 ```
 

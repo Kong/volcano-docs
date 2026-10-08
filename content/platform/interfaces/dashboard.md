@@ -58,7 +58,7 @@ not going to make twice. Two jobs belong elsewhere:
 
 Much of what the dashboard edits also lives in
 [`volcano-config.yaml`](../projects/configuration.md), the declarative manifest
-for a project. `volcano config pull` writes the project's current
-configuration to that file, and `volcano config deploy` applies it. Use it when
-you want configuration reviewed in a pull request rather than changed by
+for a project. `volcano cloud config pull` writes the project's current
+configuration to that file, and `volcano cloud config deploy` applies it. Use it
+when you want configuration reviewed in a pull request rather than changed by
 clicking.

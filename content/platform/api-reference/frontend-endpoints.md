@@ -12,7 +12,7 @@ Frontend hosting APIs are project-scoped and require a platform user token.
 Multipart form fields:
 - `name` (required): DNS-safe frontend name.
 - `framework` (optional): currently `nextjs`.
-- `app_root` (optional): relative POSIX path from the uploaded archive root to the Next.js app to build, such as `apps/web` for a monorepo. Omit it for single-app archives.
+- `app_root` (optional): relative POSIX path from the uploaded archive root to the Next.js app to build, such as `apps/web` for a monorepo. Omit it for single-app archives. The directory normally holds the app's `package.json`. If it has none, the nearest `package.json` above it must build it with `next build <dir>`, as the `volcano init nextjs` layout does with `next build web`; the build then runs from that `package.json`.
 - `variable_scope` (optional): `scoped` or `all`. New frontends default to `scoped`; omitting it for an existing frontend preserves the stored selection.
 - `variables` (optional, repeated): project variable names selected when `variable_scope=scoped`. Submit one multipart field per name. An empty scoped selection exposes no project variables.
 - `archive` (required): ZIP or `tar.gz` bundle of the frontend project or monorepo workspace root. The API stores a normalized `tar.gz` archive.
@@ -21,6 +21,7 @@ Size limits:
 - Uploaded and normalized source archives are limited to 256 MB, enforced by the API.
 - Each final frontend image is limited to 4096 MB, enforced by the build.
 - The CLI uploads `tar.gz` and does not enforce its own source archive size limit.
+- The server runtime environment is limited to 4096 bytes: the selected variables other than `NEXT_PUBLIC_*`, plus about 900 bytes Volcano sets itself. An oversized environment returns `400` with the byte count. See [Environment size](../frontends/deploy.md#environment-size).
 
 Example monorepo upload:
 
@@ -64,6 +65,7 @@ Supported frontend environments:
 - Node.js `22.x` and `24.x`, inferred from `package.json` `engines.node`.
 
 If `engines.node` is omitted, Volcano builds with Node.js `22.x`.
+Volcano runs the `build` script from `package.json`, or `next build` when it is missing. For Next.js `16.x` it adds `--webpack` to `next build`.
 Your selected Node.js family must satisfy the installed Next.js package's `engines.node` constraint. The runtime matrix is tested against the pinned Next versions' npm metadata: Next `15.5.27` requires `^18.18.0 || ^19.8.0 || >=20.0.0`, and Next `16.4.0` requires `>=20.9.0`.
 
 Plan limits:

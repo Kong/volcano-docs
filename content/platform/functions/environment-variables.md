@@ -144,10 +144,19 @@ Scoped functions still receive their declared and detected project variables,
 regardless of shared membership. Shared membership controls function environments;
 frontends continue to receive project variables under the frontend rules above.
 
-Each function environment is capped at **4096 bytes**, counting UTF-8 bytes in
-names and values. Variable writes and membership changes validate affected
-function environments before saving anything. A rejected change leaves values,
-membership, and deployments unchanged.
+Each function environment is capped at **4096 bytes**, measured as the UTF-8
+length of its variables encoded as a compact JSON object, such as
+`{"API_URL":"https://example.com","DEBUG":"1"}`. Quotes, colons, and commas
+count, so each variable adds about 6 bytes beyond its name and value. Characters
+JSON escapes, such as `"` and `\`, count twice, which makes a value holding JSON
+larger than its length suggests. Variable writes and membership changes validate
+affected function environments before saving anything. A rejected change leaves
+values, membership, and deployments unchanged.
+
+A frontend's server runtime environment has the same 4096-byte cap. It counts
+the frontend's selected variables other than `NEXT_PUBLIC_*`, plus about 900
+bytes of values Volcano sets for the runtime. See
+[Environment size](../frontends/deploy.md#environment-size).
 
 Declare the scope in `volcano-config.yaml`:
 
@@ -160,7 +169,7 @@ functions:
       - STRIPE_WEBHOOK_SECRET
 ```
 
-Then deploy it with `volcano config deploy`, or push it if the project uses
+Then deploy it with `volcano cloud config deploy`, or push it if the project uses
 [GitHub auto-deploy](../projects/git-deploy.md).
 
 Scoping works the same way for [durable functions](durable-functions.md), which

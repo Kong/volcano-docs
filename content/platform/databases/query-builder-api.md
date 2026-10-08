@@ -387,6 +387,23 @@ console.log('Created:', newPost.id);
 // user_id is automatically set to authenticated user!
 ```
 
+#### JSON and array columns
+
+Pass objects and arrays as-is. Volcano stores them as JSON, so the target column
+must be `json` or `jsonb`. For a Postgres array column such as `text[]`, pass an
+array literal string.
+
+```javascript
+const { data, error } = await volcano
+  .insert('messages', {
+    metadata: { source: 'chat', pinned: false }, // jsonb
+    attachments: [{ name: 'notes.txt' }],        // jsonb
+    tags: '{support,urgent}'                     // text[]
+  });
+```
+
+The same applies to `update` values.
+
 ### UPDATE Data
 
 ```javascript
@@ -609,7 +626,7 @@ async function getMyOrders() {
 async function createOrder(items, total) {
   const { data, error } = await volcano
     .insert('orders', {
-      items: JSON.stringify(items),
+      items,
       total: total,
       status: 'pending'
     });

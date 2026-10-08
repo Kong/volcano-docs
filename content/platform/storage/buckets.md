@@ -24,37 +24,39 @@ Buckets are containers for organizing files in Volcano Storage. Each project can
 ### Cloud
 
 ```bash
-volcano storage buckets create user-uploads
-volcano storage buckets list
-volcano storage buckets get user-uploads
-volcano storage buckets update user-uploads --file-size-limit 20971520
-volcano storage buckets update user-uploads --allowed-mime image/*
-volcano storage buckets update user-uploads --clear-allowed-mimes
-volcano storage buckets delete user-uploads
+volcano cloud storage buckets create user-uploads
+volcano cloud storage buckets list
+volcano cloud storage buckets get user-uploads
+volcano cloud storage buckets update user-uploads --file-size-limit 20971520
+volcano cloud storage buckets update user-uploads --allowed-mime 'image/*'
+volcano cloud storage buckets update user-uploads --clear-allowed-mimes
+volcano cloud storage buckets delete user-uploads
 ```
 
 ### Local mode
 
+Without `cloud`, the same commands act on local development (`volcano start`):
+
 ```bash
-volcano local storage buckets create user-uploads
-volcano local storage buckets list
-volcano local storage buckets get user-uploads
-volcano local storage buckets update user-uploads --file-size-limit 20971520
-volcano local storage buckets update user-uploads --allowed-mime image/*
-volcano local storage buckets update user-uploads --clear-allowed-mimes
-volcano local storage buckets delete user-uploads
+volcano storage buckets create user-uploads
+volcano storage buckets list
+volcano storage buckets get user-uploads
+volcano storage buckets update user-uploads --file-size-limit 20971520
+volcano storage buckets update user-uploads --allowed-mime 'image/*'
+volcano storage buckets update user-uploads --clear-allowed-mimes
+volcano storage buckets delete user-uploads
 ```
 
 ### Declarative bucket and policy config
 
 ```bash
-volcano config deploy
-volcano config deploy -f volcano-config.yaml
-volcano local config deploy
-volcano local config deploy -f volcano-config.yaml
+volcano cloud config deploy
+volcano cloud config deploy -f volcano-config.yaml
+volcano config deploy                         # local development
+volcano config deploy -f volcano-config.yaml  # local development
 ```
 
-`volcano config deploy` applies the full project configuration manifest — see
+`volcano cloud config deploy` applies the full project configuration manifest — see
 the [project configuration manifest reference](../projects/configuration.md)
 for the complete schema. The storage-related sections look like this:
 
@@ -88,7 +90,7 @@ If `-f` is omitted, the CLI auto-discovers in this order:
 Sync behavior:
 
 - Buckets are never created or deleted by the manifest. Create them first
-  (`volcano storage buckets create`); a manifest entry for a bucket that does
+  (`volcano cloud storage buckets create`); a manifest entry for a bucket that does
   not exist is skipped with a warning.
 - Existing bucket settings are updated for the fields you provide; omitted
   fields keep their current values.
@@ -141,8 +143,8 @@ buckets:
 Apply with:
 
 ```bash
-volcano config deploy
-volcano local config deploy
+volcano cloud config deploy
+volcano config deploy          # local development
 ```
 
 ## Creating buckets

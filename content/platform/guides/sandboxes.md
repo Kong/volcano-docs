@@ -89,7 +89,9 @@ Suspending retains the session's state; terminating destroys it.
 | Terminate | `DELETE /sandbox-sessions/{sessionId}` |
 
 These operations return `202`. Poll `state` for completion. `desired_state`
-records the requested outcome. Closing new-session admission does not prevent
+records the requested outcome. Once termination is requested, public reads report
+`terminating` until the session is `terminated`, unless its state is `unknown`
+and requires operator recovery. Closing new-session admission does not prevent
 termination or grant revocation.
 
 ## Choose lifetime and memory
@@ -101,19 +103,20 @@ when `memory_mb` is omitted. A conflicting override is rejected.
 
 | Field | Behavior |
 | --- | --- |
-| `max_duration_seconds` | Defaults to 3600; 30–28800 seconds, further bounded by environment capacity policy. Absolute expiry also applies while suspended. |
-| `idle_timeout_seconds` | Defaults to 0, disabling idle termination. Cannot exceed maximum duration. |
-| Command `timeout_seconds` | Defaults to 60. Up to 60 for one-shot execution or 3600 within a session. One-shot provisioning and cleanup have separate budgets; set the client timeout to at least 180 seconds. |
+| `max_duration_seconds` | Inherits the template TTL when omitted (3600 for a new template); 30–28800 seconds, further bounded by environment capacity policy. Absolute expiry also applies while suspended. |
+| `idle_timeout_seconds` | Inherits the template idle timeout when omitted, capped at the session duration. Explicit 0 disables idle termination. Explicit values cannot exceed maximum duration. |
+| Command `timeout_seconds` | Defaults to 60. Up to 60 for one-shot execution or 3600 within a session. Connection setup, result delivery, and one-shot provisioning and cleanup have separate budgets; set the client timeout to at least 180 seconds. |
 
 Active commands and authenticated proxy connections hold idle activity within
 the absolute expiry. Suspend retains reserved capacity. `429` indicates no
 capacity is available; an uncertain termination does not free capacity.
 
-One-shot commands have a one-minute execution limit, with separate provisioning
-and cleanup budgets. A successful response follows confirmed termination. Use a session
+One-shot commands have a one-minute execution limit, with separate connection setup, result delivery,
+provisioning, and cleanup budgets. A successful response follows confirmed termination. Use a session
 for longer work or a service that must remain available.
 
-A one-shot command timeout returns `504`; retrying its key returns `409`
+One-shot execution manages its own lifetime and does not inherit the template
+TTL or idle timeout. A one-shot command timeout returns `504`; retrying its key returns `409`
 because no completed result was stored. A session command timeout instead
 returns execution data with `timed_out: true`.
 
@@ -231,7 +234,6 @@ List named Sandboxes, sessions, and deployment history with:
 Lists return `data` and `pagination`. Pass `pagination.next_cursor` as `cursor`
 and keep `limit` unchanged; the default is 10, with a maximum of 100.
 
-Custom images and manifest configuration are not included in this API release.
 Sandbox usage is available as preview counters; it does not debit credits or
 enable billing.
 
@@ -257,6 +259,18 @@ containers with private workspaces. HTTP URLs use
 `http://<session-id>--<port>.sandboxes.localhost:8000` and require Sandbox access
 credentials in the `X-Volcano-Sandbox-Token` request header. Browser cookie
 redemption requires HTTPS and is unavailable on local HTTP URLs.
+
+Custom templates use the same deployment API and Dockerfile contract in local mode.
+Volcano builds a local image, validates startup, commands, and suspend/resume,
+then activates it. A service that exits or fails to become ready within 30 seconds
+fails validation; the deployment logs include the reason. Build logs and original
+source downloads remain available through the deployment endpoints. Builds and
+sessions use your local machine;
+custom images are removed after replacement or deletion once their sessions end.
+A local reset also removes custom images. Local mode does not support Git source
+handover or project source export. Even with `LOCAL_MODE_GIT_DEPLOY_WORKER=true`,
+the local Git worker deploys Functions and frontends only; it does not discover
+or deploy Sandbox directories. Deploy local custom Sandboxes through the API or CLI.
 
 Local sessions last at most one hour. Suspending pauses the container and
 retains its memory and files. Stopping or restarting the local server, restarting
@@ -342,3 +356,72 @@ The **Templates** view saves named preset and memory combinations. Deleting a
 template terminates its sessions and permanently removes their files. Lists support pagination and refresh.
 The Dashboard reports a platform refusal while Sandbox access is unavailable;
 it does not bypass the rollout gate.
+
+## Deploy a custom template
+
+Service keys need `sandboxes.deployments.write` to upload a deployment and
+`sandboxes.deployments.read` to read its status, history, source, and build logs.
+Template-edit permission alone does not grant deployment access.
+
+Place a `Dockerfile` fragment and its files in a directory. Volcano supplies the
+base image and supervisor. Use `RUN`, `COPY`, `ENV`, `WORKDIR` within `/workspace`,
+and `CMD`; omit `FROM`, `ENTRYPOINT`, and `USER`.
+Use JSON-array `CMD` to pass arguments literally, without shell expansion.
+Shell-form `CMD` explicitly runs a shell and supports expansion and pipelines.
+Local builds resolve the startup executable using the template's `PATH` and
+pin it in the image; startup runs with the declared arguments and working directory.
+
+```dockerfile
+RUN dnf install -y python3.12 && dnf clean all
+COPY app.py /workspace/app.py
+CMD ["python3.12", "/workspace/app.py"]
+```
+
+```bash
+SANDBOX_ID=$(uuidgen)
+REQUEST_ID=$(uuidgen)
+tar -czf source.tar.gz Dockerfile app.py
+curl -X POST "$VOLCANO_API_URL/projects/$PROJECT_ID/sandboxes/$SANDBOX_ID/deployments" \
+  -H "Authorization: Bearer $SERVICE_KEY" \
+  -H "Idempotency-Key: $REQUEST_ID" \
+  -F name=my-service -F code=@source.tar.gz \
+  -F memory_mb=1024 -F 'ports=[8080]'
+```
+
+The archive must be at most 32 MiB compressed and expanded, with at most 4,096
+entries. Symlinks, traversal paths, and reserved managed files are rejected.
+Declared ports must accept connections before the deployment activates. Ports
+65533 and 65534 are reserved.
+
+The response is `202` with the deployment's `id`, `status`, `created_at`, and
+`updated_at`. Poll `GET /projects/{id}/sandboxes/{sandboxId}/deployments/{deploymentId}`
+until `status` is `active`. A new template remains `unavailable` until its first
+successful activation. Updates preserve the active template and existing sessions
+while the replacement builds. Reuse the same template ID for updates, with a new
+idempotency key. Reusing a key for different content returns `409`.
+If an upload is interrupted or returns a temporary error, retry the same key
+and content. An incomplete upload reserves the template for 30 minutes from the
+first attempt; a different key returns `409` during that window. After it expires,
+start a new upload with a new key. The expired upload cannot finish later and
+replace the new deployment. Exporting the project to Git also releases an
+incomplete platform upload. Once accepted, retries keep returning the same
+deployment, even after a platform update.
+
+Git deployments wait for an earlier build to finish, checking less frequently as
+the wait grows, for up to two hours. An earlier deployment in `unknown` requires
+operator recovery, so a new Git deployment fails immediately instead of waiting.
+
+Create sessions with `sandbox_id` after activation. Sessions retain the exact
+image they started with even when a later deployment activates.
+
+Read build logs with
+`GET /projects/{id}/sandboxes/{sandboxId}/deployments/{deploymentId}/logs?region=aws-us-east-1`.
+The response contains `data` entries with `timestamp` and `message`. Supply the
+returned `next_cursor` as `cursor` to continue; `limit` defaults to 100 and accepts
+up to 1,000 entries. Read each deployment region separately.
+
+Download the retained source with
+`GET /projects/{id}/sandboxes/{sandboxId}/deployments/{deploymentId}/source`.
+An active custom deployment returns the original tar.gz bytes, without injected
+platform files. Project source export includes custom templates under
+`volcano/sandboxes/<name>/` using the same immutable source version.

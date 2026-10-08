@@ -410,7 +410,9 @@ choose them with `variable_scope` and `variables` in the
 Selected variables are available to the **build**. Next.js inlines
 `NEXT_PUBLIC_` values into the browser bundle, so changing one takes a
 redeploy. Every other selected variable is also available to the deployed
-frontend's server **runtime**. See the
+frontend's server **runtime**, which is capped at 4096 bytes including about 900
+bytes Volcano uses itself (see [Environment size](deploy.md#environment-size)).
+See the
 [frontend API reference](../api-reference/frontend-endpoints.md#create-frontend-deployment).
 
 ## Function routes
@@ -430,6 +432,10 @@ with a `_volcano` TXT record, and every hostname below it attaches to any of you
 frontends, in either TLS mode, without another record. See
 [Verify domain ownership](domain-verification.md).
 
+Each frontend has at most one custom domain. Attaching a second, different
+domain returns `409 Conflict`; to serve the same site on several hostnames,
+deploy the same source as one frontend per hostname.
+
 On the HOBBY plan an attached domain is kept but stops serving: requests to it
 return `404` while the frontend's `*.frontends.volcano.run` URL keeps working. Upgrading
 puts the domain back in service without re-attaching it. See
@@ -448,7 +454,7 @@ frontends:
 ```
 
 ```bash
-volcano config deploy
+volcano cloud config deploy
 volcano cloud frontends domain get my-site
 ```
 

@@ -5,7 +5,7 @@ description: "Storage policies provide RLS-style access control for files. Polic
 
 Storage policies provide RLS-style access control for files. Policies are evaluated at request time to determine whether an operation is allowed.
 
-For declarative CLI management with `volcano config deploy`, including full `volcano-config.yaml` examples, see [Buckets](./buckets.md#volcano-configyaml-format).
+For declarative CLI management with `volcano cloud config deploy`, including full `volcano-config.yaml` examples, see [Buckets](./buckets.md#volcano-configyaml-format).
 
 ## How policies work
 
