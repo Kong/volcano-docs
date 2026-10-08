@@ -201,7 +201,7 @@ frontends:                                  # must already be deployed
       - function: hello                     # public standard HTTP-mode function
         path_prefix: /api                   # exact segment prefix; /api or /api/...
         strip_prefix: true                  # function receives / for /api
-    custom_domain:                          # SUPERAGENT
+    custom_domain:
       domain: app.myapp.com
       tls:                                  # optional for an existing domain
         mode: managed
@@ -407,9 +407,10 @@ volcano cloud config deploy
   gated value. Re-applying an export of a project downgraded from SUPERAGENT stays a
   no-op.
 - SUPERAGENT-gated surfaces: region subsets, email template bodies, hosted pages,
-  custom domains, and the `auth.signup.allowed_email_domains` allowlist. A HOBBY
-  project can still declare the allowlist it already has, or clear it to remove
-  the restriction. Scheduler counts and storage policy counts respect plan caps.
+  and the `auth.signup.allowed_email_domains` allowlist. A HOBBY project can
+  still declare the allowlist it already has, or clear it to remove the
+  restriction. Scheduler counts, storage policy counts, and managed TLS
+  certificates respect plan caps.
 - Apply-phase failures (a provider call failing mid-apply) return `200` with
   per-entry `action: error`; already-applied changes are not rolled back.
   Re-running the deploy is safe — unchanged entries are no-ops.

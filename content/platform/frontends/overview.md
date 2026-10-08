@@ -423,7 +423,7 @@ function, so your pages call it on the same origin and can keep a session in
 
 ## Custom domains
 
-Custom domains are a **SUPERAGENT** feature and support Volcano-managed TLS or
+Custom domains are available on every plan and support Volcano-managed TLS or
 bring-your-own-certificate (BYOC) TLS. With managed TLS, Volcano issues and
 renews the certificate after you publish the returned validation records.
 
@@ -436,10 +436,9 @@ Each frontend has at most one custom domain. Attaching a second, different
 domain returns `409 Conflict`; to serve the same site on several hostnames,
 deploy the same source as one frontend per hostname.
 
-On the HOBBY plan an attached domain is kept but stops serving: requests to it
-return `404` while the frontend's `*.frontends.volcano.run` URL keeps working. Upgrading
-puts the domain back in service without re-attaching it. See
-[moving from SUPERAGENT to HOBBY](../guides/plans-and-limits.md#moving-from-superagent-to-hobby).
+HOBBY allows one project with one frontend, so a HOBBY account has one custom
+domain. SUPERAGENT puts a custom domain on every frontend. See
+[Plans and limits](../guides/plans-and-limits.md#frontends).
 
 For managed TLS, declare the domain in `volcano-config.yaml` and deploy it:
 
