@@ -16415,7 +16415,6 @@ components:
             version its server runs. Any other value is rejected with 400.
           example: '18'
           enum:
-            - '15'
             - '16'
             - '17'
             - '18'
@@ -21100,7 +21099,10 @@ components:
             - '16'
             - '17'
             - '18'
-          description: PostgreSQL major version. Asserted, never written.
+          description: |
+            PostgreSQL major version. Asserted, never written. Also accepts
+            versions new databases can no longer be created on, so an export
+            of an existing database re-applies.
         database_type:
           type: string
           enum:
