@@ -97,7 +97,7 @@ File storage is buckets that are private by default, with access policies, per-f
 
 ### Frontend hosting
 
-Frontend hosting deploys Next.js, static or server-rendered, and serves it from the edge. A failed build never replaces the live version. Custom domains are on SUPERAGENT. See [Frontends](../frontends/overview.md).
+Frontend hosting deploys Next.js, static or server-rendered, and serves it from the edge. A failed build never replaces the live version. Custom domains are on every plan. See [Frontends](../frontends/overview.md).
 
 ### Distributed locks
 

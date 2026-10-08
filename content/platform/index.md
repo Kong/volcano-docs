@@ -117,7 +117,7 @@ Postgres changes, broadcast, and presence over WebSockets.
 
 ### Frontends
 
-Next.js, static or server-rendered, served from the edge. A failed build never replaces the live version. Custom domains are on SUPERAGENT.
+Next.js, static or server-rendered, served from the edge. A failed build never replaces the live version. Custom domains are on every plan.
 
 | Guide | Description |
 |-------|-------------|
