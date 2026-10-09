@@ -231,6 +231,19 @@ for deletion to finish before creating the resource again.
 {"error": "function is still provisioning, please try again in a few seconds"}
 ```
 
+### Unavailable capabilities
+
+A request that starts new work with a capability switched off in this
+environment answers `404`, or `400` for a single field or option, with code
+`feature_unavailable`:
+
+```json
+{ "error": "sandboxes are not available", "code": "feature_unavailable" }
+```
+
+Retrying does not help. Check [`GET /capabilities`](overview.md#capabilities)
+for what this environment offers.
+
 ### Durable execution errors
 
 Starting a [durable execution](../functions/durable-functions.md) has seven

@@ -163,6 +163,7 @@ A **platform token (`pk-`) is refused with `403`.** The endpoint takes its proje
 | `list_frontends` | `read_only` | Lists the project's frontends, with status, live URLs, and function routes | `GET /projects/{id}/frontends` |
 | `list_deployments` | `read_only` | Lists recent deployments, newest first | `GET /projects/{id}/deployments` |
 | `search_logs` | `read_only` | Searches the project's logs | `POST /projects/{id}/logs/search` |
+| `list_capabilities` | `read_only` | Lists which capabilities, such as Sandboxes, accept new work in this environment | `GET /capabilities` |
 | `list_databases` | `full` | Lists the project's databases. Returns connection strings | `GET /projects/{id}/databases` |
 | `set_variable` | `full` | Creates or updates an environment variable | `POST /projects/{id}/variables` |
 
@@ -179,7 +180,7 @@ That includes the shapes an argument could not otherwise be guessed from. The
 with each variant and its `type` value spelled out, so an agent can construct
 `{"resource": {"type": "function"}, "limit": 20}` from the schema alone.
 
-Scope is enforced by the same rules as the REST API. A `read_only` token is not shown the `full` tools in `tools/list`, and is refused if it calls one anyway — `set_variable` because it writes, `list_databases` because it hands back a credential that keeps working after the token is gone. A `full` token sees all seven.
+Scope is enforced by the same rules as the REST API. A `read_only` token is not shown the `full` tools in `tools/list`, and is refused if it calls one anyway — `set_variable` because it writes, `list_databases` because it hands back a credential that keeps working after the token is gone. A `full` token sees all nine.
 
 ## Call a tool
 

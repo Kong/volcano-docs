@@ -137,6 +137,27 @@ CREATE POLICY notes_insert_own ON notes
 ALTER TABLE notes ADD COLUMN is_pinned BOOLEAN DEFAULT FALSE;
 ```
 
+### Queries that ran before the migration
+
+Volcano keeps the statements your application runs prepared on its database
+connections. A migration that changes a table's columns, such as adding one
+behind `SELECT *` or changing a type, makes Postgres refuse those statements
+with `cached plan must not change result type`. Volcano then prepares them
+again on every connection, so nothing needs restarting:
+
+- **Outside a transaction**, the statement runs again on its own and returns
+  the new columns. Your application sees no error.
+- **Inside a transaction**, the error reaches your application once, because
+  Postgres has already aborted the transaction. Roll back and run the
+  transaction again.
+- **When your driver cached the columns itself**, as drivers that prepare a
+  statement once and reuse it do, the error reaches your application once
+  even outside a transaction, as it would without Volcano. Anything the
+  statement wrote is rolled back, and the driver drops its copy, so running
+  the statement again is safe and returns the new columns. The exception is a
+  `SELECT` that calls a function which writes, on a `volcano_full_access`
+  connection: its writes are kept.
+
 ## Important Notes
 
 **No migration tracking**: Volcano does not track which migrations have been run. You are responsible for:

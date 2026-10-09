@@ -328,9 +328,87 @@ Durable functions have no update endpoint, so visibility travels with a deploy. 
 
 Three things are worth being precise about:
 
-- **Public means startable, not readable.** An anon key ships inside your pages, so everyone who loads one holds it. Reading a result or stopping an execution stays with the owner's token — otherwise any visitor could poll or cancel work started by another, since an execution is addressed by its id alone. Return results to the browser through a function or endpoint of your own that decides who may see them.
+- **Public means startable, not readable.** An anon key ships inside your pages, so everyone who loads one holds it. Reading a result or stopping an execution stays with the owner's token — otherwise any visitor could poll or cancel work started by another, since an execution is addressed by its id alone. Return results to the browser through a table of your own, as in [Return the result to the user](#return-the-result-to-the-user), or an endpoint that decides who may see them.
 - **Public means startable, not invocable.** A durable function is never reachable through `POST /functions/{functionId}/invoke` or a function URL, whatever its visibility; both answer `404`. A synchronous call would run it with no execution record, no idempotency, no concurrency accounting and no pinned version, which is not a durable execution however much it looks like one.
 - **Anyone can start it.** A public durable function is startable by anyone who reads your anon key out of a page. So is an `authenticated` one when your project allows [anonymous sign-ins](../authentication/anonymous-users.md), because anyone can get one of those tokens. Every start counts against your [execution and operation allowances](#limits-and-billing) and your concurrency cap — a caller who cannot see the result can still spend both. Validate the input inside the function and keep the payload small.
+
+### Act as the user who started it
+
+When a signed-in user's access token starts the execution, Volcano adds that
+user's identity to the input as `__volcano_auth`, the same context a
+[standard function receives](overview.md#user-context):
+
+```javascript
+const { durable } = require('@volcano.dev/sdk/durable');
+
+exports.handler = durable(async (input, ctx) => {
+  const auth = input.__volcano_auth;
+  if (!auth) throw new Error('start this function with a user access token');
+
+  const reply = await ctx.step('answer', () => answer(input.question));
+  await ctx.step('save-reply', () => saveReply(auth.user_id, input.turn_id, reply));
+  return { turn_id: input.turn_id };
+});
+```
+
+| Field | Value |
+|---|---|
+| `user_id` | The user's ID |
+| `email` | The user's email |
+| `role` | `authenticated` or `anonymous` |
+| `project_id` | The project's ID |
+| `access_token` | The token that started the execution |
+
+The input has to be a JSON object, or empty, to carry it; an array or scalar
+input arrives unchanged and without identity. A start with an anon key or a
+service key gets no `__volcano_auth`, and Volcano removes one the caller put in
+the body, so the field cannot be forged.
+
+The identity is fixed when the execution starts and replayed on every resume.
+`access_token` stops working once the project's
+[access token lifetime](../authentication/configuration/token-lifetimes.md)
+passes, one hour by default, and an execution with a wait can easily outlive
+it. Use `user_id` instead: connect to the database with
+[`volcano_user_access:<user_id>`](../databases/direct-connection.md#from-event__volcano_auth)
+so row-level security applies to that user however long the execution runs.
+
+### Return the result to the user
+
+Reading an execution takes the owner's token, so a browser cannot poll its own
+execution. Have the function write its result to a table the user can read,
+and have the page listen for it with
+[Postgres changes](../realtime/postgres-changes.md), which respect row-level
+security:
+
+```sql
+CREATE TABLE chat_replies (
+  turn_id UUID PRIMARY KEY,
+  user_id UUID NOT NULL,
+  body TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE chat_replies ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "read own replies" ON chat_replies
+  FOR SELECT USING (user_id = auth.uid());
+
+CREATE POLICY "write own replies" ON chat_replies
+  FOR INSERT WITH CHECK (user_id = auth.uid());
+```
+
+```javascript
+const channel = realtime.channel('public:chat_replies', { type: 'postgres' });
+channel.onPostgresChanges('INSERT', 'public', 'chat_replies', (payload) => {
+  if ((payload.record?.turn_id ?? payload.id) === turnId) showReply(turnId);
+});
+await channel.subscribe();
+
+await volcano.durable.start('chat-turn', { turn_id: turnId, question });
+```
+
+Subscribe before starting, so a fast execution cannot finish unseen. Change
+events do not count against your Realtime message allowance.
 
 ## Wait for the result
 

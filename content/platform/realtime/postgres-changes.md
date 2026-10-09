@@ -139,7 +139,7 @@ Do not rely on end-user delete notifications to maintain a persistent replica.
 -- Table with user_id column
 CREATE TABLE messages (
   id SERIAL PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id),
+  user_id UUID NOT NULL,
   room_id TEXT NOT NULL,
   text TEXT NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()

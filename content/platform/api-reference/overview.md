@@ -181,6 +181,47 @@ X-Volcano-Region: us-east-1                   # the region that served the reque
 
 Volcano's internal headers are never returned.
 
+## Capabilities
+
+Some capabilities are not available in every environment. Check which ones
+accept new work before offering them:
+
+```bash
+curl "https://api.volcano.dev/capabilities"
+```
+
+```json
+{
+  "data": [
+    { "id": "sandboxes", "status": "available" },
+    { "id": "sandboxes.sessions", "status": "available" },
+    { "id": "sandboxes.custom_templates", "status": "unavailable" }
+  ]
+}
+```
+
+| ID | Covers |
+|----|--------|
+| `sandboxes` | The Sandbox API: presets, templates, sessions, and executions |
+| `sandboxes.sessions` | Starting and resuming sessions, and one-shot executions |
+| `sandboxes.custom_templates` | Deploying a custom template; its validation waits while `sandboxes.sessions` is unavailable |
+
+The endpoint needs no token, and every caller in an environment gets the same
+answer. While a capability is `unavailable`, requests that start new work
+answer `404`, or `400` for a single field or option, with code
+`feature_unavailable`:
+
+```json
+{ "error": "sandboxes are not available", "code": "feature_unavailable" }
+```
+
+Reading, deleting, and terminating what already exists keep working unless the
+whole feature is absent from the environment. Treat a missing capability or an
+unknown status as unavailable, and refresh the list when a route answers
+`feature_unavailable`. A capability under another,
+such as `sandboxes.sessions`, is unavailable whenever its parent is. A `503` is
+a temporary outage, not an unavailable capability; retry it.
+
 ## CLI version gating
 
 A CLI reports its version via the `X-Volcano-CLI-Version` request header. The API

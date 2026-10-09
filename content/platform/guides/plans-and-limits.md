@@ -92,7 +92,7 @@ Installing dependencies and running your build command must finish at least five
 
 | Limit | HOBBY | SUPERAGENT | Scope |
 |---|---|---|---|
-| Request allowance | 100,000 / month | 200,000 / month | Combined across all your projects; each completed statement counts once, and an empty query such as a driver's connection ping does not count. HOBBY enforcement is eventual |
+| Request allowance | 100,000 / month | 200,000 / month | Combined across all your projects; each completed statement counts once, and transaction control and an empty query such as a driver's connection ping do not count. See [how requests are counted](../databases/overview.md#how-requests-are-counted). HOBBY enforcement is eventual |
 | Databases per project | 1 | 10,000 | Creation cap |
 | Database-storage allowance | 1 GB / month | 10 GB / month | Peak combined storage across every database you own; HOBBY makes all owned databases read-only at the allowance |
 | [Branches](../databases/branching.md) per database | 10 | 25 | Counts branches in every state |

@@ -302,6 +302,73 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/databases" \
   -d '{"name": "main", "region": "eu-central-1", "pg_version": "18"}'
 ```
 
+## How requests are counted
+
+Your plan's [database request allowance](../guides/plans-and-limits.md#databases)
+counts statements that complete, however they reach the database:
+
+| What runs | Counts as |
+| --- | --- |
+| A [REST API](rest-api.md) request, which the query builder sends | 1 request |
+| A statement over a direct connection, including `CALL proc()` or `SELECT fn()` | 1 request, however many statements the function runs inside |
+| `BEGIN`, `COMMIT`, `ROLLBACK`, and savepoints | Free |
+| The role and user-context setup Volcano runs for user access | Free |
+| A statement that fails | Free |
+| An empty query, such as a driver's connection ping | Free |
+
+A query string holding several statements, such as `INSERT ...; UPDATE ...`, is
+[refused](connection-strings.md#one-statement-per-query). Send them one at a
+time, inside `BEGIN` and `COMMIT` if they belong together.
+
+### Batch work into fewer statements
+
+From a function or other server code, combine work in SQL rather than sending
+one statement per row or step. Each of these counts as one request:
+
+```sql
+-- Several rows in one INSERT
+INSERT INTO chat_messages (conversation_id, role, body)
+VALUES ($1, 'user', $2), ($1, 'assistant', $3);
+
+-- Dependent writes in one statement
+WITH turn AS (
+  INSERT INTO chat_turns (conversation_id) VALUES ($1) RETURNING id
+)
+INSERT INTO chat_messages (turn_id, role, body)
+SELECT id, 'user', $2 FROM turn;
+```
+
+For logic that is longer than one statement, put it in a Postgres function and
+call it once. `SECURITY INVOKER`, the default, runs it as the caller, so
+row-level security still applies to a [user-access](#user-access-rls-enforced)
+connection:
+
+```sql
+CREATE FUNCTION record_turn(conversation UUID, question TEXT, answer TEXT)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY INVOKER
+AS $$
+DECLARE
+  turn_id UUID;
+BEGIN
+  INSERT INTO chat_turns (conversation_id) VALUES (conversation) RETURNING id INTO turn_id;
+  INSERT INTO chat_messages (turn_id, role, body)
+  VALUES (turn_id, 'user', question), (turn_id, 'assistant', answer);
+  UPDATE conversations SET updated_at = now() WHERE id = conversation;
+  RETURN turn_id;
+END;
+$$;
+```
+
+```javascript
+const { rows } = await client.query('SELECT record_turn($1, $2, $3) AS id', [conversationId, question, answer]);
+```
+
+The REST API runs one statement per request, inserts one row per request, and
+cannot call a Postgres function. Move a write-heavy path to a function with a
+[direct connection](direct-connection.md) to batch it.
+
 ## Read storage usage
 
 The dashboard's Database Storage chart shows observed storage sizes. A missing sample carries an earlier sample forward. Buckets before the first available sample show zero; the current size does not fill past dates. The Current value can be available before historical samples appear.

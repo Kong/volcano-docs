@@ -359,6 +359,46 @@ That route answers for 90 seconds on SUPERAGENT. On HOBBY it is cut off at 30.
 For work that has to outlast the runtime limit, start a
 [durable function](../functions/durable-functions.md) and poll its result.
 
+## Call outside APIs from server code
+
+Server-side code in a frontend can call any HTTPS API directly. Volcano does
+not restrict outbound traffic, so a route handler can call a model provider
+with a key from a selected variable:
+
+```js
+// app/api/chat/route.js
+export async function POST(request) {
+  const { messages } = await request.json();
+  const upstream = await fetch("https://api.example-llm.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${process.env.LLM_API_KEY}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ model: "example-model", messages, stream: true }),
+    signal: AbortSignal.timeout(25_000),
+  });
+  return new Response(upstream.body, {
+    status: upstream.status,
+    headers: { "content-type": upstream.headers.get("content-type") ?? "text/plain" },
+  });
+}
+```
+
+Select `LLM_API_KEY` for the frontend and keep it out of the `NEXT_PUBLIC_`
+prefix; see [Variables](#variables). The call is held to the
+[time limits](#time-limits-for-server-rendered-routes) above, so stream the
+reply and time out the upstream request inside your plan's runtime limit.
+
+Volcano does not store request or response bodies, so a prompt reaches your
+runtime logs only if your code logs it. Runtime logs are kept for your plan's
+[log retention](../guides/plans-and-limits.md#scheduling-and-logs).
+
+Move the call to a [function](../functions/overview.md) when several frontends
+or other clients share it, or when it needs a runtime other than Node.js. Move
+it to a [durable function](../functions/durable-functions.md) when one request
+can outlast the runtime limit.
+
 ## Platform error pages
 
 When Volcano cannot route or serve a frontend request, browsers receive a
@@ -407,11 +447,66 @@ A frontend gets the project variables it selects. New frontends select none;
 choose them with `variable_scope` and `variables` in the
 [declarative config](../projects/configuration.md) or on deploy.
 
-Selected variables are available to the **build**. Next.js inlines
-`NEXT_PUBLIC_` values into the browser bundle, so changing one takes a
-redeploy. Every other selected variable is also available to the deployed
-frontend's server **runtime**, which is capped at 4096 bytes including about 900
-bytes Volcano uses itself (see [Environment size](deploy.md#environment-size)).
+Selected variables are available to the **build**. Every selected variable
+except `NEXT_PUBLIC_*` is also set in the deployed frontend's server
+**runtime**, which is capped at 4096 bytes including about 900 bytes Volcano
+uses itself (see [Environment size](deploy.md#environment-size)):
+
+| Variable | Build | Server runtime |
+| --- | --- | --- |
+| `NEXT_PUBLIC_*` | Yes | No. Next.js inlines the build-time value wherever your code reads `process.env.NEXT_PUBLIC_…` literally, in browser and server code alike |
+| A name Volcano sets in the runtime, listed below | Yes, unless the [build reserves it](../functions/environment-variables.md#names-reserved-during-builds) | No. Volcano's value replaces yours |
+| Any other selected name | Yes, unless the build reserves it | Yes, including other names the build reserves, such as `VOLCANO_*` |
+| A name you did not select | No | No |
+
+Changing a `NEXT_PUBLIC_*` value takes a redeploy. Any other value reaches the
+running frontend without one. Read secrets such as API keys in server code
+only, under a name without the `NEXT_PUBLIC_` prefix, so they never enter the
+browser bundle.
+
+Volcano sets these runtime variables itself:
+
+| Variable | Value |
+| --- | --- |
+| `VOLCANO_FRONTEND_ID` | The frontend's ID |
+| `VOLCANO_FRONTEND_NAME` | The frontend's name |
+| `VOLCANO_FRONTEND_FRAMEWORK` | The frontend's framework, such as `nextjs` |
+| `NODE_ENV` | `production` |
+
+It also sets the frontend's
+[cache wiring](../functions/environment-variables.md#names-reserved-during-builds).
+`FRONTEND_PROXY_TOKEN` and `FRONTEND_PROXY_NEXT_TOKEN` hold Volcano's own
+credential and are removed before your code runs, so a selected variable with
+either name never reaches it. Nothing else is set for you. Even the project's
+`DATABASE_URL` is a variable you create and select.
+
+Local mode differs: the frontend reads its variables only when it starts, gets
+no `VOLCANO_FRONTEND_*` names, and also sees the local server's own
+environment, so do not rely on a variable you did not select being unset there.
+
+A deploy that selects a name the project does not define is rejected before
+anything builds. The deploy endpoint answers `400` with an `error` that ends in
+the missing names:
+
+```text
+frontend "web": declared project variables do not exist: STRIPE_SECRET_KEY
+```
+
+A config apply answers `422` with the same message under the frontend:
+
+```json
+{
+  "error": "project config validation failed",
+  "errors": [
+    {
+      "section": "frontends",
+      "name": "web",
+      "message": "frontend \"web\": declared project variables do not exist: STRIPE_SECRET_KEY"
+    }
+  ]
+}
+```
+
 See the
 [frontend API reference](../api-reference/frontend-endpoints.md#create-frontend-deployment).
 
