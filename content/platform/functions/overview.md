@@ -268,15 +268,18 @@ Point the handler at the file directly if you want the behavior above.
 
 ## Resource limits
 
-Functions have configurable resource limits based on your plan:
+Your plan sets each function's resource limits:
 
 | Resource | HOBBY plan | SUPERAGENT plan |
 |----------|-----------|----------|
-| Timeout | 180 seconds | 180 seconds |
-| Memory | 256 MB | 256 MB |
-| Disk | 1024 MB | 1024 MB |
+| Timeout | 30 seconds | 180 seconds |
+| Memory | 128 MB | 256 MB |
+| Disk | 512 MB | 1024 MB |
 | Rate limit (per function) | 10 RPS | Unlimited |
 | Rate limit (project-wide) | 60 RPS | Unlimited |
+
+A step in a [durable function](durable-functions.md) gets its own, longer
+timeout. See [Plans and limits](../guides/plans-and-limits.md#durable-functions).
 
 ## What's next
 

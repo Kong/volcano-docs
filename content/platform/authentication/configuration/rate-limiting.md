@@ -66,6 +66,14 @@ Usually higher than signup/signin (legitimate users refresh frequently).
 {"rate_limit_token_refresh": 500}
 ```
 
+## Password Reset Rate Limit
+
+**Setting:** `rate_limit_password_reset`  
+**Default:** 10 per hour per IP
+
+Limits `POST /auth/forgot-password`. Unlike the other settings, `0` restores
+the default of 10 rather than turning the limit off.
+
 ## Response Headers
 
 Signup, signin, refresh, and OAuth callback responses carry the remaining quota:
@@ -108,6 +116,28 @@ curl -X PUT https://api.volcano.dev/projects/PROJECT_ID/auth/config \
 Setting `rate_limit_signup`, `rate_limit_signin`, or `rate_limit_token_refresh`
 to `0` turns that limit off. For `rate_limit_signin`, that includes OAuth
 callbacks.
+
+The same limits live under `auth.rate_limits` in
+[`volcano-config.yaml`](../../projects/configuration.md):
+
+```yaml
+auth:
+  rate_limits:   # per hour
+    signup: 20
+    signin: 50
+    token_refresh: 200
+    password_reset: 10
+```
+
+## Local Mode
+
+A project running in local mode does not enforce any of these per-IP limits.
+Every client of a local server connects from your machine, so they would only
+cap your own test runs. Local responses carry no `X-RateLimit-*` headers.
+
+The configured values are kept as they are: export still renders them, and a
+cloud deploy of the same `volcano-config.yaml` enforces them. Test rate-limit
+handling against a cloud project.
 
 ## See Also
 

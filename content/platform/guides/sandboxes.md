@@ -3,6 +3,25 @@ title: Sandboxes
 description: Run isolated commands and keep temporary sessions alive for files and HTTP services.
 ---
 
+Sandboxes are in preview. They are not generally available, are not part of
+any plan, and are not billed. Check whether they are available with
+[`GET /capabilities`](../api-reference/overview.md#capabilities): the
+`sandboxes`, `sandboxes.sessions`, and `sandboxes.custom_templates` entries
+report each part. Where Sandboxes are not available, every Sandbox endpoint
+answers `404` with error code `feature_unavailable`:
+
+```json
+{ "error": "sandboxes are not available", "code": "feature_unavailable" }
+```
+
+Where they are turned off after use, only creating or starting a session,
+template, execution, or deployment, and listing presets, answer that `404`, so
+sessions and templates you already have can still be read and deleted.
+
+A `503` means the Sandbox service is temporarily unavailable; retry later. In
+local mode it means the local Sandbox service is not running, see
+[Run locally](#run-locally).
+
 ## Run a command
 
 Run a command in a temporary Sandbox:
@@ -29,8 +48,7 @@ curl "$VOLCANO_API_URL/projects/$PROJECT_ID/sandbox-executions" \
 }
 ```
 
-Sandbox access is available only in enabled environments. An unavailable environment
-returns `503`. Discover published presets and regions with `GET /sandboxes/presets`.
+Discover published presets and regions with `GET /sandboxes/presets`.
 Use the returned preset IDs when creating templates, sessions, or one-shot executions.
 An empty catalog means no verified preset has been published yet.
 
@@ -354,14 +372,14 @@ and permanently removes the session's files.
 
 The **Templates** view saves named preset and memory combinations. Deleting a
 template terminates its sessions and permanently removes their files. Lists support pagination and refresh.
-The Dashboard reports a platform refusal while Sandbox access is unavailable;
-it does not bypass the rollout gate.
 
 ## Deploy a custom template
 
 Service keys need `sandboxes.deployments.write` to upload a deployment and
 `sandboxes.deployments.read` to read its status, history, source, and build logs.
-Template-edit permission alone does not grant deployment access.
+Template-edit permission alone does not grant deployment access. Where custom
+templates are not enabled, a deployment request returns `404` with code
+`feature_unavailable`.
 
 Place a `Dockerfile` fragment and its files in a directory. Volcano supplies the
 base image and supervisor. Use `RUN`, `COPY`, `ENV`, `WORKDIR` within `/workspace`,
