@@ -10,7 +10,10 @@
    the empty sidebar/TOC gutter column instead of `main` — so it's pinned here. */
 .home-page {
   display: flex;
-  grid-area: main;
+  grid-row: main-start / main-end;
+  /* Full-bleed: run from the sidebar edge to the right edge of the viewport,
+     past the capped main column and the (unused on home) TOC gutter. */
+  grid-column: main-start / -1;
   width: 100%;
   flex-direction: column;
 }

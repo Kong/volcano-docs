@@ -71,3 +71,15 @@
   font-size: var(--type-meta);
   color: var(--text-primary);
 }
+
+/* Same hover bounce as the feature-card icons (keyframes live in
+   feature-card.css; both stylesheets load together on the home page). */
+.ide-platform:hover .ide-platform-icon {
+  animation: feature-card-icon-bounce 500ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ide-platform:hover .ide-platform-icon {
+    animation: none;
+  }
+}
