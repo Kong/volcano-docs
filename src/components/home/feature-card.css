@@ -12,25 +12,14 @@
   align-items: flex-start;
   gap: var(--space-30);
   padding: var(--space-70) var(--space-100);
+  background: var(--surface-background);
   text-decoration: none;
+  transition: background var(--system-transition);
 }
 
-/* Warm primary gradient (default). */
-.feature-card--primary {
-  background-image: linear-gradient(
-    132deg,
-    var(--surface-background) 54%,
-    var(--surface-primary-weak) 100%
-  );
-}
-
-/* Danger-tinted gradient. */
-.feature-card--danger {
-  background-image: linear-gradient(
-    140deg,
-    color-mix(in srgb, var(--surface-background) 60%, transparent) 56%,
-    color-mix(in srgb, var(--surface-danger-weak) 60%, transparent) 104%
-  );
+/* Hover only applies to linked cards (rendered as <a>). */
+a.feature-card:hover {
+  background: var(--surface-raised);
 }
 
 .feature-card-icon {
@@ -41,6 +30,36 @@
   align-items: center;
   justify-content: center;
   color: var(--text-primary);
+}
+
+/* One short bounce on hover that settles back to the resting position. */
+@keyframes feature-card-icon-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  35% {
+    transform: translateY(-4px);
+  }
+
+  60% {
+    transform: translateY(0);
+  }
+
+  80% {
+    transform: translateY(-1px);
+  }
+}
+
+a.feature-card:hover .feature-card-icon {
+  animation: feature-card-icon-bounce 500ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  a.feature-card:hover .feature-card-icon {
+    animation: none;
+  }
 }
 
 /* Icon glyph fills the 32px wrapper. */

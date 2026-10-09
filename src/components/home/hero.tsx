@@ -8,8 +8,6 @@ import Link from "next/link";
 export function Hero() {
   return (
     <section className="hero">
-      {/* Ambient radial glow behind the hero, from the design. */}
-      <div aria-hidden className="hero-glow" />
       <div className="hero-content">
         <div className="hero-copy-stack">
           <h1 className="hero-title">Volcano docs</h1>
@@ -23,7 +21,9 @@ export function Hero() {
             <Link href="/platform" className="hero-link">
               Platform
             </Link>
-            . The same docs are in your terminal with{" "}
+            .
+            <br />
+            The same docs are in your terminal with{" "}
             <Link href="/cli/docs-search" className="hero-link">
               <code>volcano docs</code>
             </Link>

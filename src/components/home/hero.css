@@ -11,20 +11,8 @@
   gap: var(--space-80);
   overflow: hidden;
   border-bottom: var(--border-divider);
+  background: var(--surface-background);
   padding: var(--space-130) var(--space-100);
-}
-
-.hero-glow {
-  pointer-events: none;
-  position: absolute;
-  left: 50%;
-  top: -231px;
-  height: 896px;
-  width: 1132px;
-  transform: translateX(-50%);
-  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
-  /* Heavy blur renders the fill as a soft ellipse; no radius needed. */
-  filter: blur(120px);
 }
 
 .hero-content {
@@ -55,7 +43,6 @@
 
 .hero-lede {
   width: 100%;
-  max-width: 530px;
   font-family: var(--system-font);
   font-size: var(--type-body);
   line-height: var(--line-height-relaxed);
