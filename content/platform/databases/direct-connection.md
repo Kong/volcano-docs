@@ -229,14 +229,42 @@ exports.handler = async (event) => {
 
 ## Node.js Server (Custom Backend)
 
-If you have your own Node.js server and want to impersonate Volcano auth users:
+If you have your own Node.js server and want to impersonate Volcano auth users,
+verify each request's access token with Volcano before you trust its user ID.
+Send the token to `GET /auth/user`. Volcano checks its signature, expiry,
+session revocation, and ban status, and returns the user. Volcano doesn't share
+the key that signs access tokens, so you can't verify them yourself. In a Volcano
+function, use `event.__volcano_auth` instead: Volcano has already verified the
+token.
 
-### Option 1: Validate User's Access Token
+### Verify the Access Token
+
+```javascript
+const API_URL = process.env.VOLCANO_API_URL ?? 'https://api.volcano.dev';
+
+// Returns the Volcano user the request's access token belongs to, or null.
+async function verifiedUser(req) {
+  const authorization = req.headers.authorization;
+  if (!authorization?.startsWith('Bearer ')) {
+    return null;
+  }
+  const response = await fetch(`${API_URL}/auth/user`, { headers: { authorization } });
+  if (!response.ok) {
+    return null; // 401: invalid, expired, or revoked token. 403: banned user.
+  }
+  const { user } = await response.json();
+  // A token from another Volcano project verifies there, not here.
+  return user.project_id === process.env.VOLCANO_PROJECT_ID ? user : null;
+}
+```
+
+The SDK's [server client](/sdk/js/nextjs) makes the same `GET /auth/user` call.
+
+### Option 1: Pool Connections Per User
 
 ```javascript
 const { Pool } = require('pg');
 const express = require('express');
-const jwt = require('jsonwebtoken');
 
 // One pool per auth user: the RLS identity is fixed at connection startup by
 // application_name, so a shared pool cannot switch users per request.
@@ -258,25 +286,19 @@ function poolForUser(userId) {
 const app = express();
 
 app.get('/api/posts', async (req, res) => {
-  // 1. Get access token from header
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  
-  if (!token) {
-    return res.status(401).json({ error: 'No token provided' });
+  // 1. Verify the access token with Volcano (verifiedUser from above)
+  const user = await verifiedUser(req);
+  if (!user) {
+    return res.status(401).json({ error: 'Not signed in' });
   }
-  
-  // 2. Validate token (call Volcano API or decode JWT)
-  // For production, validate with Volcano API
-  // For this example, we decode (you have the JWT secret)
-  const claims = jwt.verify(token, process.env.JWT_SECRET);
-  
-  // 3. Get a connection from this user's pool (started under RLS)
-  const client = await poolForUser(claims.user_id).connect();
-  
+
+  // 2. Get a connection from this user's pool (started under RLS)
+  const client = await poolForUser(user.id).connect();
+
   try {
-    // 4. Query - auth.uid() = claims.user_id
+    // 3. Query - auth.uid() = user.id
     const { rows } = await client.query('SELECT * FROM posts');
-    
+
     res.json({ posts: rows });
   } finally {
     client.release();
@@ -291,24 +313,25 @@ app.listen(3000);
 ```javascript
 const { Client } = require('pg');
 const express = require('express');
-const jwt = require('jsonwebtoken');
 
 const app = express();
 
 app.get('/api/posts', async (req, res) => {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  const claims = jwt.verify(token, process.env.JWT_SECRET);
-  
+  const user = await verifiedUser(req); // verifiedUser from above
+  if (!user) {
+    return res.status(401).json({ error: 'Not signed in' });
+  }
+
   // Build connection string with user's auth context. Replace application_name
   // (DATABASE_URL already carries volcano_full_access) so the connection starts
   // up under RLS instead of leaving duplicate params to the driver.
   const url = new URL(process.env.DATABASE_URL);
-  url.searchParams.set('application_name', `volcano_user_access:${claims.user_id}`);
+  url.searchParams.set('application_name', `volcano_user_access:${user.id}`);
   const connStr = url.toString();
-  
+
   const client = new Client({ connectionString: connStr });
   await client.connect();
-  
+
   try {
     const { rows } = await client.query('SELECT * FROM posts');
     res.json({ posts: rows });
@@ -759,10 +782,11 @@ const auth = event.__volcano_auth;  // ← Created by Volcano, trusted
 const appName = `volcano_user_access:${auth.user_id}`;
 ```
 
-**Validating JWT tokens (Node.js):**
+**Verifying the access token with Volcano (Node.js):**
 ```javascript
-const claims = jwt.verify(token, process.env.JWT_SECRET);
-const appName = `volcano_user_access:${claims.user_id}`;
+const user = await verifiedUser(req);  // GET /auth/user, see above
+if (!user) return res.status(401).end();
+const appName = `volcano_user_access:${user.id}`;
 ```
 
 ### Unsafe Patterns
@@ -774,11 +798,19 @@ const userId = req.body.user_id;  // From user input
 const appName = `volcano_user_access:${userId}`;  // Don't do this!
 ```
 
-**Always validate:**
+**Never read the user ID out of an unverified token:**
 ```javascript
-// SAFE - user_id comes from validated JWT
-const claims = jwt.verify(token, JWT_SECRET);
-const appName = `volcano_user_access:${claims.user_id}`;
+// DANGEROUS - decoding is not verifying; anyone can mint this payload
+const { sub } = JSON.parse(atob(token.split('.')[1]));
+const appName = `volcano_user_access:${sub}`;  // Don't do this!
+```
+
+**Always verify with Volcano:**
+```javascript
+// SAFE - user.id comes from Volcano's GET /auth/user
+const user = await verifiedUser(req);
+if (!user) return res.status(401).end();
+const appName = `volcano_user_access:${user.id}`;
 ```
 
 ---
@@ -1135,8 +1167,9 @@ The proxy looks up email and role from the database, making this more secure.
 
 2. **Node.js Server:**
    ```javascript
-   const claims = jwt.verify(token, JWT_SECRET);
-   const appName = `volcano_user_access:${claims.user_id}`;
+   const user = await verifiedUser(req);  // GET /auth/user
+   if (!user) return res.status(401).end();
+   const appName = `volcano_user_access:${user.id}`;
    ```
 
 3. **Any Client:**

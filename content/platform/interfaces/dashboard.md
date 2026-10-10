@@ -22,6 +22,14 @@ and history, and open a live URL. Deploys themselves are usually better from
 the [CLI](/cli) or [Git](../projects/git-deploy.md), because those are
 repeatable.
 
+**Approvals.** See every approval your durable functions have asked for, or
+one workflow's, filtered by time range and status. Cards count the requested,
+pending, approved, denied, expired, and cancelled ones, with the approval rate
+and the median time to a decision; a pie chart shows which workflows ask most,
+and a second chart shows outcomes per day. Open a pending approval to read its details, then
+approve or deny it with an optional comment, and the workflow resumes with your
+decision. See [Durable approvals](../functions/durable-approvals.md).
+
 **Databases.** Create a database, browse branches and backups, and read
 connection details. See [Databases](../databases/overview.md).
 

@@ -120,6 +120,40 @@ volcano durable executions get orders 9f2c1d84-4b77-4a1e-9f0a-2c3d4e5f6a7b
 
 The execution resumes where it stopped. Local executions are stored in the same database your project uses, so restarting loses nothing — which is what makes a local run a fair test of a long-lived one.
 
+## Approve locally
+
+A function that calls [`ctx.waitForApproval`](../functions/durable-approvals.md) waits for a decision locally too. Add one before the charge:
+
+```javascript
+const decision = await ctx.waitForApproval('approve-charge', {
+  title: `Charge ${input.amount} to ${input.email}?`,
+  timeout: '10m',
+});
+if (!decision.approved) {
+  return { charged: false, status: decision.status };
+}
+```
+
+Redeploy, start an execution, and decide it from another terminal:
+
+```bash
+volcano durable deploy --all
+volcano durable start orders --input '{"card_token":"tok_1","amount":4200,"email":"a@example.com"}'
+volcano durable approvals list
+volcano durable approvals approve 0b6f3c1e-8a4d-4f7e-9c2b-5d1a7e3f9b20 --comment "Looks right"
+```
+
+```text
+ID                                    Title                     Workflow            Execution             Status      Requested   Expires
+--------------------------------------------------------------------------------------------------------------------------------------------
+0b6f3c1e-8a4d-4f7e-9c2b-5d1a7e3f9b20  Charge 4200 to a@exam...  orders              1095b0f8-7efa-45c...  pending     5s ago      in 9m
+Showing 1 of 1 approval(s) (page 1, limit 100)
+```
+
+The local CLI decides as the local user, so `approve` and `deny` work without `volcano login`. The execution resumes with the decision and finishes; `volcano durable executions get` shows its result.
+
+**An approval's timeout runs in real time,** even though plain waits resolve immediately. A person is deciding against it, and an approval that expired the moment it was asked could never be answered. Use a short `timeout` to watch the `expired` branch run.
+
 ## Deploy it
 
 Nothing changes:
@@ -136,10 +170,10 @@ The same manifest, the same handler, the same runtime version. What differs in p
 - **Your retry budget is reachable.** `maxAttempts` counts across suspensions, so watch an execution actually exhaust one locally rather than assuming it does.
 - **Long waits work at their real length.** Run once with `LOCAL_DURABLE_REAL_TIME=true` before shipping a function whose timing matters.
 - **Your costs are what you expect.** Local executions are metered on the same three counters as deployed ones, so the project's usage is a fair estimate of what a workload will cost before you ship it. Read it from `GET /projects/{id}/usage` and check it against [the allowances for your plan](plans-and-limits.md).
-
-Volcano does not expose externally completed callbacks in local or cloud execution. Use `ctx.waitUntil` to poll application state instead.
+- **Every approval branch works.** Approve one, deny one, and let one expire, so each path through the handler has run before a person depends on it.
 
 ## Related
 
 - [Durable functions](../functions/durable-functions.md) — the full reference, including operations, retention and billing
+- [Durable approvals](../functions/durable-approvals.md) — requesting and deciding approvals
 - [Project configuration](../projects/configuration.md) — the manifest fields a durable function accepts

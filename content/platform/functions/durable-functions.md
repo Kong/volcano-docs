@@ -5,7 +5,7 @@ description: "Durable functions checkpoint their progress and resume where they 
 
 A durable function checkpoints its progress as it runs. If it is interrupted — because it suspended on a wait, or because an attempt crashed — it resumes from the last completed step instead of starting over. That lets one execution run for up to a year, far longer than the 300 or 900 seconds a single attempt is allowed.
 
-Reach for a durable function when the work has steps you do not want to repeat, or waits you cannot hold a request open for: a multi-step order pipeline, a nightly reconciliation, an approval that arrives hours later, a batch job that calls a flaky third-party API.
+Reach for a durable function when the work has steps you do not want to repeat, or waits you cannot hold a request open for: a multi-step order pipeline, a nightly reconciliation, [an approval that arrives hours later](durable-approvals.md), a batch job that calls a flaky third-party API.
 
 Durable functions are a separate resource from [standard functions](overview.md). They live under `/projects/{id}/durable-functions`, are started asynchronously rather than invoked, and never appear in the standard functions collection. A function cannot change kind after it is created.
 
@@ -69,12 +69,13 @@ Every context operation is checkpointed: what finished is recorded, and a resume
 | `ctx.step(name?, fn, options?)` | Runs work once and records its result. `options.retry` sets the retry policy, `options.atMostOnce` marks work that must not repeat. |
 | `ctx.wait(name?, duration)` | Suspends the execution. `'30s'`, `'2h'`, a whole number of seconds, or `{ hours, minutes }`. Anything shorter than a second is rejected. |
 | `ctx.waitUntil(name?, check, options)` | Polls your own state until `options.until` holds, suspending between checks. `options.initialState` is required. |
+| `ctx.waitForApproval(name, options)` | Suspends until a person approves or denies, or `options.timeout` passes, and resumes with the decision. See [Durable approvals](durable-approvals.md). |
 | `ctx.map(name?, items, fn, options?)` | Runs one child context per item, with `options.concurrency`. |
 | `ctx.parallel(name?, branches, options?)` | Runs independent branches concurrently. |
 | `ctx.child(name?, fn)` | Groups operations under one checkpointed context. |
 | `ctx.log` | The execution's logger, with the execution's identifiers attached. |
 
-Waits and polls are held by the platform rather than by your code, so a function suspended for an hour costs nothing while it waits — but the execution timeout still applies. Volcano does not expose externally completed callbacks; use `ctx.waitUntil` to poll application state instead. Full reference and worked examples are in the SDK's [durable functions guide](/sdk/js/durable-functions).
+Waits and polls are held by the platform rather than by your code, so a function suspended for an hour costs nothing while it waits — but the execution timeout still applies. To wait for a person's sign-off, use [`ctx.waitForApproval`](durable-approvals.md); to wait for anything else outside the function, poll your own state with `ctx.waitUntil`. Full reference and worked examples are in the SDK's [durable functions guide](/sdk/js/durable-functions).
 
 ## Deploy one
 
@@ -200,6 +201,7 @@ volcano cloud durable executions list order-pipeline --status running
 volcano cloud durable executions get order-pipeline $EXECUTION_ID
 volcano cloud durable executions stop order-pipeline $EXECUTION_ID
 volcano cloud durable schedulers create order-pipeline --cron "0 * * * *"
+volcano cloud durable approvals approve $APPROVAL_ID --comment "Checked stock"
 ```
 
 Logs come from the same command in both shapes a durable function has them: `volcano cloud durable logs order-pipeline --type build` is the deploy's own output, which is where a deploy that ended in `failed` says why, and `--type runtime` is what the function logged while its executions ran. Add `--follow` to tail either one.
@@ -584,6 +586,7 @@ The execution comes first and is the only operation without a `parent_id`. Every
 | `ctx.step` | `step` | Each run of the body is an entry in `attempts` |
 | `ctx.wait` | `wait` | `scheduled_end_at` is when it elapses |
 | `ctx.waitUntil` | `wait_until` | Each check is an attempt; `next_attempt_at` is the next one |
+| `ctx.waitForApproval` | `child` | A `callback`, `waiting` until the decision arrives, and the `step` that registered the request |
 | `ctx.child` | `child` | The operations inside it |
 | `ctx.map` | `map` | One `map_item` per item |
 | `ctx.parallel` | `parallel` | One `parallel_branch` per branch |
@@ -765,12 +768,12 @@ volcano durable deploy --all
 volcano durable start orders --input '{"order_id":"ord_123"}'
 ```
 
-Three things differ locally, all deliberately:
+Two things differ locally, both deliberately:
 
-- **A wait resolves immediately.** A function that waits a day is normal to write and unusable to sit through. Your function cannot tell — it still suspends, and still resumes with everything it had finished — but you get the answer in seconds. Set `LOCAL_DURABLE_REAL_TIME=true` to make waits take their real time.
+- **A wait resolves immediately.** A function that waits a day is normal to write and unusable to sit through. Your function cannot tell — it still suspends, and still resumes with everything it had finished — but you get the answer in seconds. Set `LOCAL_DURABLE_REAL_TIME=true` to make waits take their real time. An approval's timeout is the exception: it always runs in real time, because a person is deciding against it.
 - **There is one region.** Everything runs on the one local engine, so there is nothing to choose between.
 
-Everything else behaves as it does deployed: steps checkpoint and replay, a failed step retries on its backoff, `ctx.map` and `ctx.parallel` fan out, `ctx.waitUntil` polls, usage is metered on the same three counters, and an execution suspended when you stop the local server resumes when you start it again.
+Everything else behaves as it does deployed: steps checkpoint and replay, a failed step retries on its backoff, `ctx.map` and `ctx.parallel` fan out, `ctx.waitUntil` polls, `ctx.waitForApproval` waits for `volcano durable approvals approve`, usage is metered on the same three counters, and an execution suspended when you stop the local server resumes when you start it again.
 
 See [Developing durable functions locally](../guides/durable-functions-locally.md) for a worked example.
 
@@ -798,6 +801,7 @@ Durable executions are metered on three allowances of their own and spend nothin
 | Each `ctx.waitUntil` check | Size `maxAttempts` with this in mind: 200 checks is 200 operations |
 | Each `ctx.child` context | Plus whatever the child itself does |
 | Each `ctx.map` item and `ctx.parallel` branch | Each runs in a child context of its own |
+| Each `ctx.waitForApproval` | Three: the approval, the wait for its decision, and the step that registers it |
 | Each function an execution invokes from inside itself | One for making the call, on top of whatever the call costs |
 
 Only beginning something is charged. How it turned out — a step that succeeded, a wait that elapsed, an execution that failed — is a record of work already counted, not a second operation.
@@ -847,6 +851,7 @@ Durable functions are counted against their own per-project cap, so they cannot 
 
 | Guide | Description |
 |-------|-------------|
+| [Durable approvals](durable-approvals.md) | Pause a workflow until a person approves or denies |
 | [Functions overview](overview.md) | Standard functions, runtimes, and packaging |
 | [Environment variables](environment-variables.md) | Configure secrets and settings |
 | [Logs](logs.md) | View and filter function logs |

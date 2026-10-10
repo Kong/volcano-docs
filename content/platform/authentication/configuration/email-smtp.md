@@ -281,8 +281,9 @@ curl -X PUT https://api.volcano.dev/projects/PROJECT_ID/auth/config \
 curl -X POST https://api.volcano.dev/projects/PROJECT_ID/auth/config/test-email \
   -H "Authorization: Bearer TOKEN" \
   -d '{"to_email":"you@yourdomain.com"}'
-# 200 {"success":true} on delivery; 400 if email_enabled/smtp_host unset;
-# 502 if SMTP delivery fails (see the error message for the SMTP-level reason)
+# 200 {"success":true} on delivery; 400 if email_enabled/smtp_host unset or the
+# saved smtp_password can't be read; 502 if SMTP delivery fails (see the error
+# message for the SMTP-level reason)
 ```
 
 The endpoint uses the project's stored credentials, so save before testing.
@@ -312,6 +313,16 @@ preview. See the `testEmailConfig` operation in the API reference for details.
 - For SendGrid: ensure password starts with `SG.`
 - For AWS SES: use SMTP credentials (not IAM credentials)
 - For Gmail: use app password (not account password)
+
+### Saved Password Can't Be Read
+
+**Symptoms:**
+- `smtp_password_configured` is `false` although you saved a password
+- Test email error: "smtp_password could not be read; set it again to send a test email"
+
+**Solutions:**
+- Save `smtp_password` again. Until you do, Volcano sends no auth email through
+  your SMTP server.
 
 ### TLS/SSL Errors
 

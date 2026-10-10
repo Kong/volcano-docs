@@ -46,8 +46,9 @@ It cannot:
 - **Touch another project.** Presenting it on a different project's route returns `403`.
 - **Act on your account.** Listing your projects, creating a project, billing, and every other account-scoped endpoint returns `403`.
 - **Manage project access tokens.** Creating, listing, reading, and revoking tokens all require a platform token.
+- **Decide durable approvals.** A token of either scope can list approvals and read their statistics, but approving or denying one returns `403`. A workflow can hold a project access token, so letting one decide would let a workflow approve itself; a person decides in the dashboard or with a platform token. See [Durable approvals](../../functions/durable-approvals.md#who-can-decide).
 
-That last rule is the point of the credential. A token that can mint its replacement or delete the record of its own use is not meaningfully scoped, so a leaked CI secret or a prompt-injected agent cannot clone itself or erase its tracks.
+The token-management rule is the point of the credential. A token that can mint its replacement or delete the record of its own use is not meaningfully scoped, so a leaked CI secret or a prompt-injected agent cannot clone itself or erase its tracks.
 
 A project access token can read its own request counts, which is enough to monitor itself. The usage endpoints return only its own row; the project-wide view, listing every token by name, requires a platform token.
 
@@ -156,6 +157,7 @@ Every day in the window is present, so a gap reads as `0` rather than going miss
 | Query data, invoke functions | No | No | Limited by permissions | Yes, bypasses RLS |
 | Create or delete projects | Yes | No | No | No |
 | Manage project access tokens | Yes | No | No | No |
+| Decide durable approvals | Yes | No, reads only | No | No |
 | Safe in frontend code | Never | Never | Yes | Never |
 | Comes from | `volcano login` or the dashboard | `POST /projects/{id}/access-tokens` | Created with the project | `POST /projects/{id}/service-keys` |
 | Readable after creation | — | No, shown once | Yes | Yes |

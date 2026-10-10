@@ -136,10 +136,11 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/frontends/$FRONTEND_I
   }'
 ```
 
-For a hostname this account has not claimed, the create response starts in
-`pending_verification` and includes a tenant-specific TXT ownership challenge in
-`verification_records`. Volcano omits that challenge when the same account
-reuses a hostname it has claimed.
+The create response starts in `pending_verification` and names the record to
+publish in `verification_records`. When your account already owns the
+hostname's domain, that is the certificate validation CNAME, shown after the
+polling example below. Otherwise it is a tenant-specific TXT ownership
+challenge for the hostname's registrable domain:
 
 ```json
 {
@@ -149,7 +150,7 @@ reuses a hostname it has claimed.
   "verification_status": "pending",
   "verification_records": [
     {
-      "name": "_volcano.app.example.com",
+      "name": "_volcano.example.com",
       "type": "TXT",
       "value": "volcano-domain-verification=0123456789abcdef0123456789abcdef"
     }
@@ -178,7 +179,7 @@ another account holds an unverified reservation, a managed TLS create returns
   "error": "custom domain is reserved by another account until its ownership is verified",
   "code": "ownership_verification_required",
   "required_record": {
-    "name": "_volcano.app.example.com",
+    "name": "_volcano.example.com",
     "type": "TXT",
     "value": "volcano-domain-verification=fedcba9876543210fedcba9876543210"
   }
@@ -192,20 +193,19 @@ key are publicly trusted for the hostname replaces such a reservation the same
 way. Self-signed and private-CA certificates are accepted only for hostnames no
 other account has claimed, and they never replace a reservation.
 
-Once the TXT proof succeeds, the hostname stays claimed to that Volcano account,
-including after the domain is deleted. After verification succeeds you can
-delete the `_volcano` TXT record; Volcano checks it only once, and the claim does
-not depend on it. Keep the certificate validation CNAME, which issuance and
-renewal use. The same account can reuse the hostname in another project without
-repeating the TXT proof. Other accounts receive `409` for both
-managed TLS and BYOC requests for that hostname. A claimed hostname is never
-taken over; to move one to another account, contact Volcano support. BYOC
-domains are never taken over either, including ones created with a self-signed
-certificate before any account claimed the hostname.
+Once the TXT proof succeeds, your account owns the registrable domain and every
+hostname below it, including after the custom domain is deleted. The same
+account can attach those hostnames in any project without another record, and
+other accounts receive `409` for both managed TLS and BYOC requests. Keep the
+`_volcano` TXT record published: the domain moves to another account only once
+DNS serves that account's record and stops serving yours. See
+[Move a domain to another account](../frontends/domain-verification.md#move-a-domain-to-another-account).
+Custom domains already attached keep serving after a move. BYOC domains are
+never taken over, including ones created with a self-signed certificate before
+any account claimed the hostname.
 
-After adding the TXT record, or immediately when Volcano does not require one,
-poll the domain endpoint for the certificate validation CNAME. Stop early if
-provisioning fails:
+After adding the TXT record, poll the domain endpoint for the certificate
+validation CNAME. Stop early if provisioning fails:
 
 ```bash
 deadline=$((SECONDS + 300))
@@ -231,8 +231,9 @@ fi
 jq . <<<"$DOMAIN_RESPONSE"
 ```
 
-After Volcano verifies or recognizes ownership, `verification_records` changes
-to the certificate validation CNAME:
+Once Volcano verifies ownership, `verification_records` changes to the
+certificate validation CNAME. A create for a hostname your account already owns
+returns it right away:
 
 ```json
 {
@@ -258,9 +259,8 @@ to the certificate validation CNAME:
 
 Create the CNAME and keep it in DNS so Volcano can issue and renew the
 certificate. Issuance can wait in a queue when many domains are added together.
-You can remove the earlier `_volcano` TXT record after the CNAME
-appears. Point your hostname at `routing_target_hostname` separately to send
-traffic to the frontend.
+Keep the `_volcano` TXT record too. Point your hostname at
+`routing_target_hostname` separately to send traffic to the frontend.
 
 Behavior:
 - Configures one custom domain per frontend on every plan.

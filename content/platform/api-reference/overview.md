@@ -292,10 +292,17 @@ See [Functions](functions.md) for details.
 | `DELETE` | `/projects/{id}/durable-functions/{functionId}/schedulers/{schedulerId}` | Delete a schedule |
 | `GET` | `/projects/{id}/schedulers?function_kind=durable` | List every durable function's schedules in the project |
 | `GET` | `/projects/{id}/deployments?function_kind=durable` | List every durable function's deployments in the project |
+| `GET` | `/projects/{id}/durable-approvals` | List approvals workflows requested |
+| `GET` | `/projects/{id}/durable-approvals/stats` | Count approvals by outcome, workflow, and day |
+| `GET` | `/projects/{id}/durable-approvals/{approvalId}` | Get an approval |
+| `POST` | `/projects/{id}/durable-approvals/{approvalId}/approve` | Approve a pending approval; a person only |
+| `POST` | `/projects/{id}/durable-approvals/{approvalId}/deny` | Deny a pending approval; a person only |
+| `POST` | `/durable-approvals` | Register an approval request; called by the SDK from inside a workflow, not by applications |
 
 Durable functions are a separate collection: a standard function's id is `404`
 here, and a durable function's id is `404` under `/projects/{id}/functions`. See
-[Durable functions](../functions/durable-functions.md) for details.
+[Durable functions](../functions/durable-functions.md) for details, and
+[Durable approvals](../functions/durable-approvals.md) for the approval endpoints.
 
 ### Frontends
 

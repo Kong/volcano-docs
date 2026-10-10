@@ -68,7 +68,7 @@ curl "$VOLCANO_API_URL/projects/$PROJECT_ID/sandbox-sessions" \
 {
   "id": "7cdbb4e3-0419-574e-8017-705734ae8d76",
   "project_id": "8b1ec799-b9dd-4db0-8466-486d57d166f1",
-  "sandbox_id": "7cdbb4e3-0419-574e-8017-705734ae8d76",
+  "sandbox_id": null,
   "region": "us-east-1",
   "memory_mb": 1024,
   "state": "starting",
@@ -115,28 +115,40 @@ termination or grant revocation.
 ## Choose lifetime and memory
 
 Supply exactly one of `preset` or `sandbox_id` when creating or executing.
+A preset starts a session directly without creating a template; the returned
+`sandbox_id` is `null`. Sessions created from an explicit template return its ID.
 Presets support `1024` and `2048` MB; omitted memory selects `1024` MB. Named
 Sandboxes retain their selected memory for both sessions and one-shot executions
 when `memory_mb` is omitted. A conflicting override is rejected.
 
 | Field | Behavior |
 | --- | --- |
-| `max_duration_seconds` | Inherits the template TTL when omitted (3600 for a new template); 30–28800 seconds, further bounded by environment capacity policy. Absolute expiry also applies while suspended. |
-| `idle_timeout_seconds` | Inherits the template idle timeout when omitted, capped at the session duration. Explicit 0 disables idle termination. Explicit values cannot exceed maximum duration. |
-| Command `timeout_seconds` | Defaults to 60. Up to 60 for one-shot execution or 3600 within a session. Connection setup, result delivery, and one-shot provisioning and cleanup have separate budgets; set the client timeout to at least 180 seconds. |
+| `max_duration_seconds` | VM lifetime, including startup. Inherits the template TTL when omitted. Cloud defaults to 3600 seconds and accepts 30–28800 seconds, bounded by capacity policy. Local defaults to 0 (unlimited), also accepts positive lifetimes, and has no cloud eight-hour limit. Explicit 0 overrides a finite local template TTL. |
+| `timeout_seconds` | Command execution time, starting when the process runs. Cloud defaults to 60 seconds and accepts 1–28800 seconds. Local defaults to 0 (unlimited) and also accepts positive limits without the cloud limit. A finite VM expiry always takes precedence. |
 
-Active commands and authenticated proxy connections hold idle activity within
-the absolute expiry. Suspend retains reserved capacity. `429` indicates no
+Unlimited local sessions return `expires_at: null`. A finite expiry also applies
+while suspended. One-shot execution always requests termination after the command
+finishes, even when its configured lifetime is unlimited.
+
+Startup and network time do not consume the command timeout, but they do consume
+the VM lifetime and can incur usage. Cloud command responses are synchronous.
+The public connection closes after 1000 seconds without a response, even with a
+longer client timeout. For longer
+work, create a session, start a background process, and poll its status or files
+with short requests. Local mode has no cloud connection limit. A client disconnect
+does not prove that a VM has stopped; one-shot cancellation
+records termination intent for the worker. Activity never extends VM expiry.
+
+Suspend retains reserved capacity. `429` indicates no
 capacity is available; an uncertain termination does not free capacity.
 
-One-shot commands have a one-minute execution limit, with separate connection setup, result delivery,
-provisioning, and cleanup budgets. A successful response follows confirmed termination. Use a session
-for longer work or a service that must remain available.
-
-One-shot execution manages its own lifetime and does not inherit the template
-TTL or idle timeout. A one-shot command timeout returns `504`; retrying its key returns `409`
-because no completed result was stored. A session command timeout instead
-returns execution data with `timed_out: true`.
+A successful one-shot response follows confirmed VM termination. Use a session
+when several commands should share a workspace or a service must remain available.
+Both modes inherit the template TTL when `max_duration_seconds` is omitted.
+A one-shot command timeout returns `504`; retrying its key returns `409`
+because no completed result was stored. A session command reaching its command
+timeout returns execution data with `timed_out: true`. If the VM lifetime expires
+first, the command returns `504` instead.
 
 ## Retry without repeating a command
 
@@ -290,7 +302,8 @@ handover or project source export. Even with `LOCAL_MODE_GIT_DEPLOY_WORKER=true`
 the local Git worker deploys Functions and frontends only; it does not discover
 or deploy Sandbox directories. Deploy local custom Sandboxes through the API or CLI.
 
-Local sessions last at most one hour. Suspending pauses the container and
+Local sessions and commands default to unlimited time. Set either time field to
+a positive value to limit it; the cloud eight-hour limit does not apply. Suspending pauses the container and
 retains its memory and files. Stopping or restarting the local server, restarting
 the Sandbox service, or running `volcano reset` terminates existing sessions.
 Local mode supports up to four sessions per owner and 8 GiB of total reserved
@@ -440,6 +453,9 @@ up to 1,000 entries. Read each deployment region separately.
 
 Download the retained source with
 `GET /projects/{id}/sandboxes/{sandboxId}/deployments/{deploymentId}/source`.
-An active custom deployment returns the original tar.gz bytes, without injected
-platform files. Project source export includes custom templates under
-`volcano/sandboxes/<name>/` using the same immutable source version.
+A successfully activated custom deployment returns the original tar.gz bytes,
+without injected platform files. Its source remains available after a newer
+deployment activates and after its old runtime images are reclaimed, while the
+template remains available to your project. Project source export includes only
+each custom template’s active deployment under `volcano/sandboxes/<name>/`, using
+the same immutable source version.

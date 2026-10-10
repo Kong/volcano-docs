@@ -163,6 +163,28 @@ removed from `GET /projects`. `GET /projects/{id}` continues to show
 
 **Warning:** Deletes all frontends, functions, databases, auth users, tokens, and variables in the project.
 
+## Manage Variable Environments
+
+Every Project has one reserved Global variable Environment. Create additional
+named Environments:
+
+```http
+POST /projects/{id}/variable-environments
+Authorization: Bearer <platform_token>
+Content-Type: application/json
+
+{"name":"Staging"}
+```
+
+Use `GET /projects/{id}/variable-environments` to list them and
+`GET /projects/{id}/variable-environments/{environmentId}` to read one. Rename a
+custom Environment with `PATCH` and delete a custom Environment with `DELETE`.
+Names are case-insensitively unique. Global cannot be renamed or deleted;
+deleting it returns `409`.
+
+See [Variable Environments](../projects/variable-environments.md) for naming and
+lifecycle behavior.
+
 ## Export Project Configuration
 
 ```http

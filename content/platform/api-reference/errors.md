@@ -96,6 +96,15 @@ activity, log streaming, metrics query — are allowed.
 {"error": "project access tokens cannot manage project access tokens; use a platform token"}
 ```
 
+**403 - Durable Approval Decision:**
+```json
+{"error": "project access tokens cannot decide durable approvals; a person decides in the dashboard or with a platform token"}
+```
+
+Returned when a `full` token approves or denies a [durable
+approval](../functions/durable-approvals.md#who-can-decide). A `read_only` token
+gets the read-only message instead. Both can still list and read approvals.
+
 **404 - Token Not Found:**
 ```json
 {"error": "project access token not found"}
@@ -170,8 +179,9 @@ This occurs when using an old anon key JWT after the key has been regenerated. T
 
 ### Rate Limiting
 
-Only the user authentication endpoints are rate limited per project and client
-IP, and only they send `X-RateLimit-*` headers.
+The user authentication endpoints are rate limited per project and client IP,
+and only they send `X-RateLimit-*` headers. Durable starts, project locks, and
+durable approval requests have limits of their own, described in their sections.
 
 **429 - Rate Limited:**
 ```json
@@ -311,6 +321,54 @@ Durable execution is not available here. The capability is paused, or this
 deployment cannot serve it — either way the request is not one to retry in a
 loop.
 
+### Durable approval errors
+
+Approving or denying a [durable approval](../functions/durable-approvals.md)
+that can no longer take that decision returns `409` with a `code`:
+
+```json
+{"error": "approval already decided", "code": "approval_decided"}
+```
+
+- `approval_decided` — it was already decided the other way. Repeating the
+  same decision is not an error; it returns the approval with `200`.
+- `approval_expired` — its timeout passed first, and the workflow resumed with
+  an `expired` decision.
+- `approval_cancelled` — its execution ended before anyone decided.
+
+None of them clears on retry. An approval id that does not exist in the project
+answers `404` with `durable approval not found`.
+
+A workflow's own request for an approval, sent by `ctx.waitForApproval`, has
+refusals of its own. The SDK retries `404`, `429`, every `5xx`, and
+`approval_not_ready` for about 30 seconds, and fails the call on the rest:
+
+**409 - Request refused:**
+```json
+{"error": "too many pending approvals for this execution", "code": "too_many_pending_approvals"}
+```
+
+- `approval_not_ready` — the request reached Volcano before the workflow
+  finished opening it. Retried.
+- `approval_closed` — the approval's deadline already passed. Not an error:
+  `waitForApproval` resolves with an `expired` decision.
+- `execution_ended` — the execution has finished.
+- `too_many_pending_approvals` — the execution already has 100 approvals
+  pending.
+
+**429 - Too many approval requests:**
+```json
+{"error": "too many approval requests, try again later"}
+```
+
+The limit is 600 requests an hour per execution. A sending address is also
+refused for the rest of the hour after 6,000 requests that registered nothing. It carries no `X-RateLimit-*` headers.
+
+**503 - Not confirmed:**
+```json
+{"error": "the approval could not be confirmed with the workflow; retry with backoff"}
+```
+
 ### Project lock errors
 
 Project lock errors include stable codes:
@@ -335,6 +393,21 @@ three different things, so branch on `code` rather than the message text:
   Revoke one you no longer use.
 - `project_deleting` (`409`) — the project is being deleted, so its tokens can
   no longer be changed. Raised on any project write, not only these endpoints.
+
+Variable Environment errors also include stable codes. Branch on `code` when
+the same status can describe more than one condition:
+
+- `invalid_variable_environment` (`400`) — the name is the reserved `Global`
+  name. Other schema-invalid names return the generic invalid-request `400`
+  without a stable code.
+- `variable_environment_conflict` (`409`) — another Environment in the Project
+  already has that name, compared case-insensitively.
+- `variable_environment_limit_reached` (`409`) — the Project already has 100
+  custom Environments; Global does not count toward the cap.
+- `variable_environment_immutable` (`409`) — the request tried to rename or
+  delete Global.
+- `project_deleting` (`409`) — the Project is being deleted, so its
+  Environments can no longer be changed.
 
 ## Error Handling
 
@@ -408,4 +481,3 @@ async function apiCallWithRetry(url, options, maxRetries = 3) {
 - [Authentication](authentication.md) - Auth headers and tokens
 - [Using the API](using-the-api.md) - Working through these errors in a real workflow
 - [Project access tokens](../authentication/security/project-access-tokens.md) - Scopes, revocation, and limits
-

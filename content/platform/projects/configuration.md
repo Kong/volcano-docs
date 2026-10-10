@@ -561,15 +561,14 @@ sandboxes:
     memory_mb: 1024
     ports: [8080]
     ttl_seconds: 3600
-    idle_timeout_seconds: 300
 ```
 
 `config deploy --dry-run` previews changes. Applying updates the default lifetime
-and idle timeout for newly created sessions; existing sessions keep their original
-limits. An explicit session timeout overrides the template default. Set
-`idle_timeout_seconds: 0` to disable idle expiry. The idle timeout must not exceed
-`ttl_seconds`; lifetime is 30–28,800 seconds, subject to the environment's session
-limit. Local sessions have a one-hour maximum.
+for newly created sessions; existing sessions keep their original lifetime.
+An explicit session `max_duration_seconds` overrides the template default.
+Cloud lifetime is 30–28,800 seconds, subject to the environment's session limit.
+Local lifetime defaults to zero (unlimited); positive values impose a limit
+without the cloud eight-hour limit. Local commands also default to unlimited.
 
 `memory_mb` (1024 or 2048) and `ports` describe the deployed image. Config apply
 asserts these values and reports a validation error if they differ; deploy the
