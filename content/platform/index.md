@@ -45,11 +45,12 @@ Agents and APIs in Node.js, Python, or Ruby, invoked over HTTP and deployed to t
 
 ### Durable functions
 
-JavaScript or Python workflows that checkpoint each step and resume for up to a year, with waits, retries, idempotent starts, and cron schedules.
+JavaScript or Python workflows that checkpoint each step and resume for up to a year, with waits, retries, approvals, idempotent starts, and cron schedules.
 
 | Guide | Description |
 |-------|-------------|
 | [Durable functions](functions/durable-functions.md) | Long-running work that checkpoints and resumes |
+| [Durable approvals](functions/durable-approvals.md) | Pause a workflow until a person approves or denies it |
 | [Developing durable functions locally](guides/durable-functions-locally.md) | Run one on your machine, then deploy it unchanged |
 
 ### Databases
@@ -141,6 +142,7 @@ Next.js, static or server-rendered, served from the edge. A failed build never r
 | [Deploy from GitHub](projects/git-deploy.md) | Connect a repo and deploy on every push to the production branch |
 | [Export your source to GitHub](projects/export-to-git.md) | Initialize an empty repository with a project's stored source and deploy it from Git |
 | [Configuration manifest](projects/configuration.md) | Declarative `volcano-config.yaml` reference (config deploy/pull) |
+| [Variable Environments](projects/variable-environments.md) | Create and manage Project variable Environments |
 
 ## API reference
 

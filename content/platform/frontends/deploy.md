@@ -221,11 +221,13 @@ volcano cloud config deploy
 volcano cloud frontends domain get my-site
 ```
 
-If Volcano returns a `_volcano` TXT record, add it within 72 hours to prove
-hostname ownership. Volcano then returns the certificate validation CNAME;
-add that CNAME and keep it in DNS for renewal. You can remove the TXT record
-after the CNAME appears. If ownership verification expires, Volcano removes the
-domain; once it is gone, submit it again for a new challenge. Certificate
+If your account already owns the domain, Volcano returns the certificate
+validation CNAME right away. Otherwise it returns a `_volcano` TXT record; add
+it within 72 hours to prove ownership, and Volcano then returns the CNAME. Add
+the CNAME and keep it in DNS for renewal. Keep the TXT record too: the domain
+moves to another account only once DNS stops serving it. If ownership
+verification expires, Volcano removes the domain; once it is gone, submit it
+again for a new challenge. Certificate
 validation also expires after 72 hours.
 If setup fails with `failure_reason: certificate`, check the validation CNAME,
 delete the failed domain, wait for deletion to finish, and submit it again.
@@ -234,8 +236,9 @@ An `ownership` failure means another account has already claimed the hostname;
 retrying under the same account will not resolve that conflict.
 If another account has only reserved the hostname, deploying the domain to a
 frontend without one reports the `_volcano` TXT record your account must
-publish. Add it and deploy again to take over the reservation; a claimed
-hostname is never taken over.
+publish. Add it and deploy again to take over the reservation. A verified
+domain moves only as described in
+[Move a domain to another account](domain-verification.md#move-a-domain-to-another-account).
 
 If a live domain's certificate becomes unavailable, the domain returns to
 `pending_verification`, with `verification_status: pending`, while Volcano

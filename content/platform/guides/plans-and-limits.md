@@ -54,7 +54,7 @@ counts toward your account's monthly allowances.
 | Limit | HOBBY | SUPERAGENT | Scope |
 |---|---|---|---|
 | Execution allowance | 5,000 / month | 10,000 / month | Combined across all your projects; every start, including a retry you start yourself |
-| Operation allowance | 100,000 / month | 200,000 / month | Combined across all your projects; the execution itself plus every step, retry, wait, condition poll, parallel branch and nested invocation it begins |
+| Operation allowance | 100,000 / month | 200,000 / month | Combined across all your projects; the execution itself plus every step, retry, wait, condition poll, parallel branch and nested invocation it begins. An approval is three operations |
 | Compute allowance | 10,000 GB-s / month | 100,000 GB-s / month | Combined across all your projects; memory × time your code is actually running, summed over every resume. Time suspended in a wait is not charged |
 | Memory | 128 MB | 1 GB | Per execution, and the size its compute is charged at. Set by your plan, not per function |
 | Step timeout | 300 s | 900 s | One attempt between checkpoints, not the whole execution |
@@ -64,6 +64,9 @@ counts toward your account's monthly allowances.
 | Durable functions per project | 10,000 | 10,000 | Absolute hard cap, counted separately from standard functions |
 | Schedulers | Unavailable | 100 | Per project, shared with standard function schedulers |
 | Runtimes kept ready | Not kept ready | Same | Durable functions are started, not called |
+| [Pending approvals](../functions/durable-approvals.md) | 100 | 100 | Per execution, waiting at once |
+| Approval requests | 600 / hour | 600 / hour | Per execution; also 6,000 refused requests / hour per sending address |
+| Approval history | 1 year | 1 year | From the request, independent of result retention; kept after the function is deleted, removed with the project |
 
 Execution timeout and retention are the same on both plans on purpose: they are fixed when the function is created, so a plan change never leaves an existing function configured for limits its plan no longer allows. The timeout is set as high as it goes for the same reason — what actually bounds an execution is its 3,000 operations and your concurrent-execution cap, not the clock.
 
@@ -150,6 +153,12 @@ deletion to complete before creating its replacement.
 | [Project access tokens](../api-reference/using-the-api.md) per project | 100 | 100 | Safety hard cap, counts only tokens that can still authenticate |
 
 Revoked and expired tokens do not count against it, so cycling short-lived tokens never fills the allowance.
+
+## Variables
+
+| Limit | HOBBY | SUPERAGENT | Scope |
+|---|---|---|---|
+| Custom variable Environments per project | 100 | 100 | Safety hard cap; Global is not counted |
 
 ## Authentication
 

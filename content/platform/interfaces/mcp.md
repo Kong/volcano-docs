@@ -4,7 +4,8 @@ description: "Connect an AI agent to one Volcano project over the Model Context 
 ---
 
 Volcano hosts a Model Context Protocol (MCP) server, so an agent in your editor
-can inspect a project — its functions, frontends, deployments, and logs — and,
+can inspect a project — its functions, frontends, deployments, logs, and the
+approvals its durable workflows are waiting on — and,
 with a full-scope token, change it.
 
 It takes the same project access token as the REST API, over one endpoint:
@@ -163,9 +164,13 @@ A **platform token (`pk-`) is refused with `403`.** The endpoint takes its proje
 | `list_frontends` | `read_only` | Lists the project's frontends, with status, live URLs, and function routes | `GET /projects/{id}/frontends` |
 | `list_deployments` | `read_only` | Lists recent deployments, newest first | `GET /projects/{id}/deployments` |
 | `search_logs` | `read_only` | Searches the project's logs | `POST /projects/{id}/logs/search` |
+| `list_durable_approvals` | `read_only` | Lists the approvals durable workflows are waiting on or have had decided, newest first | `GET /projects/{id}/durable-approvals` |
+| `get_durable_approval_stats` | `read_only` | Counts durable approvals by outcome, workflow, and day, with the approval rate and time to decision | `GET /projects/{id}/durable-approvals/stats` |
 | `list_capabilities` | `read_only` | Lists which capabilities, such as Sandboxes, accept new work in this environment | `GET /capabilities` |
+| `list_variable_environments` | `read_only` | Lists the project's variable Environments | `GET /projects/{id}/variable-environments` |
 | `list_databases` | `full` | Lists the project's databases. Returns connection strings | `GET /projects/{id}/databases` |
 | `set_variable` | `full` | Creates or updates an environment variable | `POST /projects/{id}/variables` |
+| `create_variable_environment` | `full` | Creates a custom variable Environment | `POST /projects/{id}/variable-environments` |
 
 Arguments are not listed here, because they are not defined here. Each tool's
 input schema is generated from the API's OpenAPI specification for the endpoint
@@ -180,7 +185,11 @@ That includes the shapes an argument could not otherwise be guessed from. The
 with each variant and its `type` value spelled out, so an agent can construct
 `{"resource": {"type": "function"}, "limit": 20}` from the schema alone.
 
-Scope is enforced by the same rules as the REST API. A `read_only` token is not shown the `full` tools in `tools/list`, and is refused if it calls one anyway — `set_variable` because it writes, `list_databases` because it hands back a credential that keeps working after the token is gone. A `full` token sees all nine.
+Scope is enforced by the same rules as the REST API. A `read_only` token is not
+shown the `full` tools in `tools/list`, and is refused if it calls one anyway —
+`set_variable` and `create_variable_environment` because they write, and
+`list_databases` because it hands back a credential that keeps working after the
+token is gone. A `full` token sees all thirteen tools.
 
 ## Call a tool
 
@@ -240,6 +249,8 @@ Results are capped at 64 KiB. Past that the text ends with a note saying it was 
 A project access token is a control-plane credential. It deploys and configures; it does not read your users' data or run your code. So there is no tool to invoke a function or query a database — those need a service key or an anon key, which are data-plane credentials the agent should not be holding. See [Service keys](../authentication/security/service-keys.md).
 
 The rest of the boundary comes from the credential itself, and is the same over MCP as over HTTP: no other project, no account-level action, and no managing project access tokens — an agent cannot mint its replacement or erase the record of what it did. See [Project access tokens](../authentication/security/project-access-tokens.md).
+
+Nor can it approve or deny a durable approval. An agent can list what workflows are waiting on, but a decision takes a person, in the dashboard or with a platform token, and the approve and deny endpoints refuse a project access token. See [Durable approvals](../functions/durable-approvals.md#who-can-decide).
 
 ## Revoke access
 

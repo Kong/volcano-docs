@@ -552,13 +552,14 @@ volcano cloud config deploy
 volcano cloud frontends domain get my-site
 ```
 
-If your account has not verified the domain, the response's
-`verification_records` names a `_volcano` TXT record for the hostname's
-registrable domain, such as `_volcano.example.com` for `app.example.com`.
-Publish it; Volcano holds the hostname for your account while it waits. Once
-the account owns the domain, Volcano returns a certificate validation CNAME;
-add that CNAME and keep it in DNS for issuance and renewal. Keep the TXT record
-too: the domain moves to another account only once DNS stops serving it.
+If your account already owns the domain, the response's `verification_records`
+names the certificate validation CNAME right away. Otherwise it names a
+`_volcano` TXT record for the hostname's registrable domain, such as
+`_volcano.example.com` for `app.example.com`. Publish it; Volcano holds the
+hostname for your account while it waits. Once the account owns the domain,
+Volcano returns the CNAME instead. Add the CNAME and keep it in DNS for issuance
+and renewal. Keep the TXT record too: the domain moves to another account only
+once DNS stops serving it.
 Volcano cannot yet switch a BYOC domain to managed TLS in place. To keep the
 hostname, delete the BYOC domain and declare it again with `tls.mode: managed`;
 HTTPS for the hostname is unavailable until the managed certificate is issued.

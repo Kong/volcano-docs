@@ -776,7 +776,7 @@ Sending `subject` alone (no body) is rejected.
 
 **Responses:**
 - `200` — `{"success": true}` on delivery
-- `400` — invalid `to_email`, or `email_enabled=false` / `smtp_host` empty, or `subject` without a body
+- `400` — invalid `to_email`, or `email_enabled=false` / `smtp_host` empty, or the saved `smtp_password` can't be read (set it again), or `subject` without a body
 - `403` — caller is not the project owner
 - `404` — project not found
 - `502` — template render failure or SMTP delivery failed (message includes the SMTP-level reason)
