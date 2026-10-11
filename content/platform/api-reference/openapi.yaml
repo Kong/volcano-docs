@@ -16246,6 +16246,10 @@ components:
           type: integer
           description: Refresh token lifetime in seconds
           default: 2592000
+        refresh_token_reuse_interval:
+          type: integer
+          description: A refresh within this many seconds of the refresh token being issued returns the same refresh token instead of rotating it, so concurrent refreshes from several tabs all succeed
+          default: 10
         inactivity_timeout:
           type: integer
           description: Force re-login after inactivity (seconds, 0=never)
@@ -16294,6 +16298,10 @@ components:
           type: integer
           description: Refreshes per hour per IP
           default: 1000
+        rate_limit_password_reset:
+          type: integer
+          description: Password reset requests per hour per IP. Unlike the other limits, 0 applies the default of 10 instead of turning the limit off.
+          default: 10
         cors_enabled:
           type: boolean
           default: false
@@ -16430,6 +16438,12 @@ components:
             the built-in managed device page. Lets a CLI surface the project's
             own RFC 8628 approval page. Empty falls back to the managed page.
           example: https://app.acme.com/device
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
       required:
         - password_policy
     AuthInsightsInterval:
@@ -21264,9 +21278,14 @@ components:
           type: string
           maxLength: 4000
         details:
+          x-go-type: json.RawMessage
+          x-go-type-skip-optional-pointer: true
           description: |
-            Any JSON value to show the person deciding. The whole request is
-            limited to 64 KiB.
+            Any JSON value to show the person deciding. A number's exponent must
+            be between -324 and 324, and a number too large or too precise to
+            store is refused with `400`. Numbers are read back written out in
+            full, so the exponents' absolute values may total at most 65,536.
+            The whole request is limited to 64 KiB.
       required:
         - execution_ref
         - callback_id
@@ -23409,10 +23428,17 @@ components:
           type: integer
         refresh_token_lifetime:
           type: integer
+        refresh_token_reuse_interval:
+          type: integer
         inactivity_timeout:
           type: integer
         max_session_duration:
           type: integer
+        platform_token_ttl:
+          type: integer
+          description: TTL in seconds for platform tokens minted via `/auth/platform/exchange`. From 3600 (1 hour) to 31536000 (365 days).
+          minimum: 3600
+          maximum: 31536000
         min_password_length:
           type: integer
           minimum: 15
@@ -23437,6 +23463,19 @@ components:
           type: integer
         rate_limit_token_refresh:
           type: integer
+        rate_limit_password_reset:
+          type: integer
+          description: Password reset requests per hour per IP. Unlike the other limits, 0 applies the default of 10 instead of turning the limit off.
+        cors_enabled:
+          type: boolean
+        cors_allowed_origins:
+          type: array
+          description: Replaces the allowed origins list.
+          items:
+            type: string
+          example:
+            - https://myapp.com
+            - http://localhost:3000
         cors_allow_credentials:
           type: boolean
         cors_max_age:

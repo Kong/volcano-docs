@@ -480,9 +480,8 @@ credential and are removed before your code runs, so a selected variable with
 either name never reaches it. Nothing else is set for you. Even the project's
 `DATABASE_URL` is a variable you create and select.
 
-Local mode differs: the frontend reads its variables only when it starts, gets
-no `VOLCANO_FRONTEND_*` names, and also sees the local server's own
-environment, so do not rely on a variable you did not select being unset there.
+Local mode differs: the frontend reads its variables only when it starts and
+gets no `VOLCANO_FRONTEND_*` names.
 
 A deploy that selects a name the project does not define is rejected before
 anything builds. The deploy endpoint answers `400` with an `error` that ends in
