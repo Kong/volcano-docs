@@ -322,6 +322,7 @@ Deleting the project deletes its approvals.
 | Approval requests | 600 per hour per execution, and 6,000 refused requests per hour per sending address |
 | `title` / `description` / `name` | 200 / 4,000 / 237 characters, `name` in printable ASCII |
 | Request size, details included | 64 KiB |
+| Exponents of numbers in `details` | -324 to 324 each, with absolute values totaling at most 65,536 |
 | Comment | 2,000 characters |
 | Timeout | 1 second to 366 days |
 | History | 1 year |
@@ -349,7 +350,7 @@ Errors `waitForApproval` can raise inside the workflow, when Volcano refuses the
 
 | Status | `code` | When |
 |---|---|---|
-| `400` | | The request is invalid, such as text containing a NUL character |
+| `400` | | The request is invalid, such as text containing a NUL character, a number in `details` too large or too precise to store, or exponents in `details` totaling more than 65,536 |
 | `404` | | No running durable execution Volcano started matches the request. Retried, because a new execution can take a moment to appear |
 | `409` | `approval_not_ready` | Volcano cannot see the execution waiting yet. Retried |
 | `409` | `execution_ended` | The execution has finished |
