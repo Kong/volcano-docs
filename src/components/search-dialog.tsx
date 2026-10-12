@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useDocsSearch } from "fumadocs-core/search/client";
 import type { SearchClient } from "fumadocs-core/search/client";
 import { fetchClient } from "fumadocs-core/search/client/fetch";
@@ -14,9 +15,14 @@ import {
   SearchDialogOverlay,
   type SharedProps,
 } from "fumadocs-ui/components/dialog/search";
-import { searchIndexClient } from "@/lib/search-index-client.mjs";
+import { preloadSearchIndex, searchIndexClient } from "@/lib/search-index-client.mjs";
 
 type SearchDialogProps = SharedProps;
+
+// A single character matches most of the index, so searching it scores
+// thousands of entries for results nobody reads. Shorter input is treated like
+// an empty box.
+const MIN_QUERY_LENGTH = 2;
 
 type SearchResults = ReturnType<typeof useDocsSearch>["query"]["data"];
 
@@ -32,6 +38,18 @@ function createSearchClient(): SearchClient {
 
 const searchClient = createSearchClient();
 
+// Starts downloading and loading the index before the first query. `next dev`
+// has no static index to load.
+export function preloadSearch() {
+  if (process.env.NODE_ENV === "development") return;
+  preloadSearchIndex();
+}
+
+function searchableQuery(input: string) {
+  if (input.trim().length < MIN_QUERY_LENGTH) return "";
+  return input;
+}
+
 function listItems(results: SearchResults) {
   if (results === "empty") return null;
   return results;
@@ -40,14 +58,27 @@ function listItems(results: SearchResults) {
 // Fumadocs' default dialog, with the client swapped: its static client can
 // only fetch plain JSON.
 export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
-  const { search, setSearch, query } = useDocsSearch({ client: searchClient });
+  const [input, setInput] = useState("");
+  const { setSearch, query } = useDocsSearch({ client: searchClient });
+
+  useEffect(
+    function preloadOnOpen() {
+      if (open) preloadSearch();
+    },
+    [open],
+  );
+
+  function handleSearchChange(value: string) {
+    setInput(value);
+    setSearch(searchableQuery(value));
+  }
 
   return (
     <FumadocsSearchDialog
       open={open}
       onOpenChange={onOpenChange}
-      search={search}
-      onSearchChange={setSearch}
+      search={input}
+      onSearchChange={handleSearchChange}
       isLoading={query.isLoading}
     >
       <SearchDialogOverlay />
