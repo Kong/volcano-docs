@@ -159,7 +159,7 @@ A **platform token (`pk-`) is refused with `403`.** The endpoint takes its proje
 | Tool | Scope | What it does | Endpoint |
 |------|-------|--------------|----------|
 | `get_project` | `read_only` | Returns the project's name, status, plan, and region | `GET /projects/{id}` |
-| `get_project_usage` | `read_only` | Reads project totals and time series, including uncharged Sandbox preview metrics | `GET /projects/{id}/usage` |
+| `get_project_usage` | `read_only` | Reads project totals and time series, including Sandbox runtime, suspended time, and uncertain usage | `GET /projects/{id}/usage` |
 | `list_functions` | `read_only` | Lists the project's functions, with runtime, status, and visibility | `GET /projects/{id}/functions` |
 | `list_frontends` | `read_only` | Lists the project's frontends, with status, live URLs, and function routes | `GET /projects/{id}/frontends` |
 | `list_deployments` | `read_only` | Lists recent deployments, newest first | `GET /projects/{id}/deployments` |

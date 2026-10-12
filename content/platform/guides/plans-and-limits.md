@@ -36,6 +36,22 @@ counting toward your project limit. You can create a replacement while its
 resources are removed in the background. Previously recorded usage still
 counts toward your account's monthly allowances.
 
+## Sandboxes
+
+| Limit | HOBBY | SUPERAGENT | Scope |
+|---|---|---|---|
+| Included runtime | 5 GBh/month | 20 GBh/month | Account |
+| Additional runtime | Unavailable | 25 credits per 5 GBh | Account |
+| Baseline memory | 1 GiB | 2 GiB | Session |
+| Maximum lifetime | 1 hour | 8 hours | Session |
+| Concurrent sessions | 5 | Unlimited (100 safety ceiling) | Account |
+
+Runtime uses configured baseline memory and confirmed running time. Snapshots
+are included, suspended time is free, and automatic expansion has no surcharge.
+HOBBY exhaustion suspends running sessions and refuses starts and resumes.
+See [Sandbox pricing and usage](sandboxes.md#pricing-and-usage) for retention,
+local-mode exclusions and the preview-to-billing boundary.
+
 ## Functions
 
 | Limit | HOBBY | SUPERAGENT | Scope |
@@ -185,6 +201,11 @@ protocol error or disconnect, or a PostgreSQL error (SQLSTATE `53400`).
 
 A downgrade splits your account in two: settings are kept but stop applying,
 while resources have to be removed by you.
+
+Existing Sandbox sessions keep their original memory and expiry on downgrade.
+New sessions and resumes must fit HOBBY's baseline memory and concurrency
+limits. Running sessions are suspended when the HOBBY runtime allowance is
+exhausted; upgrading or a new cycle requires an explicit resume.
 
 ### Settings are parked, not deleted
 
