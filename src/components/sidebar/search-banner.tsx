@@ -5,12 +5,14 @@ import "./search-banner.css";
 import { useEffect, useState } from "react";
 import { useSearchContext } from "fumadocs-ui/contexts/search";
 import { SearchIcon } from "@/components/home/icons";
+import { preloadSearch } from "@/components/search-dialog";
 
 // Sidebar search box from the design: a bordered input-looking trigger that
 // opens Fumadocs' real search dialog, with an OS-aware keyboard-shortcut hint.
 // macOS uses the ⌘ symbol with no separator (⌘K); other platforms spell out
 // the modifier with a "+" (Ctrl+K). Fumadocs' actual hotkey is
-// (meta||ctrl)+K, so this hint always matches what really works.
+// (meta||ctrl)+K, so this hint always matches what really works. Pointing at
+// or focusing the box starts loading the search index before it opens.
 export function SearchBanner() {
   const { setOpenSearch, enabled } = useSearchContext();
   const [shortcut, setShortcut] = useState("⌘K");
@@ -31,6 +33,8 @@ export function SearchBanner() {
     <button
       type="button"
       onClick={openSearch}
+      onPointerEnter={preloadSearch}
+      onFocus={preloadSearch}
       aria-label="Search docs"
       className="search-banner"
     >

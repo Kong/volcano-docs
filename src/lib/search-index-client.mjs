@@ -41,6 +41,32 @@ function decodedIndexUrl(from) {
 }
 
 /**
+ * @param {string} from
+ * @param {string} query
+ */
+async function searchIndex(from, query) {
+  const pending = decodedIndexUrl(from);
+  try {
+    const [url, { oramaStaticClient }] = await Promise.all([
+      pending,
+      import("fumadocs-core/search/client/orama-static"),
+    ]);
+    try {
+      return await oramaStaticClient({ from: url }).search(query);
+    } finally {
+      // Fumadocs caches the loaded database by URL, so later queries never
+      // fetch this blob again; release the decompressed JSON it holds.
+      URL.revokeObjectURL(url);
+    }
+  } catch (error) {
+    // Fumadocs also caches a failed load by URL, so start the next query
+    // over with a fresh download and a new blob URL.
+    if (decodedIndexUrls.get(from) === pending) decodedIndexUrls.delete(from);
+    throw error;
+  }
+}
+
+/**
  * Fumadocs' Orama static client, fed the decompressed index through a blob URL.
  *
  * @param {string} [from]
@@ -49,26 +75,22 @@ function decodedIndexUrl(from) {
 export function searchIndexClient(from = SEARCH_INDEX_PATH) {
   return {
     deps: [from],
-    async search(query) {
-      const pending = decodedIndexUrl(from);
-      try {
-        const [url, { oramaStaticClient }] = await Promise.all([
-          pending,
-          import("fumadocs-core/search/client/orama-static"),
-        ]);
-        try {
-          return await oramaStaticClient({ from: url }).search(query);
-        } finally {
-          // Fumadocs caches the loaded database by URL, so later queries never
-          // fetch this blob again; release the decompressed JSON it holds.
-          URL.revokeObjectURL(url);
-        }
-      } catch (error) {
-        // Fumadocs also caches a failed load by URL, so start the next query
-        // over with a fresh download and a new blob URL.
-        if (decodedIndexUrls.get(from) === pending) decodedIndexUrls.delete(from);
-        throw error;
-      }
+    search(query) {
+      return searchIndex(from, query);
     },
   };
+}
+
+/**
+ * Downloads the index and loads it into Orama before the first query, so that
+ * query pays only for the search itself. Fumadocs loads the database only as
+ * part of a search, so this runs one: a whitespace term has no tokens, so it
+ * matches nothing and costs nothing.
+ *
+ * @param {string} [from]
+ */
+export function preloadSearchIndex(from = SEARCH_INDEX_PATH) {
+  searchIndex(from, " ").catch(function ignoreFailure() {
+    // The next real query retries the download and reports the failure.
+  });
 }
