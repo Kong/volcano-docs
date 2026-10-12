@@ -566,11 +566,16 @@ sandboxes:
 `config deploy --dry-run` previews changes. Applying updates the default lifetime
 for newly created sessions; existing sessions keep their original lifetime.
 An explicit session `max_duration_seconds` overrides the template default.
-Cloud lifetime is 30–28,800 seconds, subject to the environment's session limit.
+Cloud sessions allow 30–3,600 seconds on HOBBY and 30–28,800 seconds on
+SUPERAGENT, subject to regional capacity. Template defaults above the plan limit
+are clamped when starting a session; an explicit duration above it is rejected.
 Local lifetime defaults to zero (unlimited); positive values impose a limit
 without the cloud eight-hour limit. Local commands also default to unlimited.
 
-`memory_mb` (1024 or 2048) and `ports` describe the deployed image. Config apply
+`memory_mb` (1024 or 2048) and `ports` describe the deployed image. Running a
+2048 MiB image requires SUPERAGENT; HOBBY supports a 1024 MiB baseline. Image
+deployment and validation can succeed on HOBBY at either size, but starting a
+2048 MiB session or one-shot execution returns `sandbox_plan_limit_exceeded`. Config apply
 asserts these values and reports a validation error if they differ; deploy the
 sandbox source to rebuild an image with different values. Omitted fields preserve
 current settings. Missing templates are reported as skipped; templates absent from

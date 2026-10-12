@@ -596,7 +596,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SandboxSession'
         default:
-          description: Request refused or unavailable. Errors include invalid input (400), unauthenticated (401), forbidden (403), not found (404), conflicting retry (409), capacity exhausted (429), and temporarily unavailable (503). Code `feature_unavailable` with 404 means sandboxes are not available in this environment.
+          description: Request refused or unavailable. Errors include invalid input (400), unauthenticated (401), forbidden (403), not found (404), conflicting retry (409), capacity exhausted (429), and temporarily unavailable (503). Code `feature_unavailable` with 404 means sandboxes are not available in this environment. Code `sandbox_plan_limit_exceeded` (403) means the requested resources exceed the plan. Code `sandbox_allowance_exhausted` (429) means the remaining allowance or credits cannot admit the operation.
           content:
             application/json:
               schema:
@@ -637,7 +637,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SandboxExecutionResult'
         default:
-          description: Request refused or unavailable. Errors include invalid input (400), unauthenticated (401), forbidden (403), not found (404), conflicting retry (409), capacity exhausted (429), and temporarily unavailable (503). Code `feature_unavailable` with 404 means sandboxes are not available in this environment.
+          description: Request refused or unavailable. Errors include invalid input (400), unauthenticated (401), forbidden (403), not found (404), conflicting retry (409), capacity exhausted (429), and temporarily unavailable (503). Code `feature_unavailable` with 404 means sandboxes are not available in this environment. Code `sandbox_plan_limit_exceeded` (403) means the requested resources exceed the plan. Code `sandbox_allowance_exhausted` (429) means the remaining allowance or credits cannot admit the operation.
           content:
             application/json:
               schema:
@@ -753,7 +753,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SandboxSession'
         default:
-          description: Request refused or unavailable. Errors include invalid input (400), unauthenticated (401), forbidden (403), not found (404), conflicting retry (409), capacity exhausted (429), and temporarily unavailable (503). Code `feature_unavailable` with 404 means sandboxes are not available in this environment.
+          description: Request refused or unavailable. Errors include invalid input (400), unauthenticated (401), forbidden (403), not found (404), conflicting retry (409), capacity exhausted (429), and temporarily unavailable (503). Code `feature_unavailable` with 404 means sandboxes are not available in this environment. Code `sandbox_plan_limit_exceeded` (403) means the requested resources exceed the plan. Code `sandbox_allowance_exhausted` (429) means the remaining allowance or credits cannot admit the operation.
           content:
             application/json:
               schema:
@@ -15782,6 +15782,7 @@ components:
           type: string
           format: uuid
         memory_mb:
+          description: Baseline memory in MiB. Cloud HOBBY supports 1024; SUPERAGENT supports 1024 or 2048. Omission uses the preset or template default; a template requiring more than the plan permits is rejected. Local sessions are exempt from cloud plan limits.
           type: integer
           enum:
             - 1024
@@ -15794,7 +15795,7 @@ components:
           type: integer
           minimum: 0
           maximum: 2147483647
-          description: Inherits the template TTL when omitted (cloud default 3600 seconds; local default 0, unlimited). Cloud accepts 30–28800 seconds; local accepts 0 for unlimited or a positive lifetime.
+          description: Inherits the template TTL when omitted (cloud default 3600 seconds; local default 0, unlimited). Cloud HOBBY accepts 30–3600 seconds; SUPERAGENT accepts 30–28800 seconds. Inherited template defaults are clamped to the plan limit; explicit values above it are rejected. Local accepts 0 for unlimited or a positive lifetime.
       required:
         - region
       oneOf:
@@ -15839,6 +15840,7 @@ components:
           type: string
           format: uuid
         memory_mb:
+          description: Baseline memory in MiB. Cloud HOBBY supports 1024; SUPERAGENT supports 1024 or 2048. Omission uses the preset or template default; a template requiring more than the plan permits is rejected. Local sessions are exempt from cloud plan limits.
           type: integer
           enum:
             - 1024
@@ -15851,7 +15853,7 @@ components:
           type: integer
           minimum: 0
           maximum: 2147483647
-          description: Absolute VM lifetime including startup, bounded by environment capacity policy. Inherits the template TTL when omitted (cloud default 3600 seconds; local default 0, unlimited). Cloud accepts 30–28800 seconds; local accepts 0 for unlimited or a positive lifetime. The VM is reclaimed early when the command finishes.
+          description: Absolute VM lifetime including startup, bounded by environment capacity policy. Inherits the template TTL when omitted (cloud default 3600 seconds; local default 0, unlimited). Cloud HOBBY accepts 30–3600 seconds; SUPERAGENT accepts 30–28800 seconds. Inherited template defaults are clamped to the plan limit; explicit values above it are rejected. Local accepts 0 for unlimited or a positive lifetime. The VM is reclaimed early when the command finishes.
         command:
           type: string
           minLength: 1
@@ -20790,12 +20792,19 @@ components:
             at times the time it spent running, in megabyte-seconds; the allowance for it is
             published in gigabyte-seconds, which is 1024 of these.
             "Sandbox Running (MiB-Seconds)", "Sandbox Suspended (Seconds)", and
-            "Sandbox Uncertain (MiB-Seconds)" are preview-only usage; they do not
-            debit credits. Running reports configured memory times observed runtime,
-            not measured CPU or elastic memory consumption. Uncertain includes
-            observation gaps and unconfirmed state transitions. Suspended reports
-            duration, not snapshot size. Local sessions do not contribute.
-            Totals are rounded down after aggregating millisecond measurements.
+            "Sandbox Uncertain (MiB-Seconds)" report cloud Sandbox usage. Running
+            reports configured baseline memory times confirmed runtime, not measured
+            CPU or elastic memory consumption. For sessions admitted after the pricing
+            release, confirmed running time consumes the account's runtime allowance;
+            SUPERAGENT overage debits credits according to the account's pricing terms.
+            Suspended time and uncertain usage do not consume runtime allowance or
+            debit credits. Uncertain includes observation gaps and unconfirmed state
+            transitions. Suspended reports duration, not snapshot size; snapshot costs
+            are included in runtime pricing. Local and platform image-validation
+            sessions do not contribute. Existing preview sessions remain unbilled,
+            and preview history is never charged retroactively. Displayed totals are
+            rounded down after aggregating millisecond measurements; billing uses
+            unrounded measurements in the monthly account billing cycle.
             "Database Storage (Bytes)" is a current observed gauge,
             not a cumulative counter. It is the sum of the latest samples exposed as
             `storage_bytes` by the project's database list, so it includes what each
@@ -24118,7 +24127,7 @@ components:
           type: integer
           minimum: 0
           maximum: 2147483647
-          description: Default absolute lifetime for new sessions when the caller omits it. Cloud accepts 30–28800 seconds; local accepts 0 for unlimited or a positive lifetime.
+          description: Default absolute lifetime for new sessions when the caller omits it. Cloud templates accept 30–28800 seconds; inherited lifetimes are clamped to the session plan limit (3600 for HOBBY, 28800 for SUPERAGENT). Local accepts 0 for unlimited or a positive lifetime.
     DatabaseQueryPerformanceDatabase:
       type: object
       properties:

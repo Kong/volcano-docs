@@ -3,8 +3,9 @@ title: Sandboxes
 description: Run isolated commands and keep temporary sessions alive for files and HTTP services.
 ---
 
-Sandboxes are in preview. They are not generally available, are not part of
-any plan, and are not billed. Check whether they are available with
+Cloud Sandbox runtime is included in HOBBY and SUPERAGENT plans, with additional
+runtime billed on SUPERAGENT. See [Pricing and usage](#pricing-and-usage) for
+allowances, charges, and exemptions. Check whether Sandboxes are available with
 [`GET /capabilities`](../api-reference/overview.md#capabilities): the
 `sandboxes`, `sandboxes.sessions`, and `sandboxes.custom_templates` entries
 report each part. Where Sandboxes are not available, every Sandbox endpoint
@@ -123,7 +124,7 @@ when `memory_mb` is omitted. A conflicting override is rejected.
 
 | Field | Behavior |
 | --- | --- |
-| `max_duration_seconds` | VM lifetime, including startup. Inherits the template TTL when omitted. Cloud defaults to 3600 seconds and accepts 30–28800 seconds, bounded by capacity policy. Local defaults to 0 (unlimited), also accepts positive lifetimes, and has no cloud eight-hour limit. Explicit 0 overrides a finite local template TTL. |
+| `max_duration_seconds` | VM lifetime, including startup. Inherits the template TTL when omitted. Cloud defaults to 3600 seconds; HOBBY accepts 30–3600 seconds and SUPERAGENT accepts 30–28800 seconds. Template defaults are clamped to the plan limit; an explicitly requested duration above the plan limit is rejected. Local defaults to 0 (unlimited), also accepts positive lifetimes, and has no cloud eight-hour limit. Explicit 0 overrides a finite local template TTL. |
 | `timeout_seconds` | Command execution time, starting when the process runs. Cloud defaults to 60 seconds and accepts 1–28800 seconds. Local defaults to 0 (unlimited) and also accepts positive limits without the cloud limit. A finite VM expiry always takes precedence. |
 
 Unlimited local sessions return `expires_at: null`. A finite expiry also applies
@@ -264,8 +265,7 @@ List named Sandboxes, sessions, and deployment history with:
 Lists return `data` and `pagination`. Pass `pagination.next_cursor` as `cursor`
 and keep `limit` unchanged; the default is 10, with a maximum of 100.
 
-Sandbox usage is available as preview counters; it does not debit credits or
-enable billing.
+Cloud Sandbox runtime uses the included allowance and pricing described below.
 
 Renaming a sandbox to an existing name in the same project returns `409 Conflict`.
 
@@ -310,14 +310,54 @@ Local mode supports up to four sessions per owner and 8 GiB of total reserved
 memory. Containers share the local Docker kernel; use hosted Sandboxes when
 you need VM isolation.
 
-## Inspect preview usage
+## Pricing and usage
+
+| Limit | HOBBY | SUPERAGENT |
+| --- | --- | --- |
+| Included runtime per monthly account cycle | 5 GBh | 20 GBh |
+| Additional runtime | Unavailable | 25 credits per 5 GBh block |
+| Configured baseline memory | Up to 1 GiB | Up to 2 GiB |
+| Maximum session lifetime | 1 hour | 8 hours |
+| Concurrent sessions | 5 | Unlimited, with a 100-session safety ceiling |
+
+Runtime is configured baseline memory multiplied by confirmed running time.
+One GBh is 1 GiB running for one hour. Metering retains millisecond precision;
+rounding the displayed number does not round the charged usage. Idle running
+time counts; multiple commands in one session do not multiply the runtime.
+Automatic resource expansion is allowed and has no additional charge.
+
+Snapshot creation, restoration and retained suspended storage are included.
+Suspended time consumes neither runtime allowance nor credits. Local sessions
+and platform image-validation sessions are not billed. Existing preview
+sessions stay unbilled; sessions admitted after the pricing release are billed.
+Preview history is never charged retroactively.
+
+HOBBY exhaustion refuses starts and resumes with `429 sandbox_allowance_exhausted`.
+The worker suspends running sessions on its next allowance check. Enforcement is
+asynchronous, so observed usage can finish slightly above the allowance without
+creating HOBBY overage charges. Allowance-paused sessions are retained for up to
+one hour, bounded by their original expiry, then terminated. Resume explicitly
+after a new allowance cycle or upgrade; workloads do not restart automatically.
+Requests exceeding the plan's memory, lifetime or concurrency limit return
+`403 sandbox_plan_limit_exceeded`. Termination remains available.
+
+Platform image-validation sessions do not count toward the plan concurrency limit.
+They still reserve physical capacity; suspended customer sessions count until
+termination is confirmed.
+
+SUPERAGENT overage uses the shared credits balance and existing arrears policy.
+Unused purchased block capacity carries forward; included allowance does not.
+Account-wide billing usage appears on the billing page. The project counters
+below also expose unbilled preview and uncertain observations for diagnostics.
+
+### Inspect project runtime
 
 ```bash
 curl "$VOLCANO_API_URL/projects/$PROJECT_ID/usage" \
   -H "Authorization: Bearer $VOLCANO_TOKEN"
 ```
 
-The `metrics` array includes these preview counters. Agents can read the same
+The `metrics` array includes these runtime counters. Agents can read the same
 response with the `get_project_usage` [MCP tool](../interfaces/mcp.md):
 
 | Metric | Meaning |
@@ -326,8 +366,7 @@ response with the `get_project_usage` [MCP tool](../interfaces/mcp.md):
 | `Sandbox Suspended (Seconds)` | Observed time with the session suspended |
 | `Sandbox Uncertain (MiB-Seconds)` | Configured memory multiplied by time awaiting verification |
 
-**Preview usage does not debit credits and will not be charged retroactively.**
-These counters are not a price estimate. Running includes time between commands
+These diagnostic counters are not an invoice. Running includes time between commands
 and idle HTTP requests. Several commands in one session do not multiply its
 runtime. Paused sessions do not accumulate running usage. Local sessions do not
 contribute cloud usage.
