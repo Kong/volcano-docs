@@ -55,8 +55,11 @@ through a CNAME, including a wildcard CNAME, because the CNAME's target may
 belong to someone else.
 
 The value depends on your account and the domain, so it proves nothing for
-another account or another domain. It never changes, so the record stays valid
-for as long as you keep it published.
+another account or another domain. It stays the same until Volcano rotates the
+key it is derived from. A rotation never removes a verified domain from your
+account, and both the old and the new value prove ownership while it is under
+way. After it finishes, only the new value counts: Volcano returns it as
+`required_record` the next time a request needs a proof.
 
 You can also skip this step. Attaching a hostname that nobody owns returns the
 same `409` and `required_record`, for the hostname's registrable domain:
@@ -114,6 +117,11 @@ account's record and no longer serves the old one:
 | Only the new account's record | The domain moves to the new account. |
 | Both accounts' records | `409 Conflict`: remove the old account's record first. |
 | Only the old account's record | `409 Conflict` with the new account's `required_record`. |
+
+A record counts as the old account's only while its value is current. After a
+key rotation finishes, a record with the previous value no longer blocks a
+move, so a new account that publishes its own record in the zone takes the
+domain.
 
 Custom domains the old account already attached keep serving until it removes
 them. While the lookup of the old account's record fails, Volcano answers

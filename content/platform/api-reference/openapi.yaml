@@ -1841,13 +1841,15 @@ paths:
         Publish a TXT record named `_volcano.<domain>`, then send this request.
         Without the record, the response is `409` with
         `code: ownership_verification_required` and the `required_record` to
-        publish. Its value is the same on every request. The record must be
-        served at that name itself; a record reached through a CNAME does not
-        count.
+        publish. Its value stays the same until Volcano rotates the key it is
+        derived from. The record must be served at that name itself; a record
+        reached through a CNAME does not count.
 
         When another account verified the domain, publishing your record moves
         the domain to your account once that account's record is no longer
-        published. Keep your record published so the domain stays yours.
+        published. Keep your record published so the domain stays yours. After
+        Volcano rotates the key the value is derived from, only a record with
+        the new value counts.
 
         Verifying a domain the account already verified returns `200`.
       operationId: verifyDomain
@@ -6639,7 +6641,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '409':
-          description: Conflict - ownership not verified, custom domain owned or reserved by another account, already in use, still detaching, or frontend already has a custom domain
+          description: 'Conflict - ownership not verified, custom domain owned or reserved by another account, already in use, still detaching, or frontend already has a custom domain. While a removed domain detaches and Volcano releases it (about a minute for BYOC, a few minutes for managed TLS), adding its hostname to any frontend, or any domain to its frontend, returns `code: custom_domain_releasing` and a `Retry-After` header; send the same request again after that many seconds. A release that will not finish within a few minutes returns the conflict without `code`.'
+          headers:
+            Retry-After:
+              description: Seconds to wait before sending the same request again. Sent only with code `custom_domain_releasing`.
+              schema:
+                type: integer
           content:
             application/json:
               schema:
@@ -10575,14 +10582,22 @@ paths:
       summary: Get auth user insights
       description: |
         Returns current and deleted auth-user totals, rolling 24-hour and 30-day
-        active users, and zero-filled signup, deletion, net-growth, and successful
-        sign-in counts for an inclusive UTC date range. Weeks start on Monday.
-        Signups remain counted after deletion; net growth is signups minus
-        deletions. Deleted users contribute to active counts until their last
-        activity leaves the rolling window. Token refreshes affect active users
-        but not the sign-in series. Collection starts at deployment, with signup
-        history backfilled from accounts still present then. Earlier hard-deleted
-        accounts cannot be recovered.
+        active users, and zero-filled daily activity and account-retention counts
+        for an inclusive UTC date range. Weeks start on Monday.
+        The existing deletions series counts accounts by deletion date; net_growth
+        remains signups minus deletions and is not affected by bans.
+        The banned_users, deleted_users, and available_users fields describe the
+        current state of users registered in each bucket. Banned users exclude
+        deleted users and expired bans. Available users are signups minus
+        banned_users minus deleted_users. Unban and expiry restore availability in
+        the original signup bucket. These current-state cohorts can change after
+        the requested dates have passed, without rewriting activity counts.
+        Sign-in counts remain grouped by session creation date. Deleted users
+        contribute to active counts until their last activity leaves the rolling
+        window. Token refreshes affect active users but not the sign-in series.
+        Signup history is backfilled from accounts present when collection was
+        deployed. Accounts hard-deleted before deletion-history collection cannot
+        be recovered. Current bans require no separate event-history collection.
       operationId: getAuthInsights
       security:
         - UserToken: []
@@ -10630,6 +10645,9 @@ paths:
                     signups: 12
                     signins: 97
                     deletions: 3
+                    banned_users: 2
+                    deleted_users: 3
+                    available_users: 7
                     net_growth: 9
                     is_partial: true
         '400':
@@ -16495,6 +16513,21 @@ components:
           format: int64
           minimum: 0
           description: Successful session creations during the bucket.
+        banned_users:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Users registered in this bucket who are currently banned. Excludes deleted users, lifted bans, expired temporary bans, and internal test identities.
+        deleted_users:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Users registered in this bucket who are now deleted, counted once across soft and hard deletion. Grouped by signup date, not deletion date.
+        available_users:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Currently available users registered in this bucket (signups minus banned_users minus deleted_users). Unban or expiry restores availability in the original signup bucket. This measures account availability, not return activity.
         deletions:
           type: integer
           format: int64
@@ -16503,7 +16536,7 @@ components:
         net_growth:
           type: integer
           format: int64
-          description: Registrations minus deletions during this bucket. May be negative.
+          description: Registrations minus deletions during this bucket. May be negative. Bans do not affect this value.
         is_partial:
           type: boolean
           description: Whether the requested window or observation time clips this bucket.
@@ -16513,6 +16546,9 @@ components:
         - signins
         - is_partial
         - deletions
+        - banned_users
+        - deleted_users
+        - available_users
         - net_growth
     AuthInsightsSummary:
       type: object
@@ -19131,6 +19167,10 @@ components:
             Paths on this frontend that forward to a public function, ordered
             from most to least specific. Anyone who can load the frontend can
             reach the target function at these paths without a credential.
+        last_deployed_at:
+          type: string
+          format: date-time
+          description: Recorded completion time of the most recent deploy or redeploy with status active. Omitted when no such deployment has a recorded completion time. Site traffic, pending deployments, degraded deployments, failed deployments, and deletion do not change this value.
         last_invoked_at:
           type: string
           format: date-time
@@ -19440,7 +19480,7 @@ components:
         - type
         - value
     FrontendCustomDomainConflictError:
-      description: 'Domain ownership conflict. With `code: ownership_verification_required`, the account has not proven it owns the domain: publish `required_record` in DNS and send the same request again. The retry succeeds once Volcano can see the record. Other conflicts omit both fields.'
+      description: 'Domain ownership conflict. With `code: ownership_verification_required`, the account has not proven it owns the domain: publish `required_record` in DNS and send the same request again. The retry succeeds once Volcano can see the record. With `code: custom_domain_releasing`, a removed domain still holds the hostname or the frontend while Volcano releases it: send the same request again after the response''s `Retry-After` seconds. A release that will not finish within a few minutes is a plain conflict. Other conflicts omit both fields.'
       allOf:
         - $ref: '#/components/schemas/Error'
         - type: object
