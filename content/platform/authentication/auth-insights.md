@@ -37,6 +37,9 @@ window or the current observation time.
       "signups": 12,
       "signins": 97,
       "deletions": 3,
+      "banned_users": 2,
+      "deleted_users": 3,
+      "available_users": 7,
       "net_growth": 9,
       "is_partial": true
     }
@@ -57,9 +60,20 @@ Metric definitions:
   rewrite its signup bucket. Duplicate signup responses, OAuth linking,
   anonymous conversion, debug users and provisioned seed users do not count.
 - `deletions`: accounts deleted during the bucket, counted once across soft and
-  hard deletion. A new account using a released email is a separate signup.
-- `net_growth`: signups minus deletions in the bucket. Unlike signup and deletion
-  counts, net growth can be negative.
+  hard deletion. This remains grouped by deletion date.
+- `net_growth`: registrations minus deletions during the bucket. Bans and unbans
+  do not change this activity metric. It can be negative.
+- `deleted_users`: users registered in the bucket who are now deleted, counted
+  once across soft and hard deletion. A new account using a released email is a
+  separate signup.
+- `banned_users`: users registered in the bucket who are currently banned.
+  Deleted users, lifted bans, expired temporary bans, and internal test identities
+  are excluded. Repeating or extending a ban does not increase the count.
+- `available_users`: currently available users from the bucket's registrations:
+  `signups - banned_users - deleted_users`. Deleting a banned user moves one
+  account from `banned_users` to `deleted_users`, leaving availability unchanged.
+  Unban or expiry restores availability in the original signup bucket.
+  `total_users` remains all non-deleted accounts, including banned accounts.
 - `signins`: successful session creations during the bucket across email,
   OAuth, anonymous, and device flows. Failed authentication and token refresh do
   not count. Sign-ins by users deleted later still count. Historical sign-in
@@ -69,9 +83,21 @@ The existing `Auth Requests` metric remains separate because it also includes
 refreshes and other auth operations.
 
 Deletion history begins with deployment of deletion-history collection. Existing
-soft-deleted records are included using their recorded update timestamp. Accounts
+soft-deleted accounts are included in their signup bucket for `deleted_users`;
+`deletions` uses their recorded update timestamp as the deletion date. Accounts
 already hard-deleted, and signup counts previously subtracted by the old deletion
 policy, cannot be reconstructed. Retained deletion metrics contain only account
 and project identifiers, timestamps and flags needed for aggregation. The account
 identifier is also removed on hard deletion. Email addresses and OAuth credentials
 are not retained in these metrics.
+
+The `banned_users`, `deleted_users`, and `available_users` series show **current account
+retention by registration date**, not the number of operations on each date.
+For example, a user registered last Monday and banned today appears in Monday's
+ban count. Deleting that user switches Monday's count from banned to deleted.
+Historical buckets therefore change as account states change. This measures
+account availability, not whether users returned to use the application.
+
+Ban counts read current account status directly and need no separate ban-history
+collection. Existing deletion history preserves the signup date after account
+removal. Project deletion removes the retained history.

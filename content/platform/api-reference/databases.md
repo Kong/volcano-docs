@@ -40,6 +40,16 @@ figure your storage allowance is enforced against, and the
 it, so it is absent until the database has been sampled and can trail the stats
 endpoint's `current_storage_bytes`, which measures on request.
 
+List, count and project-lookup failures return `500` with a fixed message, such as:
+
+```json
+{"error":"failed to list databases"}
+```
+
+Internal connection details are omitted. Include the response's `X-Request-Id`
+header when contacting support. Invalid or mismatched pagination cursors return
+`400`.
+
 ## Get Database
 
 ```http

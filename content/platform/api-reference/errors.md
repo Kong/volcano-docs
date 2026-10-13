@@ -34,6 +34,46 @@ All errors return JSON:
 
 ## Common Errors
 
+### Paginated List Errors
+
+Some cursor and offset lists return `500` with these fixed messages when a
+read fails, instead of exposing database connection details:
+
+| Operation | `error` |
+| --- | --- |
+| Load a page or its included total | `failed to list resources` |
+| Count results after loading a cursor page | `failed to count resources` |
+
+`GET /projects` counts its total while loading the page, so its count failures
+return `failed to list resources`.
+
+The following offset and non-cursor lists return these fixed messages:
+
+| Resource | Read failure | Count failure |
+| --- | --- | --- |
+| Anonymous keys | `failed to list resources` | `failed to list resources` |
+| Frontends | `failed to list resources` | `failed to list resources` |
+| Auth sessions | `failed to list resources` | `failed to list resources` |
+| Projects | `failed to list resources` | `failed to list resources` |
+| Service keys | `failed to list service keys` | `failed to count service keys` |
+| Functions | `failed to list functions` | `failed to count functions` |
+| Variables | `failed to list variables` | `failed to count variables` |
+| Databases | `failed to list databases` | `failed to count databases` |
+| Project custom domains | `failed to list project custom domains` | `failed to count project custom domains` |
+| Project schedulers | `failed to list project schedulers` | `failed to count project schedulers` |
+| Storage buckets | `failed to list buckets` | No separate count |
+| Storage objects (project admin list) | `failed to list storage objects` | `failed to list storage objects` |
+
+For service keys, `page` or no pagination parameters selects offset pagination.
+A `limit` without `page` selects cursor pagination.
+
+In either pagination mode, frontend lists return `failed to list resources` if
+function routes cannot be loaded. Function lists return
+`failed to list function invocation metadata` if invocation metadata cannot be loaded.
+
+Invalid or mismatched cursors still return `400` with the cursor diagnostic.
+Keep the response's `X-Request-Id` when reporting a failure.
+
 ### Authentication Errors
 
 **401 - Missing Token:**

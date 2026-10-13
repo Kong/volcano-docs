@@ -558,7 +558,8 @@ names the certificate validation CNAME right away. Otherwise it names a
 hostname for your account while it waits. Once the account owns the domain,
 Volcano returns the CNAME instead. Add the CNAME and keep it in DNS for issuance
 and renewal. Keep the TXT record too: the domain moves to another account only
-once DNS stops serving it.
+once DNS stops serving it, or serves only a value from before a key rotation.
+See [Move a domain to another account](domain-verification.md#move-a-domain-to-another-account).
 Volcano cannot yet switch a BYOC domain to managed TLS in place. To keep the
 hostname, delete the BYOC domain and declare it again with `tls.mode: managed`;
 HTTPS for the hostname is unavailable until the managed certificate is issued.
@@ -583,9 +584,13 @@ volcano cloud frontends domain get my-site
 You can also attach a custom domain declaratively — see
 [`custom_domain` in the configuration reference](../projects/configuration.md).
 
-Removing a domain can take up to a minute to take effect everywhere. Until it
-does, attaching the same hostname again, to this or any other frontend, returns
-a domain conflict. Retry after the previous routing assignment expires.
+Removing a domain takes about a minute for BYOC and a few minutes for managed
+TLS, while Volcano detaches it and releases the hostname. Until then, attaching
+the hostname again, to this or any other frontend, or attaching another domain
+to this frontend, returns `409 Conflict` with `code: custom_domain_releasing`
+and a `Retry-After` header. Send the same request again after that many
+seconds. If Volcano cannot finish the removal within a few minutes, the `409`
+has no `code`; contact support if it persists.
 
 ### Point DNS at your frontend
 

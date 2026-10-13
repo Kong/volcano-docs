@@ -93,6 +93,7 @@ Response includes:
 - `custom_domain` (when configured)
 - `custom_domain_status` (when configured)
 - `current_deployment_id` (latest deployment operation ID for logs/status)
+- `last_deployed_at` (recorded completion time of the most recent deploy or redeploy with status `active`; also returned in list responses). Omitted when no such deployment has a recorded completion time. Site traffic, pending deployments, degraded deployments, failed deployments, and deletion do not change it.
 - `function_routes` (the frontend's [Function routes](#function-routes), most specific first; also in each item of the list response)
 
 Frontend status values:
@@ -282,7 +283,7 @@ Provisioning lifecycle:
 - An ownership reservation expires after 72 hours and the domain moves to `detaching`. Once it is removed, submit the domain again to receive a new TXT challenge.
 - `provisioning`: validation succeeded and activation is in progress.
 - `active`: domain is live and serving traffic.
-- `detaching`: domain removal has been requested and is being processed.
+- `detaching`: domain removal has been requested and is being processed. Removal takes about a minute for BYOC and a few minutes for managed TLS. Until Volcano releases the domain, adding its hostname to any frontend, or any domain to its frontend, returns `409` with `code: custom_domain_releasing` and a `Retry-After` header in seconds; send the same request again after it. A removal that Volcano cannot finish within a few minutes returns a plain `409` without `code` instead; contact support if it persists.
 - `failed`: setup or removal failed. For managed TLS, check `failure_reason`, correct the problem, then delete and recreate the domain.
 
 To use your own certificate instead, set `tls.mode` to `byoc` and provide
