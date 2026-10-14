@@ -42,16 +42,22 @@ volcano status
 ```
 
 While the local environment is running, the top-level commands act on it.
-Deploy the scaffolded function and invoke it:
+Deploy the project and invoke the scaffolded function:
 
 ```bash
-volcano functions deploy --all
-volcano functions list                       # see the deployed function's name
+volcano deploy
 volcano functions invoke hello --payload '{"name":"Ada"}'
 ```
 
-You'll get the function's JSON response. Edit `volcano/functions/hello.js`,
-redeploy, and invoke again to iterate — no cloud round-trip.
+`volcano deploy` deploys everything the project holds — variables, functions,
+frontends, and `volcano-config.yaml` — and waits until it is live. You'll get
+the function's JSON response. Edit `volcano/functions/hello.js`, run
+`volcano deploy` again, and invoke again to iterate — no cloud round-trip.
+
+Add `--with-migrations` once your project has migrations in
+`volcano/migrations`. Migrations aren't tracked, so every file runs again on
+each `--with-migrations` run: write them to be safe to repeat, or leave the
+flag out once they have run.
 
 ## 5. Deploy to the cloud
 
@@ -62,16 +68,21 @@ volcano projects create my-app
 volcano use my-app
 ```
 
-Prefix a command with `cloud` to target the cloud project explicitly:
+`volcano/volcano.env` holds the local server's URL and keys, which the cloud
+project can't use, so give the cloud project its own env file. Prefix a command
+with `cloud` to target the cloud project explicitly:
 
 ```bash
-volcano cloud functions deploy --all
+echo 'GREETING=Hello from the cloud' > volcano/cloud.env
+volcano cloud deploy --env-file volcano/cloud.env
 volcano cloud functions invoke hello --payload '{"name":"Ada"}'
 ```
 
-Your function now runs on Volcano's managed infrastructure. To manage the
-project's settings (variables, schedules, auth, and function and frontend
-settings) from one manifest, use `volcano cloud config deploy` — see
+Your function now runs on Volcano's managed infrastructure, and its greeting
+comes from `volcano/cloud.env`. `volcano cloud deploy` refuses an env file that
+still holds the local server's values. The deploy also applied
+`volcano-config.yaml`, which manages the project's settings (variables,
+schedules, auth, and function and frontend settings) from one manifest — see
 [declarative config](../projects/configuration.md).
 
 ## What's next

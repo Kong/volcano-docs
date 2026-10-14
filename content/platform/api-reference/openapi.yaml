@@ -21,6 +21,8 @@ tags:
     description: Project management operations
   - name: Logs
     description: Project-scoped log search and activity APIs
+  - name: Issues
+    description: 'Preview, not generally available: runtime errors grouped into issues. Where issues are not available, every endpoint answers `404` with code `feature_unavailable`.'
   - name: Functions
     description: Function deployment and management
   - name: Durable Functions
@@ -5888,6 +5890,129 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /projects/{id}/issues:
+    get:
+      tags:
+        - Issues
+      summary: List issues
+      description: |
+        Lists the project's issues, most recently seen first. An issue groups
+        the runtime errors one function or frontend raised with the same error
+        type and stack, or the same message when there is no stack.
+
+        Project access tokens can list issues, including read-only ones.
+      operationId: listIssues
+      security:
+        - UserToken: []
+        - ProjectAccessToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/IssueCursor'
+        - name: status
+          in: query
+          required: false
+          description: Return only issues in this status.
+          schema:
+            $ref: '#/components/schemas/IssueStatus'
+        - name: resource_id
+          in: query
+          required: false
+          description: Return only issues raised by this function or frontend.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedIssues'
+        '400':
+          description: A filter or the cursor is invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Project not found. Code `feature_unavailable` means issues are not available in this environment.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /projects/{id}/issues/{issueId}:
+    get:
+      tags:
+        - Issues
+      summary: Get an issue
+      description: |
+        Returns one issue: the resource that raised it, how often and when it
+        was seen, and its status.
+
+        Project access tokens can read issues, including read-only ones.
+      operationId: getIssue
+      security:
+        - UserToken: []
+        - ProjectAccessToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/IssueId'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+        '404':
+          description: Issue not found. Code `feature_unavailable` means issues are not available in this environment.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      tags:
+        - Issues
+      summary: Update an issue
+      description: |
+        Sets an issue's status. A resolved issue that is seen again after it
+        was resolved reopens, and `regressed_at` records when. An ignored issue
+        stays ignored while it keeps being counted.
+
+        Setting the status an issue already has is safe to repeat.
+      operationId: updateIssue
+      security:
+        - UserToken: []
+        - ProjectAccessToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/IssueId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateIssueRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+        '400':
+          description: The request body is invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Issue not found. Code `feature_unavailable` means issues are not available in this environment.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /projects/{id}/durable-approvals:
     get:
       tags:
@@ -6589,6 +6714,8 @@ paths:
         The account must own the hostname: it must have verified the hostname or a domain above it (see `POST /user/domains`). A certificate does not prove ownership.
         When the account owns no domain covering the hostname, Volcano asks for a TXT record at `_volcano.<registrable domain>`, such as `_volcano.example.com`. Publishing it verifies the whole domain, so later subdomains need no record. A managed TLS request reserves the hostname and returns that record in `verification_records`; the reservation expires after 72 hours unless the record is published. A BYOC request gets `409` with `code: ownership_verification_required` and the record in `required_record`; publish it and send the same request again.
         Managed TLS then returns the CNAME that authorizes certificate issuance and renewal.
+        To move an active BYOC domain to managed TLS without downtime, send `tls.mode: managed` for the same hostname. The response is `200` with the CNAME to publish; the uploaded certificate keeps serving until Volcano issues the managed one, and `serving_certificate` changes from `uploaded` to `managed`.
+        To move an active managed domain to BYOC without downtime, send `tls.mode: byoc` with the certificate for the same hostname. The response is `200`; the uploaded certificate replaces the managed one at once, and Volcano stops renewing the managed certificate.
         An unverified reservation does not block an account that proves ownership. When another account holds one, a request gets `409` with `code: ownership_verification_required` and the caller's own `required_record`; after publishing it, the same request takes over the reservation. When another account verified the domain, the same `409` names the record that moves the domain to the caller once the other account's record is no longer published. A hostname below a domain another account owns otherwise returns `409` without `code`.
       operationId: createFrontendCustomDomain
       security:
@@ -6605,7 +6732,7 @@ paths:
               $ref: '#/components/schemas/CreateFrontendCustomDomainRequest'
       responses:
         '200':
-          description: Custom domain already configured with same hostname
+          description: 'Custom domain already configured with the same hostname. A request with the other TLS mode for the frontend''s active domain switches it in place. To managed TLS, the uploaded certificate keeps serving, with `serving_certificate: uploaded`, until Volcano issues the managed certificate. To BYOC, the uploaded certificate replaces the managed one at once.'
           content:
             application/json:
               schema:
@@ -6697,6 +6824,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '404':
           description: Frontend or custom domain not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The custom domain switched TLS mode while the request ran. Send it again.
           content:
             application/json:
               schema:
@@ -14923,6 +15056,7 @@ paths:
         | `sandboxes` | The Sandbox API: presets, templates, sessions, and executions |
         | `sandboxes.sessions` | Starting and resuming sessions, and one-shot executions |
         | `sandboxes.custom_templates` | Deploying a custom template; its validation waits while `sandboxes.sessions` is unavailable |
+        | `issues` | The Issues API: listing, reading, and updating grouped runtime errors |
 
         A capability missing from the list is unavailable, and a capability under
         another, such as `sandboxes.sessions`, is unavailable whenever its parent is.
@@ -14948,6 +15082,8 @@ paths:
                     status: available
                   - id: sandboxes.custom_templates
                     status: unavailable
+                  - id: issues
+                    status: available
   /openapi.json:
     get:
       tags:
@@ -15372,6 +15508,23 @@ components:
         type: string
         format: uuid
       description: Durable approval ID
+    IssueId:
+      name: issueId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Issue ID
+    IssueCursor:
+      name: cursor
+      in: query
+      required: false
+      schema:
+        type: string
+      description: |
+        Opaque cursor from a previous response's `next_cursor`. Pages forward;
+        keep the same filters while paging.
     DurableApprovalFunctionFilter:
       name: function
       in: query
@@ -16142,7 +16295,7 @@ components:
       properties:
         id:
           type: string
-          description: Stable capability ID, such as `sandboxes`, `sandboxes.sessions`, or `sandboxes.custom_templates`. New IDs may appear at any time.
+          description: Stable capability ID, such as `sandboxes`, `sandboxes.sessions`, `sandboxes.custom_templates`, or `issues`. New IDs may appear at any time.
           example: sandboxes.sessions
         status:
           $ref: '#/components/schemas/CapabilityStatus'
@@ -19338,9 +19491,15 @@ components:
             - verified
             - failed
           description: '`verified`: the domain is served by a validated certificate. `pending`: it is not served yet, is being re-validated after its certificate material was withdrawn, or Volcano is retrying after a failure. `failed`: a failure left the domain unserved, alongside `domain_status: failed`; managed domains report the cause in `failure_reason`.'
+        serving_certificate:
+          type: string
+          enum:
+            - uploaded
+            - managed
+          description: 'Certificate the domain serves, present only while it is active. `uploaded`: the BYOC certificate, including after the domain switched to managed TLS and until Volcano issues the managed one; `failure_reason` then reports an issuance failure. `managed`: a certificate Volcano issued.'
         failure_reason:
           type: string
-          description: Failure category, present only when managed TLS setup has failed. Current values are provider, certificate, ownership, and internal; ownership means another account has already claimed the hostname through ownership verification. Treat unrecognized values as internal.
+          description: Failure category, present when managed TLS setup has failed, or when issuance is failing for a domain that switched to managed TLS and still serves its uploaded certificate. Current values are provider, certificate, ownership, and internal; ownership means another account has already claimed the hostname through ownership verification. Treat unrecognized values as internal.
         verification_records:
           type: array
           description: DNS records to publish now. For a managed domain whose hostname the account already owns, the create response names the `_acme-challenge` CNAME that authorizes certificate issuance and renewal. Otherwise it names the `_volcano` TXT record that proves ownership of the hostname's registrable domain, and reads return the CNAME once Volcano sees that record. Usually empty for BYOC.
@@ -21366,6 +21525,113 @@ components:
         - limit
         - total
         - has_more
+    Issue:
+      type: object
+      description: Runtime errors from one function or frontend, grouped by error type and stack.
+      properties:
+        id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        resource:
+          $ref: '#/components/schemas/ResourceReference'
+        title:
+          type: string
+          description: |
+            The error type and message, with values such as IDs, numbers, and
+            URLs replaced by placeholders like `<uuid>` and `<n>`.
+        error_type:
+          type: string
+          description: The exception class, such as `TypeError`. Omitted when the error has none.
+        culprit:
+          type: string
+          description: The innermost frame of your code in the stack, as `function (file)`. Omitted without a stack.
+        status:
+          $ref: '#/components/schemas/IssueStatus'
+        event_count:
+          type: integer
+          format: int64
+          description: Errors counted in this issue. A retried delivery can count an error twice.
+        first_seen_at:
+          type: string
+          format: date-time
+        last_seen_at:
+          type: string
+          format: date-time
+        last_region:
+          type: string
+          description: The region that served the latest error, such as `us-east-1`.
+        sample_event_id:
+          type: string
+          description: The ID of the latest error's log event, while logs retain it.
+        sample_event_at:
+          type: string
+          format: date-time
+          description: When the latest error's log event was written.
+        resolved_at:
+          type: string
+          format: date-time
+          description: When the issue was resolved. Present only while it is resolved.
+        regressed_at:
+          type: string
+          format: date-time
+          description: When a resolved issue was last seen again and reopened.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - project_id
+        - resource
+        - title
+        - status
+        - event_count
+        - first_seen_at
+        - last_seen_at
+        - created_at
+        - updated_at
+    IssueStatus:
+      type: string
+      enum:
+        - open
+        - resolved
+        - ignored
+      description: |
+        `open` until someone resolves or ignores the issue. A resolved issue
+        seen again reopens.
+    PaginatedIssues:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Issue'
+        limit:
+          type: integer
+          description: Number of items per page
+        has_more:
+          type: boolean
+          description: Whether a next page exists
+        next_cursor:
+          type: string
+          description: Opaque cursor for the next page (present if has_more is true)
+      required:
+        - data
+        - limit
+        - has_more
+    UpdateIssueRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        status:
+          $ref: '#/components/schemas/IssueStatus'
+      required:
+        - status
     PaginatedProjectCustomDomains:
       type: object
       properties:
@@ -22111,8 +22377,9 @@ components:
         domain, omitting `tls` or sending only `tls.mode` keeps the stored
         certificate; new BYOC material for the same domain rotates the
         certificate in place (zero downtime). Changing `tls.mode` for the same
-        hostname, or the hostname of a managed domain, requires deleting the
-        domain first. BYOC TLS material is write-only; exports render only
+        hostname switches an active domain in place (zero downtime); a domain
+        that is not yet active, or a managed domain changing hostname, must be
+        deleted first. BYOC TLS material is write-only; exports render only
         `tls.mode`.
       properties:
         domain:

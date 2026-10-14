@@ -33,7 +33,7 @@ Authorization: Bearer <platform_token>
       "invoke_url": "https://func-uuid.functions.volcano.run/",
       "deployed_regions": ["us-east-1", "us-west-2"],
       "runtime": "nodejs24.x",
-      "handler": "index.handler",
+      "handler": "handler",
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }
@@ -130,7 +130,7 @@ Direct API clients may upload ZIP or `tar.gz`; the API stores a normalized `tar.
 
 After dependencies are installed and the final image is built, the build rejects an image larger than 4096 MB.
 
-For direct API uploads, Volcano generates `.volcano/function-build.json` automatically. It infers `function_root` from the single runtime entry file (`index.js`/`index.mjs`, `main.py`, or `main.rb`), or from the only top-level directory when the archive has one. It infers `install_root` from the closest dependency manifest directory that contains the function root, otherwise it uses the function root.
+For direct API uploads, Volcano generates `.volcano/function-build.json` automatically. It infers `function_root` from the single runtime entry file (`index.js`/`index.mjs`, `main.py`, or `main.rb`), or from the only top-level directory when the archive has one. It selects `install_root` from the closest dependency manifest directory containing the effective handler module, relative to `function_root`. When no manifest contains the module and `function_root` is `.`, the fallback selects the longest nested manifest directory path. With no containing manifest or applicable fallback, installation uses `function_root`. See [direct-upload layout inference](../functions/upload-api.md#direct-upload-layout-inference) for handler resolution and tie-breaking.
 
 **Runtimes** ([List Runtimes](#list-runtimes) returns the current set):
 - `nodejs22.x`, `nodejs24.x`

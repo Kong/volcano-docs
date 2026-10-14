@@ -93,7 +93,7 @@ curl "https://api.volcano.dev/projects/$PROJECT_ID/functions" \
       "name": "checkout",
       "status": "active",
       "runtime": "nodejs24.x",
-      "handler": "index.handler",
+      "handler": "handler",
       "invoke_url": "https://550e8400-e29b-41d4-a716-446655440000.functions.volcano.dev/",
       "deployed_regions": ["us-east-1"],
       "created_at": "2024-06-11T08:02:44Z",
@@ -122,7 +122,7 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/functions" \
   -H "Authorization: Bearer $VOLCANO_PROJECT_TOKEN" \
   -F "name=checkout" \
   -F "runtime=nodejs24.x" \
-  -F "handler=index.handler" \
+  -F "handler=handler" \
   -F "code=@checkout.zip"
 ```
 
@@ -132,7 +132,7 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/functions" \
   "name": "checkout",
   "status": "provisioning",
   "runtime": "nodejs24.x",
-  "handler": "index.handler",
+  "handler": "handler",
   "deployed_regions": ["us-east-1"],
   "created_at": "2024-07-02T09:20:31Z",
   "updated_at": "2024-07-02T09:20:31Z"
@@ -390,7 +390,7 @@ jobs:
             -H "Authorization: Bearer $VOLCANO_PROJECT_TOKEN" \
             -F "name=checkout" \
             -F "runtime=nodejs24.x" \
-            -F "handler=index.handler" \
+            -F "handler=handler" \
             -F "code=@checkout.zip"
 ```
 
