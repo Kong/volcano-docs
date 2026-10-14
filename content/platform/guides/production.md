@@ -15,8 +15,10 @@ volcano use my-app
 ## Configure secrets and variables
 
 Store configuration and secrets as project variables (available to functions and
-frontend builds; `NEXT_PUBLIC_*` also reaches the browser). Put them in
-`volcano/volcano.env`:
+frontend builds; `NEXT_PUBLIC_*` also reaches the browser).
+`volcano/volcano.env` holds the local development server's values, and
+`volcano cloud deploy` refuses its local URL and keys, so put the cloud
+project's values in `volcano/cloud.env`:
 
 ```bash
 DATABASE_URL=...
@@ -24,39 +26,53 @@ STRIPE_SECRET_KEY=...
 NEXT_PUBLIC_API_URL=https://api.example.com
 ```
 
-Then save them to the cloud project. Set them before deploying a frontend, since
-its build reads them:
-
-```bash
-volcano cloud variables deploy
-```
-
-Never hard-code secrets in source. See [environment variables](../functions/environment-variables.md).
+The deploy below saves them before it builds anything, since function and
+frontend builds read them. Never hard-code secrets in source. See
+[environment variables](../functions/environment-variables.md).
 
 ## Deploy your project
 
-Deploy functions and frontends, then apply the rest of your project from one
-manifest:
+Create the database your project uses:
 
 ```bash
-volcano cloud functions deploy --all      # functions
-volcano cloud frontends deploy --variable-scope scoped --variable NEXT_PUBLIC_API_URL
-volcano cloud config deploy               # settings in volcano-config.yaml
+volcano cloud databases create app --region us-east-1 --pg-version 16
+```
+
+The database starts as `provisioning`. Run `volcano cloud databases get app`
+until its `Status` is `active`; migrations refuse a database that isn't. Then
+deploy everything in one run:
+
+```bash
+volcano cloud deploy --env-file volcano/cloud.env --with-migrations -d app
+```
+
+`volcano cloud deploy` saves the variables in `volcano/cloud.env`, applies
+the migrations in `volcano/migrations`, deploys your functions, durable
+functions, and the frontends listed in `.volcano/source-layout.json`, then
+applies `volcano-config.yaml`. It waits until every deployment is live and
+prints each frontend's URL. Leave out `--with-migrations` on later deploys
+unless your migrations are safe to run again. See the
+[CLI deploy reference](/cli/deploy) for every option and the commands that
+deploy one kind of resource at a time.
+
+A frontend builds with the variables its entry in `volcano-config.yaml`
+selects, so list the `NEXT_PUBLIC_*` names its pages read:
+
+```yaml
+frontends:
+  - name: my-site
+    variable_scope: scoped
+    variables: [NEXT_PUBLIC_API_URL]
 ```
 
 The [manifest](../projects/configuration.md) is the recommended way to manage
 production settings — variables, schedules, auth, and function and frontend
 settings — from one reviewed file. It configures functions and frontends but
-never creates them, so deploy them first; an entry for one that does not exist
-yet is skipped. See
-[First deploy with `volcano-config.yaml`](../frontends/deploy.md#first-deploy-with-volcano-configyaml).
-
-## Databases and migrations
-
-```bash
-volcano cloud databases create app --region us-east-1 --pg-version 16
-volcano cloud databases migration up --all -d app   # apply schema changes
-```
+never creates them; `volcano cloud deploy` creates them first, then applies it.
+Keep variables in one place: either `volcano/cloud.env` or the manifest's
+`variables` section. A deploy refuses both, because applying the section
+deletes every variable it doesn't list. With variables in the manifest, run
+`volcano cloud deploy --no-env-file`.
 
 Protect data with [row-level security](../databases/row-level-security.md) before
 going live.
@@ -71,7 +87,8 @@ volcano cloud frontends domain create my-site \
 Each frontend has one custom domain. See
 [Add a custom domain](../frontends/deploy.md#4-add-a-custom-domain). If
 `volcano-config.yaml` declares this frontend, add `custom_domain` to its entry;
-otherwise the next `volcano cloud config deploy` removes the domain.
+otherwise the next `volcano cloud deploy` or `volcano cloud config deploy`
+removes the domain.
 
 ## Observe
 

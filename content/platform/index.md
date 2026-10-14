@@ -173,6 +173,7 @@ Step-by-step guides for common tasks.
 | [Database migrations](guides/migrations.md) | Manage schema changes with the CLI |
 | [Deployment performance](guides/deployment-performance.md) | Deployment latency objectives, phases, and telemetry |
 | [Sandboxes](guides/sandboxes.md) | Run commands and HTTP services in isolated sessions with plan-based runtime pricing |
+| [Issues](guides/issues.md) | See runtime errors grouped into issues, and resolve or ignore them |
 
 ## Examples
 

@@ -210,6 +210,8 @@ Cloud uploads are limited to 256 MB per source archive, and that limit is enforc
 
 `functions deploy --all` uploads functions in API batches of up to 100 functions. Larger projects are split into multiple batch requests automatically by the CLI.
 
+`volcano deploy` (or `volcano cloud deploy`) deploys every function in `volcano/functions/` along with the project's variables, durable functions, frontends, and `volcano-config.yaml`, then waits until the deployments are live. See the [CLI deploy reference](/cli/deploy).
+
 ## Deploying
 
 Upload as binary file via multipart/form-data:
@@ -221,7 +223,7 @@ curl -X POST https://api.volcano.dev/projects/PROJECT_ID/functions \
   -F "name=my-node-function" \
   -F "code=@function.zip" \
   -F "runtime=nodejs24.x" \
-  -F "handler=index.handler"
+  -F "handler=handler"
 
 # Python function (handler defaults to "handler" if not specified)
 curl -X POST https://api.volcano.dev/projects/PROJECT_ID/functions \
@@ -259,7 +261,7 @@ You only need to specify the function name (e.g., `handler`). Volcano automatica
   "name": "my-function",
   "status": "provisioning",
   "runtime": "nodejs24.x",
-  "handler": "index.handler",
+  "handler": "handler",
   "visibility": "private",
   "is_public": false,
   "created_at": "2024-01-01T00:00:00Z"

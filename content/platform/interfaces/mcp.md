@@ -166,6 +166,7 @@ A **platform token (`pk-`) is refused with `403`.** The endpoint takes its proje
 | `search_logs` | `read_only` | Searches the project's logs | `POST /projects/{id}/logs/search` |
 | `list_durable_approvals` | `read_only` | Lists the approvals durable workflows are waiting on or have had decided, newest first | `GET /projects/{id}/durable-approvals` |
 | `get_durable_approval_stats` | `read_only` | Counts durable approvals by outcome, workflow, and day, with the approval rate and time to decision | `GET /projects/{id}/durable-approvals/stats` |
+| `list_issues` | `read_only` | Lists runtime errors grouped into issues, most recently seen first | `GET /projects/{id}/issues` |
 | `list_capabilities` | `read_only` | Lists which capabilities, such as Sandboxes, accept new work in this environment | `GET /capabilities` |
 | `list_variable_environments` | `read_only` | Lists the project's variable Environments | `GET /projects/{id}/variable-environments` |
 | `list_databases` | `full` | Lists the project's databases. Returns connection strings | `GET /projects/{id}/databases` |

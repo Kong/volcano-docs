@@ -195,7 +195,8 @@ curl "https://api.volcano.dev/capabilities"
   "data": [
     { "id": "sandboxes", "status": "available" },
     { "id": "sandboxes.sessions", "status": "available" },
-    { "id": "sandboxes.custom_templates", "status": "unavailable" }
+    { "id": "sandboxes.custom_templates", "status": "unavailable" },
+    { "id": "issues", "status": "available" }
   ]
 }
 ```
@@ -205,6 +206,7 @@ curl "https://api.volcano.dev/capabilities"
 | `sandboxes` | The Sandbox API: presets, templates, sessions, and executions |
 | `sandboxes.sessions` | Starting and resuming sessions, and one-shot executions |
 | `sandboxes.custom_templates` | Deploying a custom template; its validation waits while `sandboxes.sessions` is unavailable |
+| `issues` | The Issues API: listing, reading, and updating grouped runtime errors |
 
 The endpoint needs no token, and every caller in an environment gets the same
 answer. While a capability is `unavailable`, requests that start new work
@@ -303,6 +305,16 @@ Durable functions are a separate collection: a standard function's id is `404`
 here, and a durable function's id is `404` under `/projects/{id}/functions`. See
 [Durable functions](../functions/durable-functions.md) for details, and
 [Durable approvals](../functions/durable-approvals.md) for the approval endpoints.
+
+### Issues
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/projects/{id}/issues` | List runtime errors grouped into issues; filter with `status` and `resource_id` |
+| `GET` | `/projects/{id}/issues/{issueId}` | Get an issue |
+| `PATCH` | `/projects/{id}/issues/{issueId}` | Resolve, ignore, or reopen an issue |
+
+Issues are in preview. See [Issues](../guides/issues.md).
 
 ### Frontends
 

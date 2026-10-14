@@ -490,6 +490,12 @@ All endpoints return errors in this format:
 | 413 | Payload too large (storage limit exceeded) |
 | 500 | Internal server error |
 
+### Administrative internal failures
+
+Bucket and policy administration returns a fixed operation message for internal failures, such as `failed to create bucket`, `failed to update bucket`, or `failed to delete policy`. Statistics and policy-list failures return `failed to get storage stats` and `failed to list policies`. These HTTP 500 responses omit internal diagnostics. Include the response's `X-Request-Id` when reporting a failure.
+
+Validation, quota, conflict, and not-found errors keep their specific messages.
+
 ### Policy errors
 
 ```json

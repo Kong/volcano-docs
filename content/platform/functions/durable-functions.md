@@ -206,7 +206,7 @@ volcano cloud durable approvals approve $APPROVAL_ID --comment "Checked stock"
 
 Logs come from the same command in both shapes a durable function has them: `volcano cloud durable logs order-pipeline --type build` is the deploy's own output, which is where a deploy that ended in `failed` says why, and `--type runtime` is what the function logged while its executions ran. Add `--follow` to tail either one.
 
-The two collections refuse each other's names, so a function declared `kind: durable` is skipped by `volcano cloud functions deploy` and picked up by `volcano cloud durable deploy` — a wrong kind fails before anything is uploaded rather than creating a function that can never change.
+The two collections refuse each other's names, so a function declared `kind: durable` is skipped by `volcano cloud functions deploy` and picked up by `volcano cloud durable deploy` — a wrong kind fails before anything is uploaded rather than creating a function that can never change. `volcano cloud deploy` runs both as part of the whole project: variables and migrations first, then functions, durable functions, frontends, and the manifest. See the [CLI deploy reference](/cli/deploy).
 
 ## Start an execution
 

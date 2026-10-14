@@ -86,7 +86,7 @@ auth:
     token_refresh: 1000
     password_reset: 10
   password:
-    min_length: 8
+    min_length: 15                          # 15-128
     require_uppercase: true
     require_lowercase: true
     require_numbers: true
@@ -342,15 +342,15 @@ response that created it. Manage them through
   After a served domain is removed, proxies can keep serving its hostname for
   about a minute. An apply that declares that hostname within the minute fails
   validation; apply again once it has passed.
-  Changing the hostname or TLS
-  mode of a managed domain requires one apply to delete it and a later apply to
-  create the replacement. Replacing a BYOC domain with a managed domain for a
-  different hostname takes one apply; if Volcano cannot admit the new hostname,
-  the BYOC domain keeps serving. Switching the same hostname from BYOC to
-  managed TLS in place is not supported yet: keep BYOC, or remove the custom
-  domain in one apply and declare it with `tls.mode: managed` in the next.
-  HTTPS for that hostname is unavailable until the managed certificate is
-  issued. Managed domains retain their certificate quota until
+  Changing the hostname of a managed domain requires one apply to delete it
+  and a later apply to create the replacement. Replacing a BYOC domain with a
+  managed domain for a different hostname takes one apply; if Volcano cannot
+  admit the new hostname, the BYOC domain keeps serving. Changing the TLS mode
+  of an active domain for the same hostname takes one apply and keeps HTTPS up:
+  the current certificate serves until its replacement does. See
+  [Switch between BYOC and managed TLS](../frontends/overview.md#switch-between-byoc-and-managed-tls).
+  A domain that is not yet active cannot switch in place; delete it first.
+  Managed domains retain their certificate quota until
   deletion finishes. At the account limit, apply the deletion, wait for cleanup,
   then apply the replacement; planning a deletion does not grant capacity early.
 - **BYOC certificates** use `tls.mode: byoc` with `certificate_pem` and
@@ -397,6 +397,13 @@ the manifest (see
 volcano cloud frontends deploy --variable-scope scoped --variable NEXT_PUBLIC_API_URL
 volcano cloud config deploy
 ```
+
+`volcano cloud deploy` does both for every frontend in
+`.volcano/source-layout.json`, after the functions, and applies the manifest
+last. Pass `-c` to apply another manifest, and repeat it to apply several in
+order. It refuses a manifest with a `variables` section when an env file is
+also present, since applying the section would delete the variables only the
+env file sets. See the [CLI deploy reference](/cli/deploy).
 
 ## Validation, plan limits, and partial failures
 

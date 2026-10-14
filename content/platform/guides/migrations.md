@@ -25,9 +25,21 @@ your-project/
 **Best practices:**
 - Use numbered prefixes (`001_`, `002_`) to maintain execution order
 - Use descriptive names that indicate what the migration does
-- Keep migrations small and focused on a single change
+- Put exactly one SQL statement in each file
 
 ## Running Migrations
+
+`volcano deploy --with-migrations` applies every migration as part of a whole
+project deploy, after the variables and before the functions. `volcano cloud
+deploy --with-migrations -d mydb` does the same for a cloud database, and
+picks the database itself when your `volcano-config.yaml` declares exactly
+one. See the [CLI deploy reference](/cli/deploy). Use the commands below to
+apply migrations on their own.
+
+Migrations aren't tracked, so every file runs again on each
+`--with-migrations` run and each `migration up --all`: write them to be safe to
+repeat, such as `CREATE TABLE IF NOT EXISTS`, or leave the flag out once they
+have run.
 
 ### Cloud Deployment
 
@@ -64,7 +76,6 @@ The `-d` (or `--database`) flag is **required** for local development as well, a
 
 ### Cloud Migrations
 
-- **psql**: The PostgreSQL client must be installed and available in your PATH
 - **Database**: The target database must exist and be in `active` status
 - **Authentication**: You must be logged in with `volcano login`
 
@@ -75,8 +86,12 @@ The `-d` (or `--database`) flag is **required** for local development as well, a
 
 ## Error Handling
 
-Migrations are executed with `ON_ERROR_STOP=1`, meaning:
-- If a migration fails, execution stops immediately
+Each file is sent as one query, so it must hold exactly one SQL statement. A
+file with more than one is [refused](../databases/connection-strings.md#one-statement-per-query)
+before any of it runs. Split a multi-step change into several numbered files.
+
+When a migration fails:
+- Execution stops at that file
 - Subsequent migrations are not executed
 - You should fix the error and re-run
 
@@ -85,16 +100,16 @@ Common error scenarios:
 ```bash
 # Database doesn't exist
 $ volcano cloud databases migration up --all -d nonexistent
-Error: Failed to get database 'nonexistent': HTTP 404: database not found
+Error: failed to get database "nonexistent": HTTP 404: database not found
 
 # Database not ready
 $ volcano cloud databases migration up --all -d mydb
-Error: Database 'mydb' is not active (status: provisioning)
+Error: database "mydb" is not active (status: provisioning)
 
 # Migration not found
 $ volcano cloud databases migration up -d mydb -f missing_migration
-Error: Migration 'missing_migration' not found in volcano/migrations/
-Available migrations: 001_create_users.sql, 002_add_posts.sql
+Error: migration "missing_migration" not found in volcano/migrations/
+available migrations: 001_create_users.sql, 002_add_posts.sql
 ```
 
 ## Migration Examples
@@ -111,20 +126,29 @@ CREATE TABLE notes (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+```
 
+```sql
+-- volcano/migrations/002_index_notes_user_id.sql
 CREATE INDEX idx_notes_user_id ON notes(user_id);
 ```
 
 ### Enabling Row Level Security
 
 ```sql
--- volcano/migrations/002_enable_rls.sql
+-- volcano/migrations/003_enable_rls.sql
 ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
+```
 
+```sql
+-- volcano/migrations/004_notes_select_own.sql
 -- Users can only see their own notes
 CREATE POLICY notes_select_own ON notes
     FOR SELECT USING (auth.uid() = user_id);
+```
 
+```sql
+-- volcano/migrations/005_notes_insert_own.sql
 -- Users can only insert notes for themselves
 CREATE POLICY notes_insert_own ON notes
     FOR INSERT WITH CHECK (auth.uid() = user_id);
@@ -133,7 +157,7 @@ CREATE POLICY notes_insert_own ON notes
 ### Adding a Column
 
 ```sql
--- volcano/migrations/003_add_pinned.sql
+-- volcano/migrations/006_add_pinned.sql
 ALTER TABLE notes ADD COLUMN is_pinned BOOLEAN DEFAULT FALSE;
 ```
 
