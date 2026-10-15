@@ -101,6 +101,49 @@ IP 192.168.1.2, Project A → Count: 1  (independent)
 
 Attack on Project A doesn't affect Project B.
 
+### Server-side auth proxies
+
+A server-side proxy can preserve the browser's rate-limit and session audit IP
+when it forwards an anonymous-auth request. Send both headers:
+
+```http
+Authorization: Bearer ANON_KEY
+X-Volcano-Proxy-Authorization: Bearer SERVICE_KEY
+X-Volcano-Client-IP: 203.0.113.42
+```
+
+The service key must belong to the same project as the anon key and hold the
+scope for the endpoint it proxies:
+
+| Endpoint | Required scope |
+| --- | --- |
+| `POST /auth/signup`, `POST /auth/signup-anonymous` | `auth.signup` |
+| `POST /auth/signin`, `POST /auth/oauth/exchange` | `auth.signin` |
+| `POST /auth/refresh` | `auth.refresh` |
+| `POST /auth/logout` | `auth.logout` |
+| `POST /auth/forgot-password`, `POST /auth/reset-password` | `auth.password_reset` |
+| `GET /auth/password-policy` | Any scope |
+
+These scopes limit only which auth operations the key can proxy. Routes that do
+not enforce service-key scopes, such as database queries, still grant the key
+full service-role access, so protect it like any other service key.
+
+The proxy must take the IP only from platform-verified request metadata; it must
+never copy an IP header supplied by browser code. Volcano rejects the request
+with `401 Unauthorized` if either proxy header is missing or repeated, the IP is
+invalid, or the service key is invalid, revoked, from another project, or
+insufficiently scoped. Never expose the service key to browser code; these
+headers are only for a trusted server-side proxy such as an edge function.
+
+Volcano applies its
+[embargoed-country refusal](../../guides/unavailable-responses.md#requests-from-embargoed-countries)
+to the proxied client IP as well as to the proxy's own address, answering
+`451 Unavailable For Legal Reasons` when the browser is in an embargoed country.
+
+If neither proxy header is present, Volcano continues to resolve the client IP
+from its trusted ingress chain. Caller-supplied forwarding headers do not opt a
+request into this proxy contract.
+
 ## Configuration
 
 ```bash
@@ -142,7 +185,5 @@ handling against a cloud project.
 ## See Also
 
 - [Configuration Overview](overview.md)
-
-
 
 

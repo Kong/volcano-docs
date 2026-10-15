@@ -146,6 +146,7 @@ HTTP-mode functions receive this event instead of the RPC payload:
 ```json
 {
   "version": "1.0",
+  "__volcano_http": true,
   "method": "POST",
   "path": "/webhooks/payments",
   "raw_query_string": "attempt=one&attempt=two",
@@ -173,6 +174,11 @@ base64-encoded bytes in `body` and set `is_base64_encoded: true`. HTTP request
 bodies are limited to 2 MiB. Volcano
 also rejects a request if headers, query parameters, body encoding, and trusted
 auth context make the final invocation event exceed 6 MiB.
+
+`__volcano_http: true` is a server-owned marker that identifies this as an
+HTTP-ingress event, so a function can distinguish trusted `request_context`
+metadata from a caller-shaped RPC payload. Volcano removes a caller-supplied
+`__volcano_http` field from synchronous and durable RPC payloads.
 
 In `http_auth_mode: volcano`, platform credential headers are removed before
 the event reaches the function; authenticated-user context remains available as
@@ -299,7 +305,10 @@ Send any JSON:
 }
 ```
 
-Function receives exactly this (plus `__volcano_auth` if using auth token).
+Function receives this payload, plus `__volcano_auth` if you call it with an
+auth token. The top-level `__volcano_auth` and `__volcano_http` keys are
+reserved: Volcano removes caller-supplied values for both, so an RPC payload
+never carries the HTTP-ingress marker described in [HTTP mode request event](#http-mode-request-event).
 
 ## Response format
 
