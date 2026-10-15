@@ -408,7 +408,7 @@ self-contained HTML error page. The status code identifies the failure:
 | Status | Meaning |
 | --- | --- |
 | `403` | Project traffic is disabled. |
-| `404` | No deployed frontend serves the address. |
+| `404` | No deployed frontend serves the address, or the requested `/_next/static` file is in no build the frontend still serves. |
 | `429` | The project reached a rate or monthly request limit. |
 | `502` | The deployed frontend is temporarily unreachable. |
 | `503` | A platform dependency is temporarily unavailable. |

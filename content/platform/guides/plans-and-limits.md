@@ -184,6 +184,12 @@ Revoked and expired tokens do not count against it, so cycling short-lived token
 | Custom email templates | Unavailable | Available | Per project; HOBBY projects send the default templates |
 | Custom managed auth pages | Unavailable | Available | Per project |
 
+## Autofix
+
+| Limit | HOBBY | SUPERAGENT | Scope |
+|---|---|---|---|
+| [Autofix](autofix.md) | Unavailable | Available | Per project; a downgrade parks the settings and no run starts. Runs have [the same limits on every plan](autofix.md#run-limits) |
+
 ## Scheduling and logs
 
 | Limit | HOBBY | SUPERAGENT | Scope |
@@ -220,6 +226,7 @@ moment you upgrade. You do not have to set them up twice.
 | Scheduled functions | Kept; they stop running, and their next run time keeps advancing |
 | Database query logs | Kept; new queries stop being recorded, and query insights stop being readable |
 | Database compute size | Shrunk to the HOBBY size, and restored when you upgrade. No downtime, no data loss |
+| [Autofix](autofix.md) settings | Kept, including a stored API key; no run starts |
 
 Five things are not parked:
 

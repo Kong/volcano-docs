@@ -144,6 +144,11 @@ An issue resolved at `resolved_at` that is seen again after that moment
 reopens as `open`, and `regressed_at` records when. Set `status` back to
 `open` yourself to reopen it.
 
+When you merge an [autofix](autofix.md) pull request, the issue resolves once a
+deployment that includes the fix goes live, with `resolved_at` set to that
+moment. Errors from the previous deployment while the fix rolls out do not
+reopen it.
+
 ## Credentials
 
 Platform tokens and project access tokens can list and read issues, including
