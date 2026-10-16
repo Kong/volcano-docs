@@ -196,7 +196,9 @@ curl "https://api.volcano.dev/capabilities"
     { "id": "sandboxes", "status": "available" },
     { "id": "sandboxes.sessions", "status": "available" },
     { "id": "sandboxes.custom_templates", "status": "unavailable" },
-    { "id": "issues", "status": "available" }
+    { "id": "issues", "status": "available" },
+    { "id": "autofix", "status": "available" },
+    { "id": "autofix.managed_models", "status": "unavailable" }
   ]
 }
 ```
@@ -207,6 +209,8 @@ curl "https://api.volcano.dev/capabilities"
 | `sandboxes.sessions` | Starting and resuming sessions, and one-shot executions |
 | `sandboxes.custom_templates` | Deploying a custom template; its validation waits while `sandboxes.sessions` is unavailable |
 | `issues` | The Issues API: listing, reading, and updating grouped runtime errors |
+| `autofix` | The Autofix API: a project's AI diagnosis and fix settings |
+| `autofix.managed_models` | Turning autofix on with Volcano-managed models instead of your own API key |
 
 The endpoint needs no token, and every caller in an environment gets the same
 answer. While a capability is `unavailable`, requests that start new work
@@ -315,6 +319,19 @@ here, and a durable function's id is `404` under `/projects/{id}/functions`. See
 | `PATCH` | `/projects/{id}/issues/{issueId}` | Resolve, ignore, or reopen an issue |
 
 Issues are in preview. See [Issues](../guides/issues.md).
+
+### Autofix
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/projects/{id}/autofix` | Get a project's autofix settings |
+| `PUT` | `/projects/{id}/autofix` | Replace a project's autofix settings |
+| `DELETE` | `/projects/{id}/autofix/api-key` | Delete a project's stored API key |
+| `POST` | `/projects/{id}/issues/{issueId}/autofix-runs` | Diagnose an issue |
+| `GET` | `/projects/{id}/autofix-runs` | List autofix runs |
+| `GET` | `/projects/{id}/autofix-runs/{runId}` | Get an autofix run |
+
+Autofix is in preview and needs SUPERAGENT. See [Autofix](../guides/autofix.md).
 
 ### Frontends
 

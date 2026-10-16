@@ -23,6 +23,8 @@ tags:
     description: Project-scoped log search and activity APIs
   - name: Issues
     description: 'Preview, not generally available: runtime errors grouped into issues. Where issues are not available, every endpoint answers `404` with code `feature_unavailable`.'
+  - name: Autofix
+    description: 'Preview, not generally available: AI diagnosis of a project''s issues and draft pull requests that fix them. Where autofix is not available, turning it on, or any request for a project that never saved settings, answers `404` with code `feature_unavailable`. Autofix is not available in local mode.'
   - name: Functions
     description: Function deployment and management
   - name: Durable Functions
@@ -119,6 +121,7 @@ paths:
       security:
         - UserToken: []
         - ServiceRoleKey: []
+        - ProjectAccessToken: []
       parameters:
         - name: id
           in: path
@@ -149,6 +152,7 @@ paths:
       security:
         - UserToken: []
         - ServiceRoleKey: []
+        - ProjectAccessToken: []
       parameters:
         - name: id
           in: path
@@ -190,6 +194,7 @@ paths:
       security:
         - UserToken: []
         - ServiceRoleKey: []
+        - ProjectAccessToken: []
       parameters:
         - name: id
           in: path
@@ -224,6 +229,7 @@ paths:
       security:
         - UserToken: []
         - ServiceRoleKey: []
+        - ProjectAccessToken: []
       parameters:
         - name: id
           in: path
@@ -264,6 +270,7 @@ paths:
       security:
         - UserToken: []
         - ServiceRoleKey: []
+        - ProjectAccessToken: []
       parameters:
         - name: id
           in: path
@@ -296,6 +303,7 @@ paths:
       security:
         - UserToken: []
         - ServiceRoleKey: []
+        - ProjectAccessToken: []
       parameters:
         - name: id
           in: path
@@ -362,6 +370,7 @@ paths:
       security:
         - UserToken: []
         - ServiceRoleKey: []
+        - ProjectAccessToken: []
       parameters:
         - name: id
           in: path
@@ -399,6 +408,7 @@ paths:
       security:
         - UserToken: []
         - ServiceRoleKey: []
+        - ProjectAccessToken: []
       parameters:
         - name: id
           in: path
@@ -440,6 +450,7 @@ paths:
       security:
         - UserToken: []
         - ServiceRoleKey: []
+        - ProjectAccessToken: []
       parameters:
         - name: id
           in: path
@@ -499,6 +510,7 @@ paths:
       security:
         - UserToken: []
         - ServiceRoleKey: []
+        - ProjectAccessToken: []
       parameters:
         - name: id
           in: path
@@ -541,6 +553,7 @@ paths:
       security:
         - UserToken: []
         - ServiceRoleKey: []
+        - ProjectAccessToken: []
       parameters:
         - name: id
           in: path
@@ -571,6 +584,7 @@ paths:
       security:
         - UserToken: []
         - ServiceRoleKey: []
+        - ProjectAccessToken: []
       parameters:
         - name: id
           in: path
@@ -612,6 +626,7 @@ paths:
       security:
         - UserToken: []
         - ServiceRoleKey: []
+        - ProjectAccessToken: []
       parameters:
         - name: id
           in: path
@@ -653,6 +668,7 @@ paths:
       security:
         - UserToken: []
         - ServiceRoleKey: []
+        - ProjectAccessToken: []
         - AuthUserAccessToken: []
       parameters:
         - name: sessionId
@@ -682,6 +698,7 @@ paths:
       security:
         - UserToken: []
         - ServiceRoleKey: []
+        - ProjectAccessToken: []
       parameters:
         - name: sessionId
           in: path
@@ -711,6 +728,7 @@ paths:
       security:
         - UserToken: []
         - ServiceRoleKey: []
+        - ProjectAccessToken: []
       parameters:
         - name: sessionId
           in: path
@@ -740,6 +758,7 @@ paths:
       security:
         - UserToken: []
         - ServiceRoleKey: []
+        - ProjectAccessToken: []
       parameters:
         - name: sessionId
           in: path
@@ -769,6 +788,7 @@ paths:
       security:
         - UserToken: []
         - ServiceRoleKey: []
+        - ProjectAccessToken: []
         - AuthUserAccessToken: []
       parameters:
         - name: sessionId
@@ -811,6 +831,7 @@ paths:
       security:
         - UserToken: []
         - ServiceRoleKey: []
+        - ProjectAccessToken: []
         - AuthUserAccessToken: []
       parameters:
         - name: sessionId
@@ -847,6 +868,7 @@ paths:
       security:
         - UserToken: []
         - ServiceRoleKey: []
+        - ProjectAccessToken: []
         - AuthUserAccessToken: []
       parameters:
         - name: sessionId
@@ -2230,7 +2252,8 @@ paths:
         Returns a fast control-plane health snapshot for the project and its
         deployed resources. The endpoint does not run live provider probes.
         A successful request returns 200 even when the project status is
-        `unhealthy`; transport and authorization failures use HTTP errors.
+        `degraded` or `critical`; transport and authorization failures use HTTP
+        errors.
       operationId: getProjectHealth
       security:
         - UserToken: []
@@ -4166,6 +4189,12 @@ paths:
         - Function must have `visibility: public`
         - Function receives payload only (no `__volcano_auth`)
 
+        **Reserved payload keys:** the top-level `__volcano_auth` and
+        `__volcano_http` keys are reserved. Volcano removes caller-supplied
+        values for both before the function runs; only an auth user token adds
+        a server-built `__volcano_auth`, and only HTTP-mode ingress sets
+        `__volcano_http: true`.
+
         **Transport and CORS:**
         - This operation is the authenticated direct RPC endpoint and always uses the
           POST `{payload: ...}` contract, including for functions whose DNS ingress is
@@ -6013,6 +6042,343 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /projects/{id}/autofix:
+    get:
+      tags:
+        - Autofix
+      summary: Get autofix settings
+      description: |
+        Returns whether Volcano diagnoses the project's issues with AI, how far
+        a run may go, and which model it uses. A project that never saved
+        settings returns the defaults, with autofix off.
+
+        Your API key is never returned. `api_key_configured`,
+        `api_key_provider`, and `api_key_last4` show whether one is set and
+        which provider it belongs to.
+
+        Where autofix is not available, saved settings stay readable. A project
+        that never saved any answers `404` with code `feature_unavailable`.
+      operationId: getAutofixSettings
+      security:
+        - UserToken: []
+        - ProjectAccessToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutofixSettings'
+        '404':
+          description: Project not found. Code `feature_unavailable` means autofix is not available in this environment and the project never saved settings.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '501':
+          description: Autofix is not available in local mode.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: The owner's plan could not be resolved. Retry later.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - Autofix
+      summary: Replace autofix settings
+      description: |
+        Replaces the project's autofix settings. Omitted fields take their
+        defaults, except three: an omitted `provider` or `model` keeps its saved
+        value, and an omitted `api_key` keeps the stored key. So
+        `{"enabled": false}` turns autofix off and keeps the key.
+
+        Project access tokens are refused. Autofix opens pull requests in the
+        project's repository, so a person turns it on with a platform token or
+        in the dashboard.
+
+        Turning autofix on needs a plan that includes it. Settings that are
+        already on stay stored after a downgrade, and saving them again is not
+        refused, but no run starts until the plan includes autofix again. Other
+        saves need no plan.
+
+        Provider `anthropic` runs on your own API key. A key belongs to the
+        provider it was saved with, and turning autofix on with a provider that
+        runs on your own key needs one for it. Turning autofix off or switching
+        providers keeps the stored key; only
+        `DELETE /projects/{id}/autofix/api-key` removes it. Turning autofix on
+        with provider `volcano` needs the `autofix.managed_models` capability;
+        without it the request answers `400` with code `feature_unavailable`.
+
+        Where autofix is not available, a project with saved settings can
+        still change them with `enabled: false`. Turning autofix on answers
+        `404` with code `feature_unavailable`.
+      operationId: updateAutofixSettings
+      security:
+        - UserToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAutofixSettingsRequest'
+      responses:
+        '200':
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutofixSettings'
+        '400':
+          description: The request body is invalid, the key does not fit the provider, or turning autofix on with a provider that runs on your own key has no key for it. Code `feature_unavailable` means Volcano-managed models are not available in this environment.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The owner's plan does not include autofix, or the request used a project access token. Only a person changes autofix settings.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Project not found. Code `feature_unavailable` means autofix is not available in this environment, which refuses turning it on and a project's first save.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '501':
+          description: Autofix is not available in local mode.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Turning autofix on needs the owner's plan, which could not be resolved. Nothing was saved. Retry later.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /projects/{id}/autofix/api-key:
+    delete:
+      tags:
+        - Autofix
+      summary: Delete the API key
+      description: |
+        Deletes the project's stored API key and returns the settings. Autofix
+        on the key's provider runs on that key, so it turns off; on another
+        provider it stays as it is. Deleting when no key is stored succeeds.
+
+        Turning autofix off or switching providers never deletes the key, and
+        neither does applying a project configuration. This works where
+        autofix is not available, for a project that saved settings.
+
+        Project access tokens are refused.
+      operationId: deleteAutofixAPIKey
+      security:
+        - UserToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutofixSettings'
+        '403':
+          description: The request used a project access token. Only a person deletes the key.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Project not found. Code `feature_unavailable` means autofix is not available in this environment and the project never saved settings.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '501':
+          description: Autofix is not available in local mode.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /projects/{id}/issues/{issueId}/autofix-runs:
+    post:
+      tags:
+        - Autofix
+      summary: Diagnose an issue
+      description: |
+        Queues a run that diagnoses the issue with AI. The run reads the
+        issue's runtime logs and, when a push to the project's connected
+        repository built the deployment that was live when the issue was
+        last seen, its source at that commit. Poll the run until its status is
+        `succeeded`, `failed`, or `canceled`.
+
+        Autofix must be on for the project. An issue has at most one queued or
+        running run, a project runs one at a time, and a project starts at most
+        25 runs, manual and automatic, in any 24 hours.
+
+        Project access tokens are refused. A run spends model tokens on the
+        project's provider, so a person starts it with a platform token or in
+        the dashboard.
+      operationId: startAutofixRun
+      security:
+        - UserToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/IssueId'
+      responses:
+        '202':
+          description: Queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutofixRun'
+        '400':
+          description: Code `feature_unavailable` means the project's provider is `volcano` and Volcano-managed models are not available in this environment.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The owner's plan does not include autofix, or the request used a project access token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Project or issue not found. Code `feature_unavailable` means autofix is not available in this environment.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Autofix is off for the project, or the issue already has a queued or running run.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: The project started its limit of runs in the last 24 hours.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '501':
+          description: Autofix is not available in local mode.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: The owner's plan could not be resolved. Retry later.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /projects/{id}/autofix-runs:
+    get:
+      tags:
+        - Autofix
+      summary: List autofix runs
+      description: |
+        Lists the project's autofix runs, newest first. Runs stay readable after
+        autofix is turned off, and where autofix is not available.
+
+        Project access tokens can list runs, including read-only ones.
+      operationId: listAutofixRuns
+      security:
+        - UserToken: []
+        - ProjectAccessToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/IssueCursor'
+        - name: issue_id
+          in: query
+          required: false
+          description: Return only runs for this issue.
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          required: false
+          description: Return only runs in this status.
+          schema:
+            $ref: '#/components/schemas/AutofixRunStatus'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAutofixRuns'
+        '400':
+          description: A filter or the cursor is invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Project not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '501':
+          description: Autofix is not available in local mode.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /projects/{id}/autofix-runs/{runId}:
+    get:
+      tags:
+        - Autofix
+      summary: Get an autofix run
+      description: |
+        Returns one run: its status, the diagnosis once it succeeds, why it
+        failed or was canceled, and the model tokens it used. Runs stay readable
+        where autofix is not available.
+
+        Project access tokens can read runs, including read-only ones.
+      operationId: getAutofixRun
+      security:
+        - UserToken: []
+        - ProjectAccessToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/AutofixRunId'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutofixRun'
+        '404':
+          description: Project or run not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '501':
+          description: Autofix is not available in local mode.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /projects/{id}/durable-approvals:
     get:
       tags:
@@ -6368,7 +6734,7 @@ paths:
         22.x or 24.x. The Node.js runtime is inferred from
         `package.json` `engines.node`; if omitted, Volcano uses Node.js 22.x.
         The selected Node.js family must also satisfy the installed Next.js package's
-        `engines.node` constraint. Volcano tests Next 15.5.27 (`^18.18.0 || ^19.8.0 || >=20.0.0`) and Next 16.4.0 (`>=20.9.0`).
+        `engines.node` constraint. Volcano tests Next 15.5.28 (`^18.18.0 || ^19.8.0 || >=20.0.0`) and Next 16.4.2 (`>=20.9.0`).
         Source archive size is enforced by the API with `SOURCE_ARCHIVE_SIZE_LIMIT_MB`; the CLI
         does not apply its own source archive size limit. After the final container images are
         built, the publish build enforces `LAMBDA_TARGET_CONTAINER_SIZE_LIMIT_MB` before pushing.
@@ -9622,6 +9988,9 @@ paths:
       operationId: authGetPasswordPolicy
       security:
         - AnonKey: []
+      parameters:
+        - $ref: '#/components/parameters/AuthProxyAuthorization'
+        - $ref: '#/components/parameters/AuthProxyClientIP'
       responses:
         '200':
           description: Effective password policy
@@ -9630,7 +9999,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AuthPasswordPolicy'
         '401':
-          description: Invalid, missing, or revoked anon key
+          description: Invalid, missing, or revoked anon key; or invalid auth proxy metadata
           content:
             application/json:
               schema:
@@ -9662,6 +10031,9 @@ paths:
       operationId: authSignup
       security:
         - AnonKey: []
+      parameters:
+        - $ref: '#/components/parameters/AuthProxyAuthorization'
+        - $ref: '#/components/parameters/AuthProxyClientIP'
       requestBody:
         required: true
         content:
@@ -9696,7 +10068,9 @@ paths:
           description: Invalid input (bad email/password format)
         '401':
           description: |
-            Unauthorized - Invalid, tampered, revoked, or wrong-project anon key
+            Unauthorized - Invalid, tampered, revoked, or wrong-project anon key.
+            Also returned for invalid, repeated, or under-scoped auth proxy metadata
+            (`invalid auth proxy metadata`).
         '403':
           description: |
             Forbidden - Signups disabled, anon key lacks signup permission, or the
@@ -9728,6 +10102,9 @@ paths:
       operationId: authSignin
       security:
         - AnonKey: []
+      parameters:
+        - $ref: '#/components/parameters/AuthProxyAuthorization'
+        - $ref: '#/components/parameters/AuthProxyClientIP'
       requestBody:
         required: true
         content:
@@ -9758,7 +10135,7 @@ paths:
         '401':
           description: |
             Unauthorized - Invalid credentials, invalid/tampered/revoked anon key,
-            or account banned/deleted
+            or account banned/deleted; or invalid auth proxy metadata
         '403':
           description: |
             Forbidden - Anon key lacks signin permission, or the email domain is
@@ -9784,6 +10161,9 @@ paths:
       operationId: authRefresh
       security:
         - AnonKey: []
+      parameters:
+        - $ref: '#/components/parameters/AuthProxyAuthorization'
+        - $ref: '#/components/parameters/AuthProxyClientIP'
       requestBody:
         required: false
         content:
@@ -9805,7 +10185,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AuthTokenResponse'
         '401':
-          description: Invalid or expired refresh token
+          description: Invalid or expired refresh token; or invalid auth proxy metadata
           content:
             application/json:
               schema:
@@ -9839,6 +10219,9 @@ paths:
       operationId: authLogout
       security:
         - AnonKey: []
+      parameters:
+        - $ref: '#/components/parameters/AuthProxyAuthorization'
+        - $ref: '#/components/parameters/AuthProxyClientIP'
       requestBody:
         required: false
         content:
@@ -9855,6 +10238,12 @@ paths:
       responses:
         '204':
           description: Logged out successfully
+        '401':
+          description: Missing, invalid, or revoked anon key; or invalid, repeated, or under-scoped auth proxy metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /auth/forgot-password:
     post:
       tags:
@@ -9867,6 +10256,9 @@ paths:
       operationId: authForgotPassword
       security:
         - AnonKey: []
+      parameters:
+        - $ref: '#/components/parameters/AuthProxyAuthorization'
+        - $ref: '#/components/parameters/AuthProxyClientIP'
       requestBody:
         required: true
         content:
@@ -9890,6 +10282,12 @@ paths:
                   message:
                     type: string
                     example: If the email exists, a password reset link has been sent
+        '401':
+          description: Missing, invalid, or revoked anon key; or invalid, repeated, or under-scoped auth proxy metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '403':
           description: Password reset is disabled for this project
           content:
@@ -9913,6 +10311,9 @@ paths:
       operationId: authResetPassword
       security:
         - AnonKey: []
+      parameters:
+        - $ref: '#/components/parameters/AuthProxyAuthorization'
+        - $ref: '#/components/parameters/AuthProxyClientIP'
       requestBody:
         required: true
         content:
@@ -9944,7 +10345,7 @@ paths:
         '400':
           description: Password doesn't meet requirements
         '401':
-          description: Invalid or expired token
+          description: Invalid or expired token; or invalid auth proxy metadata
         '503':
           description: Compromised-password screening is temporarily unavailable
           content:
@@ -10055,6 +10456,9 @@ paths:
       operationId: authSignupAnonymous
       security:
         - AnonKey: []
+      parameters:
+        - $ref: '#/components/parameters/AuthProxyAuthorization'
+        - $ref: '#/components/parameters/AuthProxyClientIP'
       requestBody:
         description: Optional user metadata
         content:
@@ -10076,6 +10480,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthTokenResponse'
+        '401':
+          description: Missing, invalid, or revoked anon key; or invalid, repeated, or under-scoped auth proxy metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '403':
           description: Anonymous signins disabled
   /auth/user/convert-anonymous:
@@ -12510,6 +12920,9 @@ paths:
       operationId: authOAuthExchange
       security:
         - AnonKey: []
+      parameters:
+        - $ref: '#/components/parameters/AuthProxyAuthorization'
+        - $ref: '#/components/parameters/AuthProxyClientIP'
       requestBody:
         required: true
         content:
@@ -12535,7 +12948,7 @@ paths:
         '400':
           description: Invalid, expired, consumed, or redirect-mismatched code
         '401':
-          description: Missing or invalid project anon key
+          description: Missing or invalid project anon key; or invalid auth proxy metadata
         '403':
           description: |
             Email confirmation is now required, or the account's email domain is not
@@ -13790,7 +14203,9 @@ paths:
                     for backward compatibility. Provide an explicit list (e.g.
                     ["functions.invoke", "locks.manage"]) to restrict the key; "*"
                     grants everything. Scope enforcement applies to function invocation,
-                    storage object operations, and project locks.
+                    storage object operations, project locks, and server-side auth proxy
+                    metadata (auth.signin, auth.signup, auth.refresh, auth.logout,
+                    auth.password_reset).
                   example:
                     - functions.invoke
                     - locks.manage
@@ -14064,6 +14479,12 @@ paths:
       responses:
         '200':
           description: Policy deleted
+        '404':
+          description: Project, bucket, or policy not found. Also returned when the policy ID is malformed or belongs to another bucket.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /projects/{id}/storage/objects:
     get:
       tags:
@@ -15057,6 +15478,8 @@ paths:
         | `sandboxes.sessions` | Starting and resuming sessions, and one-shot executions |
         | `sandboxes.custom_templates` | Deploying a custom template; its validation waits while `sandboxes.sessions` is unavailable |
         | `issues` | The Issues API: listing, reading, and updating grouped runtime errors |
+        | `autofix` | The Autofix API: a project's AI diagnosis and fix settings |
+        | `autofix.managed_models` | Turning autofix on with Volcano-managed models instead of your own API key |
 
         A capability missing from the list is unavailable, and a capability under
         another, such as `sandboxes.sessions`, is unavailable whenever its parent is.
@@ -15084,6 +15507,10 @@ paths:
                     status: unavailable
                   - id: issues
                     status: available
+                  - id: autofix
+                    status: available
+                  - id: autofix.managed_models
+                    status: unavailable
   /openapi.json:
     get:
       tags:
@@ -15379,6 +15806,32 @@ components:
         project access token cannot create, list, read, or revoke project
         access tokens.
   parameters:
+    AuthProxyAuthorization:
+      name: X-Volcano-Proxy-Authorization
+      in: header
+      required: false
+      description: |
+        Trusted server-side auth proxy credential in `Bearer SERVICE_KEY`
+        form. When supplied, `X-Volcano-Client-IP` is also required. The service
+        key must belong to the anon key's project and hold this operation's scope:
+        `auth.signup` for signup and anonymous signup, `auth.signin` for signin
+        and OAuth code exchange, `auth.refresh` for refresh, `auth.logout` for
+        logout, and `auth.password_reset` for forgot-password and reset-password.
+        The password policy accepts any service key for the project. Never expose
+        a service key to browser code.
+      schema:
+        type: string
+    AuthProxyClientIP:
+      name: X-Volcano-Client-IP
+      in: header
+      required: false
+      description: |
+        Original browser IPv4 or IPv6 address supplied by a trusted server-side
+        auth proxy. The proxy must derive this value from its platform-verified
+        request metadata, never from a browser-supplied header. Requires a valid
+        `X-Volcano-Proxy-Authorization` header.
+      schema:
+        type: string
     BackupName:
       name: backupName
       in: path
@@ -15525,6 +15978,14 @@ components:
       description: |
         Opaque cursor from a previous response's `next_cursor`. Pages forward;
         keep the same filters while paging.
+    AutofixRunId:
+      name: runId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Autofix run ID
     DurableApprovalFunctionFilter:
       name: function
       in: query
@@ -16295,7 +16756,7 @@ components:
       properties:
         id:
           type: string
-          description: Stable capability ID, such as `sandboxes`, `sandboxes.sessions`, `sandboxes.custom_templates`, or `issues`. New IDs may appear at any time.
+          description: Stable capability ID, such as `sandboxes`, `sandboxes.sessions`, `sandboxes.custom_templates`, `issues`, or `autofix`. New IDs may appear at any time.
           example: sandboxes.sessions
         status:
           $ref: '#/components/schemas/CapabilityStatus'
@@ -20544,6 +21005,9 @@ components:
               }
             }
             ```
+
+            The top-level `__volcano_auth` and `__volcano_http` keys are reserved;
+            Volcano removes caller-supplied values for both.
     FunctionInvocationResponse:
       type: object
       description: Raw function response body returned by the invoked function.
@@ -21632,6 +22096,395 @@ components:
           $ref: '#/components/schemas/IssueStatus'
       required:
         - status
+    AutofixSettings:
+      type: object
+      additionalProperties: false
+      properties:
+        project_id:
+          type: string
+          format: uuid
+        enabled:
+          type: boolean
+          description: Whether Volcano diagnoses the project's issues with AI.
+        max_stage:
+          $ref: '#/components/schemas/AutofixStage'
+        auto_trigger:
+          type: boolean
+          description: Whether a new or reopened issue starts a run on its own. When false, runs start only on request.
+        provider:
+          $ref: '#/components/schemas/AutofixProvider'
+        model:
+          $ref: '#/components/schemas/AutofixModel'
+        api_key_configured:
+          type: boolean
+          description: Whether your own API key is stored. The key itself is never returned.
+        api_key_provider:
+          allOf:
+            - $ref: '#/components/schemas/AutofixProvider'
+          description: The provider the stored key belongs to, present when one is stored.
+        api_key_last4:
+          type: string
+          description: The stored key's last four characters, present when one is stored.
+        plan_includes_autofix:
+          type: boolean
+          description: Whether the owner's plan includes autofix. When false, saved settings stay stored and no run starts. Absent when a save that needed no plan succeeded but the plan could not be resolved.
+        updated_at:
+          type: string
+          format: date-time
+          description: When the settings were last saved. Absent until the first save.
+      required:
+        - project_id
+        - enabled
+        - max_stage
+        - auto_trigger
+        - provider
+        - model
+        - api_key_configured
+    AutofixStage:
+      type: string
+      enum:
+        - diagnose
+        - pull_request
+      x-enum-varnames:
+        - AutofixStageDiagnose
+        - AutofixStagePullRequest
+      description: How far a run may go. `diagnose` stops at a root-cause diagnosis. `pull_request` may also open a draft pull request with a fix in the project's connected repository.
+    AutofixProvider:
+      type: string
+      enum:
+        - volcano
+        - anthropic
+      x-enum-varnames:
+        - AutofixProviderVolcano
+        - AutofixProviderAnthropic
+      description: Who serves the model. `volcano` runs on Volcano's models. `anthropic` runs on your own Anthropic API key.
+    AutofixModel:
+      type: string
+      enum:
+        - claude-fable-5-1
+        - claude-opus-5-5
+        - claude-sonnet-5-5
+        - claude-haiku-5-5
+        - claude-opus-5
+        - claude-sonnet-5
+        - claude-haiku-4-5
+      x-enum-varnames:
+        - AutofixModelClaudeFable51
+        - AutofixModelClaudeOpus55
+        - AutofixModelClaudeSonnet55
+        - AutofixModelClaudeHaiku55
+        - AutofixModelClaudeOpus5
+        - AutofixModelClaudeSonnet5
+        - AutofixModelClaudeHaiku45
+      description: The Claude model a run uses. `claude-opus-5-5` is the default.
+    UpdateAutofixSettingsRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        enabled:
+          type: boolean
+        max_stage:
+          $ref: '#/components/schemas/AutofixStage'
+        auto_trigger:
+          type: boolean
+          default: false
+        provider:
+          $ref: '#/components/schemas/AutofixProvider'
+        model:
+          $ref: '#/components/schemas/AutofixModel'
+        api_key:
+          type: string
+          format: password
+          writeOnly: true
+          minLength: 20
+          maxLength: 512
+          pattern: ^[!-~]+$
+          description: Your own API key for `provider`, such as an Anthropic key for `anthropic`. Omit it to keep the stored key. Encrypted at rest and never returned.
+      required:
+        - enabled
+    AutofixRunStatus:
+      type: string
+      enum:
+        - queued
+        - running
+        - succeeded
+        - failed
+        - canceled
+      x-enum-varnames:
+        - AutofixRunStatusQueued
+        - AutofixRunStatusRunning
+        - AutofixRunStatusSucceeded
+        - AutofixRunStatusFailed
+        - AutofixRunStatusCanceled
+      description: Where a run is. `canceled` means the project's settings or plan stopped allowing the run before it finished; `failure_code` says which.
+    AutofixRunTrigger:
+      type: string
+      enum:
+        - manual
+        - new_issue
+        - regression
+      x-enum-varnames:
+        - AutofixRunTriggerManual
+        - AutofixRunTriggerNewIssue
+        - AutofixRunTriggerRegression
+      description: What started the run. `manual` is a request; `new_issue` and `regression` are automatic runs for an issue that appeared or reopened.
+    AutofixEvidence:
+      type: object
+      additionalProperties: false
+      properties:
+        kind:
+          type: string
+          enum:
+            - log
+            - code
+            - other
+          x-enum-varnames:
+            - AutofixEvidenceKindLog
+            - AutofixEvidenceKindCode
+            - AutofixEvidenceKindOther
+        detail:
+          type: string
+        location:
+          type: string
+          description: A file and line, or a log timestamp. Absent when the evidence has none.
+      required:
+        - kind
+        - detail
+    AutofixDiagnosis:
+      type: object
+      additionalProperties: false
+      properties:
+        summary:
+          type: string
+          description: One or two sentences on what goes wrong.
+        root_cause:
+          type: string
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/AutofixEvidence'
+        suggested_fix:
+          type: string
+        confidence:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+          x-enum-varnames:
+            - AutofixConfidenceLow
+            - AutofixConfidenceMedium
+            - AutofixConfidenceHigh
+        fixable:
+          type: boolean
+          description: Whether a change to the project's code would fix the issue.
+        files:
+          type: array
+          description: Repository paths a fix would change.
+          items:
+            type: string
+      required:
+        - summary
+        - root_cause
+        - evidence
+        - suggested_fix
+        - confidence
+        - fixable
+        - files
+    AutofixRunUsage:
+      type: object
+      additionalProperties: false
+      description: Model tokens the run used across every attempt.
+      properties:
+        input_tokens:
+          type: integer
+          format: int64
+        output_tokens:
+          type: integer
+          format: int64
+        cache_read_input_tokens:
+          type: integer
+          format: int64
+        cache_creation_input_tokens:
+          type: integer
+          format: int64
+      required:
+        - input_tokens
+        - output_tokens
+        - cache_read_input_tokens
+        - cache_creation_input_tokens
+    AutofixEdit:
+      type: object
+      additionalProperties: false
+      description: One exact text replacement. An empty `old_text` creates the file.
+      properties:
+        path:
+          type: string
+        old_text:
+          type: string
+        new_text:
+          type: string
+      required:
+        - path
+        - old_text
+        - new_text
+    AutofixPatch:
+      type: object
+      additionalProperties: false
+      description: The fix the model proposed, applied to the deployed commit. Present whenever the run opened a pull request, and when a valid fix could not be published.
+      properties:
+        title:
+          type: string
+        edits:
+          type: array
+          items:
+            $ref: '#/components/schemas/AutofixEdit'
+      required:
+        - title
+        - edits
+    AutofixPullRequestState:
+      type: string
+      enum:
+        - open
+        - merged
+        - closed
+      x-enum-varnames:
+        - AutofixPullRequestStateOpen
+        - AutofixPullRequestStateMerged
+        - AutofixPullRequestStateClosed
+    AutofixPullRequest:
+      type: object
+      additionalProperties: false
+      description: The draft pull request the run opened on the connected repository.
+      properties:
+        number:
+          type: integer
+          format: int64
+        url:
+          type: string
+          format: uri
+        branch:
+          type: string
+          description: The branch the fix is on, `volcano/autofix/<run id>`.
+        state:
+          $ref: '#/components/schemas/AutofixPullRequestState'
+        closed_at:
+          type: string
+          format: date-time
+          description: When the pull request was merged or closed.
+        deployed_at:
+          type: string
+          format: date-time
+          description: When a deployment that includes the merged fix went live. The issue resolves then, unless it occurred again since. When more than 20 deployments went live after the merge before Volcano checked, it is the merge time instead.
+      required:
+        - number
+        - url
+        - branch
+        - state
+    AutofixPullRequestSkipped:
+      type: string
+      enum:
+        - source_unavailable
+        - pull_request_open
+        - not_fixable
+        - low_confidence
+        - no_patch
+        - permission_missing
+        - repository_changed
+        - publish_failed
+      x-enum-varnames:
+        - AutofixPullRequestSkippedSourceUnavailable
+        - AutofixPullRequestSkippedPullRequestOpen
+        - AutofixPullRequestSkippedNotFixable
+        - AutofixPullRequestSkippedLowConfidence
+        - AutofixPullRequestSkippedNoPatch
+        - AutofixPullRequestSkippedPermissionMissing
+        - AutofixPullRequestSkippedRepositoryChanged
+        - AutofixPullRequestSkippedPublishFailed
+      description: Why a run whose `max_stage` is `pull_request` opened no pull request. The diagnosis stands either way.
+    AutofixRun:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        issue_id:
+          type: string
+          format: uuid
+        trigger:
+          $ref: '#/components/schemas/AutofixRunTrigger'
+        status:
+          $ref: '#/components/schemas/AutofixRunStatus'
+        max_stage:
+          $ref: '#/components/schemas/AutofixStage'
+        stage_reached:
+          $ref: '#/components/schemas/AutofixStage'
+        provider:
+          $ref: '#/components/schemas/AutofixProvider'
+        model:
+          $ref: '#/components/schemas/AutofixModel'
+        diagnosis:
+          $ref: '#/components/schemas/AutofixDiagnosis'
+        patch:
+          $ref: '#/components/schemas/AutofixPatch'
+        pull_request:
+          $ref: '#/components/schemas/AutofixPullRequest'
+        pull_request_skipped:
+          $ref: '#/components/schemas/AutofixPullRequestSkipped'
+        commit_sha:
+          type: string
+          description: The commit the diagnosis read, when a push to the connected repository deployed the resource. Absent when the run read logs only.
+        failure_code:
+          type: string
+          description: Why the run failed or was canceled, or why its last attempt will be retried. One of `api_key_rejected`, `model_request_rejected`, `model_unavailable`, `model_refused`, `no_diagnosis`, `budget_exhausted`, `timed_out`, `attempts_exhausted`, `autofix_disabled`, `plan_required`, `managed_models_unavailable`, `settings_changed`, `issue_not_found`, or `internal_error`.
+        failure_message:
+          type: string
+        usage:
+          $ref: '#/components/schemas/AutofixRunUsage'
+        created_at:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - project_id
+        - issue_id
+        - trigger
+        - status
+        - max_stage
+        - provider
+        - model
+        - usage
+        - created_at
+    PaginatedAutofixRuns:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AutofixRun'
+        limit:
+          type: integer
+          description: Number of items per page
+        has_more:
+          type: boolean
+          description: Whether a next page exists
+        next_cursor:
+          type: string
+          description: Opaque cursor for the next page (present if has_more is true)
+      required:
+        - data
+        - limit
+        - has_more
     PaginatedProjectCustomDomains:
       type: object
       properties:
@@ -21979,6 +22832,8 @@ components:
             $ref: '#/components/schemas/ProjectConfigBucket'
         realtime:
           $ref: '#/components/schemas/ProjectConfigRealtime'
+        autofix:
+          $ref: '#/components/schemas/ProjectConfigAutofix'
         auth:
           $ref: '#/components/schemas/ProjectConfigAuth'
         functions:
@@ -22706,6 +23561,21 @@ components:
           type: boolean
         postgres_changes_enabled:
           type: boolean
+    ProjectConfigAutofix:
+      type: object
+      additionalProperties: false
+      description: 'AI diagnosis and fix settings. Omitted fields keep their current value. Your API key is never part of the manifest, and an apply never sets or deletes it: set it with `PUT /projects/{id}/autofix` before turning on a provider that runs on your own key.'
+      properties:
+        enabled:
+          type: boolean
+        max_stage:
+          $ref: '#/components/schemas/AutofixStage'
+        auto_trigger:
+          type: boolean
+        provider:
+          $ref: '#/components/schemas/AutofixProvider'
+        model:
+          $ref: '#/components/schemas/AutofixModel'
     ProjectConfigScheduler:
       type: object
       additionalProperties: false
@@ -22797,6 +23667,7 @@ components:
             - function
             - frontend
             - database
+            - database_branch
         id:
           type: string
           format: uuid
@@ -22885,8 +23756,11 @@ components:
         - findings
     ProjectHealthStatus:
       type: string
+      description: empty means no functions, frontends, databases, storage, Volcano Auth users, or Sandbox resources are listed. needs_attention means an operation needs review without confirmed service impairment, or a serving frontend whose edge recovery gave up needs a redeploy. degraded means a resource is only partly available or is unavailable for an expected, temporary reason, such as a frontend whose edge synchronization did not complete or a database being restored; critical means use is blocked. A failed workflow or deployment record alone does not establish an outage. Findings remain available for empty projects.
       enum:
+        - empty
         - healthy
+        - needs_attention
         - degraded
         - critical
         - unknown

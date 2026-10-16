@@ -186,11 +186,14 @@ suspend/resume and are removed with the session.
 
 ## Grant a signed-in user access
 
-Platform user tokens and project service keys manage Sandboxes. A project
+Platform user tokens, project service keys, and full-scope project access tokens
+manage Sandboxes. Read-only project access tokens can inspect templates,
+deployments, sessions, and session files. Project access tokens are restricted to
+their project and cannot manage end-user grants or issue port credentials.
+These restrictions also apply through the [MCP server](../interfaces/mcp.md). A project
 auth-user JWT can only read, execute commands, access files, or connect to a
 session explicitly granted to that user. It cannot create, suspend, resume,
-terminate, or grant sessions. Anonymous keys and project access tokens are not
-accepted by these APIs.
+terminate, or grant sessions. Anonymous keys are not accepted by these APIs.
 
 An invalid or expired auth-user JWT returns `401`; refresh the user's login and
 retry with the same execution key. A valid user without a matching grant or

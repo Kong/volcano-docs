@@ -142,7 +142,9 @@ project's status:
 }
 ```
 
-Volcano locates the caller by IP address. Frontends serve a branded HTML page
+Volcano locates the caller by IP address. For an anonymous-auth request from an
+authenticated [server-side auth proxy](../authentication/configuration/rate-limiting.md#server-side-auth-proxies),
+that is the browser IP the proxy supplies. Frontends serve a branded HTML page
 to browser navigations and this JSON otherwise; every other surface answers
 with JSON. The response is never cached and carries the same CORS headers as
 the unavailable response, so an in-page `fetch()` can read it. A CORS preflight
