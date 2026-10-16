@@ -40,12 +40,14 @@ A project access token authenticates the same control-plane API a platform token
 - Read and write project variables and settings
 - Search, stream, and aggregate logs and metrics
 - Manage anon keys, service keys, buckets, and auth users for that project
+- Manage Sandbox templates, deployments, sessions, commands, and files. Read-only tokens can inspect templates, deployments, sessions, and session files. See [Sandbox access](../../guides/sandboxes.md#grant-a-signed-in-user-access).
 
 It cannot:
 
 - **Touch another project.** Presenting it on a different project's route returns `403`.
 - **Act on your account.** Listing your projects, creating a project, billing, and every other account-scoped endpoint returns `403`.
 - **Manage project access tokens.** Creating, listing, reading, and revoking tokens all require a platform token.
+- **Manage Sandbox end-user grants or issue Sandbox port credentials.** Both token scopes are refused, including `full`.
 - **Decide durable approvals.** A token of either scope can list approvals and read their statistics, but approving or denying one returns `403`. A workflow can hold a project access token, so letting one decide would let a workflow approve itself; a person decides in the dashboard or with a platform token. See [Durable approvals](../../functions/durable-approvals.md#who-can-decide).
 
 The token-management rule is the point of the credential. A token that can mint its replacement or delete the record of its own use is not meaningfully scoped, so a leaked CI secret or a prompt-injected agent cannot clone itself or erase its tracks.
@@ -58,7 +60,7 @@ Choose the scope at creation time. It cannot be changed afterwards; create a new
 
 | Scope | Allows |
 |-------|--------|
-| `full` | Everything the project owner can do on that project |
+| `full` | Read and mutate project resources, subject to the restrictions above |
 | `read_only` | Reads only, and not the reads that return a credential. Any mutation, and any request for a service key, an anon key, a variable's value, or a database connection string, returns `403` |
 
 Read-only is enforced by what an endpoint does, not by its HTTP method. Log search, log activity, log streaming, and metrics queries are `POST` requests because they carry filters in the body, and a `read_only` token can still call all of them — which is what makes the scope usable for monitoring and for agents that should look but not touch.

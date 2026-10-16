@@ -66,7 +66,7 @@ Supported frontend environments:
 
 If `engines.node` is omitted, Volcano builds with Node.js `22.x`.
 Volcano runs the `build` script from `package.json`, or `next build` when it is missing. For Next.js `16.x` it adds `--webpack` to `next build`.
-Your selected Node.js family must satisfy the installed Next.js package's `engines.node` constraint. The runtime matrix is tested against the pinned Next versions' npm metadata: Next `15.5.27` requires `^18.18.0 || ^19.8.0 || >=20.0.0`, and Next `16.4.0` requires `>=20.9.0`.
+Your selected Node.js family must satisfy the installed Next.js package's `engines.node` constraint. The runtime matrix is tested against the pinned Next versions' npm metadata: Next `15.5.28` requires `^18.18.0 || ^19.8.0 || >=20.0.0`, and Next `16.4.2` requires `>=20.9.0`.
 
 Plan limits:
 - HOBBY users can create one frontend per project.

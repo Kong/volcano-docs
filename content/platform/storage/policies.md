@@ -50,11 +50,11 @@ Policies have access to these variables:
 
 ## Creating policies
 
-Policies are created via the REST API:
+Create policies with a platform token:
 
 ```bash
-curl -X POST "https://api.yourapp.com/storage/buckets/my-bucket/policies" \
-  -H "Authorization: Bearer $SERVICE_KEY" \
+curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/storage/buckets/my-bucket/policies" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "owner-access",
@@ -205,13 +205,15 @@ Each user has their own isolated storage:
 
 ```bash
 # Create bucket
-curl -X POST "https://api.yourapp.com/storage/buckets" \
-  -H "Authorization: Bearer $SERVICE_KEY" \
+curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/storage/buckets" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
   -d '{"name": "user-files"}'
 
 # Policy: Users can upload to their folder
-curl -X POST "https://api.yourapp.com/storage/buckets/user-files/policies" \
-  -H "Authorization: Bearer $SERVICE_KEY" \
+curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/storage/buckets/user-files/policies" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
   -d '{
     "name": "user-insert",
     "operation": "INSERT",
@@ -219,8 +221,9 @@ curl -X POST "https://api.yourapp.com/storage/buckets/user-files/policies" \
   }'
 
 # Policy: Users can read their folder
-curl -X POST "https://api.yourapp.com/storage/buckets/user-files/policies" \
-  -H "Authorization: Bearer $SERVICE_KEY" \
+curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/storage/buckets/user-files/policies" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
   -d '{
     "name": "user-select",
     "operation": "SELECT",
@@ -228,8 +231,9 @@ curl -X POST "https://api.yourapp.com/storage/buckets/user-files/policies" \
   }'
 
 # Policy: Users can delete their files
-curl -X POST "https://api.yourapp.com/storage/buckets/user-files/policies" \
-  -H "Authorization: Bearer $SERVICE_KEY" \
+curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/storage/buckets/user-files/policies" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
   -d '{
     "name": "user-delete",
     "operation": "DELETE",
@@ -257,13 +261,15 @@ Files owned by users but readable by all team members:
 
 ```bash
 # Create bucket
-curl -X POST "https://api.yourapp.com/storage/buckets" \
-  -H "Authorization: Bearer $SERVICE_KEY" \
+curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/storage/buckets" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
   -d '{"name": "team-files"}'
 
 # Anyone authenticated can upload
-curl -X POST "https://api.yourapp.com/storage/buckets/team-files/policies" \
-  -H "Authorization: Bearer $SERVICE_KEY" \
+curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/storage/buckets/team-files/policies" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
   -d '{
     "name": "auth-insert",
     "operation": "INSERT",
@@ -271,8 +277,9 @@ curl -X POST "https://api.yourapp.com/storage/buckets/team-files/policies" \
   }'
 
 # Anyone authenticated can read
-curl -X POST "https://api.yourapp.com/storage/buckets/team-files/policies" \
-  -H "Authorization: Bearer $SERVICE_KEY" \
+curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/storage/buckets/team-files/policies" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
   -d '{
     "name": "auth-select",
     "operation": "SELECT",
@@ -280,8 +287,9 @@ curl -X POST "https://api.yourapp.com/storage/buckets/team-files/policies" \
   }'
 
 # Only owner can delete
-curl -X POST "https://api.yourapp.com/storage/buckets/team-files/policies" \
-  -H "Authorization: Bearer $SERVICE_KEY" \
+curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/storage/buckets/team-files/policies" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
   -d '{
     "name": "owner-delete",
     "operation": "DELETE",
@@ -289,8 +297,9 @@ curl -X POST "https://api.yourapp.com/storage/buckets/team-files/policies" \
   }'
 
 # Only owner can update/overwrite
-curl -X POST "https://api.yourapp.com/storage/buckets/team-files/policies" \
-  -H "Authorization: Bearer $SERVICE_KEY" \
+curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/storage/buckets/team-files/policies" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
   -d '{
     "name": "owner-update",
     "operation": "UPDATE",
@@ -304,13 +313,15 @@ Public read access, but only admins can write:
 
 ```bash
 # Create public bucket
-curl -X POST "https://api.yourapp.com/storage/buckets" \
-  -H "Authorization: Bearer $SERVICE_KEY" \
+curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/storage/buckets" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
   -d '{"name": "public-assets"}'
 
 # Anyone can read (public bucket)
-curl -X POST "https://api.yourapp.com/storage/buckets/public-assets/policies" \
-  -H "Authorization: Bearer $SERVICE_KEY" \
+curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/storage/buckets/public-assets/policies" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
   -d '{
     "name": "public-read",
     "operation": "SELECT",
@@ -326,13 +337,15 @@ Only allow image uploads, anyone can view:
 
 ```bash
 # Create bucket
-curl -X POST "https://api.yourapp.com/storage/buckets" \
-  -H "Authorization: Bearer $SERVICE_KEY" \
+curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/storage/buckets" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
   -d '{"name": "gallery"}'
 
 # Authenticated users can upload images only
-curl -X POST "https://api.yourapp.com/storage/buckets/gallery/policies" \
-  -H "Authorization: Bearer $SERVICE_KEY" \
+curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/storage/buckets/gallery/policies" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
   -d '{
     "name": "upload-images-only",
     "operation": "INSERT",
@@ -340,8 +353,9 @@ curl -X POST "https://api.yourapp.com/storage/buckets/gallery/policies" \
   }'
 
 # All user sessions can view
-curl -X POST "https://api.yourapp.com/storage/buckets/gallery/policies" \
-  -H "Authorization: Bearer $SERVICE_KEY" \
+curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/storage/buckets/gallery/policies" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
   -d '{
     "name": "view-all",
     "operation": "SELECT",
@@ -349,8 +363,9 @@ curl -X POST "https://api.yourapp.com/storage/buckets/gallery/policies" \
   }'
 
 # Only owner can delete their images
-curl -X POST "https://api.yourapp.com/storage/buckets/gallery/policies" \
-  -H "Authorization: Bearer $SERVICE_KEY" \
+curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/storage/buckets/gallery/policies" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
   -d '{
     "name": "owner-delete",
     "operation": "DELETE",
@@ -364,13 +379,15 @@ Allow documents but block executables:
 
 ```bash
 # Create bucket
-curl -X POST "https://api.yourapp.com/storage/buckets" \
-  -H "Authorization: Bearer $SERVICE_KEY" \
+curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/storage/buckets" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
   -d '{"name": "documents"}'
 
 # Block dangerous file types
-curl -X POST "https://api.yourapp.com/storage/buckets/documents/policies" \
-  -H "Authorization: Bearer $SERVICE_KEY" \
+curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/storage/buckets/documents/policies" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
   -d '{
     "name": "block-executables",
     "operation": "INSERT",
@@ -384,18 +401,28 @@ When multiple policies exist for an operation, access is granted if **any** poli
 
 ```bash
 # Policy 1: Owners can read their files
-curl -X POST ".../policies" -d '{
+curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/storage/buckets/my-bucket/policies" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
+  --data-binary @- <<'JSON'
+{
   "name": "owner-select",
   "operation": "SELECT",
   "definition": "auth.uid() = owner_id"
-}'
+}
+JSON
 
 # Policy 2: Anyone can read shared folder
-curl -X POST ".../policies" -d '{
+curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/storage/buckets/my-bucket/policies" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
+  --data-binary @- <<'JSON'
+{
   "name": "shared-select",
   "operation": "SELECT",
   "definition": "name LIKE 'shared/%'"
-}'
+}
+JSON
 ```
 
 A user can read a file if:
@@ -427,16 +454,19 @@ const { data } = await volcanoAdmin.storage
 ### List policies
 
 ```bash
-curl "https://api.yourapp.com/storage/buckets/my-bucket/policies" \
-  -H "Authorization: Bearer $SERVICE_KEY"
+curl "https://api.volcano.dev/projects/$PROJECT_ID/storage/buckets/my-bucket/policies" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
 
 ### Delete a policy
 
 ```bash
-curl -X DELETE "https://api.yourapp.com/storage/buckets/my-bucket/policies/policy-id" \
-  -H "Authorization: Bearer $SERVICE_KEY"
+curl -X DELETE "https://api.volcano.dev/projects/$PROJECT_ID/storage/buckets/my-bucket/policies/$POLICY_ID" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
+
+A malformed or unknown policy ID, or a policy outside the bucket, returns `404`
+with `{"error":"policy not found"}`.
 
 ## Debugging policies
 
