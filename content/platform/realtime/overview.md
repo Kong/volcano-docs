@@ -12,6 +12,7 @@ Volcano Realtime provides WebSocket-based real-time communication for your appli
 | Broadcast | Pub/sub messaging between connected clients |
 | Presence | Track online users and share state in real-time |
 | Postgres Changes | Subscribe to database INSERT/UPDATE/DELETE events |
+| Durable messages | Receive what a running durable function publishes |
 | Per-project | Each project has isolated realtime channels |
 | SDK support | JavaScript/TypeScript SDK with automatic reconnection |
 | Security | JWT-based authentication with automatic project isolation |
@@ -108,7 +109,7 @@ await dbChannel.subscribe();
 
 ## Channel types
 
-Volcano Realtime supports three types of channels:
+Volcano Realtime supports four types of channels:
 
 ### Broadcast channels (default)
 
@@ -135,6 +136,18 @@ const channel = realtime.channel('schema:table', { type: 'postgres' });
 ```
 
 Receive real-time notifications when database rows are inserted, updated, or deleted. Filtered by Row Level Security policies.
+
+### Durable execution channels
+
+```javascript
+const { data: subscription } = await volcano.durable.messages.subscribe(
+  { functionName: 'report-builder', executionId, clientToken },
+  (message) => console.log(message.name, message.data),
+  { realtime },
+);
+```
+
+Receive the messages a running [durable function publishes](../functions/durable-messages.md#subscribe-to-an-execution) with `ctx.publish`, in order. Clients can only listen; the execution is the only publisher. A publish with subscribers counts as one Realtime message against your allowance, plus one for each subscriber it reaches. A publish nobody is subscribed to costs nothing.
 
 ## Disable Realtime features
 

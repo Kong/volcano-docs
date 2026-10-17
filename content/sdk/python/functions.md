@@ -85,7 +85,7 @@ page = owner_client.durable.list(project_id, "charge-order", status="running")
 owner_client.durable.stop(project_id, "charge-order", handle.id)
 ```
 
-`start()` accepts the same active session, service key, or anonymous key as `functions.invoke()`. It is the only durable operation available to application credentials. An execution name makes a start idempotent.
+`start()` accepts the same active session, service key, or anonymous key as `functions.invoke()`. Besides [sending and following messages](#send-and-follow-messages), it is the only durable operation available to application credentials. An execution name makes a start idempotent.
 
 `get()`, `list()`, and `stop()` are owner-scoped. Call them from a trusted backend with the project owner's platform user token. Auth-user sessions, anonymous keys, service keys, and project access tokens are not accepted. `stop()` returns after the stop request is accepted, so poll `get()` until `is_terminal` is true.
 
@@ -182,6 +182,33 @@ A denial or a timeout is a value to branch on, not an exception. The execution c
 
 Volcano sets `VOLCANO_PLATFORM_API_URL` on deployed and local durable functions. The function sends the approval there without a credential. Volcano accepts it only from the execution that is waiting. When Volcano does not answer, has not seen the execution or its approval yet, throttles the request, or fails, the function retries for up to 30 seconds. An approval whose timeout passes before Volcano records it returns the `expired` decision. If Volcano refuses the approval, or keeps failing for 30 seconds, `wait_for_approval()` raises the durable runtime's `CallbackSubmitterError`, carrying the SDK error's message. Unless the handler catches it, the execution fails. Calling `wait_for_approval()` without `VOLCANO_PLATFORM_API_URL` raises `RuntimeError`.
 
+## Wait for a message and publish progress
+
+`ctx.wait_for_message()` pauses the execution until something outside it sends a message with that name: a webhook receiver, a backend, a browser, or another function, through [`client.durable.messages`](#send-and-follow-messages). `ctx.publish()` records a message that applications list or receive live:
+
+```python
+from volcano_sdk.durable_authoring import durable
+
+
+@durable
+def handler(event, ctx):
+    ctx.publish("progress", {"stage": "waiting-for-upload"})
+
+    upload = ctx.wait_for_message("uploaded", timeout="1d")
+    if upload is None:
+        return {"status": "abandoned"}
+
+    report = ctx.step("render", lambda scope: render(upload.data["url"]))
+    ctx.publish("progress", {"stage": "done", "report_url": report["url"]})
+    return {"status": "done", "report_url": report["url"]}
+```
+
+`wait_for_message(name, timeout=None)` returns a `ReceivedMessage` with `id`, `name`, `data`, `sender` (a `DurableMessageSender` with `type` and `user_id`), and `sent_at` as an RFC 3339 string, or `None` once the timeout passes. Messages sent before anything waits for their name are kept, and each wait takes the oldest one. A message never decides an approval, so use `wait_for_approval()` wherever only a person may answer.
+
+`publish(name, data=None)` returns a `PublishedMessage` with `id` and `seq`. `data` is any JSON value up to 64 KiB. Publishing is checkpointed, so a replay never publishes twice. The first publish in each context, and in each `ctx.child()`, `ctx.parallel()` branch, or `ctx.map()` item that publishes, opens a messages session, which appears in the execution's history as `volcano:messages-session` and costs three durable operations once.
+
+Names follow the approval rules: up to 237 printable ASCII characters, checked before anything is recorded, as is the timeout. Both need `VOLCANO_PLATFORM_API_URL`. A wait Volcano does not answer, cannot see yet, throttles, or fails on is retried for the same 30 seconds an approval gets, then raises `CallbackSubmitterError`. A wait Volcano refuses, for example with `too_many_message_waits` when 100 are already open, raises it at once. A refused publish fails its step without a retry, which fails the execution unless the handler catches it.
+
 ## Decide approvals from a backend
 
 `client.durable.approvals` lists, reads, and decides a project's approvals:
@@ -224,6 +251,61 @@ print(stats.counts.pending, stats.approval_rate, stats.median_seconds_to_decisio
 
 Read approvals with the project owner's platform user token or a project access token. Only a person decides: `approve()` and `deny()` need a platform user token, and a project access token raises `PermissionDeniedError`. Repeating the same decision returns the approval unchanged. A conflicting decision, or deciding an expired or cancelled approval, raises `ConflictError`. An unknown approval raises `NotFoundError`. `PermissionDeniedError` subclasses `AuthenticationError`, so existing handlers still catch it.
 
+## Send and follow messages
+
+`client.durable.messages` sends messages to an execution, lists its messages in both directions, and subscribes to what it publishes. It uses the application route with the client's credential, as `durable.start()` does. Pass the execution's `client_token` from the start response when an anon key, or a signed-in user who did not start the execution, should reach it:
+
+```python
+import os
+
+from volcano_sdk import ConflictError, VolcanoClient
+
+client = VolcanoClient(
+    anon_key=os.environ["VOLCANO_ANON_KEY"],
+    service_key=os.environ["VOLCANO_SERVICE_KEY"],
+)
+execution = client.durable.start("report-builder", {"report_id": "7f3a"})
+
+try:
+    message = client.durable.messages.send(
+        "report-builder",
+        execution.id,
+        "uploaded",
+        {"url": "https://files.example.com/7f3a.csv"},
+        idempotency_key="upload-7f3a",
+    )
+except ConflictError as error:
+    print(error.code)  # execution_not_running
+
+page = client.durable.messages.list("report-builder", execution.id, direction="out")
+for published in page.messages:
+    print(published.seq, published.name, published.data)
+```
+
+| Method | Returns |
+|---|---|
+| `send(function_name, execution_id, name, data=None, idempotency_key=..., client_token=..., project_id=...)` | The stored `DurableMessage`: `queued`, `delivered`, or `delivering` while its handover to a wait is still being confirmed. |
+| `list(function_name, execution_id, direction=..., name=..., after=..., limit=..., client_token=..., project_id=...)` | `DurableMessagePage` with `messages`, oldest first, and `has_more`. |
+| `await subscribe(function_name, execution_id, handler, client_token=..., project_id=...)` | A `DurableMessageSubscription` with `await unsubscribe()`. |
+
+A `DurableMessage` has `id`, `execution_id`, `direction` (`"in"` or `"out"`), `seq`, `name`, `data`, `sender`, `status`, `sent_at`, and `delivered_at`. `seq` orders both directions and can skip numbers; read the next page with `after` set to the last `seq`. A send repeating an `idempotency_key` the same sender has used on the execution returns the first message and sends nothing; another sender's keys never collide with it. The key is up to 255 characters. The key and `client_token` travel as headers, so each must be printable ASCII without leading or trailing whitespace, or the call raises `ValueError`.
+
+`subscribe()` calls the handler, which may be a coroutine function, with each message the execution publishes, in `seq` order, once each, and one call at a time. The messages published before the call are delivered before it returns. A handler that raises during that first read ends the subscription before anything more is delivered, and `subscribe()` raises its error, even when leaving the channel then fails, which is reported to the event loop's exception handler; later, what a handler raises is reported to the event loop's exception handler and delivery goes on. After a reconnect, a live message that shows an earlier one was lost, or a burst the handler falls too far behind on, the missing ones are read back before live delivery resumes; a read that fails is reported to the event loop's exception handler and retried, backing off to every 30 seconds, while the live messages after the gap wait. `client.realtime.remove_all_channels()` and `client.realtime.disconnect()` end the subscription, and a read still in flight delivers nothing; call `unsubscribe()` before subscribing to that execution again. Ended during its first read, the subscription makes `subscribe()` raise `RuntimeError`. The subscription belongs to the session that opened it: once the client signs out, signs in again, or sets another session, it delivers and reads nothing more, and the next read or delivery leaves the execution's channel and raises `RuntimeError`, reported to the event loop's exception handler, or from `subscribe()` while its first read is running. A token refresh keeps it. When the server ends the subscription, or refuses to restore it after a reconnect, as when the execution is no longer visible to the session, the subscription delivers nothing more and leaves the execution's channel, then reports `RuntimeError` with the server's reason to the event loop's exception handler once; the execution can be subscribed to again. If leaving the channel fails, that error is reported too, and the next `subscribe()` to the execution leaves it first. An end or refusal before `subscribe()` returns makes it raise that `RuntimeError` instead, and nothing is reported. It follows the execution on the client's realtime connection, which needs a signed-in session: a client holding only an anonymous or service key gets `RuntimeError`, even with the `client_token`, and can poll `list()` with `after` instead. One client subscribes to an execution once at a time:
+
+```python
+async def follow(client, execution):
+    subscription = await client.durable.messages.subscribe(
+        "report-builder",
+        execution.id,
+        lambda message: print(message.name, message.data),
+        client_token=execution.client_token,
+    )
+    ...
+    await subscription.unsubscribe()
+```
+
+Pass `project_id` to use the owner's project route with the session's platform token or a project access token instead; a `read_only` project access token can list but not send. A send to an execution that has ended raises `ConflictError` with `code` set to `execution_not_running`, and one to an execution already holding 100 messages nothing has taken raises it with `too_many_queued_messages`. An execution the caller may not reach raises `NotFoundError`, as an unknown one does.
+
 ## Run durable functions locally
 
 Deploy and start the same handler through the local durable engine:
@@ -237,5 +319,7 @@ volcano durable start charge-order --input '{"order_id":"order-9"}'
 Local waits resolve immediately by default while preserving checkpoint and replay behavior. Set `LOCAL_DURABLE_REAL_TIME=true` before `volcano start` when wait timing must match the deployed function. Local executions persist across `volcano stop` and `volcano start`.
 
 Approvals work the same locally. Decide one with `volcano durable approvals approve` or `volcano durable approvals deny`, or point the owner client at the local server. Approval timeouts run in real time.
+
+Messages work the same locally too. Send one with `volcano durable messages send`, or point the client at the local server. Message wait timeouts run in real time.
 
 Running a decorated handler directly in a Python process still needs the optional test runtime: `python -m pip install 'volcano-sdk-python[durable]'`.

@@ -51,6 +51,7 @@ JavaScript or Python workflows that checkpoint each step and resume for up to a 
 |-------|-------------|
 | [Durable functions](functions/durable-functions.md) | Long-running work that checkpoints and resumes |
 | [Durable approvals](functions/durable-approvals.md) | Pause a workflow until a person approves or denies it |
+| [Durable messages](functions/durable-messages.md) | Send messages to a running workflow and read what it publishes |
 | [Developing durable functions locally](guides/durable-functions-locally.md) | Run one on your machine, then deploy it unchanged |
 
 ### Databases

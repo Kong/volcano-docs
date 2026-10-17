@@ -4,9 +4,9 @@ description: "Connect an AI agent to one Volcano project over the Model Context 
 ---
 
 Volcano hosts a Model Context Protocol (MCP) server, so an agent in your editor
-can inspect a project — its functions, frontends, deployments, logs, and the
-approvals its durable workflows are waiting on — and,
-with a full-scope token, change it.
+can inspect a project — its functions, frontends, deployments, logs, its
+durable executions and their messages, and the approvals its durable workflows
+are waiting on — and, with a full-scope token, change it.
 
 It takes the same project access token as the REST API, over one endpoint:
 
@@ -160,18 +160,24 @@ A **platform token (`pk-`) is refused with `403`.** The endpoint takes its proje
 |------|-------|--------------|----------|
 | `get_project` | `read_only` | Returns the project's name, status, plan, and region | `GET /projects/{id}` |
 | `get_project_usage` | `read_only` | Reads project totals and time series, including Sandbox runtime, suspended time, and uncertain usage | `GET /projects/{id}/usage` |
-| `list_functions` | `read_only` | Lists the project's functions, with runtime, status, and visibility | `GET /projects/{id}/functions` |
+| `list_functions` | `read_only` | Lists the project's standard functions, with runtime, status, and visibility | `GET /projects/{id}/functions` |
 | `list_frontends` | `read_only` | Lists the project's frontends, with status, live URLs, and function routes | `GET /projects/{id}/frontends` |
 | `list_deployments` | `read_only` | Lists recent deployments, newest first | `GET /projects/{id}/deployments` |
 | `search_logs` | `read_only` | Searches the project's logs | `POST /projects/{id}/logs/search` |
 | `list_durable_approvals` | `read_only` | Lists the approvals durable workflows are waiting on or have had decided, newest first | `GET /projects/{id}/durable-approvals` |
 | `get_durable_approval_stats` | `read_only` | Counts durable approvals by outcome, workflow, and day, with the approval rate and time to decision | `GET /projects/{id}/durable-approvals/stats` |
+| `list_durable_functions` | `read_only` | Lists the project's durable functions, which `list_functions` leaves out | `GET /projects/{id}/durable-functions` |
+| `list_durable_executions` | `read_only` | Lists a durable function's executions, newest first | `GET /projects/{id}/durable-functions/{functionId}/executions` |
+| `get_durable_execution` | `read_only` | Returns one execution's status, result or error, and timing | `GET /projects/{id}/durable-functions/{functionId}/executions/{executionId}` |
+| `list_durable_messages` | `read_only` | Lists the messages sent to an execution and published by it, oldest first | `GET /projects/{id}/durable-functions/{functionId}/executions/{executionId}/messages` |
+| `list_durable_message_waits` | `read_only` | Lists the message names an execution is waiting on | `GET /projects/{id}/durable-functions/{functionId}/executions/{executionId}/message-waits` |
 | `list_issues` | `read_only` | Lists runtime errors grouped into issues, most recently seen first | `GET /projects/{id}/issues` |
 | `list_capabilities` | `read_only` | Lists which capabilities, such as Sandboxes, accept new work in this environment | `GET /capabilities` |
 | `list_variable_environments` | `read_only` | Lists the project's variable Environments | `GET /projects/{id}/variable-environments` |
 | `list_databases` | `full` | Lists the project's databases. Returns connection strings | `GET /projects/{id}/databases` |
 | `set_variable` | `full` | Creates or updates an environment variable | `POST /projects/{id}/variables` |
 | `create_variable_environment` | `full` | Creates a custom variable Environment | `POST /projects/{id}/variable-environments` |
+| `send_durable_message` | `full` | Sends a named message to a running durable execution | `POST /projects/{id}/durable-functions/{functionId}/executions/{executionId}/messages` |
 
 Arguments are not listed here, because they are not defined here. Each tool's
 input schema is generated from the API's OpenAPI specification for the endpoint
@@ -188,9 +194,10 @@ with each variant and its `type` value spelled out, so an agent can construct
 
 Scope is enforced by the same rules as the REST API. A `read_only` token is not
 shown the `full` tools in `tools/list`, and is refused if it calls one anyway —
-`set_variable` and `create_variable_environment` because they write, and
-`list_databases` because it hands back a credential that keeps working after the
-token is gone. A `full` token also sees the Sandbox mutation tools below.
+`set_variable`, `create_variable_environment`, and `send_durable_message`
+because they write, and `list_databases` because it hands back a credential that
+keeps working after the token is gone. A `full` token sees every tool above, and
+also the Sandbox mutation tools below.
 
 ## Sandbox tools
 
@@ -305,13 +312,19 @@ A JSON-RPC error means the request itself was wrong — an unknown tool or bad p
 
 Results are capped at 64 KiB. Past that the text ends with a note saying it was truncated and to narrow the request, so an agent knows it is reading a prefix. Use `limit` and the `search_logs` filters rather than paging through a truncated result.
 
+`list_durable_messages` stays valid JSON instead: it leaves out the data of the largest messages until the page fits, sets `data_omitted: true` on each and its `data` to `null`, and says how many in the note. Every `seq` and `has_more` survive, so a message too large to show never blocks the next page. A page still over the cap without its data is truncated like any other result; lower `limit`.
+
+`send_durable_message` echoes the message it sent. When that echo is over the cap, it leaves out the message's data the same way, so its `id`, `seq` and `status` still say how the send went.
+
 ## What it cannot do
 
-A project access token is a control-plane credential. It deploys and configures, including running commands in project-owned Sandbox sessions; it does not grant access to your application users' data. So there is no tool to invoke a function or query a database — those need a service key or an anon key, which are data-plane credentials the agent should not be holding. See [Service keys](../authentication/security/service-keys.md).
+A project access token is a control-plane credential: it deploys and configures, including running commands in project-owned Sandbox sessions. There is no tool to invoke a function or query a database — those need a service key or an anon key, which are data-plane credentials the agent should not be holding. See [Service keys](../authentication/security/service-keys.md).
+
+It still reads what the project records about its work, and that can include your users' data: log lines with `search_logs`, an execution's result with `get_durable_execution`, and with `list_durable_messages` the data clients sent to an execution and the data it published. With a `full` token, `send_durable_message` resumes a workflow waiting for that message, which then runs your code. Give an agent a project's token only if it may see that data, and a `read_only` one if it should not resume workflows.
 
 The rest of the boundary comes from the credential itself, and is the same over MCP as over HTTP: no other project, no account-level action, and no managing project access tokens — an agent cannot mint its replacement or erase the record of what it did. See [Project access tokens](../authentication/security/project-access-tokens.md).
 
-Nor can it approve or deny a durable approval. An agent can list what workflows are waiting on, but a decision takes a person, in the dashboard or with a platform token, and the approve and deny endpoints refuse a project access token. See [Durable approvals](../functions/durable-approvals.md#who-can-decide).
+Nor can it approve or deny a durable approval. An agent can list what workflows are waiting on, but a decision takes a person, in the dashboard or with a platform token, and the approve and deny endpoints refuse a project access token. See [Durable approvals](../functions/durable-approvals.md#who-can-decide). `send_durable_message` does not get around this: a message only resumes a workflow waiting for a message, never one waiting for an approval. See [Durable messages](../functions/durable-messages.md#messages-or-approvals).
 
 ## Revoke access
 
