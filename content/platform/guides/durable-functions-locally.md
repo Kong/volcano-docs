@@ -156,6 +156,33 @@ The local CLI decides as the local user, so `approve` and `deny` work without `v
 
 **An approval's timeout runs in real time,** even though plain waits resolve immediately. A person is deciding against it, and an approval that expired the moment it was asked could never be answered. Use a short `timeout` to watch the `expired` branch run.
 
+## Send messages locally
+
+A function that calls [`ctx.waitForMessage`](../functions/durable-messages.md) waits for one locally too. Wait for the card network's confirmation instead of the fixed day, and report progress:
+
+```javascript
+await ctx.publish('progress', { stage: 'charged', charge_id: charge.id });
+
+const settled = await ctx.waitForMessage('settled', { timeout: '10m' });
+if (settled === null) {
+  return { charged: charge.id, settled: false };
+}
+```
+
+Redeploy, start an execution, and send the message from another terminal, as your webhook receiver would:
+
+```bash
+volcano durable deploy --all
+volcano durable start orders --input '{"card_token":"tok_1","amount":4200,"email":"a@example.com"}'
+volcano durable messages waits orders 9f2c1d84-4b77-4a1e-9f0a-2c3d4e5f6a7b
+volcano durable messages send orders 9f2c1d84-4b77-4a1e-9f0a-2c3d4e5f6a7b settled --data '{"batch":"b_31"}'
+volcano durable messages list orders 9f2c1d84-4b77-4a1e-9f0a-2c3d4e5f6a7b
+```
+
+The list shows the `progress` message the function published and the `settled` message you sent, in order. A message sent before the function reaches its wait is kept until it does, so the order of the two commands does not matter.
+
+**A message wait's timeout runs in real time** too, like an approval's. Let one pass to watch the `null` branch run.
+
 ## Deploy it
 
 Nothing changes:
@@ -175,9 +202,11 @@ The same manifest, the same handler, the same runtime version. What differs in p
 - **Long waits work at their real length.** Run once with `LOCAL_DURABLE_REAL_TIME=true` before shipping a function whose timing matters.
 - **Your costs are what you expect.** Local executions are metered on the same three counters as deployed ones, so the project's usage is a fair estimate of what a workload will cost before you ship it. Read it from `GET /projects/{id}/usage` and check it against [the allowances for your plan](plans-and-limits.md).
 - **Every approval branch works.** Approve one, deny one, and let one expire, so each path through the handler has run before a person depends on it.
+- **A message wait handles both outcomes.** Send the message once, and let its timeout pass once.
 
 ## Related
 
 - [Durable functions](../functions/durable-functions.md) — the full reference, including operations, retention and billing
 - [Durable approvals](../functions/durable-approvals.md) — requesting and deciding approvals
+- [Durable messages](../functions/durable-messages.md) — sending to and publishing from a running function
 - [Project configuration](../projects/configuration.md) — the manifest fields a durable function accepts

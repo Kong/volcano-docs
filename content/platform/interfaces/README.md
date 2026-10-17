@@ -63,8 +63,11 @@ to you or your automation — a platform token or a project access token.
 row-level security applied, a file upload, a function invocation. The SDKs work
 here, with an anon key, a service key, or a signed-in user's token.
 
-A control-plane credential cannot read your users' data, and a data-plane
-credential cannot deploy. That is why an agent holding a project access token
-has no tool to query a database — see
+A control-plane credential cannot query your database or call your functions
+as your app does, and a data-plane credential cannot deploy. That is why an
+agent holding a project access token has no tool to query a database. It still
+reads what the project records about its work, such as logs and the messages
+of durable executions, and a `full` token can start a durable execution or
+resume one with a message, which runs your code — see
 [What it cannot do](mcp.md#what-it-cannot-do). For the full comparison, see
 [Token types](../authentication/security/token-types.md).

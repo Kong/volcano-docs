@@ -30,6 +30,11 @@ and a second chart shows outcomes per day. Open a pending approval to read its d
 approve or deny it with an optional comment, and the workflow resumes with your
 decision. See [Durable approvals](../functions/durable-approvals.md).
 
+**Durable messages.** Open a durable execution to see the messages it was sent
+and published, oldest first, and the message names it is waiting on. Send it a
+message from the same panel, which resumes a matching wait. See
+[Durable messages](../functions/durable-messages.md).
+
 **Databases.** Create a database, browse branches and backups, and read
 connection details. See [Databases](../databases/overview.md).
 
