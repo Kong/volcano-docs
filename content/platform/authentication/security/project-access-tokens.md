@@ -40,6 +40,7 @@ A project access token authenticates the same control-plane API a platform token
 - Read and write project variables and settings
 - Search, stream, and aggregate logs and metrics
 - Manage anon keys, service keys, buckets, and auth users for that project
+- Read durable executions and their messages, and send [durable messages](../../functions/durable-messages.md#the-project-endpoint) (`full` only)
 - Manage Sandbox templates, deployments, sessions, commands, and files. Read-only tokens can inspect templates, deployments, sessions, and session files. See [Sandbox access](../../guides/sandboxes.md#grant-a-signed-in-user-access).
 
 It cannot:
@@ -48,7 +49,7 @@ It cannot:
 - **Act on your account.** Listing your projects, creating a project, billing, and every other account-scoped endpoint returns `403`.
 - **Manage project access tokens.** Creating, listing, reading, and revoking tokens all require a platform token.
 - **Manage Sandbox end-user grants or issue Sandbox port credentials.** Both token scopes are refused, including `full`.
-- **Decide durable approvals.** A token of either scope can list approvals and read their statistics, but approving or denying one returns `403`. A workflow can hold a project access token, so letting one decide would let a workflow approve itself; a person decides in the dashboard or with a platform token. See [Durable approvals](../../functions/durable-approvals.md#who-can-decide).
+- **Decide durable approvals.** A token of either scope can list approvals and read their statistics, but approving or denying one returns `403`. A workflow can hold a project access token, so letting one decide would let a workflow approve itself; a person decides in the dashboard or with a platform token. See [Durable approvals](../../functions/durable-approvals.md#who-can-decide). Sending a durable message is allowed, because a message never decides an approval.
 
 The token-management rule is the point of the credential. A token that can mint its replacement or delete the record of its own use is not meaningfully scoped, so a leaked CI secret or a prompt-injected agent cannot clone itself or erase its tracks.
 
@@ -160,6 +161,7 @@ Every day in the window is present, so a gap reads as `0` rather than going miss
 | Create or delete projects | Yes | No | No | No |
 | Manage project access tokens | Yes | No | No | No |
 | Decide durable approvals | Yes | No, reads only | No | No |
+| Send durable messages | Yes | Yes (`full`), reads only with `read_only` | With the execution's client token, as the function's visibility allows | Yes |
 | Safe in frontend code | Never | Never | Yes | Never |
 | Comes from | `volcano login` or the dashboard | `POST /projects/{id}/access-tokens` | Created with the project | `POST /projects/{id}/service-keys` |
 | Readable after creation | — | No, shown once | Yes | Yes |

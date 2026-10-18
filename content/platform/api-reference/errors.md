@@ -296,7 +296,7 @@ for what this environment offers.
 
 ### Durable execution errors
 
-Starting a [durable execution](../functions/durable-functions.md) has seven
+Starting a [durable execution](../functions/durable-functions.md) has eight
 refusals that are worth handling separately, because some of them clear on their
 own and some do not.
 
@@ -352,6 +352,17 @@ most common refusal immediately after a deploy.
 Two starts raced for the same execution name and both released it. Nothing is
 wrong with the request: retry it as-is.
 
+**409 - Name held:**
+```json
+{"error": "durable execution name is held by another caller's start", "code": "execution_name_held"}
+```
+
+A start under this name failed before it began, and this caller may not finish
+it: only the service key, the signed-in user who made it, or an anon key for one
+an anon key made can. Retrying does not clear it. Start under a name of your own,
+or finish it with the service key. See [Durable
+messages](../functions/durable-messages.md#client-tokens).
+
 **503 - Durable executions unavailable:**
 ```json
 {"error": "durable executions are not available in this environment"}
@@ -392,6 +403,8 @@ refusals of its own. The SDK retries `404`, `429`, every `5xx`, and
   finished opening it. Retried.
 - `approval_closed` — the approval's deadline already passed. Not an error:
   `waitForApproval` resolves with an `expired` decision.
+- `callback_taken` — the callback is already registered as a message wait or
+  a messages session. The SDKs never send this.
 - `execution_ended` — the execution has finished.
 - `too_many_pending_approvals` — the execution already has 100 approvals
   pending.
@@ -408,6 +421,51 @@ refused for the rest of the hour after 6,000 requests that registered nothing. I
 ```json
 {"error": "the approval could not be confirmed with the workflow; retry with backoff"}
 ```
+
+### Durable message errors
+
+Sending a [durable message](../functions/durable-messages.md) to an execution
+that cannot take it returns `409` with a `code`:
+
+```json
+{"error": "durable execution is not running", "code": "execution_not_running"}
+```
+
+- `execution_not_running` — the execution has ended. Nothing will take the
+  message, so do not retry.
+- `too_many_queued_messages` — the execution already holds 100 messages no wait
+  has taken. Retry once it has consumed some.
+
+An execution the caller may not reach answers `404` with `durable execution not
+found`, the same as one that does not exist. Too many sends to one execution
+answer `429` with `too many messages sent to this execution, try again later`;
+the limit is 3,600 an hour. Sends and lists through the application endpoint
+answer `429` with `rate limit exceeded` past the function's rate limit, the same
+as an invocation.
+
+A workflow's own waits and publishes, sent by `ctx.waitForMessage` and
+`ctx.publish`, have refusals of their own. The SDK retries `404`, `429`, every
+`5xx`, and `callback_not_ready` for about 30 seconds, and fails the call on the
+rest:
+
+- `callback_not_ready` — the wait reached Volcano before the workflow finished
+  opening it. Retried.
+- `callback_closed` — the wait's timeout already passed. Not an error:
+  `waitForMessage` resolves with `null`.
+- `callback_taken` — the callback is already registered as an approval, or as
+  another wait or session. The SDKs never send this; it means a modified SDK
+  reused a callback.
+- `execution_ended` — the execution finished before a wait or a messages
+  session was registered.
+- `execution_not_running` — the execution finished before a publish.
+- `too_many_message_waits` — the execution already has 100 waits open.
+- `too_many_message_sessions` — the execution already opened 1,000 messages
+  sessions.
+- `too_many_published_messages` — the execution already published 1,000
+  messages.
+
+A publish with a session token Volcano does not accept answers `401`. The SDKs
+never send one.
 
 ### Project lock errors
 
