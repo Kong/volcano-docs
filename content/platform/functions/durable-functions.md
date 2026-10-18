@@ -70,12 +70,14 @@ Every context operation is checkpointed: what finished is recorded, and a resume
 | `ctx.wait(name?, duration)` | Suspends the execution. `'30s'`, `'2h'`, a whole number of seconds, or `{ hours, minutes }`. Anything shorter than a second is rejected. |
 | `ctx.waitUntil(name?, check, options)` | Polls your own state until `options.until` holds, suspending between checks. `options.initialState` is required. |
 | `ctx.waitForApproval(name, options)` | Suspends until a person approves or denies, or `options.timeout` passes, and resumes with the decision. See [Durable approvals](durable-approvals.md). |
+| `ctx.waitForMessage(name, options?)` | Suspends until a message with that name is sent to the execution, or `options.timeout` passes, and resumes with the message or `null`. See [Durable messages](durable-messages.md). |
+| `ctx.publish(name, data?)` | Records a message that applications list or receive live. See [Durable messages](durable-messages.md#publish-a-message). |
 | `ctx.map(name?, items, fn, options?)` | Runs one child context per item, with `options.concurrency`. |
 | `ctx.parallel(name?, branches, options?)` | Runs independent branches concurrently. |
 | `ctx.child(name?, fn)` | Groups operations under one checkpointed context. |
 | `ctx.log` | The execution's logger, with the execution's identifiers attached. |
 
-Waits and polls are held by the platform rather than by your code, so a function suspended for an hour costs nothing while it waits — but the execution timeout still applies. To wait for a person's sign-off, use [`ctx.waitForApproval`](durable-approvals.md); to wait for anything else outside the function, poll your own state with `ctx.waitUntil`. Full reference and worked examples are in the SDK's [durable functions guide](/sdk/js/durable-functions).
+Waits and polls are held by the platform rather than by your code, so a function suspended for an hour costs nothing while it waits — but the execution timeout still applies. To wait for a person's sign-off, use [`ctx.waitForApproval`](durable-approvals.md). To wait for a webhook, your application, or another function, have it send a message and wait with [`ctx.waitForMessage`](durable-messages.md); for state only you can check, poll it with `ctx.waitUntil`. Full reference and worked examples are in the SDK's [durable functions guide](/sdk/js/durable-functions).
 
 ## Deploy one
 
@@ -269,7 +271,7 @@ A name is made of letters, digits, `-`, `_` and `.`, up to 255 characters. Anyth
 
 It names one execution, not a process made of several. A name is taken for as long as its execution is readable, so work that continues past one execution — anything past the execution ceiling, or picked up again after it — starts a new execution under a new name, and whatever ties them together is your own identifier carried in the payload.
 
-Starting before the function has finished provisioning answers `409` with `durable function is not deployed yet`. Wait for its `status` to reach `active` rather than retrying straight away. Two starts racing for the same name can both give it up, which answers `409` as well; that one is fine to retry unchanged. A start refused because the project is already at its concurrency cap answers `429` instead — see [Limits and billing](#limits-and-billing).
+Starting before the function has finished provisioning answers `409` with `durable function is not deployed yet`. Wait for its `status` to reach `active` rather than retrying straight away. Two starts racing for the same name can both give it up, which answers `409` as well; that one is fine to retry unchanged. A start that failed before it began can be retried by the service key, by the signed-in user who made it, or, if an anon key made it, by an anon key. Any other retry answers `409` with the code `execution_name_held`, and needs a name of its own. See [Durable messages](durable-messages.md#client-tokens). A start refused because the project is already at its concurrency cap answers `429` instead — see [Limits and billing](#limits-and-billing).
 
 An execution is pinned to one region for its whole life, because its checkpoints live there.
 
@@ -330,7 +332,7 @@ Durable functions have no update endpoint, so visibility travels with a deploy. 
 
 Three things are worth being precise about:
 
-- **Public means startable, not readable.** An anon key ships inside your pages, so everyone who loads one holds it. Reading a result or stopping an execution stays with the owner's token — otherwise any visitor could poll or cancel work started by another, since an execution is addressed by its id alone. Return results to the browser through a table of your own, as in [Return the result to the user](#return-the-result-to-the-user), or an endpoint that decides who may see them.
+- **Public means startable, not readable.** An anon key ships inside your pages, so everyone who loads one holds it. Reading a result or stopping an execution stays with the owner's token — otherwise any visitor could poll or cancel work started by another, since an execution is addressed by its id alone. Return results to the browser through a table of your own, as in [Return the result to the user](#return-the-result-to-the-user), or an endpoint that decides who may see them. An execution's [messages](durable-messages.md#who-can-send-and-read) are the exception: the user who started it, and whoever holds the `client_token` its start returned, can send to it and read what it publishes.
 - **Public means startable, not invocable.** A durable function is never reachable through `POST /functions/{functionId}/invoke` or a function URL, whatever its visibility; both answer `404`. A synchronous call would run it with no execution record, no idempotency, no concurrency accounting and no pinned version, which is not a durable execution however much it looks like one.
 - **Anyone can start it.** A public durable function is startable by anyone who reads your anon key out of a page. So is an `authenticated` one when your project allows [anonymous sign-ins](../authentication/anonymous-users.md), because anyone can get one of those tokens. Every start counts against your [execution and operation allowances](#limits-and-billing) and your concurrency cap — a caller who cannot see the result can still spend both. Validate the input inside the function and keep the payload small.
 
@@ -587,6 +589,8 @@ The execution comes first and is the only operation without a `parent_id`. Every
 | `ctx.wait` | `wait` | `scheduled_end_at` is when it elapses |
 | `ctx.waitUntil` | `wait_until` | Each check is an attempt; `next_attempt_at` is the next one |
 | `ctx.waitForApproval` | `child` | A `callback`, `waiting` until the decision arrives, and the `step` that registered the request |
+| `ctx.waitForMessage` | `child` | A `callback`, `waiting` until a message arrives, and the `step` that registered the wait |
+| `ctx.publish` | `step`, or `child` in JavaScript | Nothing inside a JavaScript publish. The first publish in a context also opens a `child` named `volcano:messages-session` |
 | `ctx.child` | `child` | The operations inside it |
 | `ctx.map` | `map` | One `map_item` per item |
 | `ctx.parallel` | `parallel` | One `parallel_branch` per branch |
@@ -770,10 +774,10 @@ volcano durable start orders --input '{"order_id":"ord_123"}'
 
 Two things differ locally, both deliberately:
 
-- **A wait resolves immediately.** A function that waits a day is normal to write and unusable to sit through. Your function cannot tell — it still suspends, and still resumes with everything it had finished — but you get the answer in seconds. Set `LOCAL_DURABLE_REAL_TIME=true` to make waits take their real time. An approval's timeout is the exception: it always runs in real time, because a person is deciding against it.
+- **A wait resolves immediately.** A function that waits a day is normal to write and unusable to sit through. Your function cannot tell — it still suspends, and still resumes with everything it had finished — but you get the answer in seconds. Set `LOCAL_DURABLE_REAL_TIME=true` to make waits take their real time. The timeout on an approval or a message wait is the exception: it always runs in real time, because something outside the function is answering against it.
 - **There is one region.** Everything runs on the one local engine, so there is nothing to choose between.
 
-Everything else behaves as it does deployed: steps checkpoint and replay, a failed step retries on its backoff, `ctx.map` and `ctx.parallel` fan out, `ctx.waitUntil` polls, `ctx.waitForApproval` waits for `volcano durable approvals approve`, usage is metered on the same three counters, and an execution suspended when you stop the local server resumes when you start it again.
+Everything else behaves as it does deployed: steps checkpoint and replay, a failed step retries on its backoff, `ctx.map` and `ctx.parallel` fan out, `ctx.waitUntil` polls, `ctx.waitForApproval` waits for `volcano durable approvals approve`, `ctx.waitForMessage` waits for `volcano durable messages send`, usage is metered on the same three counters, and an execution suspended when you stop the local server resumes when you start it again.
 
 See [Developing durable functions locally](../guides/durable-functions-locally.md) for a worked example.
 
@@ -802,6 +806,8 @@ Durable executions are metered on three allowances of their own and spend nothin
 | Each `ctx.child` context | Plus whatever the child itself does |
 | Each `ctx.map` item and `ctx.parallel` branch | Each runs in a child context of its own |
 | Each `ctx.waitForApproval` | Three: the approval, the wait for its decision, and the step that registers it |
+| Each `ctx.waitForMessage` | Three: the wait, the callback the message completes, and the step that registers it |
+| Each `ctx.publish` | One. The first publish in a context also opens a messages session, which is three more |
 | Each function an execution invokes from inside itself | One for making the call, on top of whatever the call costs |
 
 Only beginning something is charged. How it turned out — a step that succeeded, a wait that elapsed, an execution that failed — is a record of work already counted, not a second operation.
@@ -852,6 +858,7 @@ Durable functions are counted against their own per-project cap, so they cannot 
 | Guide | Description |
 |-------|-------------|
 | [Durable approvals](durable-approvals.md) | Pause a workflow until a person approves or denies |
+| [Durable messages](durable-messages.md) | Send messages to a running workflow and read what it publishes |
 | [Functions overview](overview.md) | Standard functions, runtimes, and packaging |
 | [Environment variables](environment-variables.md) | Configure secrets and settings |
 | [Logs](logs.md) | View and filter function logs |
