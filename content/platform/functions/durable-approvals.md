@@ -59,6 +59,8 @@ def handler(event, ctx):
 
 `waitForApproval` needs `@volcano.dev/sdk` 2.0 or later in JavaScript, or `volcano-sdk-python` 0.14 or later in Python. A durable function deployed before approvals were available has to be redeployed once to get the `VOLCANO_PLATFORM_API_URL` variable they use; see [Errors](#errors). Ruby has no durable authoring API, so a Ruby application can [decide approvals](#decide-from-an-sdk) but not request them.
 
+An approval is for a person's decision, which is why only a person can give one. When what the workflow waits for comes from code — a webhook, a payment provider, a click in your app, another function — send it a [message](durable-messages.md) instead. A message can carry anything an approval's comment would, but it never decides an approval.
+
 ## Request an approval
 
 | Argument | Description |
@@ -353,6 +355,7 @@ Errors `waitForApproval` can raise inside the workflow, when Volcano refuses the
 | `400` | | The request is invalid, such as text containing a NUL character, a number in `details` too large or too precise to store, or exponents in `details` totaling more than 65,536 |
 | `404` | | No running durable execution Volcano started matches the request. Retried, because a new execution can take a moment to appear |
 | `409` | `approval_not_ready` | Volcano cannot see the execution waiting yet. Retried |
+| `409` | `callback_taken` | The callback is already registered as a [message](durable-messages.md) wait or session. Only a modified SDK sends this |
 | `409` | `execution_ended` | The execution has finished |
 | `409` | `too_many_pending_approvals` | The execution already has 100 approvals pending |
 | `429` | | Too many approval requests from this execution or its address. Retried |
@@ -367,5 +370,6 @@ The SDK checks the request's size and that `details` is JSON before sending it, 
 | Guide | Description |
 |-------|-------------|
 | [Durable functions](durable-functions.md) | Operations, executions, and billing |
+| [Durable messages](durable-messages.md) | Wait for something other than a person |
 | [Developing durable functions locally](../guides/durable-functions-locally.md) | Run and approve on your machine |
 | [Errors](../api-reference/errors.md) | Every API error body |

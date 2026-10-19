@@ -141,6 +141,19 @@ The server:
 2. For each subscriber, executes an RLS check
 3. Only forwards the event if the user can SELECT that row
 
+### Durable execution channels
+
+A durable execution's channel admits the same callers as its [messages API](../functions/durable-messages.md#who-can-send-and-read). The durable function's visibility has to admit the connection first; then:
+
+- A service role key can watch any execution in the project, unless the key is scoped without `functions.invoke`.
+- A signed-in user, anonymous sign-ins included, can watch the executions they started.
+- Any other signed-in user needs the execution's `client_token`, which the SDK sends with the subscribe request.
+- Until an execution is `running`, only a service role key can watch it.
+
+An anon key alone does not open a realtime connection, so a visitor who is not signed in can sign in anonymously first or poll the [messages list](../functions/durable-messages.md#who-can-send-and-read) instead.
+
+A refused subscribe looks the same as one for an execution that does not exist. The check runs when the subscription is made and about once a minute while it is open, so a subscription ends soon after its function is made private. Clients cannot publish on a durable channel.
+
 ## Banned users
 
 Users banned via the Auth Admin API are automatically blocked:
