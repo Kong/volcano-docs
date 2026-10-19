@@ -143,11 +143,13 @@ Authorization: Bearer <platform_token>
 
 ## Policy management
 
+Use a platform user token or project access token authorized for the project.
+
 ### Create policy
 
 ```http
-POST /storage/buckets/{bucket_id}/policies
-Authorization: Bearer <service_key>
+POST /projects/{project_id}/storage/buckets/{bucket_name}/policies
+Authorization: Bearer <platform_token>
 Content-Type: application/json
 ```
 
@@ -171,42 +173,44 @@ Content-Type: application/json
 
 ```json
 {
-  "id": "policy-xyz789",
-  "bucket_id": "bucket-abc123",
+  "id": "8f053387-7877-4cc0-917c-088507996651",
+  "bucket_id": "c8368d98-1cad-41c6-a3b3-a68bb360d789",
   "name": "owner-access",
   "operation": "SELECT",
   "definition": "auth.uid() = owner_id",
-  "created_at": "2024-01-15T10:30:00Z"
+  "created_at": "2024-01-15T10:30:00Z",
+  "updated_at": "2024-01-15T10:30:00Z"
 }
 ```
 
 ### List policies
 
 ```http
-GET /storage/buckets/{bucket_id}/policies
-Authorization: Bearer <service_key>
+GET /projects/{project_id}/storage/buckets/{bucket_name}/policies
+Authorization: Bearer <platform_token>
 ```
 
 **Response: 200 OK**
 
 ```json
-{
-  "policies": [
-    {
-      "id": "policy-xyz789",
-      "name": "owner-access",
-      "operation": "SELECT",
-      "definition": "auth.uid() = owner_id"
-    }
-  ]
-}
+[
+  {
+    "id": "8f053387-7877-4cc0-917c-088507996651",
+    "bucket_id": "c8368d98-1cad-41c6-a3b3-a68bb360d789",
+    "name": "owner-access",
+    "operation": "SELECT",
+    "definition": "auth.uid() = owner_id",
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-01-15T10:30:00Z"
+  }
+]
 ```
 
 ### Delete policy
 
 ```http
-DELETE /storage/buckets/{bucket_id}/policies/{policy_id}
-Authorization: Bearer <service_key>
+DELETE /projects/{project_id}/storage/buckets/{bucket_name}/policies/{policy_id}
+Authorization: Bearer <platform_token>
 ```
 
 **Response: 200 OK**
@@ -216,6 +220,9 @@ Authorization: Bearer <service_key>
   "message": "policy deleted"
 }
 ```
+
+A malformed or unknown policy ID, or a policy outside the bucket, returns `404`
+with `{"error":"policy not found"}`.
 
 ## Object operations
 
@@ -489,6 +496,12 @@ All endpoints return errors in this format:
 | 404 | Not found (bucket or object doesn't exist) |
 | 413 | Payload too large (storage limit exceeded) |
 | 500 | Internal server error |
+
+### Administrative internal failures
+
+Bucket and policy administration returns a fixed operation message for internal failures, such as `failed to create bucket`, `failed to update bucket`, or `failed to delete policy`. Statistics and policy-list failures return `failed to get storage stats` and `failed to list policies`. These HTTP 500 responses omit internal diagnostics. Include the response's `X-Request-Id` when reporting a failure.
+
+Validation, quota, conflict, and not-found errors keep their specific messages.
 
 ### Policy errors
 

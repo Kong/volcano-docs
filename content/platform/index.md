@@ -143,6 +143,7 @@ Next.js, static or server-rendered, served from the edge. A failed build never r
 | [Export your source to GitHub](projects/export-to-git.md) | Initialize an empty repository with a project's stored source and deploy it from Git |
 | [Configuration manifest](projects/configuration.md) | Declarative `volcano-config.yaml` reference (config deploy/pull) |
 | [Variable Environments](projects/variable-environments.md) | Create and manage Project variable Environments |
+| [Project health](projects/health.md) | Check project health and review operation failures and blocked storage use |
 
 ## API reference
 
@@ -173,6 +174,8 @@ Step-by-step guides for common tasks.
 | [Database migrations](guides/migrations.md) | Manage schema changes with the CLI |
 | [Deployment performance](guides/deployment-performance.md) | Deployment latency objectives, phases, and telemetry |
 | [Sandboxes](guides/sandboxes.md) | Run commands and HTTP services in isolated sessions with plan-based runtime pricing |
+| [Issues](guides/issues.md) | See runtime errors grouped into issues, and resolve or ignore them |
+| [Autofix](guides/autofix.md) | Have AI diagnose your issues and open draft pull requests that fix them |
 
 ## Examples
 

@@ -47,7 +47,7 @@ curl -X POST https://api.volcano.dev/projects/PROJECT_ID/functions \
   -F "name=my-api" \
   -F "code=@function.zip" \
   -F "runtime=nodejs24.x" \
-  -F "handler=index.handler"
+  -F "handler=handler"
 ```
 
 ### JavaScript (fetch)
@@ -57,7 +57,7 @@ const formData = new FormData();
 formData.append('name', 'my-api');
 formData.append('code', fileInput.files[0]); // File from <input type="file">
 formData.append('runtime', 'nodejs24.x');
-formData.append('handler', 'index.handler');
+formData.append('handler', 'handler');
 
 const response = await fetch(
   `https://api.volcano.dev/projects/${projectId}/functions`,
@@ -84,7 +84,7 @@ const form = new FormData();
 form.append('name', 'my-api');
 form.append('code', fs.createReadStream('./function.zip'));
 form.append('runtime', 'nodejs24.x');
-form.append('handler', 'index.handler');
+form.append('handler', 'handler');
 
 const response = await fetch(
   `https://api.volcano.dev/projects/${projectId}/functions`,
@@ -108,7 +108,7 @@ files = {
     'name': (None, 'my-api'),
     'code': ('function.tar.gz', open('function.tar.gz', 'rb'), 'application/gzip'),
     'runtime': (None, 'python3.12'),
-    'handler': (None, 'lambda_function.lambda_handler')
+    'handler': (None, 'lambda_handler')
 }
 
 response = requests.post(
@@ -142,7 +142,7 @@ func uploadFunction(projectID, token string) error {
 	// Add form fields
 	writer.WriteField("name", "my-api")
 	writer.WriteField("runtime", "nodejs24.x")
-	writer.WriteField("handler", "index.handler")
+	writer.WriteField("handler", "handler")
 	
 	// Add file
 	file, _ := os.Open("function.zip")
@@ -182,7 +182,7 @@ You may upload either ZIP or `tar.gz` source archives. The Volcano CLI always up
   "name": "my-api",
   "status": "provisioning",
   "runtime": "nodejs24.x",
-  "handler": "index.handler",
+  "handler": "handler",
   "created_at": "2024-01-05T10:30:00Z",
   "updated_at": "2024-01-05T10:30:00Z"
 }
@@ -214,7 +214,7 @@ After upload, the cloud compile build installs dependencies from manifests such 
 ## File Requirements
 
 1. **Must be a ZIP or tar.gz file** - Other formats rejected
-2. **Include handler file** - e.g., `index.js` for `index.handler`
+2. **Include handler file** - e.g., `index.js` exporting the submitted `handler` function
 3. **Include dependency manifests/lockfiles** - Do not include installed dependency directories for cloud deploys
 4. **No symlink entries** - Uploaded source archives cannot contain symlinks. Safe symlinks created during the cloud build, such as package-manager workspace links, are materialized before publish.
 5. **No top-level `.volcano-dependencies` path** - Volcano reserves it for dependency staging. An upload containing it is accepted asynchronously, then fails during the compile build.
@@ -229,7 +229,20 @@ Volcano infers build roots deterministically:
 - `function_root` is the directory containing the single runtime entry file when exactly one is found: `index.js`/`index.mjs` for Node.js, `main.py` for Python, or `main.rb` for Ruby.
 - If there is no root-level file and all files are under one top-level directory, that top-level directory becomes `function_root`.
 - Otherwise, `function_root` is the archive root (`.`).
-- `install_root` is the closest dependency manifest directory that contains `function_root`. If no manifest applies, it falls back to `function_root`.
+- `install_root` prefers the closest dependency manifest directory containing the runtime handler module, resolved relative to `function_root`.
+- When `function_root` is `.` and no manifest contains the handler module, the fallback selects the longest nested manifest directory path by character count; equal-length ties choose the lexicographically first directory. With no matching manifest or applicable fallback, `install_root` is `function_root`.
+
+Volcano prefixes the supplied `handler` with `index.` for Node.js or `main.`
+for Python and Ruby. The final dot separates the module from the exported
+function. For example, the Node.js handler `src/handler.main` becomes
+`index.src/handler.main`, so its module file is `index.src/handler.js`,
+relative to `function_root`. Python module dots become path separators;
+Node.js and Ruby preserve module directory dots.
+
+When a root-level dependency manifest exists, unrelated nested manifests do
+not select the install root. For a root-level `index.js` and `package.json`,
+Volcano installs from the archive root even when the
+bundle also contains `examples/other-package/package.json`.
 
 Recommended direct-upload layouts:
 

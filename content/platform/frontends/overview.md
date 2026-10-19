@@ -214,14 +214,15 @@ route whose answer depends on a cookie, do not declare it shareable.
 A prefetch and a full page load of the same URL are cached separately, as are
 the same page requested on two different domains.
 
-**Middleware turns caching off for the routes it matches.** Middleware runs in
-your runtime, so a page answered from the edge would skip it — a route gated on
-a cookie would be served to the next visitor without one. Rather than guess
-which middleware is a security check, Volcano keeps every matched route out of
-the shared cache:
+**Middleware turns caching off for the routes it matches.** This covers
+`proxy.js` (Next.js 16) and `middleware.js`, on the Edge or Node.js runtime.
+Middleware runs in your runtime, so a page answered from the edge would skip
+it — a route gated on a cookie would be served to the next visitor without one.
+Rather than guess which middleware is a security check, Volcano keeps every
+matched route out of the shared cache:
 
 ```js
-// middleware.js — /dashboard is never cached, everything else still is
+// proxy.js — /dashboard is never cached, everything else still is
 export const config = { matcher: ["/dashboard/:path*"] };
 ```
 
@@ -407,7 +408,7 @@ self-contained HTML error page. The status code identifies the failure:
 | Status | Meaning |
 | --- | --- |
 | `403` | Project traffic is disabled. |
-| `404` | No deployed frontend serves the address. |
+| `404` | No deployed frontend serves the address, or the requested `/_next/static` file is in no build the frontend still serves. |
 | `429` | The project reached a rate or monthly request limit. |
 | `502` | The deployed frontend is temporarily unreachable. |
 | `503` | A platform dependency is temporarily unavailable. |
@@ -560,9 +561,7 @@ Volcano returns the CNAME instead. Add the CNAME and keep it in DNS for issuance
 and renewal. Keep the TXT record too: the domain moves to another account only
 once DNS stops serving it, or serves only a value from before a key rotation.
 See [Move a domain to another account](domain-verification.md#move-a-domain-to-another-account).
-Volcano cannot yet switch a BYOC domain to managed TLS in place. To keep the
-hostname, delete the BYOC domain and declare it again with `tls.mode: managed`;
-HTTPS for the hostname is unavailable until the managed certificate is issued.
+
 To use BYOC instead, attach the domain with your certificate, then point DNS at
 the frontend. A certificate does not prove ownership, so BYOC also needs a
 verified domain; until then the attach fails with `409` and the
@@ -615,8 +614,59 @@ ALIAS, ANAME, or flattening record with your DNS provider.
 
 To rotate the certificate later, update it through the declarative
 [`custom_domain` config](../projects/configuration.md) and re-apply; the
-rotation is zero-downtime. Re-running `domain create` for a domain that's
+rotation is zero-downtime. Re-running `domain create` for a BYOC domain that's
 already attached is a no-op and won't replace the certificate.
+
+### Switch between BYOC and managed TLS
+
+An active domain switches between BYOC and managed TLS in place, without
+downtime. The current certificate keeps serving until its replacement does.
+
+To move a BYOC domain to managed TLS, change its `tls` block to
+`mode: managed` and deploy:
+
+```yaml
+version: 1
+frontends:
+  - name: my-site
+    custom_domain:
+      domain: app.example.com
+      tls:
+        mode: managed
+```
+
+```bash
+volcano cloud config deploy
+volcano cloud frontends domain get my-site
+```
+
+Your uploaded certificate keeps serving while Volcano issues the managed one.
+Publish the `_acme-challenge` CNAME from `verification_records`. The domain
+stays `active`, and `serving_certificate` changes from `uploaded` to `managed`
+once the managed certificate serves. If issuance fails, `failure_reason` names
+the cause while the uploaded certificate keeps serving. If the uploaded
+certificate expires first, Volcano stops serving it. The domain returns to
+`pending_verification`, or to `failed` with `failure_reason` if issuance had
+failed, until the managed certificate is issued.
+The switch needs a free managed TLS certificate in your
+[plan](../guides/plans-and-limits.md#frontends).
+
+To move a managed domain to BYOC, attach your certificate to the same hostname:
+
+```bash
+volcano cloud frontends domain create my-site \
+  --domain app.example.com \
+  --cert  ./fullchain-leaf.pem \
+  --key   ./privkey.pem
+```
+
+Your certificate replaces the managed one at once, and Volcano stops renewing
+the managed certificate. You can then delete the `_acme-challenge` CNAME. In
+`volcano-config.yaml`, declare `tls.mode: byoc` with `certificate_pem` and
+`private_key_pem` instead.
+
+A domain that is not yet `active` has no certificate to keep serving. Wait
+until it is active, or remove it and declare it again with the other mode.
 
 ## Next
 

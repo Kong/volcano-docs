@@ -66,6 +66,13 @@ realtime:
   presence_enabled: true
   postgres_changes_enabled: true
 
+autofix:                                    # SUPERAGENT to turn on; omitted fields keep their value
+  enabled: true
+  max_stage: pull_request                   # diagnose | pull_request
+  auto_trigger: false
+  provider: anthropic                       # volcano | anthropic
+  model: claude-opus-5-5                    # the API key is never part of the manifest
+
 auth:
   tokens:
     access_token_lifetime: 3600
@@ -86,7 +93,7 @@ auth:
     token_refresh: 1000
     password_reset: 10
   password:
-    min_length: 8
+    min_length: 15                          # 15-128
     require_uppercase: true
     require_lowercase: true
     require_numbers: true
@@ -342,15 +349,15 @@ response that created it. Manage them through
   After a served domain is removed, proxies can keep serving its hostname for
   about a minute. An apply that declares that hostname within the minute fails
   validation; apply again once it has passed.
-  Changing the hostname or TLS
-  mode of a managed domain requires one apply to delete it and a later apply to
-  create the replacement. Replacing a BYOC domain with a managed domain for a
-  different hostname takes one apply; if Volcano cannot admit the new hostname,
-  the BYOC domain keeps serving. Switching the same hostname from BYOC to
-  managed TLS in place is not supported yet: keep BYOC, or remove the custom
-  domain in one apply and declare it with `tls.mode: managed` in the next.
-  HTTPS for that hostname is unavailable until the managed certificate is
-  issued. Managed domains retain their certificate quota until
+  Changing the hostname of a managed domain requires one apply to delete it
+  and a later apply to create the replacement. Replacing a BYOC domain with a
+  managed domain for a different hostname takes one apply; if Volcano cannot
+  admit the new hostname, the BYOC domain keeps serving. Changing the TLS mode
+  of an active domain for the same hostname takes one apply and keeps HTTPS up:
+  the current certificate serves until its replacement does. See
+  [Switch between BYOC and managed TLS](../frontends/overview.md#switch-between-byoc-and-managed-tls).
+  A domain that is not yet active cannot switch in place; delete it first.
+  Managed domains retain their certificate quota until
   deletion finishes. At the account limit, apply the deletion, wait for cleanup,
   then apply the replacement; planning a deletion does not grant capacity early.
 - **BYOC certificates** use `tls.mode: byoc` with `certificate_pem` and
@@ -376,6 +383,20 @@ response that created it. Manage them through
   every account whose domain the list no longer admits. See
   [Email domain allowlist](../authentication/configuration/email-domain-allowlist.md).
 
+## Autofix settings
+
+The `autofix` section reconciles a project's [autofix](../guides/autofix.md)
+settings. An omitted field keeps its current value. Your API key is never part
+of the manifest, and an apply never sets or deletes it: set it with
+`PUT /projects/{id}/autofix` before turning on provider `anthropic`. Switching
+providers keeps a stored key. Export writes the section once the settings have
+been saved. Where autofix is not available, re-applying saved settings or
+turning autofix off still works; turning it on, or declaring the section for a
+project that never saved settings, is a validation error.
+
+A project access token can re-apply the section unchanged, but a change to it
+is refused: only a person changes autofix settings.
+
 ## Coverage warnings: skipped and missing
 
 Because the manifest can never create functions, frontends, databases, or
@@ -398,6 +419,13 @@ volcano cloud frontends deploy --variable-scope scoped --variable NEXT_PUBLIC_AP
 volcano cloud config deploy
 ```
 
+`volcano cloud deploy` does both for every frontend in
+`.volcano/source-layout.json`, after the functions, and applies the manifest
+last. Pass `-c` to apply another manifest, and repeat it to apply several in
+order. It refuses a manifest with a `variables` section when an env file is
+also present, since applying the section would delete the variables only the
+env file sets. See the [CLI deploy reference](/cli/deploy).
+
 ## Validation, plan limits, and partial failures
 
 - Validation failures (bad cron expressions, invalid policy definitions,
@@ -407,7 +435,7 @@ volcano cloud config deploy
   gated value. Re-applying an export of a project downgraded from SUPERAGENT stays a
   no-op.
 - SUPERAGENT-gated surfaces: region subsets, email template bodies, hosted pages,
-  and the `auth.signup.allowed_email_domains` allowlist. A HOBBY project can
+  `autofix.enabled`, and the `auth.signup.allowed_email_domains` allowlist. A HOBBY project can
   still declare the allowlist it already has, or clear it to remove the
   restriction. Scheduler counts, storage policy counts, and managed TLS
   certificates respect plan caps.
@@ -494,7 +522,9 @@ to one secret no longer restarts every function in the project.
 
 Write-only secrets — `auth.email.smtp.password`, OAuth `client_secret`, and
 BYOC certificate material — are omitted from exports and stay unchanged unless
-you set them explicitly. Custom-domain exports keep only `tls.mode`, for both
+you set them explicitly. The autofix API key cannot be set in the manifest at
+all: set it with `PUT /projects/{id}/autofix` before applying
+`provider: anthropic`. See [Autofix](../guides/autofix.md). Custom-domain exports keep only `tls.mode`, for both
 managed and BYOC domains. The CLI interpolates `${ENV_VAR}` references before
 upload, so keep secrets in your environment, not in the file. Variable values
 are included in exports (they are readable through the API).

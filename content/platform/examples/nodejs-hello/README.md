@@ -20,7 +20,7 @@ curl -X POST https://api.volcano.dev/projects/PROJECT_ID/functions \
   -F "name=hello-world" \
   -F "code=@function.zip" \
   -F "runtime=nodejs24.x" \
-  -F "handler=index.handler" \
+  -F "handler=handler" \
   -F "visibility=authenticated"
 ```
 

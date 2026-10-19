@@ -58,6 +58,8 @@ past the cap answers `403` as well.
 
 Scheduled invocations deliver your configured payload as the function event. Volcano also injects `__volcano_schedule` with `scheduler_id`, `run_id`, `job_id`, `project_id`, `target_id`, `job_type`, and `region` so functions can distinguish manual and scheduled invocations.
 
+The top-level `__volcano_auth` and `__volcano_http` keys are reserved. Volcano removes them from your configured payload, so a schedule can never present a caller identity or HTTP-ingress context to the function.
+
 ## Account access holds
 
 Scheduled invocations and automatic runtime warming stop while the owner is

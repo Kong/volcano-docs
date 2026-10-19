@@ -49,6 +49,8 @@ volcano start
 volcano durable deploy --all
 ```
 
+`volcano deploy` deploys it too, along with the rest of the project.
+
 Start an execution and watch it:
 
 ```bash
@@ -160,6 +162,8 @@ Nothing changes:
 
 ```bash
 volcano cloud durable deploy --all
+# or the whole project, with the cloud project's variables
+volcano cloud deploy --env-file volcano/cloud.env
 ```
 
 The same manifest, the same handler, the same runtime version. What differs in production is time — waits take as long as you asked for — and that you can choose regions.

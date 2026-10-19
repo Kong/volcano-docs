@@ -26,7 +26,9 @@ volcano use my-app
 ## 2. Set variables
 
 Values your build needs go in project variables. Prefix anything the browser
-needs with `NEXT_PUBLIC_`. Put them in `volcano/volcano.env`:
+needs with `NEXT_PUBLIC_`. Put the cloud project's values in
+`volcano/cloud.env`; `volcano/volcano.env` holds the local development
+server's:
 
 ```bash
 NEXT_PUBLIC_API_URL=https://api.example.com
@@ -35,7 +37,7 @@ NEXT_PUBLIC_API_URL=https://api.example.com
 Then save them to your cloud project:
 
 ```bash
-volcano cloud variables deploy
+volcano cloud variables deploy -f volcano/cloud.env
 ```
 
 Without `cloud`, `volcano variables deploy` writes to local development
@@ -84,6 +86,55 @@ selects. The manifest updates the selection afterwards, but a `NEXT_PUBLIC_`
 value only reaches the browser bundle through a build, so a variable added by
 `cloud config deploy` alone needs a redeploy before the browser sees it.
 
+### Deploy with the rest of the project
+
+`volcano cloud deploy` deploys the frontends listed in
+`.volcano/source-layout.json` together with the project's variables,
+functions, and manifest. A frontend whose `volcano-config.yaml` entry sets
+`variable_scope: all`, or `variable_scope: scoped` with a `variables` list,
+builds with that selection, and the manifest is applied after the frontend
+exists, so the two steps above happen in the right order:
+
+```json
+{
+  "version": 1,
+  "frontends": [
+    { "name": "my-site", "workspace": "", "app_root": "" }
+  ]
+}
+```
+
+`workspace` is the directory to upload, relative to the project root, and
+`app_root` is the Next.js app inside it. Projects created with
+`volcano init nextjs` include this file. A [connected Git repository](../projects/git-deploy.md)
+reads the same file. See the [CLI deploy reference](/cli/deploy).
+
+The deploy can't pass any other selection to a build. An entry with
+`variable_scope: shared`, or one that leaves out either field, builds with the
+selection the frontend already has, which is none for a new frontend. The CLI
+warns, the manifest step applies the selection afterwards, and the next deploy
+rebuilds with it. Until then, the browser bundle lacks those `NEXT_PUBLIC_`
+values.
+
+### Deploy to local development
+
+Leave out `cloud` to build and serve the frontend on the local development
+server that `volcano start` runs:
+
+```bash
+volcano frontends deploy --name my-site --variable-scope scoped --variable NEXT_PUBLIC_API_URL
+# or deploy it with the rest of the project
+volcano deploy
+```
+
+The local site is served at an address like
+`http://FRONTEND_ID.frontends.localhost:8080`. `volcano frontends get my-site`
+prints it once the first build finishes. Custom domains are cloud-only. To call
+an HTTP-mode function from the local site, declare a
+[Frontend Function route](function-routes.md) with `function_routes` in
+`volcano-config.yaml`; `volcano deploy` applies it after the frontend exists.
+`volcano frontends routes list|create|delete` manages the same routes by hand.
+
 ### What the CLI uploads
 
 The CLI archives the project directory (`--path`, the current directory by
@@ -91,6 +142,9 @@ default) and skips:
 
 - `node_modules`, `.next`, `dist`, and `build`, at any depth
 - `.env.local` and other `.env*.local` files
+- `volcano/*.env` and `volcano.env`, which hold the project's variables, such
+  as `volcano/cloud.env`, and under `volcano cloud deploy` the `--env-file` it
+  deployed, wherever it is
 - `.git`, editor and OS files (`.vscode`, `.idea`, `.DS_Store`, `*.swp`), and
   `*.log`
 - anything matched by the root `.gitignore`

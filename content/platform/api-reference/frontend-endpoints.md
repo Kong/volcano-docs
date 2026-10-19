@@ -66,7 +66,7 @@ Supported frontend environments:
 
 If `engines.node` is omitted, Volcano builds with Node.js `22.x`.
 Volcano runs the `build` script from `package.json`, or `next build` when it is missing. For Next.js `16.x` it adds `--webpack` to `next build`.
-Your selected Node.js family must satisfy the installed Next.js package's `engines.node` constraint. The runtime matrix is tested against the pinned Next versions' npm metadata: Next `15.5.27` requires `^18.18.0 || ^19.8.0 || >=20.0.0`, and Next `16.4.0` requires `>=20.9.0`.
+Your selected Node.js family must satisfy the installed Next.js package's `engines.node` constraint. The runtime matrix is tested against the pinned Next versions' npm metadata: Next `15.5.28` requires `^18.18.0 || ^19.8.0 || >=20.0.0`, and Next `16.4.2` requires `>=20.9.0`.
 
 Plan limits:
 - HOBBY users can create one frontend per project.
@@ -272,9 +272,12 @@ Behavior:
 - The default `*.frontends.<env>.volcano.run` URL keeps strict valid TLS and is not replaced by BYOC certificates from other domains.
 - Returns `201` when a new custom domain is queued, and `200` when the same domain is already configured.
 - Returns `403` when a managed TLS request would exceed the account's [managed TLS certificate limit](../guides/plans-and-limits.md#frontends).
-- Returns `409` when the frontend already has a different domain, the requested domain is attached elsewhere or claimed by another account, or a previous attachment is still detaching. When another account only holds an unverified managed TLS reservation, a managed TLS request gets a `409` with `code: ownership_verification_required` and the `required_record` to publish before retrying. A BYOC request gets a plain `409` unless its certificate is publicly trusted for the hostname, which replaces the reservation.
+- Returns `409` when the frontend already has a different domain, the requested domain is attached elsewhere or claimed by another account, a previous attachment is still detaching, or a TLS mode switch targets a domain that is not `active`. When another account only holds an unverified managed TLS reservation, a managed TLS request gets a `409` with `code: ownership_verification_required` and the `required_record` to publish before retrying. A BYOC request gets a plain `409` unless its certificate is publicly trusted for the hostname, which replaces the reservation.
 - Returns `503` when custom domain provisioning is temporarily unavailable.
-- Changing between managed TLS and BYOC requires deleting the existing domain and creating it again. Moving a hostname from BYOC to managed TLS this way leaves it without HTTPS until the managed certificate is issued.
+- A request with the other TLS mode for the hostname of the frontend's active domain switches it in place and returns `200`:
+  - To managed TLS: the uploaded certificate keeps serving, with `serving_certificate: uploaded`, until Volcano issues the managed certificate. Publish the CNAME in `verification_records`.
+  - To BYOC: the uploaded certificate replaces the managed one at once, and Volcano stops renewing the managed certificate.
+- Any other change between managed TLS and BYOC requires deleting the existing domain and creating it again.
 - Hostnames under `volcano.dev` cannot be registered as custom domains.
 - Local mode does not provide managed certificate issuance. Use BYOC when running locally.
 
@@ -303,7 +306,8 @@ Response fields:
   - `verified`: the domain is served by a validated certificate.
   - `pending`: the domain is not served yet, is being re-validated after its certificate material was withdrawn, or Volcano is retrying after a failure.
   - `failed`: a failure left the domain unserved, alongside `domain_status: failed`. Managed domains report the cause in `failure_reason`.
-- `failure_reason` when managed TLS provisioning fails
+- `failure_reason` when managed TLS provisioning fails, or when issuance fails after a switch to managed TLS while the uploaded certificate still serves
+- `serving_certificate` while the domain is `active`: `uploaded` for a BYOC certificate, including after a switch to managed TLS until issuance, or `managed`
 - `verification_records[]`
 - `required_routing_record` (deprecated; no longer returned)
 - `routing_target_hostname`
@@ -325,7 +329,8 @@ Notes:
 `DELETE /projects/{project_id}/frontends/{frontend_id}/domain`
 
 Removes custom-domain configuration from the frontend and frees shard capacity.
-Returns `204` when the detach request is queued successfully.
+Returns `204` when the detach request is queued successfully, or `409` when the
+domain switched TLS mode while the request ran; send it again.
 
 ## Function routes
 

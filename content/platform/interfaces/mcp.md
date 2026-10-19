@@ -166,6 +166,7 @@ A **platform token (`pk-`) is refused with `403`.** The endpoint takes its proje
 | `search_logs` | `read_only` | Searches the project's logs | `POST /projects/{id}/logs/search` |
 | `list_durable_approvals` | `read_only` | Lists the approvals durable workflows are waiting on or have had decided, newest first | `GET /projects/{id}/durable-approvals` |
 | `get_durable_approval_stats` | `read_only` | Counts durable approvals by outcome, workflow, and day, with the approval rate and time to decision | `GET /projects/{id}/durable-approvals/stats` |
+| `list_issues` | `read_only` | Lists runtime errors grouped into issues, most recently seen first | `GET /projects/{id}/issues` |
 | `list_capabilities` | `read_only` | Lists which capabilities, such as Sandboxes, accept new work in this environment | `GET /capabilities` |
 | `list_variable_environments` | `read_only` | Lists the project's variable Environments | `GET /projects/{id}/variable-environments` |
 | `list_databases` | `full` | Lists the project's databases. Returns connection strings | `GET /projects/{id}/databases` |
@@ -189,7 +190,67 @@ Scope is enforced by the same rules as the REST API. A `read_only` token is not
 shown the `full` tools in `tools/list`, and is refused if it calls one anyway —
 `set_variable` and `create_variable_environment` because they write, and
 `list_databases` because it hands back a credential that keeps working after the
-token is gone. A `full` token sees all thirteen tools.
+token is gone. A `full` token also sees the Sandbox mutation tools below.
+
+## Sandbox tools
+
+Sandbox tools use the same API authorization and billing rules. A session ID
+must belong to the token's project, including on routes without a project ID.
+
+| Tool | Scope | Purpose |
+|------|-------|---------|
+| `list_sandbox_presets` | `read_only` | Discover verified presets and memory sizes |
+| `list_sandboxes`, `get_sandbox` | `read_only` | Inspect project templates |
+| `list_sandbox_deployments`, `get_sandbox_deployment`, `get_sandbox_deployment_logs` | `read_only` | Inspect deployment history, status, and build logs |
+| `list_sandbox_sessions`, `get_sandbox_session` | `read_only` | Inspect session state |
+| `read_sandbox_file` | `read_only` | Read session files |
+| `create_sandbox`, `update_sandbox` | `full` | Create or rename a template |
+| `create_sandbox_session` | `full` | Start a session from a preset or template |
+| `execute_sandbox` | `full` | Execute once with automatic cleanup |
+| `execute_sandbox_session` | `full` | Execute in an existing session |
+| `write_sandbox_file` | `full` | Write a session file |
+| `suspend_sandbox_session`, `resume_sandbox_session` | `full` | Pause and resume a session |
+| `terminate_sandbox_session` | `full` | Permanently stop a session and release compute |
+
+Check `list_capabilities` before starting work. Confirmed cloud running time
+consumes account allowance and paid overage credits. Suspended and uncertain
+time are uncharged, and snapshot costs are included in runtime pricing.
+Terminate sessions when finished; termination discards their files.
+
+For operations with an `Idempotency-Key` argument, generate a UUID once and
+reuse it only for retries with the same arguments. The tool forwards this as an
+HTTP header, preventing duplicate starts or executions after a lost response.
+Resource IDs such as `sessionId` and `sandboxId` are tool arguments; the project
+ID always comes from the credential.
+
+`create_sandbox_session` and `execute_sandbox` take their request fields inside
+`body`. Supply exactly one of `body.preset` or `body.sandbox_id`. The
+`Idempotency-Key` argument stays outside `body`.
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/call",
+  "params": {
+    "name": "execute_sandbox",
+    "arguments": {
+      "Idempotency-Key": "00000000-0000-4000-8000-000000000001",
+      "body": {
+        "preset": "python3.12",
+        "region": "us-east-1",
+        "command": "python --version"
+      }
+    }
+  }
+}
+```
+
+MCP requests are limited to 1 MiB and results to 64 KiB. Use the SDK or HTTP API
+for larger files. Custom image uploads and source archive downloads remain in
+the CLI/API. Template deletion, end-user grants, and port-access credential
+issuance are not MCP tools. Project access tokens cannot manage end-user grants
+or issue port credentials, even through direct HTTP requests.
 
 ## Call a tool
 
@@ -246,7 +307,7 @@ Results are capped at 64 KiB. Past that the text ends with a note saying it was 
 
 ## What it cannot do
 
-A project access token is a control-plane credential. It deploys and configures; it does not read your users' data or run your code. So there is no tool to invoke a function or query a database — those need a service key or an anon key, which are data-plane credentials the agent should not be holding. See [Service keys](../authentication/security/service-keys.md).
+A project access token is a control-plane credential. It deploys and configures, including running commands in project-owned Sandbox sessions; it does not grant access to your application users' data. So there is no tool to invoke a function or query a database — those need a service key or an anon key, which are data-plane credentials the agent should not be holding. See [Service keys](../authentication/security/service-keys.md).
 
 The rest of the boundary comes from the credential itself, and is the same over MCP as over HTTP: no other project, no account-level action, and no managing project access tokens — an agent cannot mint its replacement or erase the record of what it did. See [Project access tokens](../authentication/security/project-access-tokens.md).
 
