@@ -170,7 +170,10 @@ These commands create cloud resources; the frontend will run on your computer ag
 
 In the project's authentication settings, enable email/password signup and allow the exact browser origin `http://localhost:3000`.
 Leave signup email-domain restrictions empty so anyone can register.
-Use the project's publishable anonymous key with permissions for signup, signin, session refresh, signout, and password recovery, plus `realtime.connect` and `realtime.subscribe`.
+The default anonymous key is auth-only and cannot connect to realtime.
+Create a publishable anonymous key using [Creating a key with custom permissions](/platform/authentication/security/anon-keys#creating-a-key-with-custom-permissions).
+Include all seven auth permissions (`auth.signup`, `auth.signin`, `auth.refresh`, `auth.logout`, `auth.password_reset`, `auth.confirm_email`, and `auth.resend_confirmation`), plus `realtime.connect` and `realtime.subscribe`.
+Use this new key in `.env.local` below.
 See [authentication configuration](/platform/authentication/configuring-auth-methods) and [realtime authentication](/sdk/js/realtime).
 
 Edit `.env.local`:
@@ -454,7 +457,6 @@ All queries use the authenticated client, so PostgreSQL applies the current user
 `data.ts` supplies feed search, 20-record pages for posts, comments, people, and messages, plus author, bookmark, and friendship queries.
 It sorts posts by creation time and ID for stable ordering.
 Paginated queries request 21 rows, display the first 20, and use the extra row to enable the next-page action.
-The API's `count` describes the returned page, so it is not used as a total record count.
 Saved posts remain separate from feed search.
 
 **`src/lib/volcano.ts`**
@@ -1133,7 +1135,8 @@ Users receive changes for their own identity-based inbox row; private message te
 On a version change, the app reloads through ordinary authenticated queries, which enforce the full membership and friendship rules.
 
 The hook registers listeners before subscribing, refreshes tokens, reloads after reconnecting, and cleans up on signout or unmount.
-Failed connections retry with bounded backoff and restart when the browser comes online; session restoration also retries on the online event.
+Failed connections or subscriptions retry with bounded backoff; the delay resets only after a successful subscription.
+Connections restart when the browser comes online; session restoration also retries on the online event.
 The connection is tied to the signed-in account; a ref supplies the latest committed refresh callback without reconnecting when filters change.
 Asynchronous writes also refresh through the latest callback, so a write started in Feed cannot overwrite Saved with an older Feed query.
 Focus and visible 30-second reconciliation recover missed changes.
@@ -1213,17 +1216,21 @@ export function useLiveUpdates(userId: string, refresh: () => Promise<void>) {
         realtime = instance;
         const channel = instance.channel('public:community_inboxes', { type: 'postgres' });
         channel.onPostgresChanges('*', 'public', 'community_inboxes', schedule);
+        let subscribed = false;
         instance.onConnect(function connected() {
           if (!current()) return;
-          clearTimeout(retryTimer); retryTimer = undefined; retryDelay = 1000;
-          setConnection('Live updates connected'); schedule();
+          clearTimeout(retryTimer); retryTimer = undefined;
+          if (subscribed) { setConnection('Live updates connected'); schedule(); }
+          else setConnection('Subscribing to live updates…');
         });
         instance.onDisconnect(function disconnected() { if (current()) { setConnection('Reconnecting; Refresh is available'); retry(5000); } });
         instance.onError(function failed() { if (current()) { setConnection('Live updates unavailable; retrying. Refresh is available'); retry(5000); } });
         await instance.connect();
         if (!current()) { instance.disconnect(); return; }
         await channel.subscribe();
-        if (!current()) instance.disconnect();
+        if (!current()) { instance.disconnect(); return; }
+        subscribed = true; retryDelay = 1000;
+        setConnection('Live updates connected'); schedule();
       } catch {
         if (!current()) return;
         dispose();
