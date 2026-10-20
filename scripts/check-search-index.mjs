@@ -94,10 +94,12 @@ try {
       }
       console.log(`check-search-index: query "${query}" found ${url} (${mode})`);
     }
+    // Use a specific title for Docs: broad terms can legitimately rank other
+    // reference pages above the JavaScript guide as the synced content grows.
     for (const [section, query, expected] of [
-      ["docs", "authentication", "/sdk/js/authentication"],
-      ["cookbooks", "photo", "/cookbooks/photo-uploads"],
-      ["blog", "photo", "/blog/designing-private-photo-uploads"],
+      ["docs", "Volcano SDK Documentation", "/sdk/js"],
+      ["cookbooks", "social", "/cookbooks/build-a-social-media-app"],
+      ["blog", "feature", "/blog/start-with-one-feature"],
     ]) {
       const scoped = searchIndexClient(`http://127.0.0.1:${port}/${mode}${SEARCH_INDEX_PATH}`, section);
       const matches = await scoped.search(query);
@@ -109,10 +111,10 @@ try {
       }
       console.log(`check-search-index: ${section} search returns only its own section (${mode})`);
     }
-    const topicClient = searchIndexClient(`http://127.0.0.1:${port}/${mode}${SEARCH_INDEX_PATH}`, ["blog", "blog-topic:storage"]);
-    const topicMatches = await topicClient.search("photo");
-    if (topicMatches.length === 0 || topicMatches.some((result) => !result.url.startsWith("/blog/designing-private-photo-uploads"))) {
-      throw new Error(`check-search-index: storage topic did not isolate the matching blog post (${mode}).`);
+    const topicClient = searchIndexClient(`http://127.0.0.1:${port}/${mode}${SEARCH_INDEX_PATH}`, ["blog", "blog-topic:application-design"]);
+    const topicMatches = await topicClient.search("feature");
+    if (topicMatches.length === 0 || topicMatches.some((result) => !result.url.startsWith("/blog/start-with-one-feature"))) {
+      throw new Error(`check-search-index: application-design topic did not isolate the matching blog post (${mode}).`);
     }
     console.log(`check-search-index: blog topic search isolates matching posts (${mode})`);
   }

@@ -16,8 +16,8 @@ Choose a result you can check in the browser.
 For this application, a useful first milestone is a signed-in user seeing a preview of their uploaded image.
 That milestone connects identity, storage, and the interface without requiring a complete social feed.
 
-The [signup and login recipe](/cookbooks/user-signup-and-login) establishes the authenticated client.
-The [photo upload recipe](/cookbooks/photo-uploads) extends that client with storage operations.
+The [authentication guide](/sdk/js/authentication) establishes the authenticated client.
+The [Storage guide](/sdk/js/storage) extends that client with upload operations.
 Keep the same client within the browser application so these operations use the current user's session.
 
 ## Include access rules in the first flow
