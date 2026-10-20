@@ -1,6 +1,6 @@
 import { DocsLayout } from "fumadocs-ui/layouts/docs";
 import type { ReactNode } from "react";
-import { source } from "@/lib/source";
+import { getDocsTree } from "@/lib/sections";
 import { baseOptions } from "@/lib/layout.shared";
 import { SearchBanner } from "@/components/sidebar/search-banner";
 import { SidebarQuickStartPortal } from "@/components/sidebar/sidebar-quick-start-portal";
@@ -26,7 +26,7 @@ function SidebarBanner() {
 export default function Layout({ children }: { children: ReactNode }) {
   return (
     <DocsLayout
-      tree={source.pageTree}
+      tree={getDocsTree()}
       {...baseOptions()}
       slots={{
         header: DocsHeader,

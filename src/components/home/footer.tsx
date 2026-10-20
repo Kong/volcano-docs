@@ -29,6 +29,8 @@ const LINK_COLUMNS = [
     links: [
       { label: "Getting started", href: "/get-started" },
       { label: "Documentation", href: "/" },
+      { label: "Cookbooks", href: "/cookbooks" },
+      { label: "Blog", href: "/blog" },
       { label: "Tutorials", href: "/get-started" },
     ],
   },

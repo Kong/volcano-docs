@@ -31,6 +31,8 @@ order: 3
 | `order` | integer | no | Sort position within its directory. Default: alphabetical. |
 | `nav_title` | string | no | Short label for the sidebar when `title` is long. |
 | `tags` | string[] | no | Topical grouping / filtering. |
+| `author` | string | no | Author byline for a blog post. |
+| `published` | date (`YYYY-MM-DD`) | no | Blog publication date; quote the value in YAML. |
 | `keywords` | string[] | no | Extra search synonyms not in the prose. |
 | `draft` | boolean | no | `true` hides the page from production builds. |
 | `updated` | date (`YYYY-MM-DD`) | no | Last meaningful update. CI may auto-fill from git. |

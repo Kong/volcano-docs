@@ -10,6 +10,7 @@ type FeatureCardProps = {
   href?: string;
   variant?: "primary" | "danger";
   className?: string;
+  children?: ReactNode;
 };
 
 // A single feature card: gradient background, optional icon, title, and body.
@@ -22,6 +23,7 @@ export function FeatureCard({
   href,
   variant = "primary",
   className,
+  children,
 }: FeatureCardProps) {
   const cardClass = `feature-card feature-card--${variant} ${className ?? ""}`;
 
@@ -30,16 +32,17 @@ export function FeatureCard({
       {icon && <div className="feature-card-icon">{icon}</div>}
       <h3 className="feature-card-title">{title}</h3>
       <p className="feature-card-body">{description}</p>
+      {children}
     </>
   );
 
   if (href) {
     return (
-      <Link href={href} className={cardClass}>
+      <Link href={href} data-slot="feature-card" data-variant={variant} className={cardClass}>
         {body}
       </Link>
     );
   }
 
-  return <div className={cardClass}>{body}</div>;
+  return <div data-slot="feature-card" data-variant={variant} className={cardClass}>{body}</div>;
 }

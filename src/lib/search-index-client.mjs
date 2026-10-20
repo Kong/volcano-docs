@@ -43,8 +43,9 @@ function decodedIndexUrl(from) {
 /**
  * @param {string} from
  * @param {string} query
+ * @param {string | string[]} [tag]
  */
-async function searchIndex(from, query) {
+async function searchIndex(from, query, tag) {
   const pending = decodedIndexUrl(from);
   try {
     const [url, { oramaStaticClient }] = await Promise.all([
@@ -52,7 +53,7 @@ async function searchIndex(from, query) {
       import("fumadocs-core/search/client/orama-static"),
     ]);
     try {
-      return await oramaStaticClient({ from: url }).search(query);
+      return await oramaStaticClient({ from: url, tag }).search(query);
     } finally {
       // Fumadocs caches the loaded database by URL, so later queries never
       // fetch this blob again; release the decompressed JSON it holds.
@@ -70,13 +71,14 @@ async function searchIndex(from, query) {
  * Fumadocs' Orama static client, fed the decompressed index through a blob URL.
  *
  * @param {string} [from]
+ * @param {string | string[]} [tag] Restrict results before ranking and limiting them.
  * @returns {import("fumadocs-core/search/client").SearchClient}
  */
-export function searchIndexClient(from = SEARCH_INDEX_PATH) {
+export function searchIndexClient(from = SEARCH_INDEX_PATH, tag) {
   return {
-    deps: [from],
+    deps: [from, tag],
     search(query) {
-      return searchIndex(from, query);
+      return searchIndex(from, query, tag);
     },
   };
 }

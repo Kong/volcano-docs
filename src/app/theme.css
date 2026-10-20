@@ -152,15 +152,38 @@
 
   /* ── Semantic typography (site type scale). One size per role. ── */
   --type-display: var(--font-size-5xl); /* 48 — page hero title */
+  --type-display-compact: var(--font-size-2xl);
   --type-section: var(--font-size-xl); /* 24 — section titles */
   --type-subtitle: var(--font-size-lg); /* 18 — header brand */
   --type-title: var(--font-size-base); /* 16 — card/nav section titles */
   --type-body: var(--font-size-base); /* 16 — body copy */
   --type-meta: var(--font-size-md); /* 14 — nav / dense UI text */
+  --type-navigation-weight: var(--font-weight-medium);
+  --type-action-weight: var(--font-weight-semibold);
+  --type-heading-weight: var(--font-weight-bold);
+  --type-navigation-leading: var(--line-height-snug);
+  --type-body-leading: var(--line-height-relaxed);
+  --type-heading-tracking: var(--tracking-heading);
 
   /* ── Semantic layout sizes. ── */
   --layout-header-height: 3.5rem;
+  --layout-header-wordmark-width: 6rem;
   --layout-ide-card-min-width: 140px;
+  --layout-reading-width: 52rem;
+  --layout-collection-width: 76rem;
+  --layout-feature-card-height: 349px;
+  --layout-navigation-icon-size: var(--size-icon);
+  --layout-theme-control-size: 2.25rem;
+  --shadow-floating: var(--shadow-design);
+
+  /* Semantic spacing for shared navigation and standalone sections. */
+  --spacing-page: var(--space-100);
+  --spacing-inline: var(--space-60);
+  --spacing-section: var(--space-130);
+  --spacing-card: var(--space-80);
+  --spacing-action-block: var(--space-30);
+  --spacing-action-inline: var(--space-50);
+  --spacing-control-gap: var(--space-40);
 
   /* ── System defaults all components inherit from. ── */
   --system-font: var(--font-family-sans);
@@ -202,4 +225,12 @@
   --vd-border-subtle: var(--color-neutral-800);
 
   color-scheme: dark;
+}
+
+@media (width < 48rem) {
+  :root {
+    --layout-header-height: 7rem;
+    --spacing-page: var(--space-60);
+    --spacing-section: var(--space-100);
+  }
 }

@@ -1,30 +1,17 @@
 import { source } from "@/lib/source";
 import {
   DocsPage,
-  DocsBody,
   DocsTitle,
   DocsDescription,
 } from "fumadocs-ui/page";
 import { notFound } from "next/navigation";
-import defaultMdxComponents from "fumadocs-ui/mdx";
 import type { Metadata } from "next";
-import type { ComponentProps } from "react";
 import { HomePage } from "@/components/home";
 import { CopyPageDropdown } from "@/components/copy-page-dropdown";
-import { resolveRelativeMdHref } from "@/lib/relative-md-href.mjs";
+import { MarkdownContent } from "@/components/markdown-content";
+import { isStandaloneSection } from "@/lib/sections";
 
 type PageProps = { params: Promise<{ slug?: string[] }> };
-
-type DocsPageData = ReturnType<typeof source.getPage>;
-
-// Resolve relative Markdown links (`./x.md`, `../x.md`, and bare `x.md`) to real
-// routes while retaining query strings and fragments.
-function createMdLink(page: NonNullable<DocsPageData>) {
-  const ResolvedLink = defaultMdxComponents.a;
-  return function MdLink({ href, ...props }: ComponentProps<"a">) {
-    return <ResolvedLink href={resolveRelativeMdHref(href, source, page)} {...props} />;
-  };
-}
 
 function isHome(slug?: string[]) {
   return !slug || slug.length === 0;
@@ -32,6 +19,7 @@ function isHome(slug?: string[]) {
 
 export default async function Page(props: PageProps) {
   const params = await props.params;
+  if (isStandaloneSection(params.slug)) notFound();
 
   // The site root renders the custom Figma landing page edge-to-edge inside
   // the docs layout, so it keeps the real header + sidebar but skips the
@@ -43,7 +31,6 @@ export default async function Page(props: PageProps) {
   const page = source.getPage(params.slug);
   if (!page) notFound();
 
-  const MDXContent = page.data.body;
   return (
     <DocsPage toc={page.data.toc} full={page.data.full}>
       <div className="docs-title-row">
@@ -51,15 +38,15 @@ export default async function Page(props: PageProps) {
         <CopyPageDropdown slug={params.slug!} />
       </div>
       <DocsDescription>{page.data.description}</DocsDescription>
-      <DocsBody>
-        <MDXContent components={{ ...defaultMdxComponents, a: createMdLink(page) }} />
-      </DocsBody>
+      <MarkdownContent page={page} />
     </DocsPage>
   );
 }
 
 export function generateStaticParams() {
-  return source.generateParams();
+  return source.generateParams().filter(function docsOnly(params) {
+    return !isStandaloneSection(params.slug);
+  });
 }
 
 export async function generateMetadata(props: PageProps): Promise<Metadata> {

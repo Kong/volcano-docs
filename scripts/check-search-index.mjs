@@ -9,6 +9,7 @@ import http from "node:http";
 import path from "node:path";
 import zlib from "node:zlib";
 import { SEARCH_INDEX_PATH, searchIndexClient } from "../src/lib/search-index-client.mjs";
+import { getSearchSection } from "../src/lib/search-section.mjs";
 
 // Budget for the bytes a reader downloads on their first search. When it was
 // set, the index was 1.48 MB gzip (8.92 MB JSON), under the 10 MB raw ceiling
@@ -93,6 +94,27 @@ try {
       }
       console.log(`check-search-index: query "${query}" found ${url} (${mode})`);
     }
+    for (const [section, query, expected] of [
+      ["docs", "authentication", "/sdk/js/authentication"],
+      ["cookbooks", "photo", "/cookbooks/photo-uploads"],
+      ["blog", "photo", "/blog/designing-private-photo-uploads"],
+    ]) {
+      const scoped = searchIndexClient(`http://127.0.0.1:${port}/${mode}${SEARCH_INDEX_PATH}`, section);
+      const matches = await scoped.search(query);
+      if (!matches.some((result) => result.type === "page" && result.url === expected)) {
+        throw new Error(`check-search-index: ${section} query "${query}" did not find ${expected} (${mode}).`);
+      }
+      if (matches.some((result) => getSearchSection(result.url) !== section)) {
+        throw new Error(`check-search-index: ${section} query returned results from another section (${mode}).`);
+      }
+      console.log(`check-search-index: ${section} search returns only its own section (${mode})`);
+    }
+    const topicClient = searchIndexClient(`http://127.0.0.1:${port}/${mode}${SEARCH_INDEX_PATH}`, ["blog", "blog-topic:storage"]);
+    const topicMatches = await topicClient.search("photo");
+    if (topicMatches.length === 0 || topicMatches.some((result) => !result.url.startsWith("/blog/designing-private-photo-uploads"))) {
+      throw new Error(`check-search-index: storage topic did not isolate the matching blog post (${mode}).`);
+    }
+    console.log(`check-search-index: blog topic search isolates matching posts (${mode})`);
   }
 } finally {
   server.close();

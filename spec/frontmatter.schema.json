@@ -19,6 +19,14 @@
       "type": "integer",
       "minimum": 0
     },
+    "author": {
+      "type": "string",
+      "minLength": 1
+    },
+    "published": {
+      "type": "string",
+      "format": "date"
+    },
     "nav_title": {
       "type": "string",
       "minLength": 1
