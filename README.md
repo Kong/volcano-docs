@@ -102,7 +102,8 @@ The shared header links three sections while preserving existing docs URLs:
 
 Author recipes in `content/cookbooks/` and posts in `content/blog/`.
 Each section's `index.md` provides its introduction, and `meta.json` controls the card and navigation order.
-New Markdown pages appear in the listing automatically, using their frontmatter title and description.
+Keep `"..."` at the end of each section's `meta.json` page list so new Markdown pages appear automatically after explicitly ordered pages in the listing and navigation tree, using their frontmatter title and description.
+Cookbooks uses that tree for its sidebar; Blog keeps its topic filters in the sidebar.
 All sections share search, sitemap generation, relative Markdown link handling, and the raw Markdown API.
 Search is scoped to the active section.
 In Blog, selecting a topic filters both the post cards and search results; All posts clears the filter.

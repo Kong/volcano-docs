@@ -94,10 +94,10 @@ try {
       }
       console.log(`check-search-index: query "${query}" found ${url} (${mode})`);
     }
-    // Use a specific title for Docs: broad terms can legitimately rank other
-    // reference pages above the JavaScript guide as the synced content grows.
+    // Anchor the Docs scope check to content authored here, so SDK syncs and
+    // ranking changes for broad terms cannot invalidate this assertion.
     for (const [section, query, expected] of [
-      ["docs", "Volcano SDK Documentation", "/sdk/js"],
+      ["docs", searchTerm, expectedUrl],
       ["cookbooks", "social", "/cookbooks/build-a-social-media-app"],
       ["blog", "feature", "/blog/start-with-one-feature"],
     ]) {
