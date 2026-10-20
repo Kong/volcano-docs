@@ -116,6 +116,13 @@ try {
     if (topicMatches.length === 0 || topicMatches.some((result) => !result.url.startsWith("/blog/start-with-one-feature"))) {
       throw new Error(`check-search-index: application-design topic did not isolate the matching blog post (${mode}).`);
     }
+    // The sole post matches the positive case even if a client ignores topics.
+    // A topic absent from that post must exclude the same search results.
+    const absentTopicClient = searchIndexClient(`http://127.0.0.1:${port}/${mode}${SEARCH_INDEX_PATH}`, ["blog", "blog-topic:__missing-topic-for-scope-check__"]);
+    const absentTopicMatches = await absentTopicClient.search("feature");
+    if (absentTopicMatches.length !== 0) {
+      throw new Error(`check-search-index: a nonmatching topic returned blog results (${mode}).`);
+    }
     console.log(`check-search-index: blog topic search isolates matching posts (${mode})`);
   }
 } finally {

@@ -200,11 +200,13 @@ volcano cloud databases migration up --all --database community
 
 The generator produces one SQL statement per file under `volcano/migrations/`.
 The CLI runs them in filename order and does not track applied files.
-The supplied statements support rerunning the same initial setup; later schema changes should get new migrations.
+The supplied statements support rerunning the same initial setup in a fresh database.
+Rerunning `CREATE TABLE IF NOT EXISTS` does not upgrade an older schema; changes to existing tables and policies require explicit new migrations.
 
 | Table | Stores | Access rule |
 | --- | --- | --- |
-| `community_members` | Account ID, email, display name, bio, active status | Anyone can create their own profile; members see active profiles |
+| `community_members` | Account ID, display name, bio, active status | Anyone can create their own profile; members see active profiles |
+| `community_accounts` | Account ID and login email binding | Database helpers and triggers only; browsers have no access |
 | `community_posts` | Posts and reaction counts | Members read; authors edit and delete |
 | `community_comments` | Replies | Members read; authors create and delete their replies |
 | `community_likes` | One like per member and post | Members manage their own likes |
@@ -215,14 +217,15 @@ The supplied statements support rerunning the same initial setup; later schema c
 | `community_inboxes` | An identity and version counter | Each user reads only their own signal row |
 
 Community data is available after signin and profile creation.
-The authenticated ID and email must match an active profile:
+The authenticated ID and email must match the private account binding for an active profile:
 
 ```sql
 SELECT EXISTS (
-  SELECT 1 FROM public.community_members
-  WHERE id = auth.uid()
-    AND email = lower(auth.email())
-    AND active
+  SELECT 1 FROM public.community_members AS m
+  JOIN public.community_accounts AS a ON a.user_id = m.id
+  WHERE m.id = auth.uid()
+    AND a.email = lower(auth.email())
+    AND m.active
 );
 ```
 
@@ -231,7 +234,10 @@ Column grants restrict client writes; defaults supply the authenticated author, 
 New profiles are active by default.
 Clients cannot change their active status, choose another author, forge notification recipients, or overwrite counts.
 
-**Checkpoint:** migrations complete, and the SQL console shows nine `community_` tables with row-level security enabled.
+The database keeps login emails in `community_accounts`, which grants no access to browser roles.
+Public profile queries contain no email field; the interface uses Volcano Auth's `user.email` only for the signed-in account.
+
+**Checkpoint:** migrations complete, and the SQL console shows ten `community_` tables with row-level security enabled.
 
 **`scripts/write-migrations.mjs`**
 
@@ -241,10 +247,14 @@ import fs from 'node:fs';
 // Each item becomes exactly one SQL statement in its own numbered file.
 export const statements = [
   ['members', `CREATE TABLE IF NOT EXISTS public.community_members (
-    id uuid PRIMARY KEY DEFAULT auth.uid(), email text NOT NULL UNIQUE DEFAULT lower(auth.email()),
+    id uuid PRIMARY KEY DEFAULT auth.uid(),
     display_name text NOT NULL CHECK(length(trim(display_name)) BETWEEN 1 AND 80),
     bio text NOT NULL DEFAULT '' CHECK(length(bio)<=500), active boolean NOT NULL DEFAULT true,
     created_at timestamptz NOT NULL DEFAULT now()
+  );`],
+  ['accounts', `CREATE TABLE IF NOT EXISTS public.community_accounts (
+    user_id uuid PRIMARY KEY REFERENCES public.community_members(id) ON DELETE CASCADE,
+    email text NOT NULL UNIQUE
   );`],
   ['inboxes', `CREATE TABLE IF NOT EXISTS public.community_inboxes (id uuid PRIMARY KEY REFERENCES public.community_members(id) ON DELETE CASCADE, version bigint NOT NULL DEFAULT 0);`],
   ['posts', `CREATE TABLE IF NOT EXISTS public.community_posts (
@@ -282,7 +292,9 @@ export const statements = [
     title text NOT NULL, is_read boolean NOT NULL DEFAULT false, created_at timestamptz NOT NULL DEFAULT now()
   );`],
   ['is_member', `CREATE OR REPLACE FUNCTION public.community_is_member() RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,public AS $$
-    SELECT EXISTS(SELECT 1 FROM public.community_members WHERE id=auth.uid() AND email=lower(auth.email()) AND active);
+    SELECT EXISTS(SELECT 1 FROM public.community_members m
+      JOIN public.community_accounts a ON a.user_id=m.id
+      WHERE m.id=auth.uid() AND a.email=lower(auth.email()) AND m.active);
   $$;`],
   ['are_friends', `CREATE OR REPLACE FUNCTION public.community_are_friends(a uuid,b uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,public AS $$
     SELECT auth.uid() IN (a,b) AND EXISTS(SELECT 1 FROM public.community_friendships f
@@ -291,7 +303,7 @@ export const statements = [
   $$;`],
 ];
 
-const tables = ['members','inboxes','posts','comments','likes','bookmarks','friendships','messages','notifications'];
+const tables = ['members','accounts','inboxes','posts','comments','likes','bookmarks','friendships','messages','notifications'];
 for (const table of tables) {
   statements.push([`${table}_rls`, `ALTER TABLE public.community_${table} ENABLE ROW LEVEL SECURITY;`]);
   statements.push([`${table}_revoke`, `REVOKE ALL ON public.community_${table} FROM PUBLIC,anon,authenticated;`]);
@@ -302,10 +314,10 @@ function policy(name, table, operation, clause) {
     CREATE POLICY ${name} ON public.community_${table} FOR ${operation} TO authenticated ${clause}; END IF; END $$;`]);
 }
 const member = 'public.community_is_member()';
-const mine = "id=auth.uid() AND email=lower(auth.email())";
+const mine = "id=auth.uid()";
 policy('member_read','members','SELECT',`USING((${mine}) OR (active AND ${member}))`);
 policy('member_join','members','INSERT',`WITH CHECK(${mine} AND active)`);
-policy('member_edit','members','UPDATE',`USING(${mine}) WITH CHECK(${mine})`);
+policy('member_edit','members','UPDATE',`USING(${mine} AND ${member}) WITH CHECK(${mine} AND ${member})`);
 policy('inbox_read','inboxes','SELECT','USING(id=auth.uid())');
 for (const table of ['posts','comments']) {
   policy(`${table}_read`,table,'SELECT',`USING(${member})`);
@@ -330,7 +342,10 @@ policy('message_receipt','messages','UPDATE',`USING(${conversation} AND recipien
 policy('notification_read','notifications','SELECT',`USING(${member} AND recipient_id=auth.uid())`);
 policy('notification_receipt','notifications','UPDATE',`USING(${member} AND recipient_id=auth.uid()) WITH CHECK(${member} AND recipient_id=auth.uid() AND is_read)`);
 
-for (const table of tables) statements.push([`${table}_select`, `GRANT SELECT ON public.community_${table} TO authenticated;`]);
+for (const table of tables) {
+  if (table === 'accounts') continue;
+  statements.push([`${table}_select`, `GRANT SELECT ON public.community_${table} TO authenticated;`]);
+}
 for (const [table, columns] of [
   ['members','display_name'], ['posts','body'], ['comments','post_id,body'], ['likes','post_id'],
   ['bookmarks','post_id'], ['friendships','recipient_id'], ['messages','id,recipient_id,body'],
@@ -347,7 +362,10 @@ statements.push(['signal_function', `CREATE OR REPLACE FUNCTION public.community
 DECLARE r jsonb; target uuid; BEGIN
   IF TG_OP='DELETE' THEN r=to_jsonb(OLD); ELSE r=to_jsonb(NEW); END IF;
   IF TG_TABLE_NAME='community_members' THEN
-    IF TG_OP='INSERT' THEN INSERT INTO public.community_inboxes(id) VALUES(NEW.id) ON CONFLICT DO NOTHING; END IF;
+    IF TG_OP='INSERT' THEN
+      INSERT INTO public.community_accounts(user_id,email) VALUES(NEW.id,lower(auth.email()));
+      INSERT INTO public.community_inboxes(id) VALUES(NEW.id) ON CONFLICT DO NOTHING;
+    END IF;
     UPDATE public.community_inboxes SET version=version+1 WHERE id IN(SELECT id FROM public.community_members WHERE active) OR id=(r->>'id')::uuid;
   ELSIF TG_TABLE_NAME IN('community_posts','community_comments','community_likes') THEN
     UPDATE public.community_inboxes SET version=version+1 WHERE id IN(SELECT id FROM public.community_members WHERE active);
@@ -464,7 +482,7 @@ export function getVolcano() {
 **`src/lib/types.ts`**
 
 ```typescript title="src/lib/types.ts"
-export type Member = { id: string; email: string; display_name: string; bio: string; active: boolean };
+export type Member = { id: string; display_name: string; bio: string; active: boolean };
 export type Post = { id: string; author_id: string; body: string; like_count: number; comment_count: number; created_at: string };
 export type Comment = { id: string; post_id: string; author_id: string; body: string; created_at: string };
 export type Friendship = { id: string; requester_id: string; recipient_id: string; status: 'pending' | 'accepted' };
@@ -481,7 +499,7 @@ export type Action = (work: () => Promise<unknown>, success: string) => Promise<
 import { getVolcano } from './volcano';
 import type { Comment, Friendship, Member, Message, Notice, Post, Snapshot } from './types';
 
-export const memberColumns = 'id,email,display_name,bio,active';
+export const memberColumns = 'id,display_name,bio,active';
 const postColumns = 'id,author_id,body,like_count,comment_count,created_at';
 const messageColumns = 'id,sender_id,recipient_id,body,is_read,sequence,created_at';
 
@@ -619,7 +637,7 @@ const { error } = await getVolcano().insert('community_members', {
 if (error) throw error;
 ```
 
-The database supplies the account ID and email and sets `active` to true.
+The database supplies the account ID, privately binds its login email, and sets `active` to true.
 The member can enter the community immediately after creating their profile.
 Operators can deactivate accounts through the SQL console, but members cannot reactivate themselves.
 
@@ -1114,20 +1132,29 @@ On a version change, the app reloads through ordinary authenticated queries, whi
 
 The hook registers listeners before subscribing, refreshes tokens, reloads after reconnecting, and cleans up on signout or unmount.
 Failed connections retry with bounded backoff and restart when the browser comes online; session restoration also retries on the online event.
+The connection is tied to the signed-in account; a ref supplies the latest committed refresh callback without reconnecting when filters change.
+Asynchronous writes also refresh through the latest callback, so a write started in Feed cannot overwrite Saved with an older Feed query.
 Focus and visible 30-second reconciliation recover missed changes.
 The interface shows connection status and keeps manual Refresh available.
+
+This signal design is intended for a small community.
+A public feed change increments every active member's inbox, and count-maintaining triggers can emit additional changes for one interaction.
+Each connected client then reloads its snapshot, so writes and reloads grow with the member count and compete for inbox row locks.
+For larger audiences, use one shared feed-change signal or a suitably authorized broadcast, and reserve per-member inbox signals for private events.
 
 **`src/components/use-live-updates.ts`**
 
 ```typescript title="src/components/use-live-updates.ts"
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { VolcanoRealtime } from '@volcano.dev/sdk/realtime';
 import { getVolcano } from '../lib/volcano';
 
 export function useLiveUpdates(userId: string, refresh: () => Promise<void>) {
   const [connection, setConnection] = useState('Connecting live updates…');
+  const refreshRef = useRef(refresh);
+  useLayoutEffect(function commitRefresh() { refreshRef.current = refresh; }, [refresh]);
   useEffect(function connectInbox() {
     let active = true;
     let realtime: VolcanoRealtime | undefined;
@@ -1157,7 +1184,7 @@ export function useLiveUpdates(userId: string, refresh: () => Promise<void>) {
     function schedule() {
       if (!active || document.visibilityState !== 'visible') return;
       clearTimeout(timer);
-      timer = setTimeout(function reconcile() { if (active) void refresh(); }, 150);
+      timer = setTimeout(function reconcile() { if (active) void refreshRef.current(); }, 150);
     }
     async function connect() {
       const attempt = ++generation;
@@ -1216,7 +1243,7 @@ export function useLiveUpdates(userId: string, refresh: () => Promise<void>) {
       document.removeEventListener('visibilitychange', schedule);
       dispose();
     };
-  }, [userId, refresh]);
+  }, [userId]);
   return connection;
 }
 ```
@@ -1264,7 +1291,7 @@ Publish a post and refresh the second account's feed to confirm it appears.
 ```tsx title="src/components/community-app.tsx"
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import type { User } from '@volcano.dev/sdk';
 import { getVolcano } from '../lib/volcano';
 import { loadMember, loadSnapshot } from '../lib/data';
@@ -1333,12 +1360,14 @@ function Workspace({ user }: WorkspaceProps) {
     }).catch(function failed(cause) { if (request === generation.current && mounted.current) { setError(errorText(cause)); setLoaded(true); } })
       .finally(function finished() { if (request === generation.current && mounted.current) setRefreshing(false); });
   }, [user.id, search, page, tab, peoplePage]);
+  const refreshRef = useRef(refresh);
+  useLayoutEffect(function commitRefresh() { refreshRef.current = refresh; generation.current++; }, [refresh]);
   useEffect(function load() { void refresh(); return cancelLoad; }, [refresh]);
   const connection = useLiveUpdates(user.id, refresh);
   async function runAction(work: () => Promise<unknown>, success: string) {
     if (busy) return;
     setBusy(true); setStatus('Saving…'); setError('');
-    try { await work(); if (mounted.current) { setStatus(success); await refresh(); } }
+    try { await work(); if (mounted.current) { setStatus(success); await refreshRef.current(); } }
     catch (cause) { if (mounted.current) { setError(errorText(cause)); setStatus(''); } }
     finally { if (mounted.current) setBusy(false); }
   }
@@ -1516,7 +1545,7 @@ npm run build
 ```
 
 The test uses a local PostgreSQL-compatible PGlite database with simulated authenticated identities.
-It checks migration reruns, immediate access after profile creation, author spoofing, ownership, private bookmarks, reaction counts, friend acceptance, message access, read receipts, and revoked access.
+It checks migration reruns, private account-email access, safe profile insert responses, immediate access after profile creation, author spoofing, ownership, private bookmarks, reaction counts, friend acceptance, message access, read receipts, and revoked access.
 It does not connect to your cloud project or replace a two-account browser check.
 
 In the running application:
@@ -1530,6 +1559,9 @@ In the running application:
 7. Remove the friendship. Confirm the conversation becomes unavailable in both accounts.
 8. Set one member's `active` value to false in the SQL console. Confirm their next refresh removes access.
 9. Check navigation, forms, and messages at a narrow viewport and using a keyboard.
+10. With a slow network, start a Like action in Feed and switch to Saved before it completes. Confirm Saved still shows only saved posts afterward.
+11. Change search text, tabs, and pages while live updates are connected. Confirm these view changes do not reconnect the realtime socket.
+12. Confirm profile reads and profile insert responses contain no email, and direct reads of `community_accounts` are denied.
 
 For signup failures, check email/password settings and the key's auth permissions.
 For data failures, check the database name, migrations, and profile creation for the signed-in account.
@@ -1569,13 +1601,20 @@ test('migrations and community permissions work without the reference project', 
     assert.equal((await rows('SELECT * FROM public.community_posts')).length,0);
     for (const id of [alice,bob,eve]) {
       await as(id);
-      await db.query('INSERT INTO public.community_members(display_name) VALUES($1)', [id]);
+      const [profile] = await rows('INSERT INTO public.community_members(display_name) VALUES($1) RETURNING *', [id]);
+      assert.equal('email' in profile,false);
+      await assert.rejects(db.query('SELECT email FROM public.community_members'));
+      await assert.rejects(db.query('SELECT * FROM public.community_accounts'));
+      await assert.rejects(db.query("UPDATE public.community_accounts SET email='forged@example.test'"));
       assert.equal((await rows('SELECT active FROM public.community_members WHERE id=$1',[id]))[0].active,true);
       assert.equal((await rows('SELECT public.community_is_member() AS joined'))[0].joined,true);
     }
     await assert.rejects(db.query('UPDATE public.community_members SET active=true'));
     await assert.rejects(db.query('UPDATE public.community_members SET active=false'));
     await as(alice);
+    const profiles = await rows('SELECT * FROM public.community_members');
+    assert.equal(profiles.length,3);
+    assert.ok(profiles.every(function publicOnly(row) { return !('email' in row); }));
     const [post] = await rows("INSERT INTO public.community_posts(body) VALUES('Hello community') RETURNING id");
     await assert.rejects(db.query('INSERT INTO public.community_posts(body,author_id) VALUES($1,$2)', ['spoof',bob]));
     await as(bob);
