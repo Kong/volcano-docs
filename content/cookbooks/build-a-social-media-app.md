@@ -163,10 +163,12 @@ volcano login
 volcano projects create community-demo
 volcano use community-demo
 volcano cloud databases create community
+volcano cloud databases get community
 ```
 
 If the project name is taken, choose another name in both project commands.
 These commands create cloud resources; the frontend will run on your computer against this cloud database.
+Wait until `volcano cloud databases get community` reports `Status: active` before applying migrations; repeat that command if provisioning is still in progress.
 
 In the project's authentication settings, enable email/password signup and allow the exact browser origin `http://localhost:3000`.
 Leave signup email-domain restrictions empty so anyone can register.
@@ -709,17 +711,17 @@ export function AuthForm({ configurationError }: AuthFormProps) {
         {success && <p role="status">{success}</p>}
         <form onSubmit={submit}>
           <label htmlFor="auth-email">Email</label>
-          <input id="auth-email" name="email" type="email" autoComplete="email" required />
+          <input id="auth-email" name="email" type="email" autoComplete="email" disabled={busy} required />
           {mode !== 'reset' && <>
             <label htmlFor="auth-password">Password (at least 15 characters)</label>
-            <input id="auth-password" name="password" type="password" autoComplete={passwordAutoComplete} minLength={15} required />
+            <input id="auth-password" name="password" type="password" autoComplete={passwordAutoComplete} minLength={15} disabled={busy} required />
           </>}
           <button type="submit" disabled={busy} aria-busy={busy}>{action}</button>
         </form>
         <div className="actions">
-          <button type="button" onClick={signInMode}>Sign in</button>
-          <button type="button" onClick={signupMode}>Create account</button>
-          <button type="button" onClick={resetMode}>Forgot password?</button>
+          <button type="button" onClick={signInMode} disabled={busy}>Sign in</button>
+          <button type="button" onClick={signupMode} disabled={busy}>Create account</button>
+          <button type="button" onClick={resetMode} disabled={busy}>Forgot password?</button>
         </div>
       </section>
     </main>
@@ -780,6 +782,7 @@ Create `src/components/post-card.tsx` from the post and comment components (exam
 It renders the author, publication time, body, counts, ownership controls, reactions, and a paginated comment list.
 Open comments reload whenever the workspace refreshes, even if the comment count stays unchanged.
 Post, comment, and message composers disable editing during submission, preserve text on failure, and clear it only after success.
+Navigation, pagination, conversation selection, and comment collapsing are disabled while a write is pending so they cannot unmount the submitted form.
 
 The composer sends only the post text:
 
@@ -905,8 +908,8 @@ function Comments({ postId, version, count, userId, onAction, busy }: CommentsPr
     return cancelLoad;
   }, [open, reload, count, version]);
   function toggle() { if (!open) setLoading(true); setOpen(!open); }
-  function previous() { setLoading(true); setPage(Math.max(0, page - 1)); }
-  function next() { setLoading(true); setPage(page + 1); }
+  function previous() { generation.current++; setRows([]); setError(''); setLoading(true); setPage(Math.max(0, page - 1)); }
+  function next() { generation.current++; setRows([]); setError(''); setLoading(true); setPage(page + 1); }
   async function addComment(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -920,11 +923,11 @@ function Comments({ postId, version, count, userId, onAction, busy }: CommentsPr
   }
   return (
     <section>
-      <button type="button" onClick={toggle} aria-expanded={open}>Comments ({count})</button>
+      <button type="button" onClick={toggle} disabled={busy} aria-expanded={open}>Comments ({count})</button>
       {open && <>
         {loading && <p role="status">Loading comments…</p>}
         {error && <p role="alert">{error}</p>}
-        {!loading && !rows.length && <p>No comments yet. Start the conversation.</p>}
+        {!loading && !error && !rows.length && <p>No comments yet. Start the conversation.</p>}
         <ul className="comment-list">{rows.map(function renderComment(row) {
           let label = 'Community member';
           if (row.author_id === userId) label = 'You';
@@ -934,7 +937,7 @@ function Comments({ postId, version, count, userId, onAction, busy }: CommentsPr
           }
           return <li key={row.id}><strong>{label}</strong><p>{row.body}</p>{row.author_id === userId && <button type="button" onClick={remove} disabled={busy}>Delete comment</button>}</li>;
         })}</ul>
-        <div className="actions"><button type="button" onClick={previous} disabled={page === 0}>Previous comments</button><button type="button" onClick={next} disabled={(page + 1) * 20 >= count}>More comments</button></div>
+        <div className="actions"><button type="button" onClick={previous} disabled={busy || loading || page === 0}>Previous comments</button><button type="button" onClick={next} disabled={busy || loading || (page + 1) * 20 >= count}>More comments</button></div>
         <form onSubmit={addComment}>
           <label htmlFor={`comment-${postId}`}>Write a comment</label>
           <textarea id={`comment-${postId}`} name="body" maxLength={2000} disabled={busy} required />
@@ -1014,7 +1017,7 @@ export function People({ people, friendships, userId, busy, onAction, onMessage 
         {!friendship && <button type="button" onClick={request} disabled={busy}>Add friend</button>}
         {friendship?.status === 'pending' && friendship.recipient_id === userId && <button type="button" onClick={accept} disabled={busy}>Accept request</button>}
         {friendship?.status === 'pending' && <button type="button" onClick={remove} disabled={busy}>Cancel or decline request</button>}
-        {friendship?.status === 'accepted' && <><button type="button" onClick={message}>Message</button><button type="button" onClick={remove} disabled={busy}>Remove friend</button></>}
+        {friendship?.status === 'accepted' && <><button type="button" onClick={message} disabled={busy}>Message</button><button type="button" onClick={remove} disabled={busy}>Remove friend</button></>}
       </div>
     </article>;
   })}</div>;
@@ -1027,7 +1030,7 @@ export function People({ people, friendships, userId, busy, onAction, onMessage 
 ```tsx title="src/components/chat.tsx"
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { loadMessages, sendMessage } from '../lib/data';
 import { getVolcano } from '../lib/volcano';
 import type { Action, Member, Message } from '../lib/types';
@@ -1036,25 +1039,31 @@ import { errorText } from './auth-form';
 type ChatProps = { userId: string; friends: Member[]; peer: string; onPeerChange: (id: string) => void; version: number; busy: boolean; onAction: Action };
 
 export function Chat({ userId, friends, peer, onPeerChange, version, busy, onAction }: ChatProps) {
-  const [rows, setRows] = useState<Message[]>([]);
+  const [history, setHistory] = useState<{ view: string; rows: Message[]; hasMore: boolean } | null>(null);
   const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const generation = useRef(0);
   const draft = useRef<{ id: string; peer: string; body: string } | null>(null);
   const available = friends.some(function matches(friend) { return friend.id === peer; });
+  const view = JSON.stringify([peer, page, available]);
+  let rows: Message[] = [];
+  let hasMore = false;
+  if (history?.view === view) { rows = history.rows; hasMore = history.hasMore; }
+  const canMarkRead = rows.some(function unread(row) { return row.recipient_id === userId && !row.is_read; });
   const reload = useCallback(function reloadConversation() {
     const request = ++generation.current;
-    if (!peer || !available) return Promise.resolve();
+    if (!peer || !available) { setLoading(false); return Promise.resolve(); }
+    setLoading(true);
     return loadMessages(userId, peer, page).then(function loaded(result) {
-      if (request === generation.current) { setRows(result.rows); setHasMore(result.hasMore); setError(''); }
+      if (request === generation.current) { setHistory({ view, rows: result.rows, hasMore: result.hasMore }); setError(''); }
     }).catch(function failed(cause) { if (request === generation.current) setError(errorText(cause)); })
       .finally(function finished() { if (request === generation.current) setLoading(false); });
-  }, [userId, peer, page, available]);
+  }, [userId, peer, page, available, view]);
   function cancelLoad() { generation.current++; }
+  useLayoutEffect(function changeView() { generation.current++; setError(''); }, [view]);
   useEffect(function load() { void reload(); return cancelLoad; }, [reload, version]);
-  function selectPeer(event: ChangeEvent<HTMLSelectElement>) { setPage(0); setRows([]); setHasMore(false); draft.current = null; onPeerChange(event.target.value); }
+  function selectPeer(event: ChangeEvent<HTMLSelectElement>) { setPage(0); setHistory(null); draft.current = null; onPeerChange(event.target.value); }
   function older() { setLoading(true); setPage(page + 1); }
   function newer() { setLoading(true); setPage(Math.max(0, page - 1)); }
   async function send(event: FormEvent<HTMLFormElement>) {
@@ -1069,7 +1078,7 @@ export function Chat({ userId, friends, peer, onPeerChange, version, busy, onAct
   }
   async function markRead() {
     const through = rows[rows.length - 1]?.sequence;
-    if (!through) return;
+    if (!through || !canMarkRead) return;
     async function work() {
       const { error } = await getVolcano().update('community_messages', { is_read: true }).eq('recipient_id', userId).eq('sender_id', peer).eq('is_read', false).lte('sequence', through);
       if (error) throw error;
@@ -1081,7 +1090,7 @@ export function Chat({ userId, friends, peer, onPeerChange, version, busy, onAct
     <h2>Private messages</h2>
     {!friends.length && <p>Accept a friend request from People before starting a conversation.</p>}
     <label htmlFor="chat-peer">Conversation</label>
-    <select id="chat-peer" value={peer} onChange={selectPeer}>
+    <select id="chat-peer" value={peer} onChange={selectPeer} disabled={busy}>
       <option value="">Choose a friend</option>
       {friends.map(function option(friend) { return <option key={friend.id} value={friend.id}>{friend.display_name}</option>; })}
     </select>
@@ -1089,7 +1098,7 @@ export function Chat({ userId, friends, peer, onPeerChange, version, busy, onAct
     {loading && available && <p role="status">Loading conversation…</p>}
     {peer && !available && <p>This conversation is unavailable. Check that both members are active friends.</p>}
     {available && <>
-      {!loading && !rows.length && <p>No messages yet. Say hello.</p>}
+      {!loading && !error && !rows.length && <p>No messages yet. Say hello.</p>}
       <ol className="messages">{rows.map(function message(row) {
         let name = 'Friend';
         if (row.sender_id === userId) name = 'You';
@@ -1097,7 +1106,7 @@ export function Chat({ userId, friends, peer, onPeerChange, version, busy, onAct
         if (row.is_read) receipt = 'Read';
         return <li key={row.id}><strong>{name}</strong><p>{row.body}</p><small>{receipt}</small></li>;
       })}</ol>
-      <div className="actions"><button onClick={older} type="button" disabled={!hasMore}>Older messages</button><button onClick={newer} type="button" disabled={page === 0}>Newer messages</button><button onClick={markRead} type="button" disabled={busy || !rows.length}>Mark read</button></div>
+      <div className="actions"><button onClick={older} type="button" disabled={busy || loading || !hasMore}>Older messages</button><button onClick={newer} type="button" disabled={busy || loading || page === 0}>Newer messages</button><button onClick={markRead} type="button" disabled={busy || loading || !canMarkRead}>Mark read</button></div>
       <form onSubmit={send} key={peer}>
         <label htmlFor="message-body">Message (up to 2,000 characters)</label>
         <textarea id="message-body" name="body" maxLength={2000} disabled={busy} required />
@@ -1130,7 +1139,8 @@ volcano cloud config deploy --file volcano/volcano-config.yaml --dry-run
 volcano cloud config deploy --file volcano/volcano-config.yaml
 ```
 
-The hook subscribes to `public:community_inboxes`.
+The hook subscribes to `public:community_inboxes` with `autoFetch: false`.
+It uses events only as refresh signals, so it does not fetch the changed inbox row before reloading the snapshot.
 Users receive changes for their own identity-based inbox row; private message text never enters that signal.
 On a version change, the app reloads through ordinary authenticated queries, which enforce the full membership and friendship rules.
 
@@ -1203,8 +1213,6 @@ export function useLiveUpdates(userId: string, refresh: () => Promise<void>) {
           apiUrl: process.env.NEXT_PUBLIC_VOLCANO_API_URL ?? 'https://api.volcano.dev',
           anonKey: process.env.NEXT_PUBLIC_VOLCANO_ANON_KEY!,
           accessToken: session.access_token,
-          volcanoClient: client,
-          databaseName: process.env.NEXT_PUBLIC_VOLCANO_DATABASE,
           async getToken() {
             if (!current() || client.auth.user()?.id !== userId) throw new Error('Session changed');
             const result = await client.auth.refreshSession();
@@ -1214,7 +1222,7 @@ export function useLiveUpdates(userId: string, refresh: () => Promise<void>) {
           },
         });
         realtime = instance;
-        const channel = instance.channel('public:community_inboxes', { type: 'postgres' });
+        const channel = instance.channel('public:community_inboxes', { type: 'postgres', autoFetch: false });
         channel.onPostgresChanges('*', 'public', 'community_inboxes', schedule);
         let subscribed = false;
         instance.onConnect(function connected() {
@@ -1271,6 +1279,10 @@ realtime:
 
 
 ## 9. Assemble the interface and run it
+
+The workspace distinguishes a failed profile lookup from a confirmed missing profile and offers Retry after a failed lookup.
+Each snapshot is tied to the tab, search, and page that loaded it; another view shows loading or retry feedback until its own data arrives.
+Feed search waits 300 milliseconds after typing stops before querying.
 
 Create the remaining files:
 
@@ -1344,8 +1356,9 @@ const tabs = ['Feed','Saved','People','Messages','Notifications','Profile'];
 function Workspace({ user }: WorkspaceProps) {
   const [member, setMember] = useState<Member | null>(null);
   const [loaded, setLoaded] = useState(false);
-  const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
+  const [snapshot, setSnapshot] = useState<{ view: string; data: Snapshot } | null>(null);
   const [tab, setTab] = useState('Feed');
+  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
   const [peoplePage, setPeoplePage] = useState(0);
@@ -1356,29 +1369,47 @@ function Workspace({ user }: WorkspaceProps) {
   const [status, setStatus] = useState('');
   const [version, setVersion] = useState(0);
   const generation = useRef(0);
+  const actionPending = useRef(false);
+  const view = JSON.stringify([tab, search, page, peoplePage]);
+  let currentSnapshot: Snapshot | null = null;
+  if (snapshot?.view === view) currentSnapshot = snapshot.data;
+  useEffect(function debounceSearch() {
+    if (busy || searchInput === search) return;
+    const timer = setTimeout(function applySearch() { setSearch(searchInput); setPage(0); }, 300);
+    return function cancelSearch() { clearTimeout(timer); };
+  }, [searchInput, search, busy]);
   const mounted = useRef(true);
   function cancelLoad() { generation.current++; }
   useEffect(function trackMount() { mounted.current = true; return function unmount() { mounted.current = false; cancelLoad(); }; }, []);
-  const refresh = useCallback(function refreshData() {
+  const refresh = useCallback(async function refreshData() {
     const request = ++generation.current;
-    return loadMember(user.id).then(async function loadedMember(nextMember) {
-      let nextSnapshot: Snapshot | null = null;
-      if (nextMember?.active) nextSnapshot = await loadSnapshot(user.id, search, page, tab === 'Saved', peoplePage);
+    setRefreshing(true);
+    try {
+      const nextMember = await loadMember(user.id);
       if (request !== generation.current || !mounted.current) return;
-      setMember(nextMember); setSnapshot(nextSnapshot); setLoaded(true); setError(''); setVersion(function increment(n) { return n + 1; });
-    }).catch(function failed(cause) { if (request === generation.current && mounted.current) { setError(errorText(cause)); setLoaded(true); } })
-      .finally(function finished() { if (request === generation.current && mounted.current) setRefreshing(false); });
-  }, [user.id, search, page, tab, peoplePage]);
+      setMember(nextMember); setLoaded(true);
+      if (!nextMember?.active) { setSnapshot(null); setError(''); return; }
+      const nextSnapshot = await loadSnapshot(user.id, search, page, tab === 'Saved', peoplePage);
+      if (request !== generation.current || !mounted.current) return;
+      setSnapshot({ view, data: nextSnapshot }); setError('');
+      setVersion(function increment(n) { return n + 1; });
+    } catch (cause) {
+      if (request === generation.current && mounted.current) setError(errorText(cause));
+    } finally {
+      if (request === generation.current && mounted.current) setRefreshing(false);
+    }
+  }, [user.id, search, page, tab, peoplePage, view]);
   const refreshRef = useRef(refresh);
   useLayoutEffect(function commitRefresh() { refreshRef.current = refresh; generation.current++; }, [refresh]);
   useEffect(function load() { void refresh(); return cancelLoad; }, [refresh]);
   const connection = useLiveUpdates(user.id, refresh);
   async function runAction(work: () => Promise<unknown>, success: string) {
-    if (busy) return;
+    if (actionPending.current) return;
+    actionPending.current = true;
     setBusy(true); setStatus('Saving…'); setError('');
     try { await work(); if (mounted.current) { setStatus(success); await refreshRef.current(); } }
     catch (cause) { if (mounted.current) { setError(errorText(cause)); setStatus(''); } }
-    finally { if (mounted.current) setBusy(false); }
+    finally { actionPending.current = false; if (mounted.current) setBusy(false); }
   }
   async function signOut() {
     try { const { error } = await getVolcano().auth.signOut(); if (error && mounted.current) setError(errorText(error)); }
@@ -1406,7 +1437,7 @@ function Workspace({ user }: WorkspaceProps) {
     }
     await runAction(work, 'Profile saved.');
   }
-  function changeSearch(event: ChangeEvent<HTMLInputElement>) { setPage(0); setSearch(event.target.value); }
+  function changeSearch(event: ChangeEvent<HTMLInputElement>) { setSearchInput(event.target.value); }
   function previousPosts() { setPage(Math.max(0, page - 1)); }
   function nextPosts() { setPage(page + 1); }
   function previousPeople() { setPeoplePage(Math.max(0, peoplePage - 1)); }
@@ -1417,45 +1448,50 @@ function Workspace({ user }: WorkspaceProps) {
   if (refreshing) progress = 'Refreshing…';
   return (
     <main data-slot="community" className="community-app">
-      <header className="app-header"><div><h1>Community</h1><p>{user.email}</p></div><button type="button" onClick={signOut}>Sign out</button></header>
+      <header className="app-header"><div><h1>Community</h1><p>{user.email}</p></div><button type="button" onClick={signOut} disabled={busy}>Sign out</button></header>
       <div className="feedback">
         {error && <p role="alert">{error} If a write could not be confirmed, refresh before submitting it again.</p>}
         <p role="status">{status} {progress}</p>
       </div>
-      {!loaded && <p role="status">Loading your community access…</p>}
-      {loaded && !member && <section className="panel"><h2>Create your profile</h2><form onSubmit={enroll}><label htmlFor="join-name">Display name</label><input id="join-name" name="display_name" maxLength={80} required /><button type="submit" disabled={busy} aria-busy={busy}>Join community</button></form></section>}
+      {!loaded && refreshing && <p role="status">Loading your community access…</p>}
+      {!loaded && !refreshing && <button type="button" onClick={manualRefresh}>Retry loading your profile</button>}
+      {loaded && !member && <section className="panel"><h2>Create your profile</h2><form onSubmit={enroll}><label htmlFor="join-name">Display name</label><input id="join-name" name="display_name" maxLength={80} disabled={busy} required /><button type="submit" disabled={busy} aria-busy={busy}>Join community</button></form></section>}
       {loaded && member && !member.active && <section className="panel"><h2>Account deactivated</h2><p>Contact the community operator if you believe this is a mistake.</p><button type="button" onClick={manualRefresh} disabled={refreshing}>Check account status</button></section>}
-      {member?.active && snapshot && <>
+      {member?.active && <>
         <nav className="tabs" aria-label="Community navigation">{tabs.map(function renderTab(name) {
           function selectTab() { setTab(name); setPage(0); }
           let label = name;
-          if (name === 'Messages') label = `Messages (${snapshot.unread})`;
-          return <button type="button" key={name} onClick={selectTab} aria-current={tab === name}>{label}</button>;
-        })}<button type="button" onClick={manualRefresh} disabled={refreshing}>Refresh</button></nav>
+          if (name === 'Messages') label = `Messages (${snapshot?.data.unread ?? 0})`;
+          return <button type="button" key={name} onClick={selectTab} disabled={busy} aria-current={tab === name}>{label}</button>;
+        })}<button type="button" onClick={manualRefresh} disabled={refreshing || busy}>Refresh</button></nav>
         <p className="muted">{connection}</p>
         {tab === 'Feed' && <>
           <form onSubmit={publish} className="panel"><label htmlFor="new-post">Share something (up to 4,000 characters)</label><textarea id="new-post" name="body" maxLength={4000} disabled={busy} required /><button type="submit" disabled={busy} aria-busy={busy}>Publish post</button></form>
-          <label htmlFor="feed-search">Search posts</label><input id="feed-search" type="search" value={search} onChange={changeSearch} />
+          <label htmlFor="feed-search">Search posts</label><input id="feed-search" type="search" value={searchInput} onChange={changeSearch} disabled={busy} />
         </>}
+        {!currentSnapshot && refreshing && <p role="status">Loading this view…</p>}
+        {!currentSnapshot && !refreshing && <p>This view could not be loaded. Use Refresh to retry.</p>}
+        {currentSnapshot && <>
         {(tab === 'Feed' || tab === 'Saved') && <>
           <h2>{tab}</h2>
-          {!snapshot.posts.length && <p>No posts here yet. Publish one from Feed or adjust your search.</p>}
-          <div className="stack">{snapshot.posts.map(function renderPost(post) {
-            const author = snapshot.authors.find(function matching(profile) { return profile.id === post.author_id; });
-            return <PostCard key={post.id} post={post} version={version} author={author?.display_name ?? 'Community member'} userId={user.id} liked={snapshot.likes.includes(post.id)} saved={snapshot.saved.includes(post.id)} busy={busy} onAction={runAction} />;
+          {!currentSnapshot.posts.length && <p>No posts here yet. Publish one from Feed or adjust your search.</p>}
+          <div className="stack">{currentSnapshot.posts.map(function renderPost(post) {
+            const author = currentSnapshot.authors.find(function matching(profile) { return profile.id === post.author_id; });
+            return <PostCard key={post.id} post={post} version={version} author={author?.display_name ?? 'Community member'} userId={user.id} liked={currentSnapshot.likes.includes(post.id)} saved={currentSnapshot.saved.includes(post.id)} busy={busy} onAction={runAction} />;
           })}</div>
-          <div className="actions"><button type="button" onClick={previousPosts} disabled={page === 0}>Previous posts</button><span>Page {page + 1}</span><button type="button" onClick={nextPosts} disabled={!snapshot.hasMorePosts}>Next posts</button></div>
+          <div className="actions"><button type="button" onClick={previousPosts} disabled={busy || page === 0}>Previous posts</button><span>Page {page + 1}</span><button type="button" onClick={nextPosts} disabled={busy || !currentSnapshot.hasMorePosts}>Next posts</button></div>
         </>}
-        {tab === 'People' && <><h2>People</h2><People people={snapshot.people} friendships={snapshot.friendships} userId={user.id} busy={busy} onAction={runAction} onMessage={openMessage} /><div className="actions"><button type="button" onClick={previousPeople} disabled={peoplePage === 0}>Previous people</button><button type="button" onClick={nextPeople} disabled={!snapshot.hasMorePeople}>Next people</button></div></>}
-        {tab === 'Messages' && <Chat key={peer} userId={user.id} friends={snapshot.friends} peer={peer} onPeerChange={setPeer} version={version} busy={busy} onAction={runAction} />}
-        {tab === 'Notifications' && <section className="panel"><h2>Latest 50 notifications</h2>{!snapshot.notifications.length && <p>No notifications yet. Friend requests and comments on your posts will appear here.</p>}<ul>{snapshot.notifications.map(function notice(item) {
+        {tab === 'People' && <><h2>People</h2><People people={currentSnapshot.people} friendships={currentSnapshot.friendships} userId={user.id} busy={busy} onAction={runAction} onMessage={openMessage} /><div className="actions"><button type="button" onClick={previousPeople} disabled={busy || peoplePage === 0}>Previous people</button><button type="button" onClick={nextPeople} disabled={busy || !currentSnapshot.hasMorePeople}>Next people</button></div></>}
+        {tab === 'Messages' && <Chat key={peer} userId={user.id} friends={currentSnapshot.friends} peer={peer} onPeerChange={setPeer} version={version} busy={busy} onAction={runAction} />}
+        {tab === 'Notifications' && <section className="panel"><h2>Latest 50 notifications</h2>{!currentSnapshot.notifications.length && <p>No notifications yet. Friend requests and comments on your posts will appear here.</p>}<ul>{currentSnapshot.notifications.map(function notice(item) {
           async function markRead() {
             async function work() { const { error } = await getVolcano().update('community_notifications', { is_read: true }).eq('id', item.id); if (error) throw error; }
             await runAction(work, 'Notification marked read.');
           }
           return <li key={item.id}><p>{item.title}</p>{!item.is_read && <button type="button" onClick={markRead} disabled={busy}>Mark notification read</button>}{item.is_read && <small>Read</small>}</li>;
         })}</ul></section>}
-        {tab === 'Profile' && <section className="panel"><h2>Your profile</h2><form onSubmit={updateProfile}><label htmlFor="profile-name">Display name</label><input id="profile-name" name="display_name" defaultValue={member.display_name} maxLength={80} required /><label htmlFor="profile-bio">Bio</label><textarea id="profile-bio" name="bio" defaultValue={member.bio} maxLength={500} /><button type="submit" disabled={busy} aria-busy={busy}>Save profile</button></form></section>}
+        {tab === 'Profile' && <section className="panel"><h2>Your profile</h2><form onSubmit={updateProfile}><label htmlFor="profile-name">Display name</label><input id="profile-name" name="display_name" defaultValue={member.display_name} maxLength={80} disabled={busy} required /><label htmlFor="profile-bio">Bio</label><textarea id="profile-bio" name="bio" defaultValue={member.bio} maxLength={500} disabled={busy} /><button type="submit" disabled={busy} aria-busy={busy}>Save profile</button></form></section>}
+        </>}
       </>}
     </main>
   );
@@ -1568,11 +1604,14 @@ In the running application:
 7. Remove the friendship. Confirm the conversation becomes unavailable in both accounts.
 8. Set one member's `active` value to false in the SQL console. Confirm their next refresh removes access.
 9. Check navigation, forms, and messages at a narrow viewport and using a keyboard.
-10. With a slow network, start a Like action in Feed and switch to Saved before it completes. Confirm Saved still shows only saved posts afterward.
+10. With a slow network, start a write in Feed. Confirm navigation remains disabled until it completes; then switch to Saved and confirm it shows only saved posts.
 11. Change search text, tabs, and pages while live updates are connected. Confirm these view changes do not reconnect the realtime socket.
 12. Confirm profile reads and profile insert responses contain no email, and direct reads of `community_accounts` are denied.
 13. Keep a comment thread open, replace a comment from another account without changing the total count, and click Refresh. Confirm the replacement appears.
-14. With a slow network, submit a post, comment, or message. Confirm its text field is disabled until the request finishes and that a failed submission preserves the text.
+14. With a slow network, submit a post, comment, or message. Confirm its text field and controls that could hide the form are disabled until the request finishes and that a failed submission preserves the text.
+15. Sign in as an existing member with the database unavailable. Confirm a failed profile lookup offers Retry rather than Create your profile, then restore connectivity and retry.
+16. Load Feed, disconnect the browser, and switch to Saved or another page. Confirm the previous view is hidden, an error and Refresh remain available, and reconnecting restores the requested view.
+17. Open an older message page while offline. Confirm messages from the previous page do not appear under the new page and that reconnecting plus Refresh recovers the conversation.
 
 For signup failures, check email/password settings and the key's auth permissions.
 For data failures, check the database name, migrations, and profile creation for the signed-in account.

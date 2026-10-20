@@ -35,10 +35,9 @@ if (gzip[0] !== 0x1f || gzip[1] !== 0x8b) {
 }
 const jsonSize = zlib.gunzipSync(gzip).length;
 const exportedIndex = JSON.parse(zlib.gunzipSync(gzip));
-const applicationDesignPages = new Set(
-  Object.values(exportedIndex.docs.docs)
-    .filter((document) => document.type === "page" && document.tags?.includes("blog-topic:application-design"))
-    .map((document) => document.url),
+const indexedPages = Object.values(exportedIndex.docs.docs).filter((document) => document.type === "page");
+const topicPage = indexedPages.find((document) =>
+  getSearchSection(document.url) === "blog" && document.tags?.some((tag) => tag.startsWith("blog-topic:")),
 );
 console.log(
   `check-search-index: ${indexPath} is ${gzip.length} bytes gzip (${jsonSize} bytes JSON)`,
@@ -104,8 +103,8 @@ try {
     // ranking changes for broad terms cannot invalidate this assertion.
     for (const [section, query, expected] of [
       ["docs", searchTerm, expectedUrl],
-      ["cookbooks", "social", "/cookbooks/build-a-social-media-app"],
-      ["blog", "feature", "/blog/start-with-one-feature"],
+      ["cookbooks", "Cookbooks", "/cookbooks"],
+      ["blog", "Blog", "/blog"],
     ]) {
       const scoped = searchIndexClient(`http://127.0.0.1:${port}/${mode}${SEARCH_INDEX_PATH}`, section);
       const matches = await scoped.search(query);
@@ -117,18 +116,28 @@ try {
       }
       console.log(`check-search-index: ${section} search returns only its own section (${mode})`);
     }
-    const topicClient = searchIndexClient(`http://127.0.0.1:${port}/${mode}${SEARCH_INDEX_PATH}`, ["blog", "blog-topic:application-design"]);
-    const topicMatches = await topicClient.search("feature");
-    if (topicMatches.length === 0 || topicMatches.some((result) => !applicationDesignPages.has(result.url.split("#", 1)[0]))) {
-      throw new Error(`check-search-index: application-design topic returned a post outside that topic (${mode}).`);
+    // Editorial posts may be renamed, retagged, or removed. Derive the topic
+    // and query from the current index; an empty blog has no topic to test.
+    if (topicPage) {
+      const topic = topicPage.tags.find((tag) => tag.startsWith("blog-topic:"));
+      const topicPages = new Set(indexedPages.filter((page) => page.tags?.includes(topic)).map((page) => page.url));
+      const topicClient = searchIndexClient(`http://127.0.0.1:${port}/${mode}${SEARCH_INDEX_PATH}`, ["blog", topic]);
+      const topicMatches = await topicClient.search(topicPage.content);
+      if (topicMatches.length === 0 || topicMatches.some((result) => !topicPages.has(result.url.split("#", 1)[0]))) {
+        throw new Error(`check-search-index: ${topic} search did not isolate matching posts (${mode}).`);
+      }
+      // An absent topic must exclude results even if all current posts share a topic.
+      let absentTopic = "blog-topic:__missing-topic-for-scope-check__";
+      while (indexedPages.some((page) => page.tags?.includes(absentTopic))) absentTopic += "_";
+      const absentTopicClient = searchIndexClient(`http://127.0.0.1:${port}/${mode}${SEARCH_INDEX_PATH}`, ["blog", absentTopic]);
+      const absentTopicMatches = await absentTopicClient.search(topicPage.content);
+      if (absentTopicMatches.length !== 0) {
+        throw new Error(`check-search-index: a nonmatching topic returned blog results (${mode}).`);
+      }
+      console.log(`check-search-index: blog topic search isolates matching posts (${mode})`);
+    } else {
+      console.log(`check-search-index: no tagged blog posts; topic checks skipped (${mode})`);
     }
-    // An absent topic must exclude results even if all current posts share a topic.
-    const absentTopicClient = searchIndexClient(`http://127.0.0.1:${port}/${mode}${SEARCH_INDEX_PATH}`, ["blog", "blog-topic:__missing-topic-for-scope-check__"]);
-    const absentTopicMatches = await absentTopicClient.search("feature");
-    if (absentTopicMatches.length !== 0) {
-      throw new Error(`check-search-index: a nonmatching topic returned blog results (${mode}).`);
-    }
-    console.log(`check-search-index: blog topic search isolates matching posts (${mode})`);
   }
 } finally {
   server.close();
