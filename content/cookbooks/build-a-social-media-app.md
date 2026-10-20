@@ -776,6 +776,8 @@ export default function ResetPasswordPage() {
 
 Create `src/components/post-card.tsx` from the post and comment components (example below).
 It renders the author, publication time, body, counts, ownership controls, reactions, and a paginated comment list.
+Open comments reload whenever the workspace refreshes, even if the comment count stays unchanged.
+Post, comment, and message composers disable editing during submission, preserve text on failure, and clear it only after success.
 
 The composer sends only the post text:
 
@@ -811,9 +813,9 @@ import { loadComments } from '../lib/data';
 import { errorText } from './auth-form';
 import type { Action, Comment, Post } from '../lib/types';
 
-type PostCardProps = { post: Post; author: string; userId: string; liked: boolean; saved: boolean; busy: boolean; onAction: Action };
+type PostCardProps = { post: Post; version: number; author: string; userId: string; liked: boolean; saved: boolean; busy: boolean; onAction: Action };
 
-export function PostCard({ post, author, userId, liked, saved, busy, onAction }: PostCardProps) {
+export function PostCard({ post, version, author, userId, liked, saved, busy, onAction }: PostCardProps) {
   const [editing, setEditing] = useState(false);
   function openEdit() { setEditing(true); }
   async function editPost(event: FormEvent<HTMLFormElement>) {
@@ -871,17 +873,17 @@ export function PostCard({ post, author, userId, liked, saved, busy, onAction }:
       </div>
       {editing && <form onSubmit={editPost}>
         <label htmlFor={`edit-${post.id}`}>Edit post</label>
-        <textarea id={`edit-${post.id}`} name="body" defaultValue={post.body} maxLength={4000} required />
+        <textarea id={`edit-${post.id}`} name="body" defaultValue={post.body} maxLength={4000} disabled={busy} required />
         <button disabled={busy} type="submit">Save changes</button>
       </form>}
-      <Comments postId={post.id} count={post.comment_count} userId={userId} onAction={onAction} busy={busy} />
+      <Comments postId={post.id} version={version} count={post.comment_count} userId={userId} onAction={onAction} busy={busy} />
     </article>
   );
 }
 
-type CommentsProps = { postId: string; count: number; userId: string; busy: boolean; onAction: Action };
+type CommentsProps = { postId: string; version: number; count: number; userId: string; busy: boolean; onAction: Action };
 
-function Comments({ postId, count, userId, onAction, busy }: CommentsProps) {
+function Comments({ postId, version, count, userId, onAction, busy }: CommentsProps) {
   const [open, setOpen] = useState(false);
   const [page, setPage] = useState(0);
   const [rows, setRows] = useState<Comment[]>([]);
@@ -899,7 +901,7 @@ function Comments({ postId, count, userId, onAction, busy }: CommentsProps) {
   useEffect(function load() {
     if (open) void reload();
     return cancelLoad;
-  }, [open, reload, count]);
+  }, [open, reload, count, version]);
   function toggle() { if (!open) setLoading(true); setOpen(!open); }
   function previous() { setLoading(true); setPage(Math.max(0, page - 1)); }
   function next() { setLoading(true); setPage(page + 1); }
@@ -933,7 +935,7 @@ function Comments({ postId, count, userId, onAction, busy }: CommentsProps) {
         <div className="actions"><button type="button" onClick={previous} disabled={page === 0}>Previous comments</button><button type="button" onClick={next} disabled={(page + 1) * 20 >= count}>More comments</button></div>
         <form onSubmit={addComment}>
           <label htmlFor={`comment-${postId}`}>Write a comment</label>
-          <textarea id={`comment-${postId}`} name="body" maxLength={2000} required />
+          <textarea id={`comment-${postId}`} name="body" maxLength={2000} disabled={busy} required />
           <button type="submit" disabled={busy} aria-busy={busy}>Add comment</button>
         </form>
       </>}
@@ -1096,7 +1098,7 @@ export function Chat({ userId, friends, peer, onPeerChange, version, busy, onAct
       <div className="actions"><button onClick={older} type="button" disabled={!hasMore}>Older messages</button><button onClick={newer} type="button" disabled={page === 0}>Newer messages</button><button onClick={markRead} type="button" disabled={busy || !rows.length}>Mark read</button></div>
       <form onSubmit={send} key={peer}>
         <label htmlFor="message-body">Message (up to 2,000 characters)</label>
-        <textarea id="message-body" name="body" maxLength={2000} required />
+        <textarea id="message-body" name="body" maxLength={2000} disabled={busy} required />
         <button type="submit" disabled={busy} aria-busy={busy}>Send message</button>
       </form>
     </>}
@@ -1425,7 +1427,7 @@ function Workspace({ user }: WorkspaceProps) {
         })}<button type="button" onClick={manualRefresh} disabled={refreshing}>Refresh</button></nav>
         <p className="muted">{connection}</p>
         {tab === 'Feed' && <>
-          <form onSubmit={publish} className="panel"><label htmlFor="new-post">Share something (up to 4,000 characters)</label><textarea id="new-post" name="body" maxLength={4000} required /><button type="submit" disabled={busy} aria-busy={busy}>Publish post</button></form>
+          <form onSubmit={publish} className="panel"><label htmlFor="new-post">Share something (up to 4,000 characters)</label><textarea id="new-post" name="body" maxLength={4000} disabled={busy} required /><button type="submit" disabled={busy} aria-busy={busy}>Publish post</button></form>
           <label htmlFor="feed-search">Search posts</label><input id="feed-search" type="search" value={search} onChange={changeSearch} />
         </>}
         {(tab === 'Feed' || tab === 'Saved') && <>
@@ -1433,7 +1435,7 @@ function Workspace({ user }: WorkspaceProps) {
           {!snapshot.posts.length && <p>No posts here yet. Publish one from Feed or adjust your search.</p>}
           <div className="stack">{snapshot.posts.map(function renderPost(post) {
             const author = snapshot.authors.find(function matching(profile) { return profile.id === post.author_id; });
-            return <PostCard key={post.id} post={post} author={author?.display_name ?? 'Community member'} userId={user.id} liked={snapshot.likes.includes(post.id)} saved={snapshot.saved.includes(post.id)} busy={busy} onAction={runAction} />;
+            return <PostCard key={post.id} post={post} version={version} author={author?.display_name ?? 'Community member'} userId={user.id} liked={snapshot.likes.includes(post.id)} saved={snapshot.saved.includes(post.id)} busy={busy} onAction={runAction} />;
           })}</div>
           <div className="actions"><button type="button" onClick={previousPosts} disabled={page === 0}>Previous posts</button><span>Page {page + 1}</span><button type="button" onClick={nextPosts} disabled={!snapshot.hasMorePosts}>Next posts</button></div>
         </>}
@@ -1562,6 +1564,8 @@ In the running application:
 10. With a slow network, start a Like action in Feed and switch to Saved before it completes. Confirm Saved still shows only saved posts afterward.
 11. Change search text, tabs, and pages while live updates are connected. Confirm these view changes do not reconnect the realtime socket.
 12. Confirm profile reads and profile insert responses contain no email, and direct reads of `community_accounts` are denied.
+13. Keep a comment thread open, replace a comment from another account without changing the total count, and click Refresh. Confirm the replacement appears.
+14. With a slow network, submit a post, comment, or message. Confirm its text field is disabled until the request finishes and that a failed submission preserves the text.
 
 For signup failures, check email/password settings and the key's auth permissions.
 For data failures, check the database name, migrations, and profile creation for the signed-in account.

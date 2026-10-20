@@ -34,6 +34,12 @@ if (gzip[0] !== 0x1f || gzip[1] !== 0x8b) {
   process.exit(1);
 }
 const jsonSize = zlib.gunzipSync(gzip).length;
+const exportedIndex = JSON.parse(zlib.gunzipSync(gzip));
+const applicationDesignPages = new Set(
+  Object.values(exportedIndex.docs.docs)
+    .filter((document) => document.type === "page" && document.tags?.includes("blog-topic:application-design"))
+    .map((document) => document.url),
+);
 console.log(
   `check-search-index: ${indexPath} is ${gzip.length} bytes gzip (${jsonSize} bytes JSON)`,
 );
@@ -113,11 +119,10 @@ try {
     }
     const topicClient = searchIndexClient(`http://127.0.0.1:${port}/${mode}${SEARCH_INDEX_PATH}`, ["blog", "blog-topic:application-design"]);
     const topicMatches = await topicClient.search("feature");
-    if (topicMatches.length === 0 || topicMatches.some((result) => !result.url.startsWith("/blog/start-with-one-feature"))) {
-      throw new Error(`check-search-index: application-design topic did not isolate the matching blog post (${mode}).`);
+    if (topicMatches.length === 0 || topicMatches.some((result) => !applicationDesignPages.has(result.url.split("#", 1)[0]))) {
+      throw new Error(`check-search-index: application-design topic returned a post outside that topic (${mode}).`);
     }
-    // The sole post matches the positive case even if a client ignores topics.
-    // A topic absent from that post must exclude the same search results.
+    // An absent topic must exclude results even if all current posts share a topic.
     const absentTopicClient = searchIndexClient(`http://127.0.0.1:${port}/${mode}${SEARCH_INDEX_PATH}`, ["blog", "blog-topic:__missing-topic-for-scope-check__"]);
     const absentTopicMatches = await absentTopicClient.search("feature");
     if (absentTopicMatches.length !== 0) {
