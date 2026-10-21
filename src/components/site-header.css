@@ -62,7 +62,7 @@
   text-decoration: none;
 }
 
-.site-header-link::before {
+.site-header-link:first-child::before {
   content: "/";
   margin-inline-end: var(--cmp-gap);
   color: var(--cmp-muted);
