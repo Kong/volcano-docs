@@ -53,19 +53,24 @@
 }
 
 .site-header-link {
+  --cmp-link-decoration: none;
   font-family: var(--cmp-nav-font);
   font-size: var(--cmp-nav-size);
   font-weight: var(--cmp-nav-weight);
   letter-spacing: var(--cmp-nav-tracking);
   color: var(--cmp-fg);
   white-space: nowrap;
-  text-decoration: none;
+  text-decoration: var(--cmp-link-decoration);
+  text-underline-offset: var(--spacing-action-block);
 }
 
-.site-header-link:first-child::before {
+.site-header-nav::before {
   content: "/";
-  margin-inline-end: var(--cmp-gap);
   color: var(--cmp-muted);
+}
+
+.site-header-link[aria-current="page"] {
+  --cmp-link-decoration: underline;
 }
 
 .site-header-link[aria-current="page"],
