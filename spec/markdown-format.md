@@ -69,7 +69,7 @@ Docusaurus `sidebar_position` / Starlight `sidebar.order`; `nav_title` →
 ### Video demos
 
 Link to a public `.mp4` asset with descriptive link text to embed a native video player: `[Demo description](/blog/example/demo.mp4)`.
-The player starts paused and provides playback controls, so motion is always opt-in.
+The player autoplays muted and loops, with playback controls available to pause it.
 
 ## Links
 

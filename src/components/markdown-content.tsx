@@ -13,7 +13,7 @@ export function MarkdownContent({ page }: MarkdownContentProps) {
   function MdLink({ href, ...props }: ComponentProps<"a">) {
     if (href?.endsWith(".mp4")) {
       return (
-        <video controls playsInline preload="metadata" src={href} aria-label={String(props.children)}>
+        <video autoPlay muted loop controls playsInline preload="metadata" src={href} aria-label={String(props.children)}>
           <a href={href}>{props.children}</a>
         </video>
       );
