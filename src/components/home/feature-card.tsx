@@ -5,6 +5,8 @@ import type { ReactNode } from "react";
 
 type FeatureCardProps = {
   icon?: ReactNode;
+  image?: ReactNode;
+  eyebrow?: ReactNode;
   title: string;
   description: string;
   href?: string;
@@ -18,6 +20,8 @@ type FeatureCardProps = {
 // design (warm primary vs. danger-tinted).
 export function FeatureCard({
   icon,
+  image,
+  eyebrow,
   title,
   description,
   href,
@@ -29,10 +33,14 @@ export function FeatureCard({
 
   const body = (
     <>
-      {icon && <div className="feature-card-icon">{icon}</div>}
-      <h3 className="feature-card-title">{title}</h3>
-      <p className="feature-card-body">{description}</p>
-      {children}
+      {image && <div className="feature-card-image">{image}</div>}
+      <div className="feature-card-content">
+        {icon && <div className="feature-card-icon">{icon}</div>}
+        {eyebrow}
+        <h3 className="feature-card-title">{title}</h3>
+        <p className="feature-card-body">{description}</p>
+        {children}
+      </div>
     </>
   );
 

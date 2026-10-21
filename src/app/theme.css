@@ -175,6 +175,10 @@
   --layout-reading-width: 52rem;
   --layout-collection-width: 76rem;
   --layout-feature-card-height: 349px;
+  --layout-blog-cover-ratio: 40 / 21;
+  --motion-cover-rest-scale: 1;
+  --motion-cover-hover-scale: 1.04;
+  --motion-cover-transition: transform 300ms ease;
   --layout-navigation-icon-size: var(--size-icon);
   --layout-theme-control-size: 2.25rem;
 
@@ -183,6 +187,9 @@
   --spacing-inline: var(--space-60);
   --spacing-section: var(--space-130);
   --spacing-card: var(--space-80);
+  --spacing-none: var(--space-0);
+  --type-card-heading: var(--font-size-xl);
+  --type-card-heading-leading: var(--line-height-normal);
   --spacing-action-block: var(--space-30);
   --spacing-action-inline: var(--space-50);
   --spacing-control-gap: var(--space-40);

@@ -32,6 +32,20 @@ a.feature-card:hover {
   color: var(--text-primary);
 }
 
+.feature-card-image {
+  width: 100%;
+}
+
+.feature-card-content {
+  display: contents;
+}
+
+.feature-card-image img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 /* One short bounce on hover that settles back to the resting position. */
 @keyframes feature-card-icon-bounce {
   0%,
