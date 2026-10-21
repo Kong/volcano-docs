@@ -11,6 +11,13 @@ export function MarkdownContent({ page }: MarkdownContentProps) {
   const ResolvedLink = defaultMdxComponents.a;
   const MDXContent = page.data.body;
   function MdLink({ href, ...props }: ComponentProps<"a">) {
+    if (href?.endsWith(".mp4")) {
+      return (
+        <video controls playsInline preload="metadata" src={href} aria-label={String(props.children)}>
+          <a href={href}>{props.children}</a>
+        </video>
+      );
+    }
     return <ResolvedLink href={resolveRelativeMdHref(href, source, page)} {...props} />;
   }
   return (

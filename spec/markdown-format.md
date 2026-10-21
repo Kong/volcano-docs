@@ -66,6 +66,11 @@ Docusaurus `sidebar_position` / Starlight `sidebar.order`; `nav_title` →
   referenced relatively: `![diagram](./assets/flow.png)`.
 - No `.DS_Store` or editor cruft in `docs/`.
 
+### Video demos
+
+Link to a public `.mp4` asset with descriptive link text to embed a native video player: `[Demo description](/blog/example/demo.mp4)`.
+The player starts paused and provides playback controls, so motion is always opt-in.
+
 ## Links
 
 - Within the same section: relative, keep the `.md` extension — `./quickstart.md`.

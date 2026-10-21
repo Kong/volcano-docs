@@ -8,6 +8,7 @@
 // Usage: node scripts/check-links.mjs [contentDir] [publicDir]   (defaults: content, public)
 import fs from "node:fs";
 import path from "node:path";
+import yaml from "js-yaml";
 import { markdownLinks, routePath } from "./markdown-links.mjs";
 import { relocatedIndexHref } from "./relocated-index.mjs";
 
@@ -43,6 +44,17 @@ const errors = [];
 for (const file of mdFiles) {
   const dir = path.dirname(file);
   const text = fs.readFileSync(file, "utf8");
+  const frontmatter = text.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
+  if (frontmatter) {
+    try {
+      const data = yaml.load(frontmatter[1]);
+      if (data?.cover !== undefined && (typeof data.cover !== "string" || !publicAssets.has(routePath(data.cover)))) {
+        errors.push(`${routeOf(file)}  ->  cover: ${data.cover}  (no public asset)`);
+      }
+    } catch (error) {
+      errors.push(`${routeOf(file)}  ->  invalid frontmatter: ${error.message}`);
+    }
+  }
   for (const link of markdownLinks(text)) {
     if (/^(https?:|mailto:|tel:|#)/.test(link.url)) continue;
     const url = routePath(relocatedIndexHref(link.url, file));

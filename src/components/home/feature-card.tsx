@@ -10,7 +10,7 @@ type FeatureCardProps = {
   title: string;
   description: string;
   href?: string;
-  variant?: "primary" | "danger";
+  variant?: "primary" | "danger" | "cover";
   className?: string;
   children?: ReactNode;
 };

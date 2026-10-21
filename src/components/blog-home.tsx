@@ -35,7 +35,7 @@ export function BlogHome({ title, description, posts, children }: BlogHomeProps)
             image = <Image src={post.cover} alt="" width={2400} height={1260} sizes="(min-width: 1024px) 40vw, 100vw" />;
           }
           return (
-            <FeatureCard key={post.url} className="blog-post-card" icon={icon} image={image} eyebrow={<BlogMetadata data={{ tags: post.tags }} />} title={post.title} description={post.description ?? ""} href={blogTopicHref(topic, post.url)}>
+            <FeatureCard key={post.url} variant="cover" icon={icon} image={image} eyebrow={<BlogMetadata data={{ tags: post.tags }} />} title={post.title} description={post.description ?? ""} href={blogTopicHref(topic, post.url)}>
               <div className="blog-post-footer">
                 <BlogMetadata data={{ author: post.author, published: post.published }} />
                 <span className="blog-post-action">Read post <span aria-hidden="true">→</span></span>

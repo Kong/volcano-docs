@@ -190,6 +190,12 @@
   --spacing-none: var(--space-0);
   --type-card-heading: var(--font-size-xl);
   --type-card-heading-leading: var(--line-height-normal);
+  --type-card-default-leading: var(--line-height-tight);
+  --type-card-tracking: var(--tracking-heading-tight);
+  --layout-feature-icon-size: var(--size-8);
+  --spacing-feature-block: var(--space-70);
+  --spacing-feature-inline: var(--space-100);
+  --spacing-feature-gap: var(--space-30);
   --spacing-action-block: var(--space-30);
   --spacing-action-inline: var(--space-50);
   --spacing-control-gap: var(--space-40);
