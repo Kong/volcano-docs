@@ -285,7 +285,7 @@ Provisioning lifecycle:
 - `pending_verification`: waiting for the ownership TXT record or the later certificate validation CNAME.
 - An ownership reservation expires after 72 hours and the domain moves to `detaching`. Once it is removed, submit the domain again to receive a new TXT challenge.
 - `provisioning`: validation succeeded and activation is in progress.
-- `active`: domain is live and serving traffic.
+- `active`: Volcano has the certificate and serves the domain everywhere within a minute, usually within seconds. Until then an HTTPS request to it fails the TLS handshake. Your DNS change propagates separately, so visitors may reach your previous host until the old record's TTL runs out. See [Wait out the switchover](../frontends/overview.md#wait-out-the-switchover).
 - `detaching`: domain removal has been requested and is being processed. Removal takes about a minute for BYOC and a few minutes for managed TLS. Until Volcano releases the domain, adding its hostname to any frontend, or any domain to its frontend, returns `409` with `code: custom_domain_releasing` and a `Retry-After` header in seconds; send the same request again after it. A removal that Volcano cannot finish within a few minutes returns a plain `409` without `code` instead; contact support if it persists.
 - `failed`: setup or removal failed. For managed TLS, check `failure_reason`, correct the problem, then delete and recreate the domain.
 

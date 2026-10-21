@@ -35,6 +35,15 @@ and published, oldest first, and the message names it is waiting on. Send it a
 message from the same panel, which resumes a matching wait. See
 [Durable messages](../functions/durable-messages.md).
 
+**Durable Tracing.** Under **Observability → Durable Tracing**, pick a durable
+function and one of its recent executions to see its trace: every step, wait,
+and retry on a timeline, and how long the code ran versus waited. A failed or
+timed-out execution shows its error type and message under its name when one
+was recorded, ready to copy. Select an operation to see its own error and each
+attempt's, when the trace has them; otherwise rely on the execution's error.
+The address links to the execution shown. See
+[Inspect an execution's operations](../functions/durable-functions.md#inspect-an-executions-operations).
+
 **Databases.** Create a database, browse branches and backups, and read
 connection details. See [Databases](../databases/overview.md).
 

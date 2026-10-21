@@ -167,7 +167,12 @@ Do not use a new key unless you intend to run the command again.
 ## Read and write files
 
 Files are scoped to the session workspace. Content uses base64 and is limited
-to 8 MiB per operation.
+to 8 MiB per operation. Use a relative path such as `file.bin` or its
+`/workspace/file.bin` equivalent. Parent directories must already exist; create
+them first with an exec command such as `mkdir -p nested` before writing
+`nested/file.bin`. Paths must be canonical: traversal
+components (`..`), repeated separators, and paths outside `/workspace` return
+`400` in cloud and local mode.
 
 ```bash
 curl "$VOLCANO_API_URL/sandbox-sessions/$SESSION_ID/files/write" \
@@ -381,26 +386,6 @@ estimates: unconfirmed transitions and gaps longer than 30 seconds appear as
 uncertain usage. Usage stops accumulating at the session's expiry, even if
 cleanup or confirmation takes longer. Elastic CPU/memory consumption, snapshot
 bytes, build costs, and outbound transfer are not included in these counters.
-
-### Preview budget limits
-
-If your account has a preview test budget, it is shared across your projects
-and uses the monthly account anniversary recorded when cloud usage metering
-first starts for your account. Subscription changes do not reset this preview
-budget. It does not reserve or spend real credits.
-
-New sessions and resumes reserve up to one minute of configured-memory runtime.
-An exhausted budget returns `429` with `sandbox_shadow_budget_exhausted`.
-Running sessions are asked to pause before their next reservation would exceed
-the budget. Uncertain usage also consumes the test budget. A budget-paused
-session is retained for at most one hour, or until its existing expiry if
-sooner, then terminated. Increasing the test budget permits an explicit resume;
-it does not automatically resume paused workloads. Termination stays available.
-
-Budget enforcement is asynchronous. Provider delays and worker outages can
-exceed the reservation; the existing maximum session lifetime remains the hard
-backstop. Session concurrency, regional capacity, and lifetime limits continue
-to apply when test budgets are disabled.
 
 ## Use the CLI and SDKs
 

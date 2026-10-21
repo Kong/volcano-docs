@@ -5323,6 +5323,7 @@ paths:
       operationId: listDurableFunctions
       security:
         - UserToken: []
+        - ProjectAccessToken: []
       parameters:
         - $ref: '#/components/parameters/ProjectId'
         - $ref: '#/components/parameters/Page'
@@ -5369,6 +5370,7 @@ paths:
       operationId: createDurableFunction
       security:
         - UserToken: []
+        - ProjectAccessToken: []
       parameters:
         - $ref: '#/components/parameters/ProjectId'
       requestBody:
@@ -5507,6 +5509,7 @@ paths:
       operationId: getDurableFunction
       security:
         - UserToken: []
+        - ProjectAccessToken: []
       parameters:
         - $ref: '#/components/parameters/ProjectId'
         - $ref: '#/components/parameters/DurableFunctionId'
@@ -5540,6 +5543,7 @@ paths:
       operationId: deleteDurableFunction
       security:
         - UserToken: []
+        - ProjectAccessToken: []
       parameters:
         - $ref: '#/components/parameters/ProjectId'
         - $ref: '#/components/parameters/DurableFunctionId'
@@ -5563,6 +5567,7 @@ paths:
       operationId: listDurableFunctionDeployments
       security:
         - UserToken: []
+        - ProjectAccessToken: []
       parameters:
         - $ref: '#/components/parameters/ProjectId'
         - $ref: '#/components/parameters/DurableFunctionId'
@@ -5594,6 +5599,7 @@ paths:
       operationId: listDurableFunctionSchedulers
       security:
         - UserToken: []
+        - ProjectAccessToken: []
       parameters:
         - $ref: '#/components/parameters/ProjectId'
         - $ref: '#/components/parameters/DurableFunctionId'
@@ -5625,6 +5631,7 @@ paths:
       operationId: createDurableFunctionScheduler
       security:
         - UserToken: []
+        - ProjectAccessToken: []
       parameters:
         - $ref: '#/components/parameters/ProjectId'
         - $ref: '#/components/parameters/DurableFunctionId'
@@ -5672,6 +5679,7 @@ paths:
       operationId: getDurableFunctionScheduler
       security:
         - UserToken: []
+        - ProjectAccessToken: []
       parameters:
         - $ref: '#/components/parameters/ProjectId'
         - $ref: '#/components/parameters/DurableFunctionId'
@@ -5696,6 +5704,7 @@ paths:
       operationId: updateDurableFunctionScheduler
       security:
         - UserToken: []
+        - ProjectAccessToken: []
       parameters:
         - $ref: '#/components/parameters/ProjectId'
         - $ref: '#/components/parameters/DurableFunctionId'
@@ -5734,6 +5743,7 @@ paths:
       operationId: deleteDurableFunctionScheduler
       security:
         - UserToken: []
+        - ProjectAccessToken: []
       parameters:
         - $ref: '#/components/parameters/ProjectId'
         - $ref: '#/components/parameters/DurableFunctionId'
@@ -5772,6 +5782,7 @@ paths:
       operationId: startDurableExecution
       security:
         - UserToken: []
+        - ProjectAccessToken: []
       parameters:
         - $ref: '#/components/parameters/ProjectId'
         - $ref: '#/components/parameters/DurableFunctionId'
@@ -5859,6 +5870,7 @@ paths:
       operationId: listDurableExecutions
       security:
         - UserToken: []
+        - ProjectAccessToken: []
       parameters:
         - $ref: '#/components/parameters/ProjectId'
         - $ref: '#/components/parameters/DurableFunctionId'
@@ -5900,6 +5912,7 @@ paths:
       operationId: getDurableExecution
       security:
         - UserToken: []
+        - ProjectAccessToken: []
       parameters:
         - $ref: '#/components/parameters/ProjectId'
         - $ref: '#/components/parameters/DurableFunctionId'
@@ -5949,6 +5962,7 @@ paths:
       operationId: listDurableExecutionOperations
       security:
         - UserToken: []
+        - ProjectAccessToken: []
       parameters:
         - $ref: '#/components/parameters/ProjectId'
         - $ref: '#/components/parameters/DurableFunctionId'
@@ -6001,6 +6015,7 @@ paths:
       operationId: stopDurableExecution
       security:
         - UserToken: []
+        - ProjectAccessToken: []
       parameters:
         - $ref: '#/components/parameters/ProjectId'
         - $ref: '#/components/parameters/DurableFunctionId'

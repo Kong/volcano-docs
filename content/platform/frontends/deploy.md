@@ -328,7 +328,9 @@ app.example.com.  CNAME  <frontend-id>.frontends.volcano.run.
 
 The domain goes `active` once Volcano finishes attaching the certificate —
 that status doesn't confirm routing DNS is live, so verify it separately. See
-[custom domains](overview.md#custom-domains) for lifecycle and BYOC rotation.
+[custom domains](overview.md#custom-domains) for lifecycle and BYOC rotation,
+and [Wait out the switchover](overview.md#wait-out-the-switchover) before
+treating an error after `active` as a failure.
 
 ## 5. View logs
 

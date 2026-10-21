@@ -617,6 +617,24 @@ To rotate the certificate later, update it through the declarative
 rotation is zero-downtime. Re-running `domain create` for a BYOC domain that's
 already attached is a no-op and won't replace the certificate.
 
+### Wait out the switchover
+
+`active` means Volcano has the certificate and is rolling the hostname out.
+Allow a short window before every request reaches your site:
+
+- Volcano serves the hostname within seconds of `active`, and within a minute
+  at most. Until then an HTTPS request to it fails the TLS handshake.
+- Resolvers keep sending visitors to your previous DNS target until the old
+  record's TTL runs out.
+
+Don't roll back during that window. Every Volcano response carries an
+`x-volcano-version` header, so an HTTP error without one came from your previous
+host. `-S` keeps a handshake failure visible:
+
+```bash
+curl -sSI https://app.example.com/ | grep -i -E '^(HTTP|x-volcano)'
+```
+
 ### Switch between BYOC and managed TLS
 
 An active domain switches between BYOC and managed TLS in place, without
