@@ -20,7 +20,7 @@ import {
 import { preloadSearchIndex, searchIndexClient } from "@/lib/search-index-client.mjs";
 import { getSearchLabel, getSearchSection, getSearchTags } from "@/lib/search-section.mjs";
 import { useBlogFilters } from "@/components/blog-filters";
-import { topicLabel } from "@/lib/blog-topics.mjs";
+import { blogTopicHref, topicLabel } from "@/lib/blog-topics.mjs";
 
 type SearchDialogProps = SharedProps;
 type SearchSection = ReturnType<typeof getSearchSection>;
@@ -62,9 +62,12 @@ function searchableQuery(input: string) {
   return input;
 }
 
-function listItems(results: SearchResults) {
+function listItems(results: SearchResults, topic: string | null) {
   if (results === "empty") return null;
-  return results;
+  return results?.map(function preserveTopic(result) {
+    if (!topic || getSearchSection(result.url) !== "blog") return result;
+    return { ...result, url: blogTopicHref(topic, result.url) };
+  });
 }
 
 // Fumadocs' default dialog, with the client swapped: its static client can
@@ -115,7 +118,7 @@ function SectionSearchDialog({ section, topic, open, onOpenChange }: SectionSear
           <SearchDialogInput aria-label={label} placeholder={`${label}...`} />
           <SearchDialogClose />
         </SearchDialogHeader>
-        <SearchDialogList items={listItems(query.data)} />
+        <SearchDialogList items={listItems(query.data, topic)} />
         {topic && <SearchDialogFooter>Topic: {topicLabel(topic)}</SearchDialogFooter>}
       </SearchDialogContent>
     </FumadocsSearchDialog>

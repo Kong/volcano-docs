@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, Suspense, use, useEffect, useState, type ReactNode } from "react";
+import { createContext, Suspense, use, useEffect, useState, type ComponentProps, type ReactNode } from "react";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { getSearchSection } from "@/lib/search-section.mjs";
 import { blogTopicHref } from "@/lib/blog-topics.mjs";
@@ -8,6 +9,7 @@ import { blogTopicHref } from "@/lib/blog-topics.mjs";
 type BlogFilters = { topic: string | null; setTopic: (topic: string | null) => void };
 type BlogFiltersProviderProps = { children: ReactNode };
 type BlogTopicUrlSyncProps = { onChange: (topic: string | null) => void };
+type BlogTopicLinkProps = Omit<ComponentProps<typeof Link>, "href"> & { href: string };
 const BlogFiltersContext = createContext<BlogFilters | null>(null);
 
 // Only this invisible bridge suspends while static pages hydrate their URL.
@@ -37,4 +39,9 @@ export function useBlogFilters() {
   const context = use(BlogFiltersContext);
   if (!context) throw new Error("Blog filters require BlogFiltersProvider");
   return context;
+}
+
+export function BlogTopicLink({ href, ...props }: BlogTopicLinkProps) {
+  const { topic } = useBlogFilters();
+  return <Link data-slot="blog-topic-link" {...props} href={blogTopicHref(topic, href)} />;
 }

@@ -10,6 +10,7 @@ import path from "node:path";
 import zlib from "node:zlib";
 import { SEARCH_INDEX_PATH, searchIndexClient } from "../src/lib/search-index-client.mjs";
 import { getSearchSection } from "../src/lib/search-section.mjs";
+import { assertBlogTopicIndex, readTaggedBlogPages } from "./blog-search-expectations.mjs";
 
 // Budget for the bytes a reader downloads on their first search. When it was
 // set, the index was 1.48 MB gzip (8.92 MB JSON), under the 10 MB raw ceiling
@@ -36,9 +37,9 @@ if (gzip[0] !== 0x1f || gzip[1] !== 0x8b) {
 const jsonSize = zlib.gunzipSync(gzip).length;
 const exportedIndex = JSON.parse(zlib.gunzipSync(gzip));
 const indexedPages = Object.values(exportedIndex.docs.docs).filter((document) => document.type === "page");
-const topicPage = indexedPages.find((document) =>
-  getSearchSection(document.url) === "blog" && document.tags?.some((tag) => tag.startsWith("blog-topic:")),
-);
+const taggedBlogPages = readTaggedBlogPages();
+assertBlogTopicIndex(taggedBlogPages, indexedPages);
+const topicPage = taggedBlogPages[0];
 console.log(
   `check-search-index: ${indexPath} is ${gzip.length} bytes gzip (${jsonSize} bytes JSON)`,
 );
@@ -117,12 +118,12 @@ try {
       console.log(`check-search-index: ${section} search returns only its own section (${mode})`);
     }
     // Editorial posts may be renamed, retagged, or removed. Derive the topic
-    // and query from the current index; an empty blog has no topic to test.
+    // and query from authored frontmatter; an untagged blog has no topic to test.
     if (topicPage) {
-      const topic = topicPage.tags.find((tag) => tag.startsWith("blog-topic:"));
-      const topicPages = new Set(indexedPages.filter((page) => page.tags?.includes(topic)).map((page) => page.url));
+      const topic = topicPage.tags[0];
+      const topicPages = new Set(taggedBlogPages.filter((page) => page.tags.includes(topic)).map((page) => page.url));
       const topicClient = searchIndexClient(`http://127.0.0.1:${port}/${mode}${SEARCH_INDEX_PATH}`, ["blog", topic]);
-      const topicMatches = await topicClient.search(topicPage.content);
+      const topicMatches = await topicClient.search(topicPage.title);
       if (topicMatches.length === 0 || topicMatches.some((result) => !topicPages.has(result.url.split("#", 1)[0]))) {
         throw new Error(`check-search-index: ${topic} search did not isolate matching posts (${mode}).`);
       }
@@ -130,7 +131,7 @@ try {
       let absentTopic = "blog-topic:__missing-topic-for-scope-check__";
       while (indexedPages.some((page) => page.tags?.includes(absentTopic))) absentTopic += "_";
       const absentTopicClient = searchIndexClient(`http://127.0.0.1:${port}/${mode}${SEARCH_INDEX_PATH}`, ["blog", absentTopic]);
-      const absentTopicMatches = await absentTopicClient.search(topicPage.content);
+      const absentTopicMatches = await absentTopicClient.search(topicPage.title);
       if (absentTopicMatches.length !== 0) {
         throw new Error(`check-search-index: a nonmatching topic returned blog results (${mode}).`);
       }

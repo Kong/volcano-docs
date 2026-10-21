@@ -35,7 +35,7 @@ Use that broadcast channel for cursors (6-second expiry) and chat bubbles
 (60 characters, 5-second expiry; / to chat, Enter to finish).
 Use place-lobby presence for the online count. Validate incoming events.
 Enable anonymous sign-ins, broadcast/presence, and the needed key permissions.
-Subscribe before loading the saved grid; queue a fresh snapshot on reconnect,
+Wait for subscription readiness before each snapshot, including on reconnect,
 even when a snapshot is already loading. Constrain saved colors to hex RGB.
 Handle failed writes, token refresh, loading/errors, and unmount cleanup.
 Create the app in a new folder with web/ and volcano/migrations/.
@@ -87,7 +87,7 @@ volcano.database(process.env.NEXT_PUBLIC_VOLCANO_DATABASE);
 const restored = await volcano.initialize();
 if (restored.error) throw restored.error;
 if (!restored.user) {
-  const { error } = await volcano.auth.signUpAnonymous();
+  const { error } = await volcano.auth.signInAnonymously();
   if (error) throw error;
 }
 ```
@@ -143,7 +143,7 @@ live.on('pixel', (pixel) => {
 });
 let subscribed = false;
 realtime.onConnect(() => {
-  if (subscribed) void loadGrid().catch(showError);
+  if (subscribed) void live.subscribe().then(loadGrid).catch(showError);
 });
 await realtime.connect();
 await live.subscribe();

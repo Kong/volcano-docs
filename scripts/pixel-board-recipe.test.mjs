@@ -21,7 +21,7 @@ function deferred() {
 async function harness() {
   const state = {
     color: "#222222", draws: [], sent: [], errors: [], readCount: 0,
-    onRead: null, onWrite: null,
+    onRead: null, onWrite: null, onSubscribe: null,
   };
   const handlers = new Map();
   let reconnect;
@@ -54,7 +54,7 @@ async function harness() {
   };
   const live = {
     on(event, callback) { handlers.set(event, callback); },
-    async subscribe() {},
+    async subscribe() { if (state.onSubscribe) await state.onSubscribe(); },
     async send(payload) { state.sent.push(payload); },
   };
   class Realtime {
@@ -150,6 +150,33 @@ test("pixel invalidations received during a delayed snapshot reconcile afterward
   await loading;
   await settle(runtime);
   assert.equal(lastColor(state), "#ffd635");
+});
+
+test("reconnect waits for subscription readiness before reading a recovery snapshot", async () => {
+  const { state, reconnect } = await harness();
+  const ready = deferred();
+  state.onSubscribe = function subscribe() { return ready.promise; };
+  reconnect();
+  await settle();
+  assert.equal(state.readCount, 0, "a snapshot before subscription readiness can miss paints");
+  state.color = "#3690ea"; // Paint while this client cannot receive events yet.
+  ready.resolve();
+  await settle();
+  assert.equal(state.readCount, 1);
+  assert.equal(lastColor(state), state.color);
+});
+
+test("failed reconnect subscriptions report an error without starting an unsafe snapshot", async () => {
+  const { state, reconnect } = await harness();
+  state.onSubscribe = async function subscribe() { throw new Error("subscription denied"); };
+  reconnect();
+  await settle();
+  assert.equal(state.readCount, 0);
+  assert.match(state.errors[0]?.message, /subscription denied/);
+  state.onSubscribe = null;
+  reconnect();
+  await settle();
+  assert.equal(state.readCount, 1, "a later reconnect can still recover");
 });
 
 test("a failed read does not poison later recovery reads", async () => {

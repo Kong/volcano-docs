@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BlogTopicLink } from "@/components/blog-filters";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { DocsTitle, DocsDescription } from "fumadocs-ui/page";
@@ -22,7 +22,7 @@ export default async function BlogPage({ params }: BlogPageProps) {
     <div className="home-page">
       <div data-slot="blog-content" data-variant="article" className="blog-content">
         <article data-slot="collection-article" className="collection-article">
-          <Link href="/blog" className="collection-back">← Back to posts</Link>
+          <BlogTopicLink href="/blog" className="collection-back">← Back to posts</BlogTopicLink>
           <DocsTitle>{page.data.title}</DocsTitle>
           <BlogMetadata data={page.data} />
           <DocsDescription>{page.data.description}</DocsDescription>

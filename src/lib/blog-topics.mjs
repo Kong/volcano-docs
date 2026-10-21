@@ -25,6 +25,7 @@ export function collectTopics(posts) {
  */
 export function blogTopicHref(topic, pathname = "/blog") {
   if (!topic) return pathname;
-  const params = new URLSearchParams({ topic });
-  return `${pathname}?${params}`;
+  const url = new URL(pathname, "https://docs.invalid");
+  url.searchParams.set("topic", topic);
+  return `${url.pathname}${url.search}${url.hash}`;
 }

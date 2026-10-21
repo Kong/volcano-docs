@@ -41,4 +41,8 @@ test("blog topic links preserve filters on the listing and articles", () => {
   assert.equal(blogTopicHref("application-design", "/blog/start-with-one-feature"),
     "/blog/start-with-one-feature?topic=application-design");
   assert.equal(new URL(blogTopicHref("a & b"), "https://docs.example").searchParams.get("topic"), "a & b");
+  assert.equal(blogTopicHref("storage", "/blog/post#upload-files"), "/blog/post?topic=storage#upload-files");
+  assert.equal(blogTopicHref("storage", "/blog/post?from=search&topic=old#upload-files"),
+    "/blog/post?from=search&topic=storage#upload-files");
+  assert.equal(blogTopicHref(null, "/blog/post#upload-files"), "/blog/post#upload-files");
 });
