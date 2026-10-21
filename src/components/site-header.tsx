@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { getSearchSection } from "@/lib/search-section.mjs";
 import { Logo } from "@/components/logo";
 import { ThemeSwitcher } from "@/components/sidebar/theme-switcher";
 import "./site-header.css";
@@ -17,9 +18,7 @@ const LINKS = [
 
 export function SiteHeader({ children }: SiteHeaderProps) {
   const pathname = usePathname();
-  let section = "docs";
-  if (pathname === "/cookbooks" || pathname.startsWith("/cookbooks/")) section = "cookbooks";
-  if (pathname === "/blog" || pathname.startsWith("/blog/")) section = "blog";
+  const section = getSearchSection(pathname);
 
   return (
     <header data-slot="site-header" className="site-header">

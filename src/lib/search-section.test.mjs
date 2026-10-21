@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { getSearchSection, getSearchLabel, getSearchTags } from "./search-section.mjs";
-import { collectTopics, topicLabel } from "./blog-topics.mjs";
+import { blogTopicHref, collectTopics, topicLabel } from "./blog-topics.mjs";
 
 test("search scope follows section boundaries for landing pages and articles", () => {
   for (const pathname of ["/", "/sdk/js/authentication", "/platform", "/blogger", "/cookbooks-old"]) {
@@ -33,4 +33,12 @@ test("topic counts count each post once and use readable labels", () => {
     { tag: "authentication", label: "Authentication", count: 1 },
     { tag: "storage", label: "Storage", count: 2 },
   ]);
+});
+
+test("blog topic links preserve filters on the listing and articles", () => {
+  assert.equal(blogTopicHref(null), "/blog");
+  assert.equal(blogTopicHref("application-design"), "/blog?topic=application-design");
+  assert.equal(blogTopicHref("application-design", "/blog/start-with-one-feature"),
+    "/blog/start-with-one-feature?topic=application-design");
+  assert.equal(new URL(blogTopicHref("a & b"), "https://docs.example").searchParams.get("topic"), "a & b");
 });

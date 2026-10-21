@@ -28,12 +28,15 @@ Restore the session or sign in anonymously; no registration form.
 Pre-seed a pixels table keyed by (x,y), default color #2A2A2A, with
 updated_by and updated_at. Enable RLS; authenticated visitors can read
 and update colors, but cannot insert or delete cells.
-Persist each paint before broadcasting a pixel event on place-live.
+Persist each paint before broadcasting pixel coordinates on place-live.
+Read the current database row on pixel events and after writes; never trust
+broadcast colors. Serialize reads, including reconnect snapshots.
 Use that broadcast channel for cursors (6-second expiry) and chat bubbles
 (60 characters, 5-second expiry; / to chat, Enter to finish).
 Use place-lobby presence for the online count. Validate incoming events.
 Enable anonymous sign-ins, broadcast/presence, and the needed key permissions.
-Subscribe before loading the saved grid; reconcile on reconnect.
+Subscribe before loading the saved grid; queue a fresh snapshot on reconnect,
+even when a snapshot is already loading. Constrain saved colors to hex RGB.
 Handle failed writes, token refresh, loading/errors, and unmount cleanup.
 Create the app in a new folder with web/ and volcano/migrations/.
 Include the manifest and deployment commands; test in two browsers.
@@ -53,7 +56,8 @@ Save **each SQL statement separately**, in order, as `001.sql` through `008.sql`
 ```sql
 CREATE TABLE public.pixels (
   x integer NOT NULL, y integer NOT NULL,
-  color text NOT NULL DEFAULT '#2A2A2A',
+  color text NOT NULL DEFAULT '#2A2A2A'
+    CHECK (color ~ '^#[0-9A-Fa-f]{6}$'),
   updated_by uuid, updated_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (x,y)
 );
@@ -91,16 +95,18 @@ if (!restored.user) {
 Call async setup from a client effect, catch its errors in your error display, and return synchronous cleanup from the effect.
 Register listeners before subscribing.
 `drawPixel(x,y,color)` updates your canvas; `showError(error)` displays a visible error.
-Buffer broadcasts during snapshot loading so an older query cannot overwrite a live paint.
+Queue database reads so snapshots and pixel refreshes cannot overwrite one another out of order.
 On unmount, call `live.unsubscribe()` and `realtime.disconnect()`; guard async setup and drawing after unmount.
 
 ```javascript
-let loading = false;
-const pending = new Map();
-async function loadGrid() {
-  if (loading) return;
-  loading = true;
-  try {
+let reads = Promise.resolve();
+function queueRead(read) {
+  const result = reads.then(read);
+  reads = result.catch(() => {}); // One failed read must not block later reads.
+  return result;
+}
+function loadGrid() {
+  return queueRead(async () => {
     for (let offset = 0; ; offset += 1000) {
       const { data, error } = await volcano.from('pixels').select('x,y,color')
         .order('x').order('y').limit(1000).offset(offset);
@@ -108,10 +114,15 @@ async function loadGrid() {
       for (const p of data ?? []) drawPixel(p.x, p.y, p.color);
       if ((data?.length ?? 0) < 1000) break;
     }
-  } finally {
-    for (const p of pending.values()) drawPixel(p.x, p.y, p.color);
-    pending.clear(); loading = false;
-  }
+  });
+}
+function refreshPixel(x, y) {
+  return queueRead(async () => {
+    const { data, error } = await volcano.from('pixels').select('x,y,color')
+      .eq('x', x).eq('y', y).limit(1);
+    if (error) throw error;
+    if (data?.[0]) drawPixel(data[0].x, data[0].y, data[0].color);
+  });
 }
 const realtime = new VolcanoRealtime({ apiUrl, anonKey,
   accessToken: volcano.accessToken,
@@ -124,12 +135,10 @@ const realtime = new VolcanoRealtime({ apiUrl, anonKey,
 const live = realtime.channel('place-live', { type: 'broadcast' });
 live.on('pixel', (pixel) => {
   if (!pixel || typeof pixel !== 'object') return;
-  const { x, y, color } = pixel;
+  const { x, y } = pixel;
   if (Number.isInteger(x) && x >= 0 && x < 400 &&
-      Number.isInteger(y) && y >= 0 && y < 240 &&
-      /^#[0-9a-f]{6}$/i.test(color)) {
-    if (loading) pending.set(`${x},${y}`, pixel);
-    else drawPixel(x, y, color);
+      Number.isInteger(y) && y >= 0 && y < 240) {
+    void refreshPixel(x, y).catch(showError);
   }
 });
 let subscribed = false;
@@ -147,9 +156,12 @@ async function paint(x, y, color) {
     updated_at: new Date().toISOString(),
   }).eq('x', x).eq('y', y);
   if (error) throw error;
-  drawPixel(x, y, color);
-  try { await live.send({ type: 'pixel', x, y, color }); }
-  catch { showError(new Error('Pixel saved; live update failed. Reload to sync.')); }
+  await Promise.all([
+    refreshPixel(x, y),
+    live.send({ event: 'pixel', x, y }).catch(() => {
+      showError(new Error('Pixel saved; live update failed. Reload to sync.'));
+    }),
+  ]);
 }
 ```
 
@@ -163,10 +175,15 @@ realtime:
   presence_enabled: true
 auth:
   signup:
+    enable_signup: true
     enable_anonymous_signins: true
+  cors:
+    enabled: true
+    allowed_origins:
+      - http://localhost:3000
 ```
 
-Create a fresh project and database:
+Create a fresh project and database; replace `my-pixels` everywhere with an unused name:
 
 ```bash
 volcano login
@@ -177,7 +194,9 @@ volcano cloud databases get pixel_board
 ```
 
 Wait for database status `active`.
-Create an [anonymous key with custom permissions](/platform/authentication/security/anon-keys#creating-a-key-with-custom-permissions): all auth permissions plus `realtime.connect`, `realtime.subscribe`, and `realtime.publish`.
+In the [dashboard's anonymous keys page](https://volcano.dev/dashboard/keys), select `my-pixels`, click **Create Key**, and name it `Pixelboard`.
+Keep the default **Auth** permissions and select **Realtime → Connect, Subscribe, Publish**, then click **Create Key** and copy its value.
+This dashboard path needs no platform token or manually supplied project ID.
 Set these in `volcano/cloud.env` and `web/.env.local`:
 
 ```dotenv
@@ -199,19 +218,22 @@ volcano cloud frontends deploy --name web --path . --app-root web \
 volcano cloud frontends get web
 ```
 
-Allow your exact development and deployed origins in the project's auth CORS settings.
+Add the frontend's exact HTTPS origin to `auth.cors.allowed_origins` in the manifest, then rerun `volcano cloud config deploy --file volcano/volcano-config.yaml`.
+See [CORS configuration](/platform/authentication/configuration/cors); include a different localhost origin if your dev server uses another port.
 These initial migrations target an empty database; do not rerun them on an installed template.
 
 ## Check that it works
 
 Open the app in two browser profiles.
 Paint in one; confirm the other updates without reloading.
-Reload both to confirm persistence, then disconnect/reconnect one and verify its canvas catches up.
+Reload both to confirm persistence; reconnect one during a slow grid load and verify it catches up.
+Paint the same cell concurrently with delayed responses; both canvases must settle on its saved color.
 Move a cursor and send a chat bubble; both should appear remotely and expire.
 
 ## Why it's built this way
 
 Pre-seeding makes painting an UPDATE, avoiding insert races.
-PostgreSQL is authoritative; broadcasts, cursors, and chat are ephemeral.
-Broadcasts can be missed or forged, so validate payloads and reload saved colors after reconnecting.
+PostgreSQL is authoritative; pixel broadcasts carry coordinates, never trusted colors.
+Queued reads avoid stale responses and dropped reconnects, at the cost of a query per pixel notification.
+Cursors and chat remain ephemeral; batch pixel reads for larger audiences.
 This open canvas has no painting cooldown or moderation; add those before running a public community.

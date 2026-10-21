@@ -165,6 +165,9 @@
   --type-body-leading: var(--line-height-relaxed);
   --type-heading-tracking: var(--tracking-heading);
 
+  /* ── Semantic shadows. ── */
+  --shadow-floating: var(--shadow-design);
+
   /* ── Semantic layout sizes. ── */
   --layout-header-height: 3.5rem;
   --layout-header-wordmark-width: 6rem;
@@ -174,7 +177,6 @@
   --layout-feature-card-height: 349px;
   --layout-navigation-icon-size: var(--size-icon);
   --layout-theme-control-size: 2.25rem;
-  --shadow-floating: var(--shadow-design);
 
   /* Semantic spacing for shared navigation and standalone sections. */
   --spacing-page: var(--space-100);

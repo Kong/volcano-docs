@@ -18,3 +18,13 @@ export function collectTopics(posts) {
     return a.label.localeCompare(b.label);
   });
 }
+
+/**
+ * @param {string | null} topic
+ * @param {string} [pathname]
+ */
+export function blogTopicHref(topic, pathname = "/blog") {
+  if (!topic) return pathname;
+  const params = new URLSearchParams({ topic });
+  return `${pathname}?${params}`;
+}

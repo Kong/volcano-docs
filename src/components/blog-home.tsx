@@ -8,7 +8,7 @@ import { Hero } from "@/components/home/hero";
 import { FeatureCard } from "@/components/home/feature-card";
 import { SectionHeading } from "@/components/home/section-heading";
 import { Footer } from "@/components/home/footer";
-import { topicLabel } from "@/lib/blog-topics.mjs";
+import { blogTopicHref, topicLabel } from "@/lib/blog-topics.mjs";
 import "./collection-home.css";
 import "@/components/home/index.css";
 
@@ -26,12 +26,12 @@ export function BlogHome({ title, description, posts, children }: BlogHomeProps)
   function clearTopic() { setTopic(null); }
   return (
     <div data-slot="collection-home" data-size={size} className="home-page collection-home">
-      <Hero title={title} description={description} actionHref={filtered[0]?.url ?? "/blog"} actionLabel="Start reading">{children}</Hero>
+      <Hero title={title} description={description} actionHref={blogTopicHref(topic, filtered[0]?.url ?? "/blog")} actionLabel="Start reading">{children}</Hero>
       <SectionHeading>{heading}</SectionHeading>
       <div className="collection-home-cards" aria-live="polite">
         {filtered.map(function renderPost(post) {
           return (
-            <FeatureCard key={post.url} icon={<Newspaper className="feature-card-glyph" />} title={post.title} description={post.description ?? ""} href={post.url}>
+            <FeatureCard key={post.url} icon={<Newspaper className="feature-card-glyph" />} title={post.title} description={post.description ?? ""} href={blogTopicHref(topic, post.url)}>
               <BlogMetadata data={post} />
             </FeatureCard>
           );
