@@ -1,13 +1,10 @@
 ---
 title: Cookbooks
-description: Build a social media app from scratch with a practical, step-by-step Volcano cookbook.
+description: Build working apps with compact Volcano recipes, starting with a collaborative pixel canvas.
 ---
 
-Build a social media application with the JavaScript SDK.
-The recipe includes project setup, complete source code, and steps to check the result.
+Build with Volcano using focused code, a coding-agent prompt, and commands to deploy and check the result.
 
-Follow [the social app recipe](./build-a-social-media-app.md) to add accounts, posts, comments, friendships, and private messages.
-
-If you need a project first, follow the [quickstart](/get-started/quickstart).
+Start with [Pixelboard](./pixel-board.md), a shared canvas with anonymous sign-in, persistent pixels, and live updates.
 
 For platform concepts and API references, explore the [Docs](/).

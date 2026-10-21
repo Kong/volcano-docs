@@ -1,3 +1,7 @@
 {
-  "pages": ["index", "build-a-social-media-app", "..."]
+  "pages": [
+    "index",
+    "pixel-board",
+    "..."
+  ]
 }
