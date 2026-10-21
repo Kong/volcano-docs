@@ -361,17 +361,23 @@ page = client.durable.messages.list(
 for message in page.messages:
     print(message.seq, message.name, message.data)
 
-subscription = await client.durable.messages.subscribe(
-    "checkout",
-    execution.id,
-    lambda message: print(message.name, message.data),
-    client_token=execution.client_token,
-)
+
+async def follow(client, execution):
+    subscription = await client.durable.messages.subscribe(
+        "checkout",
+        execution.id,
+        lambda message: print(message.name, message.data),
+        client_token=execution.client_token,
+    )
+    ...
+    await subscription.unsubscribe()
 ```
 
-Python's `subscribe` is a coroutine. In Python and Ruby, `subscribe` follows the execution on the client's realtime connection, which opens only for a signed-in user: a client holding just the client token or a service key gets an error. Such a client can poll `list` with `after` instead.
+Python's `subscribe` is a coroutine, and Ruby's runs inside an `Async` reactor. In Python and Ruby, `subscribe` follows the execution on the client's realtime connection, which opens only for a signed-in user: a client holding just the client token or a service key gets an error. Such a client can poll `list` with `after` instead.
 
 ```ruby
+require "async"
+
 message = client.durable.messages.send_message(
   "checkout", execution.id, "address-confirmed", { address_id: "addr_19" },
   client_token: execution.client_token, idempotency_key: "confirm-addr_19"
@@ -381,10 +387,16 @@ page = client.durable.messages.list("checkout", execution.id, direction: "out",
                                                               client_token: execution.client_token)
 page.messages.each { |m| puts [m.seq, m.name, m.data].inspect }
 
-subscription = client.durable.messages.subscribe("checkout", execution.id,
-                                                 client_token: execution.client_token) do |m|
-  puts m.name
-end
+Async do
+  subscription = client.durable.messages.subscribe("checkout", execution.id,
+                                                   client_token: execution.client_token) do |m|
+    puts m.name
+  end
+  # ...
+  subscription.unsubscribe
+ensure
+  client.realtime.disconnect
+end.wait
 ```
 
 Pass `projectId` (`project_id`) to use the [project endpoint](#the-project-endpoint) with an owner's or project access token instead. JavaScript returns its usual `{ data, status, error }` envelope; Python and Ruby raise a not-found error for `404` and a conflict error for `409`, whose `code` says which.

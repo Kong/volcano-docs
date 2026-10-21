@@ -282,11 +282,11 @@ Starting has two endpoints, because starting and managing are done by different 
 | Endpoint | Credentials | Use it for |
 |---|---|---|
 | `POST /durable-functions/{functionId}/executions` | Service key; auth user token or anon key as the function's [visibility](#who-can-start-executions) allows | Applications starting work |
-| `POST /projects/{id}/durable-functions/{functionId}/executions` | Project owner token | Scripts and tooling already working against a project |
+| `POST /projects/{id}/durable-functions/{functionId}/executions` | Project owner token, or a `full` project access token | Scripts and tooling already working against a project |
 
 They behave identically otherwise: the same body, the same idempotency header, the same `202` and handle. `volcano.durable.start` calls the first one.
 
-Everything else about an execution — reading it, listing, stopping — is on the project-scoped collection and takes the owner's token only. The SDK has `volcano.durable.get`, `.list` and `.stop` for those, but they carry the owner's token, so call them from a backend rather than a browser.
+Everything else about an execution — reading it, listing, stopping — is on the project-scoped collection and takes the owner's token or a [project access token](../authentication/security/project-access-tokens.md). Either token scope can read and list; stopping needs `full`. The SDK has `volcano.durable.get`, `.list` and `.stop` for those, but they carry one of these credentials, so call them from a backend rather than a browser.
 
 ### Who can start executions
 
@@ -416,7 +416,7 @@ events do not count against your Realtime message allowance.
 
 ## Wait for the result
 
-Poll the execution. Reading is owner-scoped, so this takes your platform token rather than the credential that started it:
+Poll the execution. Reading is project-scoped, so this takes your platform token or a project access token rather than the credential that started it:
 
 ```bash
 curl "https://api.volcano.dev/projects/$PROJECT_ID/durable-functions/$FUNCTION_ID/executions/$EXECUTION_ID" \
@@ -447,6 +447,23 @@ curl "https://api.volcano.dev/projects/$PROJECT_ID/durable-functions/$FUNCTION_I
 | `unknown` | The platform lost track of the outcome; no result or error is available |
 
 The last five are terminal. `result` is whatever the function returned, verbatim. It is absent while the execution is still running, absent when the result was too large to return and was checkpointed instead, and absent once the function's retention period lapses. Only the last of those sets `result_expired` to `true`, which distinguishes a discarded result from an empty one; a checkpointed result reads exactly like a function that returned nothing, so keep what you need to read back small. A finished execution is dropped entirely a day or so after its retention lapses, and reads and listings stop returning it — record anything you need to keep for longer while the execution is still readable.
+
+A `failed` or `timed_out` execution carries `error` when one was recorded: the type and message of what ended it, such as an error your handler did not catch. Like `result`, it is gone once the function's retention period lapses.
+
+```json
+{
+  "id": "4c2e8f1a-7b3d-4e9a-a6c5-1d2e3f4a5b6c",
+  "function_id": "6f1c0f6e-6b0e-4a1d-9f8a-2c3d4e5f6a7b",
+  "name": "order-4418",
+  "status": "failed",
+  "region": "us-east-1",
+  "error": { "type": "CardDeclined", "message": "card declined by issuer: insufficient_funds" },
+  "created_at": "2026-09-04T19:02:11Z",
+  "completed_at": "2026-09-04T19:02:19Z"
+}
+```
+
+A listing leaves `error` out, so read the execution itself to see why it ended. `volcano cloud durable executions get` prints the same type and message, and the dashboard shows them under the execution's name in **Observability → Durable Tracing**. To find the step that raised it, [inspect the execution's operations](#inspect-an-executions-operations).
 
 `unknown` is rare and means what it says: the outcome cannot be established, so there is no outcome to report and no later poll will produce one. It is terminal for that reason, and it releases the concurrency slot the execution held. Its `completed_at` is when the platform gave up, not when the work ended. Treat it the way you would a lost response — check whatever the function was supposed to write, and start again under a new name if it did not.
 
@@ -530,7 +547,8 @@ curl "https://api.volcano.dev/projects/$PROJECT_ID/durable-functions/$FUNCTION_I
           "attempt": 1,
           "status": "failed",
           "started_at": "2026-09-04T18:31:02Z",
-          "ended_at": "2026-09-04T18:31:03Z"
+          "ended_at": "2026-09-04T18:31:03Z",
+          "error": { "type": "GatewayTimeout", "message": "payment gateway did not answer within 5s" }
         },
         {
           "attempt": 2,
@@ -601,9 +619,9 @@ A map item or parallel branch you did not name carries the SDK's positional name
 
 A finished execution's trace is final: `complete` is `true`, and its operations no longer change. The one late addition is its last invocation window, which can land shortly after. A running one is refreshed when you read it, usually to within about ten seconds and later when many executions are being watched at once; `synced_at` says when it was last refreshed, and is absent until the first refresh, when `data` may still be empty. Poll it the way you poll the execution.
 
-The trace is metadata, never data. Inputs, step results and return values are not included, and an error carries its type and a bounded message only when one was recorded. A trace lives as long as its execution does: for the function's `retention_days`, and not past the function's deletion.
+The trace is metadata, never data. Inputs, step results and return values are not included. An operation that failed or timed out, and each failed attempt of a step, carries `error` with its type and a bounded message when one was recorded. A trace lives as long as its execution does: for the function's `retention_days`, and not past the function's deletion.
 
-The dashboard draws the same trace as a timeline when you open an execution. **Observability → Durable Tracing** shows a durable function's recent executions beside the trace of the one you pick, and its address links to that execution.
+The dashboard draws the same trace as a timeline when you open an execution. **Observability → Durable Tracing** shows a durable function's recent executions beside the trace of the one you pick, and its address links to that execution. Pick an operation in the timeline to see its own error and each attempt's, when the trace has them.
 
 ### Stop an execution
 
