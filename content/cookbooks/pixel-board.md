@@ -44,11 +44,12 @@ Ask before creating cloud resources or deploying.
 ```
 
 For the one-click path, choose **Pixel canvas** when creating a project in the dashboard.
-The CLI also supports `volcano projects create my-pixels --template pixel-board`; wait for `volcano projects get my-pixels` to report installation `ready`.
+The CLI also supports `volcano projects create my-pixels --template pixel-board`.
+Use the project ID printed by that command in `volcano projects get <project-id>`; wait for template status `ready`.
 
 ## Build it yourself
 
-Create a Next.js app in `web/` and install `@volcano.dev/sdk` and `centrifuge` there.
+Create a Next.js app in `web/` and install `@volcano.dev/sdk` there; it includes the realtime dependencies.
 Wire these core excerpts into its client canvas, palette, and error display; they are not complete UI files.
 
 Save **each SQL statement separately**, in order, as `001.sql` through `008.sql` under `volcano/migrations/`:
@@ -228,7 +229,8 @@ Open the app in two browser profiles.
 Paint in one; confirm the other updates without reloading.
 Reload both to confirm persistence; reconnect one during a slow grid load and verify it catches up.
 Paint the same cell concurrently with delayed responses; both canvases must settle on its saved color.
-Move a cursor and send a chat bubble; both should appear remotely and expire.
+For agent or template builds, also move a cursor and send a chat bubble; both should appear remotely and expire.
+The manual excerpts cover pixel persistence and live painting; cursor, chat, and presence UI are left to implement.
 
 ## Why it's built this way
 
