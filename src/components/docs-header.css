@@ -1,63 +1,22 @@
-/* ══════════════════════════════════════════
-   Docs header: full-width brand bar with the Volcano logo on the left and
-   theme switcher on the right. Spans the header grid area set by Fumadocs'
-   docs layout container.
-   ══════════════════════════════════════════ */
-
-.docs-header {
-  position: sticky;
-  top: 0;
-  z-index: 30;
-  grid-area: header;
-  display: flex;
-  min-width: 0;
-  height: var(--layout-header-height);
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 var(--space-100);
-  border-bottom: var(--border-divider);
-  background: color-mix(in srgb, var(--surface-background) 80%, transparent);
-  backdrop-filter: blur(4px);
-}
-
-.docs-header-start {
-  display: flex;
-  align-items: center;
-  gap: var(--space-60);
-}
-
-/* Sidebar panel is hidden below `md` (see global.css); the trigger opens it
-   as an overlay there, and is redundant once the panel is always visible. */
 .docs-header-sidebar-trigger {
+  --cmp-icon-size: var(--layout-navigation-icon-size);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
   border: none;
   background: none;
-  color: var(--text-primary);
+  color: var(--cmp-fg);
   cursor: pointer;
 }
 
 .docs-header-sidebar-trigger-icon {
-  width: var(--size-icon);
-  height: var(--size-icon);
+  width: var(--cmp-icon-size);
+  height: var(--cmp-icon-size);
 }
 
 @media (width >= 48rem) {
   .docs-header-sidebar-trigger {
     display: none;
-  }
-}
-
-/* Below `md` the mobile nav drawer (z-40) renders above the header (z-30),
-   covering this control — SidebarFooter shows its own copy there instead. */
-@media (width < 48rem) {
-  .docs-header-theme-switcher {
-    display: none;
-  }
-
-  .docs-header {
-    padding: 0 var(--space-60);
   }
 }

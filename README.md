@@ -90,7 +90,35 @@ Structure:
 - `src/app` — App Router (`layout.tsx`, `(docs)` group, `[[...slug]]` renderer, `api/search`).
 - `src/lib/source.ts` — Fumadocs loader over `content/` (mounted at `/`).
 - `source.config.ts` — Fumadocs MDX config; `.source/` is generated (gitignored).
-- Custom branding/UI is intentionally deferred — this is the default theme.
+- Custom UI uses the design tokens in `src/app/theme.css` alongside Fumadocs primitives.
+
+### Docs, Cookbooks, and Blog
+
+The shared header links three sections while preserving existing docs URLs:
+
+- `/` and the existing guide routes use the documentation sidebar.
+- `/cookbooks` lists recipes; recipe pages use their own sidebar and table of contents.
+- `/blog` lists posts; both the listing and articles share a Blog sidebar with search, All posts, and topic filters with counts.
+
+Author recipes in `content/cookbooks/` and posts in `content/blog/`.
+Each section's `index.md` provides its introduction, and `meta.json` controls the card and navigation order.
+Keep `"..."` at the end of each section's `meta.json` page list so new Markdown pages appear automatically after explicitly ordered pages in the listing and navigation tree, using their frontmatter title and description.
+Cookbooks uses that tree for its sidebar; Blog keeps its topic filters in the sidebar.
+All sections share search, sitemap generation, relative Markdown link handling, and the raw Markdown API.
+Search is scoped to the active section.
+In Blog, selecting a topic filters both the post cards and search results; All posts clears the filter.
+Topics and counts are derived from Markdown `tags`, and selections stay active while navigating between posts.
+
+Blog posts can also include optional metadata:
+
+```yaml
+author: Your name
+published: "2026-10-19"
+tags: [storage, authentication]
+```
+
+The blog displays these fields when provided and includes them in article metadata.
+Follow [`spec/markdown-format.md`](spec/markdown-format.md) for the full content contract.
 
 **Version note:** Fumadocs 16 hard-requires Next 16, so the site is on Next 16 +
 React 19.2 rather than `volcano-web`'s Next 15.5. Every other convention matches.

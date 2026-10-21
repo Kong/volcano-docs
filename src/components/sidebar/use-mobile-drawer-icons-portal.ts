@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { usePortalContainer } from "./use-portal-container";
 import { useSidebar } from "fumadocs-ui/components/sidebar/base";
 
 // Fumadocs has no slot for the mobile drawer's top icon-links row (the one
@@ -9,10 +10,7 @@ import { useSidebar } from "fumadocs-ui/components/sidebar/base";
 // same idea as useScrollViewportPortal, just a different target.
 export function useMobileDrawerIconsPortal() {
   const { open } = useSidebar();
-  const [container] = useState(function createContainer() {
-    if (typeof document === "undefined") return null;
-    return document.createElement("div");
-  });
+  const container = usePortalContainer();
 
   useEffect(
     function attachContainer() {

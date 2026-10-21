@@ -1,6 +1,7 @@
 import { source } from "@/lib/source";
 import { createFromSource } from "fumadocs-core/search/server";
 import type { StructuredData } from "fumadocs-core/mdx-plugins";
+import { getSearchSection } from "@/lib/search-section.mjs";
 
 // The API reference repeats endpoint parameter and field tables that swell the
 // static index past the CloudFront auto-compression ceiling (see
@@ -23,8 +24,14 @@ async function buildIndex(page: Page) {
   const headingsOnly =
     (page.url === HEADINGS_ONLY_PREFIX || page.url.startsWith(`${HEADINGS_ONLY_PREFIX}/`)) &&
     structuredData.headings.length > 0;
+  const section = getSearchSection(page.url);
+  const tags: string[] = [section];
+  if (section === "blog") {
+    for (const topic of data.tags ?? []) tags.push(`blog-topic:${topic}`);
+  }
   return {
     id: page.url,
+    tag: tags,
     url: page.url,
     title: data.title ?? page.url,
     description: data.description,

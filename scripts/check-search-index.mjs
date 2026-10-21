@@ -9,6 +9,8 @@ import http from "node:http";
 import path from "node:path";
 import zlib from "node:zlib";
 import { SEARCH_INDEX_PATH, searchIndexClient } from "../src/lib/search-index-client.mjs";
+import { getSearchSection } from "../src/lib/search-section.mjs";
+import { assertBlogTopicIndex, readTaggedBlogPages } from "./blog-search-expectations.mjs";
 
 // Budget for the bytes a reader downloads on their first search. When it was
 // set, the index was 1.48 MB gzip (8.92 MB JSON), under the 10 MB raw ceiling
@@ -33,6 +35,11 @@ if (gzip[0] !== 0x1f || gzip[1] !== 0x8b) {
   process.exit(1);
 }
 const jsonSize = zlib.gunzipSync(gzip).length;
+const exportedIndex = JSON.parse(zlib.gunzipSync(gzip));
+const indexedPages = Object.values(exportedIndex.docs.docs).filter((document) => document.type === "page");
+const taggedBlogPages = readTaggedBlogPages();
+assertBlogTopicIndex(taggedBlogPages, indexedPages);
+const topicPage = taggedBlogPages[0];
 console.log(
   `check-search-index: ${indexPath} is ${gzip.length} bytes gzip (${jsonSize} bytes JSON)`,
 );
@@ -92,6 +99,45 @@ try {
         throw new Error(`check-search-index: query "${query}" did not find ${url} (${mode}).`);
       }
       console.log(`check-search-index: query "${query}" found ${url} (${mode})`);
+    }
+    // Anchor the Docs scope check to content authored here, so SDK syncs and
+    // ranking changes for broad terms cannot invalidate this assertion.
+    for (const [section, query, expected] of [
+      ["docs", searchTerm, expectedUrl],
+      ["cookbooks", "Cookbooks", "/cookbooks"],
+      ["blog", "Blog", "/blog"],
+    ]) {
+      const scoped = searchIndexClient(`http://127.0.0.1:${port}/${mode}${SEARCH_INDEX_PATH}`, section);
+      const matches = await scoped.search(query);
+      if (!matches.some((result) => result.type === "page" && result.url === expected)) {
+        throw new Error(`check-search-index: ${section} query "${query}" did not find ${expected} (${mode}).`);
+      }
+      if (matches.some((result) => getSearchSection(result.url) !== section)) {
+        throw new Error(`check-search-index: ${section} query returned results from another section (${mode}).`);
+      }
+      console.log(`check-search-index: ${section} search returns only its own section (${mode})`);
+    }
+    // Editorial posts may be renamed, retagged, or removed. Derive the topic
+    // and query from authored frontmatter; an untagged blog has no topic to test.
+    if (topicPage) {
+      const topic = topicPage.tags[0];
+      const topicPages = new Set(taggedBlogPages.filter((page) => page.tags.includes(topic)).map((page) => page.url));
+      const topicClient = searchIndexClient(`http://127.0.0.1:${port}/${mode}${SEARCH_INDEX_PATH}`, ["blog", topic]);
+      const topicMatches = await topicClient.search(topicPage.title);
+      if (topicMatches.length === 0 || topicMatches.some((result) => !topicPages.has(result.url.split("#", 1)[0]))) {
+        throw new Error(`check-search-index: ${topic} search did not isolate matching posts (${mode}).`);
+      }
+      // An absent topic must exclude results even if all current posts share a topic.
+      let absentTopic = "blog-topic:__missing-topic-for-scope-check__";
+      while (indexedPages.some((page) => page.tags?.includes(absentTopic))) absentTopic += "_";
+      const absentTopicClient = searchIndexClient(`http://127.0.0.1:${port}/${mode}${SEARCH_INDEX_PATH}`, ["blog", absentTopic]);
+      const absentTopicMatches = await absentTopicClient.search(topicPage.title);
+      if (absentTopicMatches.length !== 0) {
+        throw new Error(`check-search-index: a nonmatching topic returned blog results (${mode}).`);
+      }
+      console.log(`check-search-index: blog topic search isolates matching posts (${mode})`);
+    } else {
+      console.log(`check-search-index: no tagged blog posts; topic checks skipped (${mode})`);
     }
   }
 } finally {

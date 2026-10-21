@@ -39,7 +39,7 @@
   }
 
   .home-card-row--primary {
-    height: 349px;
+    height: var(--layout-feature-card-height);
   }
 
   .home-card-row--tutorials {

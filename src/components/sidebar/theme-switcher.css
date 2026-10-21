@@ -1,39 +1,62 @@
-/* ══════════════════════════════════════════
-   Theme switcher (Figma AI builder / Segmented controls): system / dark / light
-   on a warm-tinted container, active option highlighted in brand orange.
-   ══════════════════════════════════════════ */
+.theme-switcher,
+.theme-switcher-menu {
+  --cmp-size: var(--layout-theme-control-size);
+  --cmp-icon-size: var(--layout-navigation-icon-size);
+  --cmp-gap: var(--spacing-control-gap);
+  --cmp-padding: var(--spacing-action-block);
+  --cmp-bg: var(--surface-background);
+  --cmp-border: var(--border-divider);
+  --cmp-shadow: var(--shadow-floating);
+}
 
 .theme-switcher {
   display: flex;
   width: fit-content;
   align-items: center;
-  gap: var(--space-30);
-  padding: var(--space-10);
-  border: var(--border-divider);
-  background: var(--surface-primary-weak);
 }
 
-.theme-switcher-option {
+.theme-switcher-menu {
   display: flex;
+  flex-direction: column;
+  width: fit-content;
+  min-width: 0;
+  gap: var(--cmp-gap);
+  padding: var(--cmp-padding);
+  border: var(--cmp-border);
+  background: var(--cmp-bg);
+  box-shadow: var(--cmp-shadow);
+}
+
+.theme-switcher-trigger,
+.theme-switcher-option {
+  --cmp-control-bg: var(--surface-background);
+  --cmp-control-fg: var(--text-neutral);
+  display: inline-flex;
+  width: var(--cmp-size);
+  height: var(--cmp-size);
   align-items: center;
-  padding: var(--space-10) var(--space-40);
-  background: none;
+  justify-content: center;
+  padding: 0;
+  background: var(--cmp-control-bg);
   border: none;
   cursor: pointer;
-  color: var(--text-neutral);
-  transition: color var(--system-transition), background var(--system-transition);
+  color: var(--cmp-control-fg);
 }
 
+.theme-switcher-trigger { border: var(--cmp-border); }
+
+.theme-switcher-trigger:hover,
 .theme-switcher-option:hover {
-  color: var(--text-primary);
+  --cmp-control-bg: var(--surface-tint-weak);
+  --cmp-control-fg: var(--text-primary);
 }
 
-.theme-switcher-option[aria-pressed="true"] {
-  background: var(--surface-background);
-  color: var(--color-primary);
+.theme-switcher-option[data-variant="selected"] {
+  --cmp-control-bg: var(--surface-tint-weak);
+  --cmp-control-fg: var(--color-primary);
 }
 
 .theme-switcher-icon {
-  width: var(--size-icon);
-  height: var(--size-icon);
+  width: var(--cmp-icon-size);
+  height: var(--cmp-icon-size);
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { usePortalContainer } from "./use-portal-container";
 import { useSidebar } from "fumadocs-ui/components/sidebar/base";
 
 // Fumadocs has no public slot *inside* the sidebar's scroll viewport, so to make
@@ -15,10 +16,7 @@ import { useSidebar } from "fumadocs-ui/components/sidebar/base";
 // syncs the DOM and never calls setState, satisfying react-hooks/set-state-in-effect.
 export function useScrollViewportPortal(position: "start" | "end") {
   const { open, mode } = useSidebar();
-  const [container] = useState(function createContainer() {
-    if (typeof document === "undefined") return null;
-    return document.createElement("div");
-  });
+  const container = usePortalContainer();
 
   useEffect(
     function attachContainer() {

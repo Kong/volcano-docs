@@ -4,6 +4,7 @@
    ══════════════════════════════════════════ */
 
 .hero {
+  --cmp-title-size: var(--type-display);
   position: relative;
   display: flex;
   width: 100%;
@@ -34,7 +35,7 @@
 
 .hero-title {
   font-family: var(--system-mono-font);
-  font-size: var(--type-display);
+  font-size: var(--cmp-title-size);
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-normal);
   letter-spacing: var(--tracking-heading);
@@ -47,15 +48,6 @@
   font-size: var(--type-body);
   line-height: var(--line-height-relaxed);
   color: var(--text-primary);
-}
-
-.hero-link {
-  color: inherit;
-  text-decoration: underline;
-}
-
-.hero-link code {
-  font-family: var(--system-mono-font);
 }
 
 .hero-cta {
@@ -76,4 +68,10 @@
 
 .hero-cta:hover {
   opacity: 0.9;
+}
+
+@media (width < 48rem) {
+  .hero {
+    --cmp-title-size: var(--type-display-compact);
+  }
 }

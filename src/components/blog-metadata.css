@@ -1,0 +1,21 @@
+.blog-metadata {
+  --cmp-fg: var(--text-neutral);
+  --cmp-bg: var(--surface-raised);
+  --cmp-font: var(--system-font);
+  --cmp-size: var(--type-meta);
+  --cmp-leading: var(--type-navigation-leading);
+  --cmp-gap: var(--spacing-inline);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cmp-gap);
+  color: var(--cmp-fg);
+  font-family: var(--cmp-font);
+  font-size: var(--cmp-size);
+  line-height: var(--cmp-leading);
+}
+
+.blog-metadata-tag {
+  padding-inline: var(--cmp-gap);
+  background: var(--cmp-bg);
+}

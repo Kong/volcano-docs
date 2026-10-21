@@ -38,7 +38,7 @@ pnpm lint:docs <dir> # validate markdown against spec/markdown-format.md
 
 | Path | Purpose |
 |------|---------|
-| `content/` | The docs tree. `get-started`, `index.md`, and `sdk/index.md` are authored here. The language subtrees `sdk/{js,python,ruby}`, plus `platform`, `cli`, and `ai`, are **synced** from source repos (`docs.config.yaml`) — do not hand-edit them. |
+| `content/` | The docs tree. `get-started`, `cookbooks`, `blog`, `index.md`, and `sdk/index.md` are authored here. The language subtrees `sdk/{js,python,ruby}`, plus `platform`, `cli`, and `ai`, are **synced** from source repos (`docs.config.yaml`) — do not hand-edit them. |
 | `src/app/` | App Router: root layout, `(docs)` group, `[[...slug]]` renderer, `api/search`. |
 | `src/lib/` | `source.ts` (Fumadocs loader over `content/`), `layout.shared.tsx`. |
 | `source.config.ts` | Fumadocs MDX config; `.source/` is generated (gitignored). |

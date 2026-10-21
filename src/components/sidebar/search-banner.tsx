@@ -3,9 +3,11 @@
 import "./search-banner.css";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useSearchContext } from "fumadocs-ui/contexts/search";
 import { SearchIcon } from "@/components/home/icons";
 import { preloadSearch } from "@/components/search-dialog";
+import { getSearchLabel, getSearchSection } from "@/lib/search-section.mjs";
 
 // Sidebar search box from the design: a bordered input-looking trigger that
 // opens Fumadocs' real search dialog, with an OS-aware keyboard-shortcut hint.
@@ -14,6 +16,7 @@ import { preloadSearch } from "@/components/search-dialog";
 // (meta||ctrl)+K, so this hint always matches what really works. Pointing at
 // or focusing the box starts loading the search index before it opens.
 export function SearchBanner() {
+  const label = getSearchLabel(getSearchSection(usePathname()));
   const { setOpenSearch, enabled } = useSearchContext();
   const [shortcut, setShortcut] = useState("⌘K");
 
@@ -35,11 +38,11 @@ export function SearchBanner() {
       onClick={openSearch}
       onPointerEnter={preloadSearch}
       onFocus={preloadSearch}
-      aria-label="Search docs"
+      aria-label={label}
       className="search-banner"
     >
       <SearchIcon className="search-banner-icon" />
-      <span className="search-banner-label">Search docs...</span>
+      <span className="search-banner-label">{label}...</span>
       <kbd className="search-banner-kbd">{shortcut}</kbd>
     </button>
   );

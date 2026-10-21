@@ -1,10 +1,19 @@
 import { defineConfig, defineDocs } from "fumadocs-mdx/config";
+import { pageSchema } from "fumadocs-core/source/schema";
 import { remarkRelocatedIndex } from "./scripts/relocated-index.mjs";
 
 // Reads the assembled docs tree. Intro and SDK landing pages are authored here;
 // product and SDK language subtrees are synced (see docs.config.yaml).
 export const docs = defineDocs({
   dir: "content",
+  docs: {
+    schema: pageSchema.extend({
+      author: pageSchema.shape.title.optional(),
+      published: pageSchema.shape.title.regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      tags: pageSchema.shape.title.array().optional(),
+      draft: pageSchema.shape.full,
+    }),
+  },
 });
 
 // Synced docs use fence languages Shiki doesn't ship (e.g. env, cron). Rewrite
