@@ -11,6 +11,7 @@ export const docs = defineDocs({
       author: pageSchema.shape.title.optional(),
       published: pageSchema.shape.title.regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
       tags: pageSchema.shape.title.array().optional(),
+      draft: pageSchema.shape.full,
     }),
   },
 });

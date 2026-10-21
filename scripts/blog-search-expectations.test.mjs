@@ -11,6 +11,7 @@ test("authored topics remain required even if the index loses every topic tag", 
     fs.mkdirSync(path.join(directory, "nested"));
     fs.writeFileSync(path.join(directory, "nested", "index.md"), "---\ntitle: Renamable post\ntags: [storage, realtime]\n---\n");
     fs.writeFileSync(path.join(directory, "index.md"), "---\ntitle: Blog\n---\n");
+    fs.writeFileSync(path.join(directory, "unannounced.md"), "---\ntitle: Unannounced\ndraft: true\ntags: [secret]\n---\n");
     const expected = readTaggedBlogPages(directory);
     assert.deepEqual(expected, [{ url: "/blog/nested", title: "Renamable post", tags: ["blog-topic:storage", "blog-topic:realtime"] }]);
     assert.throws(() => assertBlogTopicIndex(expected, [{ url: "/blog/nested", tags: ["blog"] }]), /missing expected tag/);

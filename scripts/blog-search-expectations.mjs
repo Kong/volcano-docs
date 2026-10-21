@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import yaml from "js-yaml";
+import { isPageVisible } from "../src/lib/content-visibility.mjs";
 
 // Read expectations from authored content, independently of the search export.
 // Losing every topic tag in the index must fail rather than skip the checks.
@@ -15,6 +16,7 @@ export function readTaggedBlogPages(directory = "content/blog") {
       const frontmatter = markdown.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
       if (!frontmatter) throw new Error(`Missing blog frontmatter: ${file}`);
       const data = yaml.load(frontmatter[1]);
+      if (!isPageVisible(data, "production")) continue;
       if (!data.tags?.length) continue;
       const slug = file.replace(/\.md$/, "").replace(/(^|\/)index$/, "");
       const url = `/blog/${slug}`.replace(/\/$/, "");

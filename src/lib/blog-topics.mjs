@@ -1,8 +1,13 @@
+const ACRONYMS = new Map([["ai", "AI"], ["api", "API"], ["sdk", "SDK"]]);
+
 /** @param {string} tag */
 export function topicLabel(tag) {
-  return tag.replaceAll("-", " ").replace(/^./, function capitalize(character) {
-    return character.toUpperCase();
-  });
+  return tag.split("-").map(function labelWord(word, index) {
+    const acronym = ACRONYMS.get(word.toLowerCase());
+    if (acronym) return acronym;
+    if (index === 0) return word.replace(/^./, function capitalize(character) { return character.toUpperCase(); });
+    return word;
+  }).join(" ");
 }
 
 /** @param {{ tags?: string[] }[]} posts */

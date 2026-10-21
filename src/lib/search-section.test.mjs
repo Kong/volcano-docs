@@ -25,6 +25,10 @@ test("blog topic filters stay scoped to blog and do not affect other sections", 
 
 test("topic counts count each post once and use readable labels", () => {
   assert.equal(topicLabel("getting-started"), "Getting started");
+  assert.equal(topicLabel("ai-agents"), "AI agents");
+  assert.equal(topicLabel("api-design"), "API design");
+  assert.equal(topicLabel("sdk"), "SDK");
+  assert.equal(topicLabel("using-the-sdk"), "Using the SDK");
   assert.deepEqual(collectTopics([
     { tags: ["storage", "storage", "authentication"] },
     { tags: ["storage"] },
@@ -38,8 +42,8 @@ test("topic counts count each post once and use readable labels", () => {
 test("blog topic links preserve filters on the listing and articles", () => {
   assert.equal(blogTopicHref(null), "/blog");
   assert.equal(blogTopicHref("application-design"), "/blog?topic=application-design");
-  assert.equal(blogTopicHref("application-design", "/blog/start-with-one-feature"),
-    "/blog/start-with-one-feature?topic=application-design");
+  assert.equal(blogTopicHref("ai-agents", "/blog/introducing-volcano-sandbox"),
+    "/blog/introducing-volcano-sandbox?topic=ai-agents");
   assert.equal(new URL(blogTopicHref("a & b"), "https://docs.example").searchParams.get("topic"), "a & b");
   assert.equal(blogTopicHref("storage", "/blog/post#upload-files"), "/blog/post?topic=storage#upload-files");
   assert.equal(blogTopicHref("storage", "/blog/post?from=search&topic=old#upload-files"),

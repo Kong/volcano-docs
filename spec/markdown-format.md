@@ -34,7 +34,7 @@ order: 3
 | `author` | string | no | Author byline for a blog post. |
 | `published` | date (`YYYY-MM-DD`) | no | Blog publication date; quote the value in YAML. |
 | `keywords` | string[] | no | Extra search synonyms not in the prose. |
-| `draft` | boolean | no | `true` hides the page from production builds. |
+| `draft` | boolean | no | `true` hides the page, navigation entry, search results, and sitemap entry in production. Visible in local development for preview. |
 | `updated` | date (`YYYY-MM-DD`) | no | Last meaningful update. CI may auto-fill from git. |
 
 ### Reserved (CI-injected — do not set by hand)
