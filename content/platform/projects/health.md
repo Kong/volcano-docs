@@ -12,25 +12,25 @@ curl "https://api.volcano.dev/projects/$PROJECT_ID/health" \
 
 Request `GET /projects?include=health` to include the same status in project lists.
 
-| Status | Meaning |
-| --- | --- |
-| `empty` | No functions, frontends, databases, storage, Volcano Auth users, or Sandbox resources are listed. A Sandbox template that is not being deleted, or a session that still holds capacity, counts, as long as the Sandbox API still lists it for the project. |
-| `healthy` | No issues were reported by the available checks. |
-| `needs_attention` | A failed or stalled operation needs review, or a frontend that serves needs a redeploy because edge recovery gave up. These records do not confirm an outage. |
-| `degraded` | A resource is only partly available, or is unavailable for an expected, temporary reason. See [Degraded resources](#degraded-resources). |
-| `critical` | Use is blocked, such as invocation of a failed function, connections to a failed database, a failed frontend with no deployment serving, or uploads above an enforced storage allowance. |
-| `unknown` | The check cannot determine the status. |
+| Status            | Meaning                                                                                                                                                                                                                                                    |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `empty`           | No functions, frontends, databases, storage, Volcano Auth users, or Sandbox resources are listed. A Sandbox template that is not being deleted, or a session that still holds capacity, counts, as long as the Sandbox API still lists it for the project. |
+| `healthy`         | No issues were reported by the available checks.                                                                                                                                                                                                           |
+| `needs_attention` | A failed or stalled operation needs review, or a frontend that serves needs a redeploy because edge recovery gave up. These records do not confirm an outage.                                                                                              |
+| `degraded`        | A resource is only partly available, or is unavailable for an expected, temporary reason. See [Degraded resources](#degraded-resources).                                                                                                                   |
+| `critical`        | Use is blocked, such as invocation of a failed function, connections to a failed database, a failed frontend with no deployment serving, or uploads above an enforced storage allowance.                                                                   |
+| `unknown`         | The check cannot determine the status.                                                                                                                                                                                                                     |
 
 ## Frontends while a deployment builds
 
 While a deployment builds, a frontend is `provisioning`, and the site keeps being served from the previous deployment. Health reports that deployment's state, not the build:
 
-| Before the deployment | While it builds |
-| --- | --- |
-| Serving normally | `healthy` |
+| Before the deployment                                     | While it builds                                              |
+| --------------------------------------------------------- | ------------------------------------------------------------ |
+| Serving normally                                          | `healthy`                                                    |
 | Serving with incomplete edge synchronization (`degraded`) | `degraded`, until a deployment completes or the build stalls |
-| Nothing serving after a failed deployment | `critical` (`frontend_not_serving`) |
-| First deployment of a new frontend | `healthy`, because there is nothing to lose |
+| Nothing serving after a failed deployment                 | `critical` (`frontend_not_serving`)                          |
+| First deployment of a new frontend                        | `healthy`, because there is nothing to lose                  |
 
 A deployment that fails over a site that is still served does not change the status, because the status follows what serves the site: `healthy` when a healthy deployment still serves it, `degraded` when the serving deployment is degraded, and `critical` when nothing serves it. The failed attempt is only a deployment record.
 
@@ -50,6 +50,8 @@ Two cases report `degraded`. In both, a resource is not in its normal state and 
 ## Review findings
 
 The response includes `checks` and the highest-priority `findings`. Each finding contains a `reason_code` and the affected resource in `scope.resource`. Check `data_status` before treating a result as complete. A `partial` or `stale` result may be incomplete, so do not read `healthy` in it as a confirmation of current availability. `observed_at` identifies when the check ran. It is not when a failed operation happened, and a finding does not carry that time. The `evidence.value` of a lifecycle check is an identifier of its status (`0` healthy, `1` degraded, `2` critical, `3` unknown, `4` needs attention) and not a severity order, so rank checks by `status`.
+
+On a plan that stops at its allowance (HOBBY), the `storage.capacity` check judges the file storage of your whole account against the allowance, because the allowance is metered across every project you own. When the account has reached it, every project in it reports `storage_usage_over_plan_limit`, because uploads are refused from that point. On a plan that bills overage (SUPERAGENT), uploads are never refused, so the check compares only this project's bytes with the allowance and reports `storage_usage_over_allowance` or `storage_usage_within_plan_limit` for it alone. Its `evidence` describes only this project: `value` is the bytes this project stores and `sample_count` is its object count, so a project can report a small value while its account is over the allowance.
 
 The status summarizes the findings and does not describe the whole project. A `critical` finding names the resource and the reason, for example `function_invocation_blocked` for calls to one function or `storage_usage_over_plan_limit` for uploads. It does not mean other parts of the project are unavailable.
 
@@ -140,7 +142,7 @@ The status summarizes the findings and does not describe the whole project. A `c
 }
 ```
 
-`checks` lists every check, including the healthy ones. `findings` lists up to five of the `critical`, `degraded`, and `needs_attention` checks, most severe first. A resource being deleted is `healthy` with `resource_deleting`, because the removal was requested. If the deletion fails, the resource becomes `failed` and is classified like any failed resource, and its failed cleanup task is `needs_attention`. A check with status `unknown` appears in `checks` but not in `findings`. If the plan cannot be looked up, the `storage.capacity` check reports `unknown` with `plan_unavailable` and `data_status` is `partial`. That check does not change the project status, which comes from the remaining checks.
+`checks` lists every check, including the healthy ones. `findings` lists up to five of the `critical`, `degraded`, and `needs_attention` checks, most severe first. A resource being deleted is `healthy` with `resource_deleting`, because the removal was requested. If the deletion fails, the resource becomes `failed` and is classified like any failed resource, and its failed cleanup task is `needs_attention`. A check with status `unknown` appears in `checks` but not in `findings`. If the plan cannot be looked up, the `storage.capacity` check reports `unknown` with `plan_unavailable` and `data_status` is `partial`. That check does not change the project status, which comes from the remaining checks. On a plan that stops at its allowance, the check also reports `unknown` with `storage_unavailable` when your account's total storage cannot be read.
 
 An empty project can retain a failed project record or an unfinished cleanup task. Its label remains `empty`; its findings still identify operations that need review. `empty` describes what the project contains and does not mean there is nothing to review, so show the findings beside it. A failed project record alone does not identify which operation failed.
 

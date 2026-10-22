@@ -1,6 +1,6 @@
 ---
-title: "Backups and restore"
-description: "Back up a database, restore it from a backup or to a point in time, and schedule automated backups."
+title: 'Backups and restore'
+description: 'Back up a database, restore it from a backup or to a point in time, and schedule automated backups.'
 ---
 
 A backup is a copy of one of your databases as it was at a moment in time. You
@@ -180,16 +180,16 @@ before you use it rather than caching it.
 A database being restored is one nothing else may touch. While a restore is in
 flight, these return `409`:
 
-| Request | Why |
-|---|---|
-| A second restore | The first one is still moving the data |
-| A new backup | There is no coherent state to capture yet |
-| Deleting a backup | The restore may still need the one it is pinned to |
-| A schedule change | The restore is moving the data to a new branch, and that is where the schedule has to live |
-| Deleting the database | The restore would race the teardown |
-| Resizing the database's compute | The compute is being moved |
-| Resetting the database password | The restore rewrites credentials on its way out |
-| Creating or resetting a branch | A branch forks from the parent the restore is replacing |
+| Request                         | Why                                                                                        |
+| ------------------------------- | ------------------------------------------------------------------------------------------ |
+| A second restore                | The first one is still moving the data                                                     |
+| A new backup                    | There is no coherent state to capture yet                                                  |
+| Deleting a backup               | The restore may still need the one it is pinned to                                         |
+| A schedule change               | The restore is moving the data to a new branch, and that is where the schedule has to live |
+| Deleting the database           | The restore would race the teardown                                                        |
+| Resizing the database's compute | The compute is being moved                                                                 |
+| Resetting the database password | The restore rewrites credentials on its way out                                            |
+| Creating or resetting a branch  | A branch forks from the parent the restore is replacing                                    |
 
 Deleting, resizing, and resetting the password ask whether a restore is running
 before they act. If Volcano cannot get an answer, they return `503` rather than
@@ -333,11 +333,11 @@ whether or not you are looking, and retention is what bounds how many it holds.
 
 ## Limits
 
-| | HOBBY | SUPERAGENT |
-|---|---|---|
-| Backups per database | Not included | 50 |
-| Backup retention | Not included | 30 days |
-| Point-in-time restore window | Not included | 7 days |
+|                              | HOBBY        | SUPERAGENT |
+| ---------------------------- | ------------ | ---------- |
+| Backups per database         | Not included | 50         |
+| Backup retention             | Not included | 30 days    |
+| Point-in-time restore window | Not included | 7 days     |
 
 Backups, scheduled backups, and point-in-time restore are all SUPERAGENT. A HOBBY
 project gets `403` from every endpoint here, with nothing to configure and

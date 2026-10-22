@@ -1,6 +1,6 @@
 ---
-title: "Volcano SDK"
-description: "The Volcano SDK (@volcano.dev/sdk) is a JavaScript library for authentication, database queries, and functions."
+title: 'Volcano SDK'
+description: 'The Volcano SDK (@volcano.dev/sdk) is a JavaScript library for authentication, database queries, and functions.'
 ---
 
 The Volcano SDK (`@volcano.dev/sdk`) is a JavaScript library for authentication, database queries, and functions.
@@ -29,7 +29,7 @@ import { VolcanoAuth } from '@volcano.dev/sdk';
 // Initialize SDK
 const volcano = new VolcanoAuth({
   apiUrl: 'https://api.yourapp.com',
-  anonKey: 'your-anon-key'
+  anonKey: 'your-anon-key',
 });
 
 // For database queries, set database name
@@ -38,35 +38,31 @@ volcano.database('your_database_name');
 // Sign up with email/password
 await volcano.auth.signUp({
   email: 'user@example.com',
-  password: 'password123'
+  password: 'password123',
 });
 
 // Query database
-const { data } = await volcano
-  .from('posts')
-  .select('*')
-  .eq('status', 'published')
-  .limit(10);
+const { data } = await volcano.from('posts').select('*').eq('status', 'published').limit(10);
 
 // OR sign in with OAuth
-volcano.auth.signInWithGoogle();  // Redirects to Google
-volcano.auth.signInWithGitHub();  // Redirects to GitHub
+volcano.auth.signInWithGoogle(); // Redirects to Google
+volcano.auth.signInWithGitHub(); // Redirects to GitHub
 
 // Call your functions
 const result = await volcano.functions.invoke('get-data', {
-  action: 'get_data'
+  action: 'get_data',
 });
 ```
 
 ## Features
 
-| Feature | Description |
-|---------|-------------|
-| Query Builder | `.from().select().eq()` syntax for database queries |
-| Direct PostgreSQL access | Query databases directly from the browser |
-| Automatic RLS | Row-level security enforced on all queries |
-| Project locks | Renewable backend leases through `volcano.locks` |
-| Universal | Works in browser and server-side environments |
+| Feature                  | Description                                         |
+| ------------------------ | --------------------------------------------------- |
+| Query Builder            | `.from().select().eq()` syntax for database queries |
+| Direct PostgreSQL access | Query databases directly from the browser           |
+| Automatic RLS            | Row-level security enforced on all queries          |
+| Project locks            | Renewable backend leases through `volcano.locks`    |
+| Universal                | Works in browser and server-side environments       |
 
 ---
 
@@ -84,12 +80,13 @@ const volcano = new VolcanoAuth({
 ```
 
 **Server-side (function) Usage:**
+
 ```javascript
 // Use accessToken from event.__volcano_auth inside your functions
 const volcano = new VolcanoAuth({
   apiUrl: process.env.VOLCANO_API_URL,
   anonKey: process.env.ANON_KEY,
-  accessToken: event.__volcano_auth.access_token
+  accessToken: event.__volcano_auth.access_token,
 });
 ```
 
@@ -100,7 +97,7 @@ For project locks, initialize the SDK with a service-role key carrying
 const volcano = new VolcanoAuth({
   apiUrl: process.env.VOLCANO_API_URL,
   anonKey: process.env.ANON_KEY,
-  accessToken: process.env.SERVICE_ROLE_KEY
+  accessToken: process.env.SERVICE_ROLE_KEY,
 });
 
 await volcano.locks.withLock('leader', { ttl: 30 }, async ({ signal }) => {
@@ -120,10 +117,11 @@ See [Project locks with JavaScript](../locks/javascript-sdk.md).
 const { user, session, error } = await volcano.auth.signUp({
   email: 'user@example.com',
   password: 'password123',
-  metadata: {            // Optional
+  // Optional
+  metadata: {
     name: 'John Doe',
-    age: 30
-  }
+    age: 30,
+  },
 });
 
 if (error) {
@@ -134,6 +132,7 @@ if (error) {
 ```
 
 **Returns:**
+
 ```javascript
 {
   user: {
@@ -158,7 +157,7 @@ if (error) {
 ```javascript
 const { user, session, error } = await volcano.auth.signIn({
   email: 'user@example.com',
-  password: 'password123'
+  password: 'password123',
 });
 
 if (error) {
@@ -299,11 +298,12 @@ if (error) {
 
 ```javascript
 const { user, error } = await volcano.auth.updateUser({
-  password: 'new-password',  // Optional
-  metadata: {                 // Optional
+  password: 'new-password', // Optional
+  // Optional
+  metadata: {
     name: 'Jane Doe',
-    preferences: { theme: 'dark' }
-  }
+    preferences: { theme: 'dark' },
+  },
 });
 ```
 
@@ -351,7 +351,7 @@ View and manage active sessions across devices:
 // Get all sessions
 const { sessions, total, error } = await volcano.auth.getSessions();
 
-sessions.forEach(session => {
+sessions.forEach((session) => {
   console.log(`${session.provider} - ${session.user_agent}`);
   console.log(`  Current session: ${session.is_current}`);
   console.log(`  IP: ${session.ip_address}`);
@@ -373,7 +373,7 @@ A signed-in client can invoke functions whose [visibility](../functions/creating
 ```javascript
 const { data, error } = await volcano.functions.invoke('get-data', {
   action: 'get_data',
-  params: { id: 123 }
+  params: { id: 123 },
 });
 
 if (error) {
@@ -395,35 +395,31 @@ Function routing is handled transparently by the SDK when invoking by name.
 ```html
 <!DOCTYPE html>
 <html>
-<head>
-  <title>OAuth Example</title>
-  <script src="volcano-auth-sdk.js"></script>
-</head>
-<body>
-  <h1>Sign In</h1>
-  
-  <button onclick="volcano.auth.signInWithGoogle()">
-    Sign in with Google
-  </button>
-  
-  <button onclick="volcano.auth.signInWithGitHub()">
-    Sign in with GitHub
-  </button>
+  <head>
+    <title>OAuth Example</title>
+    <script src="volcano-auth-sdk.js"></script>
+  </head>
+  <body>
+    <h1>Sign In</h1>
 
-  <script>
-const volcano = new VolcanoAuth({
-  apiUrl: 'https://api.volcano.dev',
-  anonKey: 'your-anon-key'
-});
+    <button onclick="volcano.auth.signInWithGoogle()">Sign in with Google</button>
 
-    // Check if already logged in
-    volcano.auth.initialize().then(({ user }) => {
-      if (user) {
-        window.location.href = '/dashboard';
-      }
-    });
-  </script>
-</body>
+    <button onclick="volcano.auth.signInWithGitHub()">Sign in with GitHub</button>
+
+    <script>
+      const volcano = new VolcanoAuth({
+        apiUrl: 'https://api.volcano.dev',
+        anonKey: 'your-anon-key',
+      });
+
+      // Check if already logged in
+      volcano.auth.initialize().then(({ user }) => {
+        if (user) {
+          window.location.href = '/dashboard';
+        }
+      });
+    </script>
+  </body>
 </html>
 ```
 
@@ -436,9 +432,9 @@ const volcano = new VolcanoAuth({
 async function signUpWithEmail() {
   const { user, error } = await volcano.auth.signUp({
     email: document.getElementById('email').value,
-    password: document.getElementById('password').value
+    password: document.getElementById('password').value,
   });
-  
+
   if (error) {
     alert('Signup failed: ' + error.message);
   } else {
@@ -454,14 +450,14 @@ function signUpWithGoogle() {
 // User dashboard - link additional providers
 async function showLinkOptions() {
   const { providers, error } = await volcano.auth.getLinkedOAuthProviders();
-  
+
   if (error) return;
-  
-  if (!providers.find(p => p.provider === 'google')) {
+
+  if (!providers.find((p) => p.provider === 'google')) {
     showButton('Link Google', () => linkGoogle());
   }
-  
-  if (!providers.find(p => p.provider === 'github')) {
+
+  if (!providers.find((p) => p.provider === 'github')) {
     showButton('Link GitHub', () => linkGitHub());
   }
 }
@@ -481,22 +477,26 @@ async function linkGoogle() {
 ```javascript
 async function renderProviderManagement() {
   const { providers, error } = await volcano.auth.getLinkedOAuthProviders();
-  
+
   if (error) return;
-  
-  const html = providers.map(p => `
+
+  const html = providers
+    .map(
+      (p) => `
     <div class="provider-card">
       <span>${p.provider}</span>
       <button onclick="unlinkProvider('${p.provider}')">Unlink</button>
     </div>
-  `).join('');
-  
+  `,
+    )
+    .join('');
+
   document.getElementById('providers').innerHTML = html;
 }
 
 async function unlinkProvider(provider) {
   const { error } = await volcano.auth.unlinkOAuthProvider(provider);
-  
+
   if (error) {
     alert('Error: ' + error.message);
     // Might be: "cannot unlink last authentication method"
@@ -551,12 +551,14 @@ if (error) {
 ### Automatic token storage
 
 SDK automatically stores tokens in localStorage:
+
 - `volcano_access_token`
 - `volcano_refresh_token`
 
 ### Automatic token refresh
 
 When access token expires (401 error), SDK automatically:
+
 1. Uses refresh token to get new access token
 2. Retries the original request
 3. If refresh fails, clears session
@@ -595,8 +597,8 @@ if (user) {
 const { providers, error } = await volcano.auth.getLinkedOAuthProviders();
 
 if (!error) {
-  const hasGoogle = providers.some(p => p.provider === 'google');
-  const hasGitHub = providers.some(p => p.provider === 'github');
+  const hasGoogle = providers.some((p) => p.provider === 'google');
+  const hasGitHub = providers.some((p) => p.provider === 'github');
 
   if (hasGoogle) {
     console.log('User can sign in with Google');
@@ -608,8 +610,8 @@ if (!error) {
 
 ```javascript
 // User can link multiple OAuth providers
-await linkProvider('google');   // Now has: password + Google
-await linkProvider('github');   // Now has: password + Google + GitHub
+await linkProvider('google'); // Now has: password + Google
+await linkProvider('github'); // Now has: password + Google + GitHub
 await linkProvider('microsoft'); // Now has: password + Google + GitHub + Microsoft
 
 // User can sign in with ANY of these methods
@@ -619,9 +621,9 @@ await linkProvider('microsoft'); // Now has: password + Google + GitHub + Micros
 
 ```javascript
 // Day 1: User signs up with email/password
-const { error: signupError } = await volcano.auth.signUp({ 
-  email: 'user@example.com', 
-  password: 'pwd123' 
+const { error: signupError } = await volcano.auth.signUp({
+  email: 'user@example.com',
+  password: 'pwd123',
 });
 
 // Day 5: User links Google for convenience
@@ -686,7 +688,7 @@ volcano.auth.signInWithOAuth('google');
 async function handleOAuthCallback() {
   // SDK automatically handles session restoration
   const { user } = await volcano.auth.initialize();
-  
+
   if (user) {
     // OAuth sign-in successful
     window.location.href = '/dashboard';
@@ -700,32 +702,32 @@ async function handleOAuthCallback() {
 
 ### Auth methods
 
-| Method | Description |
-|--------|-------------|
-| `signUp({email, password, metadata})` | Email/password signup |
-| `signIn({email, password})` | Email/password signin |
-| `signOut()` | Sign out user |
-| `signInWithGoogle()` | Sign in with Google |
-| `signInWithGitHub()` | Sign in with GitHub |
-| `signInWithMicrosoft()` | Sign in with Microsoft |
-| `signInWithApple()` | Sign in with Apple |
-| `signInWithOAuth(provider)` | Generic OAuth signin |
-| `linkOAuthProvider(provider)` | Link OAuth to current user |
-| `unlinkOAuthProvider(provider)` | Unlink OAuth provider |
-| `getLinkedOAuthProviders()` | List user's OAuth providers |
-| `getUser()` | Get current user |
-| `updateUser({password, metadata})` | Update profile |
-| `refreshSession()` | Manually refresh token |
-| `onAuthStateChange(callback)` | Listen to auth events |
-| `initialize()` | Restore session on load |
-| `getSessions()` | Get all user's sessions |
-| `deleteSession(sessionId)` | Sign out from specific device |
-| `deleteAllOtherSessions()` | Sign out from all other devices |
+| Method                                | Description                     |
+| ------------------------------------- | ------------------------------- |
+| `signUp({email, password, metadata})` | Email/password signup           |
+| `signIn({email, password})`           | Email/password signin           |
+| `signOut()`                           | Sign out user                   |
+| `signInWithGoogle()`                  | Sign in with Google             |
+| `signInWithGitHub()`                  | Sign in with GitHub             |
+| `signInWithMicrosoft()`               | Sign in with Microsoft          |
+| `signInWithApple()`                   | Sign in with Apple              |
+| `signInWithOAuth(provider)`           | Generic OAuth signin            |
+| `linkOAuthProvider(provider)`         | Link OAuth to current user      |
+| `unlinkOAuthProvider(provider)`       | Unlink OAuth provider           |
+| `getLinkedOAuthProviders()`           | List user's OAuth providers     |
+| `getUser()`                           | Get current user                |
+| `updateUser({password, metadata})`    | Update profile                  |
+| `refreshSession()`                    | Manually refresh token          |
+| `onAuthStateChange(callback)`         | Listen to auth events           |
+| `initialize()`                        | Restore session on load         |
+| `getSessions()`                       | Get all user's sessions         |
+| `deleteSession(sessionId)`            | Sign out from specific device   |
+| `deleteAllOtherSessions()`            | Sign out from all other devices |
 
 ### Function methods
 
-| Method | Description |
-|--------|-------------|
+| Method                          | Description     |
+| ------------------------------- | --------------- |
 | `invoke(functionName, payload)` | Call a function |
 
 ---
@@ -754,7 +756,7 @@ async function linkOAuthProvider(provider) {
 // Initialize once
 const volcano = new VolcanoAuth({
   apiUrl: API_URL,
-  anonKey: ANON_KEY
+  anonKey: ANON_KEY,
 });
 
 // Use SDK methods
@@ -770,9 +772,9 @@ async function linkProvider(provider) {
 
 ## What's next
 
-| Resource | Description |
-|----------|-------------|
-| [OAuth providers](oauth-providers.md) | Configure OAuth providers |
-| [OAuth integration guide](oauth-integration-guide.md) | Complete OAuth integration |
-| [API reference](../api-reference/oauth.md) | OAuth API endpoints |
-| [Examples](../examples/frontend-auth-nextjs/README.md) | Working code examples |
+| Resource                                               | Description                |
+| ------------------------------------------------------ | -------------------------- |
+| [OAuth providers](oauth-providers.md)                  | Configure OAuth providers  |
+| [OAuth integration guide](oauth-integration-guide.md)  | Complete OAuth integration |
+| [API reference](../api-reference/oauth.md)             | OAuth API endpoints        |
+| [Examples](../examples/frontend-auth-nextjs/README.md) | Working code examples      |

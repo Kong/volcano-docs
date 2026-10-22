@@ -1,6 +1,6 @@
 ---
-title: "Accessing User Information in Functions"
-description: "Learn how to access authenticated user information in your functions."
+title: 'Accessing User Information in Functions'
+description: 'Learn how to access authenticated user information in your functions.'
 ---
 
 Learn how to access authenticated user information in your functions.
@@ -33,13 +33,13 @@ exports.handler = async (event) => {
 
 ## Context Fields
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `user_id` | string (UUID) | Unique identifier for the user. Persists across anonymous → authenticated conversion |
-| `email` | string | User's email (or internal format for anonymous users) |
-| `project_id` | string (UUID) | The project this user belongs to |
-| `role` | string | User type: `"authenticated"` or `"anonymous"` |
-| `access_token` | string | The caller's access token — forward it to the Volcano SDK/API to make calls as this user |
+| Field          | Type          | Description                                                                              |
+| -------------- | ------------- | ---------------------------------------------------------------------------------------- |
+| `user_id`      | string (UUID) | Unique identifier for the user. Persists across anonymous → authenticated conversion     |
+| `email`        | string        | User's email (or internal format for anonymous users)                                    |
+| `project_id`   | string (UUID) | The project this user belongs to                                                         |
+| `role`         | string        | User type: `"authenticated"` or `"anonymous"`                                            |
+| `access_token` | string        | The caller's access token — forward it to the Volcano SDK/API to make calls as this user |
 
 ## Checking if User is Authenticated
 
@@ -50,7 +50,7 @@ exports.handler = async (event) => {
   if (!event.__volcano_auth) {
     return {
       statusCode: 401,
-      body: JSON.stringify({ error: 'Authentication required' })
+      body: JSON.stringify({ error: 'Authentication required' }),
     };
   }
 
@@ -77,8 +77,8 @@ exports.handler = async (event) => {
       statusCode: 200,
       body: JSON.stringify({
         message: 'Welcome back!',
-        user_id: user_id
-      })
+        user_id: user_id,
+      }),
     };
   }
 
@@ -86,8 +86,8 @@ exports.handler = async (event) => {
   return {
     statusCode: 200,
     body: JSON.stringify({
-      message: 'Welcome, guest!'
-    })
+      message: 'Welcome, guest!',
+    }),
   };
 };
 ```
@@ -139,10 +139,10 @@ exports.handler = async (event) => {
     return {
       statusCode: 200,
       body: JSON.stringify({
-        data: { /* limited features */ },
+        data: {/* limited features */},
         message: 'Create an account to unlock all features!',
-        is_guest: true
-      })
+        is_guest: true,
+      }),
     };
   }
 
@@ -151,9 +151,9 @@ exports.handler = async (event) => {
     return {
       statusCode: 200,
       body: JSON.stringify({
-        data: { /* full features */ },
-        is_guest: false
-      })
+        data: {/* full features */},
+        is_guest: false,
+      }),
     };
   }
 };
@@ -177,14 +177,11 @@ exports.handler = async (event) => {
 
   try {
     // Query data for this specific user
-    const result = await client.query(
-      'SELECT * FROM todos WHERE user_id = $1',
-      [user_id]
-    );
+    const result = await client.query('SELECT * FROM todos WHERE user_id = $1', [user_id]);
 
     return {
       statusCode: 200,
-      body: JSON.stringify(result.rows)
+      body: JSON.stringify(result.rows),
     };
   } finally {
     client.release();
@@ -233,7 +230,7 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 200,
-      body: JSON.stringify(result.rows)
+      body: JSON.stringify(result.rows),
     };
   } finally {
     client.release();
@@ -255,14 +252,14 @@ exports.handler = async (event) => {
 
   // Premium features only for registered users
   const premiumFeatures = ['export', 'analytics', 'team_sharing'];
-  
+
   if (premiumFeatures.includes(action) && auth.role === 'anonymous') {
     return {
       statusCode: 403,
       body: JSON.stringify({
         error: 'This feature requires a full account',
-        upgrade_url: '/signup'
-      })
+        upgrade_url: '/signup',
+      }),
     };
   }
 
@@ -292,7 +289,7 @@ exports.handler = async (event) => {
     action,
     resource_id,
     timestamp: new Date(),
-    ip_address: event.headers?.['x-forwarded-for']
+    ip_address: event.headers?.['x-forwarded-for'],
   });
 
   // Continue with operation
@@ -322,7 +319,6 @@ exports.handler = async (event) => {
     // 1. Service-to-service call (service key)
     // 2. Anon key on a public function
     // 3. Frontend Function route or http_auth_mode: none
-    
     // Check if this is a valid use case
     // or return 401 Unauthorized
   }
@@ -392,7 +388,7 @@ exports.handler = async (event) => {
   if (!event.__volcano_auth) {
     return {
       statusCode: 401,
-      body: JSON.stringify({ error: 'Authentication required' })
+      body: JSON.stringify({ error: 'Authentication required' }),
     };
   }
 
@@ -410,26 +406,27 @@ exports.handler = async (event) => {
     switch (action) {
       case 'create_item':
         // Create item for this user
-        const result = await client.query(
-          'INSERT INTO items (user_id, name, data) VALUES ($1, $2, $3) RETURNING *',
-          [user_id, data.name, data]
-        );
-        
+        const result = await client.query('INSERT INTO items (user_id, name, data) VALUES ($1, $2, $3) RETURNING *', [
+          user_id,
+          data.name,
+          data,
+        ]);
+
         return {
           statusCode: 201,
-          body: JSON.stringify(result.rows[0])
+          body: JSON.stringify(result.rows[0]),
         };
 
       case 'list_items':
         // RLS automatically filters to user's items
         const items = await client.query('SELECT * FROM items ORDER BY created_at DESC');
-        
+
         return {
           statusCode: 200,
           body: JSON.stringify({
             items: items.rows,
-            user_type: role
-          })
+            user_type: role,
+          }),
         };
 
       case 'upgrade_prompt':
@@ -439,30 +436,30 @@ exports.handler = async (event) => {
             statusCode: 200,
             body: JSON.stringify({
               message: 'Create an account to save your items permanently',
-              is_guest: true
-            })
+              is_guest: true,
+            }),
           };
         }
-        
+
         return {
           statusCode: 200,
           body: JSON.stringify({
             message: 'You have full access!',
-            is_guest: false
-          })
+            is_guest: false,
+          }),
         };
 
       default:
         return {
           statusCode: 400,
-          body: JSON.stringify({ error: 'Unknown action' })
+          body: JSON.stringify({ error: 'Unknown action' }),
         };
     }
   } catch (error) {
     console.error('Error:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Internal server error' })
+      body: JSON.stringify({ error: 'Internal server error' }),
     };
   } finally {
     client.release();
@@ -476,4 +473,3 @@ exports.handler = async (event) => {
 - [Anonymous Users](../authentication/anonymous-users.md) - Guest user authentication
 - [Row-Level Security](../databases/row-level-security.md) - Database-level permissions
 - [Function Integration](../authentication/backend/function-integration.md) - Auth integration details
-

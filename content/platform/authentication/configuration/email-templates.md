@@ -1,6 +1,6 @@
 ---
-title: "Email Templates"
-description: "Customize email templates per project."
+title: 'Email Templates'
+description: 'Customize email templates per project.'
 ---
 
 Customize email templates per project.
@@ -22,11 +22,13 @@ including the message body and footer. Emails for your Volcano account use
 **Default subject:** "Confirm your email address"
 
 **Contains:**
+
 - Confirmation link with token
 - Project name
 - Security note
 
 **Variables:**
+
 - `{{.Email}}` - Recipient email
 - `{{.ConfirmationURL}}` - Link with token
 - `{{.ProjectName}}` - Your project name
@@ -38,12 +40,14 @@ including the message body and footer. Emails for your Volcano account use
 **Default subject:** "Reset your password"
 
 **Contains:**
+
 - Reset link with token
 - Expiration warning (1 hour)
 - Security notes
 - "Didn't request this?" message
 
 **Variables:**
+
 - `{{.Email}}` - Recipient email
 - `{{.ResetURL}}` - Link with token
 - `{{.ProjectName}}` - Your project name
@@ -55,11 +59,13 @@ including the message body and footer. Emails for your Volcano account use
 **Default subject:** "Your password was changed"
 
 **Contains:**
+
 - Confirmation of password change
 - Security alert if unauthorized
 - Contact info
 
 **Variables:**
+
 - `{{.Email}}` - Recipient email
 - `{{.ProjectName}}` - Your project name
 
@@ -91,6 +97,7 @@ Content-Type: application/json
 ```
 
 **Request:**
+
 ```json
 {
   "subject": "Welcome to MyApp!",
@@ -100,6 +107,7 @@ Content-Type: application/json
 ```
 
 **Template types:**
+
 - `confirmation` - Email confirmation
 - `password_reset` - Password reset
 - `password_changed` - Password change notification
@@ -110,13 +118,13 @@ Content-Type: application/json
 
 All templates have access to:
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `{{.Email}}` | Recipient email | user@example.com |
-| `{{.ProjectName}}` | Project name | My App |
-| `{{.AppName}}` | Application name | My App |
-| `{{.ConfirmationURL}}` | Confirmation link | `https://app.com/confirm?token=abc` |
-| `{{.ResetURL}}` | Password reset link | `https://app.com/reset?token=xyz` |
+| Variable               | Description         | Example                             |
+| ---------------------- | ------------------- | ----------------------------------- |
+| `{{.Email}}`           | Recipient email     | user@example.com                    |
+| `{{.ProjectName}}`     | Project name        | My App                              |
+| `{{.AppName}}`         | Application name    | My App                              |
+| `{{.ConfirmationURL}}` | Confirmation link   | `https://app.com/confirm?token=abc` |
+| `{{.ResetURL}}`        | Password reset link | `https://app.com/reset?token=xyz`   |
 
 ### Usage in Templates
 
@@ -131,6 +139,7 @@ All templates have access to:
 ### HTML Structure
 
 **Do:**
+
 - Use simple table-based layouts
 - Inline CSS (no external stylesheets)
 - Keep under 100KB total size
@@ -138,6 +147,7 @@ All templates have access to:
 - Include alt text for images
 
 **Don't:**
+
 - Complex JavaScript
 - External resources
 - Form elements
@@ -146,6 +156,7 @@ All templates have access to:
 ### Content
 
 **Do:**
+
 - Clear call-to-action
 - Plain text alternative
 - Unsubscribe info (for marketing)
@@ -153,6 +164,7 @@ All templates have access to:
 - Simple language
 
 **Don't:**
+
 - Spam trigger words (FREE!, BUY NOW!)
 - All caps
 - Excessive punctuation!!!
@@ -170,6 +182,7 @@ Always include plain text version:
 ```
 
 **Why:**
+
 - Some clients show text-only
 - Improves deliverability
 - Accessibility
@@ -180,28 +193,31 @@ Always include plain text version:
 ### Minimalist Confirmation
 
 **HTML:**
+
 ```html
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="UTF-8">
-</head>
-<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <h1>{{.ProjectName}}</h1>
-  <p>Confirm your email address:</p>
-  <p>
-    <a href="{{.ConfirmationURL}}" style="display: inline-block; background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 3px;">
-      Confirm Email
-    </a>
-  </p>
-  <p style="color: #666; font-size: 12px;">
-    If you didn't sign up, ignore this email.
-  </p>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+  <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h1>{{.ProjectName}}</h1>
+    <p>Confirm your email address:</p>
+    <p>
+      <a
+        href="{{.ConfirmationURL}}"
+        style="display: inline-block; background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 3px;"
+      >
+        Confirm Email
+      </a>
+    </p>
+    <p style="color: #666; font-size: 12px;">If you didn't sign up, ignore this email.</p>
+  </body>
 </html>
 ```
 
 **Text:**
+
 ```text
 {{.ProjectName}}
 
@@ -214,35 +230,39 @@ If you didn't sign up, ignore this email.
 ### Branded Template
 
 **HTML:**
+
 ```html
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="UTF-8">
-</head>
-<body style="background: #f4f4f4; padding: 20px; font-family: 'Helvetica Neue', Arial, sans-serif;">
-  <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden;">
-    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
-      <h1 style="color: white; margin: 0;">{{.ProjectName}}</h1>
-    </div>
-    <div style="padding: 30px;">
-      <h2>Welcome!</h2>
-      <p>Thanks for joining {{.ProjectName}}. Click below to confirm your email:</p>
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="{{.ConfirmationURL}}" style="background: #667eea; color: white; padding: 15px 40px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;">
-          Confirm Email
-        </a>
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+  <body style="background: #f4f4f4; padding: 20px; font-family: 'Helvetica Neue', Arial, sans-serif;">
+    <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden;">
+      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
+        <h1 style="color: white; margin: 0;">{{.ProjectName}}</h1>
       </div>
-      <p style="color: #666; font-size: 14px;">
-        Or copy this link: <br>
-        <span style="word-break: break-all;">{{.ConfirmationURL}}</span>
-      </p>
+      <div style="padding: 30px;">
+        <h2>Welcome!</h2>
+        <p>Thanks for joining {{.ProjectName}}. Click below to confirm your email:</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a
+            href="{{.ConfirmationURL}}"
+            style="background: #667eea; color: white; padding: 15px 40px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;"
+          >
+            Confirm Email
+          </a>
+        </div>
+        <p style="color: #666; font-size: 14px;">
+          Or copy this link: <br />
+          <span style="word-break: break-all;">{{.ConfirmationURL}}</span>
+        </p>
+      </div>
+      <div style="background: #f9f9f9; padding: 20px; text-align: center; color: #999; font-size: 12px;">
+        © {{.ProjectName}} - Automated Email
+      </div>
     </div>
-    <div style="background: #f9f9f9; padding: 20px; text-align: center; color: #999; font-size: 12px;">
-      © {{.ProjectName}} - Automated Email
-    </div>
-  </div>
-</body>
+  </body>
 </html>
 ```
 
@@ -309,6 +329,7 @@ Before sending to users, test with your own email:
 ### Template Validation
 
 **Check:**
+
 - All variables render correctly
 - Links work
 - Renders well on mobile
@@ -321,11 +342,13 @@ Before sending to users, test with your own email:
 ### Template Injection Prevention
 
 **Templates use Go's html/template package:**
+
 - Automatic HTML escaping
 - XSS prevention
 - No code execution
 
 **Example:**
+
 ```text
 Input: {{.ProjectName}} = "<script>alert(1)</script>"
 Output: &lt;script&gt;alert(1)&lt;/script&gt;
@@ -336,11 +359,13 @@ Output: &lt;script&gt;alert(1)&lt;/script&gt;
 ### Variable Validation
 
 **All template variables are sourced from:**
+
 - Database (project name)
 - System (confirmation URL, reset URL)
 - Never from user input directly
 
 **Tokens are:**
+
 - Cryptographically random
 - Project-scoped
 - One-time use
@@ -351,8 +376,3 @@ Output: &lt;script&gt;alert(1)&lt;/script&gt;
 - [Email Verification](../email-verification.md)
 - [SMTP Configuration](email-smtp.md)
 - [Password Reset](../password-reset.md)
-
-
-
-
-

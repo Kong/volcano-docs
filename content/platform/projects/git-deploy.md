@@ -1,6 +1,6 @@
 ---
-title: "Deploy from GitHub"
-description: "Connect a GitHub repository to a Volcano project so every push to the production branch deploys your functions and frontend automatically."
+title: 'Deploy from GitHub'
+description: 'Connect a GitHub repository to a Volcano project so every push to the production branch deploys your functions and frontend automatically.'
 ---
 
 Connect a GitHub repository to a project and Volcano deploys it on every push to
@@ -46,10 +46,10 @@ my-repo/
 **Functions** are the entries directly under `volcano/functions/` in your build
 root:
 
-| Entry | Function name | Entry file |
-|-------|---------------|------------|
-| `hello.js` | `hello` | the file itself |
-| `checkout/` | `checkout` | `index.*`, else the runtime's handler file (`index.js`, `main.py`, `main.rb`), else the first source file by name |
+| Entry       | Function name | Entry file                                                                                                        |
+| ----------- | ------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `hello.js`  | `hello`       | the file itself                                                                                                   |
+| `checkout/` | `checkout`    | `index.*`, else the runtime's handler file (`index.js`, `main.py`, `main.rb`), else the first source file by name |
 
 Names must be DNS-safe: lowercase letters, digits, and internal hyphens, 1–63
 characters. `batch`, `invocations`, and `logs` are reserved. Entries that do not
@@ -172,10 +172,10 @@ app, start through its same-origin edge function instead:
 
 ```js
 const redirect = `${location.origin}/settings/git`;
-const response = await fetch(
-  `/api/web/user/git/connect?provider=github&redirect=${encodeURIComponent(redirect)}`,
-  { method: "POST", credentials: "include" },
-);
+const response = await fetch(`/api/web/user/git/connect?provider=github&redirect=${encodeURIComponent(redirect)}`, {
+  method: 'POST',
+  credentials: 'include',
+});
 const { authorization_url } = await response.json();
 location.assign(authorization_url);
 ```
@@ -342,12 +342,12 @@ curl -X PUT "https://api.volcano.dev/projects/$PROJECT_ID/git-deploy-settings" \
   }'
 ```
 
-| Field | Effect |
-|-------|--------|
+| Field                 | Effect                                                                                                                                                                                                                                                                                                          |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `auto_deploy_enabled` | Master switch, on from the first connect. A push that arrives while this is off is never deployed, and turning it on later does not deploy that push retroactively. Once you save settings here they are never defaulted over again — rebinding, disconnecting and reconnecting all leave them as you set them. |
-| `deploy_functions` | Deploy every function discovered under `volcano/functions/`. |
-| `frontend_name` | Frontend to deploy. Omit or leave empty to deploy no frontend. The frontend does not have to exist yet — it is created on the first deploy. |
-| `frontend_app_root` | App root the frontend builds from, relative to `root_directory`. Requires `frontend_name`; omit for the build root itself. |
+| `deploy_functions`    | Deploy every function discovered under `volcano/functions/`.                                                                                                                                                                                                                                                    |
+| `frontend_name`       | Frontend to deploy. Omit or leave empty to deploy no frontend. The frontend does not have to exist yet — it is created on the first deploy.                                                                                                                                                                     |
+| `frontend_app_root`   | App root the frontend builds from, relative to `root_directory`. Requires `frontend_name`; omit for the build root itself.                                                                                                                                                                                      |
 
 This is a full replace: send every field you want to keep.
 
@@ -374,14 +374,14 @@ curl "https://api.volcano.dev/projects/$PROJECT_ID/deployments?limit=20" \
 A push deploys **code**: the functions under `volcano/functions/` and the
 configured frontend. It does not apply the rest of your project configuration.
 
-| Concern | Applied on push? | How to change it |
-|---------|------------------|------------------|
-| Function source | Yes | Push |
-| Frontend source | Yes | Push |
-| Function invocation settings (`visibility`, modes, OpenAPI metadata) | Yes, from `volcano-config.yaml` | Push, or `volcano cloud config deploy` |
-| Function kind (`standard` or `durable`) | Yes, from `volcano-config.yaml`, on the push that creates it | Fixed once created |
-| Function variable scope (`variable_scope`, `variables`) | Yes, from `volcano-config.yaml` | Push, or `volcano cloud config deploy` |
-| Variables, buckets, auth, OAuth, email templates, schedulers, databases | No | `volcano cloud config deploy` — see the [configuration manifest](configuration.md) |
+| Concern                                                                 | Applied on push?                                             | How to change it                                                                   |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| Function source                                                         | Yes                                                          | Push                                                                               |
+| Frontend source                                                         | Yes                                                          | Push                                                                               |
+| Function invocation settings (`visibility`, modes, OpenAPI metadata)    | Yes, from `volcano-config.yaml`                              | Push, or `volcano cloud config deploy`                                             |
+| Function kind (`standard` or `durable`)                                 | Yes, from `volcano-config.yaml`, on the push that creates it | Fixed once created                                                                 |
+| Function variable scope (`variable_scope`, `variables`)                 | Yes, from `volcano-config.yaml`                              | Push, or `volcano cloud config deploy`                                             |
+| Variables, buckets, auth, OAuth, email templates, schedulers, databases | No                                                           | `volcano cloud config deploy` — see the [configuration manifest](configuration.md) |
 
 Variables are read at build and run time from the project, so a variable you
 change through the API or the dashboard applies to the next deployment without a
@@ -528,14 +528,14 @@ or a newer production push deploys successfully.
 
 Per deployment run:
 
-| Limit | Value |
-|-------|-------|
-| Downloaded repository tarball | 256 MiB compressed |
-| Extracted repository | 512 MiB total, 256 MiB per file |
-| Repository entries | 50,000 |
-| Functions per commit | 1,000 |
-| Each generated deploy archive | 256 MiB by default (operator-configured) |
-| Total bytes packaged into archives | 1 GiB |
+| Limit                              | Value                                    |
+| ---------------------------------- | ---------------------------------------- |
+| Downloaded repository tarball      | 256 MiB compressed                       |
+| Extracted repository               | 512 MiB total, 256 MiB per file          |
+| Repository entries                 | 50,000                                   |
+| Functions per commit               | 1,000                                    |
+| Each generated deploy archive      | 256 MiB by default (operator-configured) |
+| Total bytes packaged into archives | 1 GiB                                    |
 
 Exceeding any of these fails the run without retrying — they are properties of
 the commit, not transient conditions.

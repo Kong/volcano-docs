@@ -1,6 +1,6 @@
 ---
-title: "Overview"
-description: "Volcano is AI infrastructure for agents and applications: functions, durable functions, databases, auth, realtime, storage, hosting, and locks."
+title: 'Overview'
+description: 'Volcano is AI infrastructure for agents and applications: functions, durable functions, databases, auth, realtime, storage, hosting, and locks.'
 ---
 
 Volcano is AI infrastructure for agents and applications. It provides functions, durable functions, databases, authentication, realtime, file storage, frontend hosting, and distributed locks. All of them work together through a unified API.
@@ -47,6 +47,7 @@ Most applications need one project. You might create multiple projects to separa
 Functions are code that runs on demand. You write the code, upload it to Volcano, and invoke it via HTTP. Volcano deploys each function to the project's regions, scales it, and can run it on a cron schedule. A call made with a user token includes that caller's identity.
 
 Supported runtimes:
+
 - Node.js (22.x, 24.x)
 - Python (3.10, 3.11, 3.12, 3.13, 3.14)
 - Ruby (3.3, 3.4, 4.0)
@@ -107,13 +108,13 @@ Distributed locks are renewable leases so one holder runs a task. Each lease car
 
 Volcano uses different keys for different purposes:
 
-| Key type | Purpose | Use in |
-|----------|---------|--------|
-| Platform token (`pk-`) | Manage every project in your account | Your terminal, backend, CI/CD |
-| Project access token (`pt-`) | Manage one project, with a read-only option | CI, scripts, AI agents |
-| Anon key | Initialize the SDK, let users sign up and sign in | Frontend |
-| Service key | Invoke functions as admin, bypass RLS | Backend only |
-| User access token | Authenticate as a specific user | Frontend, functions |
+| Key type                     | Purpose                                           | Use in                        |
+| ---------------------------- | ------------------------------------------------- | ----------------------------- |
+| Platform token (`pk-`)       | Manage every project in your account              | Your terminal, backend, CI/CD |
+| Project access token (`pt-`) | Manage one project, with a read-only option       | CI, scripts, AI agents        |
+| Anon key                     | Initialize the SDK, let users sign up and sign in | Frontend                      |
+| Service key                  | Invoke functions as admin, bypass RLS             | Backend only                  |
+| User access token            | Authenticate as a specific user                   | Frontend, functions           |
 
 > **Important:** Never expose platform tokens, project access tokens, or service keys in frontend code. They act on your project rather than on behalf of one user, and belong only in environments you control.
 
@@ -137,17 +138,17 @@ nothing is available through only one of them. See
 
 ## What's next
 
-| Guide | Description |
-|-------|-------------|
-| [Ways to use Volcano](../interfaces/README.md) | Dashboard, CLI, SDK, API, and MCP — and when to use each |
-| [Quickstart](quickstart.md) | Deploy your first function in 5 minutes |
-| [Installation](installation.md) | Set up the SDK and CLI |
-| [Projects](../projects/overview.md) | Learn about project management |
-| [Functions](../functions/overview.md) | Deep dive into functions |
-| [Durable functions](../functions/durable-functions.md) | Workflows that checkpoint and resume |
-| [Databases](../databases/overview.md) | Learn about PostgreSQL databases |
-| [Authentication](../authentication/overview.md) | Add user auth to your app |
-| [Realtime](../realtime/overview.md) | Database events, broadcast, and presence |
-| [Storage](../storage/overview.md) | File buckets and access policies |
-| [Frontends](../frontends/overview.md) | Deploy a Next.js site |
-| [Distributed locks](../locks/javascript-sdk.md) | Coordinate workers so each task runs once |
+| Guide                                                  | Description                                              |
+| ------------------------------------------------------ | -------------------------------------------------------- |
+| [Ways to use Volcano](../interfaces/README.md)         | Dashboard, CLI, SDK, API, and MCP — and when to use each |
+| [Quickstart](quickstart.md)                            | Deploy your first function in 5 minutes                  |
+| [Installation](installation.md)                        | Set up the SDK and CLI                                   |
+| [Projects](../projects/overview.md)                    | Learn about project management                           |
+| [Functions](../functions/overview.md)                  | Deep dive into functions                                 |
+| [Durable functions](../functions/durable-functions.md) | Workflows that checkpoint and resume                     |
+| [Databases](../databases/overview.md)                  | Learn about PostgreSQL databases                         |
+| [Authentication](../authentication/overview.md)        | Add user auth to your app                                |
+| [Realtime](../realtime/overview.md)                    | Database events, broadcast, and presence                 |
+| [Storage](../storage/overview.md)                      | File buckets and access policies                         |
+| [Frontends](../frontends/overview.md)                  | Deploy a Next.js site                                    |
+| [Distributed locks](../locks/javascript-sdk.md)        | Coordinate workers so each task runs once                |

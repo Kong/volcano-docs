@@ -1,6 +1,6 @@
 ---
-title: "OAuth Integration Guide"
-description: "Complete guide for integrating OAuth/SSO authentication in your application."
+title: 'OAuth Integration Guide'
+description: 'Complete guide for integrating OAuth/SSO authentication in your application.'
 ---
 
 Complete guide for integrating OAuth/SSO authentication in your application.
@@ -39,15 +39,16 @@ curl -X POST https://api.volcano.dev/projects/YOUR_PROJECT_ID/oauth/configs \
 <button onclick="signInWithGoogle()">Sign in with Google</button>
 
 <script>
-function signInWithGoogle() {
-  window.location.href = 'https://api.volcano.dev/auth/oauth/google/authorize';
-}
+  function signInWithGoogle() {
+    window.location.href = 'https://api.volcano.dev/auth/oauth/google/authorize';
+  }
 </script>
 ```
 
 ### 3. Handle Callback
 
 When Google redirects back to your callback URL, Volcano automatically:
+
 1. Exchanges authorization code for access token
 2. Fetches user info from Google
 3. Creates/signs in user
@@ -95,6 +96,7 @@ curl -X POST https://api.volcano.dev/projects/YOUR_PROJECT_ID/oauth/configs \
 ```
 
 **Default Scopes:**
+
 - `openid` - OpenID Connect
 - `email` - User's email address
 - `profile` - User's basic profile (name, picture)
@@ -134,6 +136,7 @@ curl -X POST https://api.volcano.dev/projects/YOUR_PROJECT_ID/oauth/configs \
 ```
 
 **Default Scopes:**
+
 - `read:user` - Read user profile
 - `user:email` - Access user's email addresses
 
@@ -184,6 +187,7 @@ curl -X POST https://api.volcano.dev/projects/YOUR_PROJECT_ID/oauth/configs \
 ```
 
 **Default Scopes:**
+
 - `openid` - OpenID Connect
 - `email` - User's email
 - `profile` - User's profile info
@@ -240,6 +244,7 @@ curl -X POST https://api.volcano.dev/projects/YOUR_PROJECT_ID/oauth/configs \
 ```
 
 **Default Scopes:**
+
 - `email` - User's email (might be Apple relay)
 - `name` - User's name (only on first auth)
 
@@ -254,10 +259,10 @@ curl -X POST https://api.volcano.dev/projects/YOUR_PROJECT_ID/oauth/configs \
 ```html
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title>OAuth Example</title>
-</head>
-<body>
+  </head>
+  <body>
     <!-- OAuth Buttons -->
     <button onclick="signInWithGoogle()">Sign in with Google</button>
     <button onclick="signInWithGitHub()">Sign in with GitHub</button>
@@ -265,31 +270,31 @@ curl -X POST https://api.volcano.dev/projects/YOUR_PROJECT_ID/oauth/configs \
     <button onclick="signInWithApple()">Sign in with Apple</button>
 
     <script>
-        const PROJECT_ID = 'your-project-id';
-        const API_URL = 'https://api.volcano.dev';
+      const PROJECT_ID = 'your-project-id';
+      const API_URL = 'https://api.volcano.dev';
 
-        function signInWithGoogle() {
-            redirectToOAuth('google');
-        }
+      function signInWithGoogle() {
+        redirectToOAuth('google');
+      }
 
-        function signInWithGitHub() {
-            redirectToOAuth('github');
-        }
+      function signInWithGitHub() {
+        redirectToOAuth('github');
+      }
 
-        function signInWithMicrosoft() {
-            redirectToOAuth('microsoft');
-        }
+      function signInWithMicrosoft() {
+        redirectToOAuth('microsoft');
+      }
 
-        function signInWithApple() {
-            redirectToOAuth('apple');
-        }
+      function signInWithApple() {
+        redirectToOAuth('apple');
+      }
 
-        function redirectToOAuth(provider) {
-            const authUrl = `${API_URL}/auth/oauth/${provider}/authorize`;
-            window.location.href = authUrl;
-        }
+      function redirectToOAuth(provider) {
+        const authUrl = `${API_URL}/auth/oauth/${provider}/authorize`;
+        window.location.href = authUrl;
+      }
     </script>
-</body>
+  </body>
 </html>
 ```
 
@@ -303,24 +308,21 @@ const accessToken = localStorage.getItem('access_token');
 
 // Link Google to existing account
 async function linkGoogle() {
-    const response = await fetch(
-        `${API_URL}/auth/oauth/google/link`,
-        {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${accessToken}`
-            }
-        }
-    );
+  const response = await fetch(`${API_URL}/auth/oauth/google/link`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
 
-    const data = await response.json();
+  const data = await response.json();
 
-    if (response.ok) {
-        // Redirect to OAuth authorization
-        window.location.href = data.authorization_url;
-    } else {
-        console.error('Error:', data.error);
-    }
+  if (response.ok) {
+    // Redirect to OAuth authorization
+    window.location.href = data.authorization_url;
+  } else {
+    console.error('Error:', data.error);
+  }
 }
 
 // After OAuth completes, provider is linked
@@ -331,25 +333,22 @@ async function linkGoogle() {
 
 ```javascript
 async function unlinkGoogle() {
-    const accessToken = localStorage.getItem('access_token');
+  const accessToken = localStorage.getItem('access_token');
 
-    const response = await fetch(
-        `${API_URL}/auth/oauth/google/unlink`,
-        {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${accessToken}`
-            }
-        }
-    );
+  const response = await fetch(`${API_URL}/auth/oauth/google/unlink`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
 
-    if (response.ok) {
-        console.log('Google unlinked successfully');
-    } else {
-        const data = await response.json();
-        console.error('Error:', data.error);
-        // Might be: "cannot unlink last authentication method"
-    }
+  if (response.ok) {
+    console.log('Google unlinked successfully');
+  } else {
+    const data = await response.json();
+    console.error('Error:', data.error);
+    // Might be: "cannot unlink last authentication method"
+  }
 }
 ```
 
@@ -357,25 +356,22 @@ async function unlinkGoogle() {
 
 ```javascript
 async function getLinkedProviders() {
-    const accessToken = localStorage.getItem('access_token');
+  const accessToken = localStorage.getItem('access_token');
 
-    const response = await fetch(
-        `${API_URL}/auth/oauth/providers`,
-        {
-            headers: {
-                'Authorization': `Bearer ${accessToken}`
-            }
-        }
-    );
+  const response = await fetch(`${API_URL}/auth/oauth/providers`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
 
-    const data = await response.json();
-    
-    // data.providers = [
-    //   { provider: 'google', linked_at: '...', updated_at: '...' },
-    //   { provider: 'github', linked_at: '...', updated_at: '...' }
-    // ]
+  const data = await response.json();
 
-    return data.providers;
+  // data.providers = [
+  //   { provider: 'google', linked_at: '...', updated_at: '...' },
+  //   { provider: 'github', linked_at: '...', updated_at: '...' }
+  // ]
+
+  return data.providers;
 }
 ```
 
@@ -401,13 +397,13 @@ Volcano automatically validates redirect URLs to prevent open redirects:
 
 ```javascript
 // Valid redirect URLs
-'https://yourapp.com/callback'
-'https://app.yourapp.com/auth/callback'
-'http://localhost:8080/callback'  // Dev only
+'https://yourapp.com/callback';
+'https://app.yourapp.com/auth/callback';
+'http://localhost:8080/callback'; // Dev only
 
 // Invalid (blocked by Volcano)
-'http://evil.com@yourapp.com/callback'  // Contains @
-'javascript:alert(1)'                    // Invalid protocol
+'http://evil.com@yourapp.com/callback'; // Contains @
+'javascript:alert(1)'; // Invalid protocol
 ```
 
 ### 3. Store Tokens Securely
@@ -434,13 +430,12 @@ When OAuth email already exists:
 // User tries to sign up with Google
 // But email already exists from password signup
 
-fetch('/auth/oauth/google/authorize')
-  .then(response => {
-    if (response.status === 409) {
-      // Show message: "Email already exists. Please sign in and link Google."
-      showMessage('Please sign in with your password, then link Google from settings');
-    }
-  });
+fetch('/auth/oauth/google/authorize').then((response) => {
+  if (response.status === 409) {
+    // Show message: "Email already exists. Please sign in and link Google."
+    showMessage('Please sign in with your password, then link Google from settings');
+  }
+});
 ```
 
 ### 5. Prevent Account Lockout
@@ -448,20 +443,20 @@ fetch('/auth/oauth/google/authorize')
 ```javascript
 // Before unlinking provider, check if it's the last method
 async function unlinkProvider(provider) {
-    const response = await fetch(`/auth/oauth/${provider}/unlink`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${accessToken}` }
-    });
+  const response = await fetch(`/auth/oauth/${provider}/unlink`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
 
-    if (response.status === 400) {
-        const data = await response.json();
-        if (data.error.includes('last authentication method')) {
-            alert('You need to set a password before unlinking this provider');
-            return;
-        }
+  if (response.status === 400) {
+    const data = await response.json();
+    if (data.error.includes('last authentication method')) {
+      alert('You need to set a password before unlinking this provider');
+      return;
     }
+  }
 
-    // Successfully unlinked
+  // Successfully unlinked
 }
 ```
 
@@ -543,9 +538,10 @@ App that only uses OAuth (no email/password):
 ```
 
 **Configuration:**
+
 ```json
 {
-  "enable_signup": false  // Disable email/password signup
+  "enable_signup": false // Disable email/password signup
 }
 ```
 
@@ -570,6 +566,7 @@ App with both email/password AND OAuth:
 ```
 
 Users can:
+
 - Sign up with email/password
 - Sign up with OAuth
 - Link OAuth to existing password account
@@ -583,9 +580,9 @@ Enterprise apps that require specific OAuth provider:
 ```javascript
 // Only show Microsoft button for enterprise users
 if (userDomain === 'company.com') {
-    showMicrosoftButton();
+  showMicrosoftButton();
 } else {
-    showAllProviders();
+  showAllProviders();
 }
 ```
 
@@ -600,6 +597,7 @@ if (userDomain === 'company.com') {
 **Cause:** Provider not set up in Volcano
 
 **Solution:**
+
 ```bash
 # Check existing configs
 curl -H "Authorization: Bearer TOKEN" \
@@ -614,6 +612,7 @@ curl -X POST ... (see setup section)
 ### "invalid state parameter"
 
 **Causes:**
+
 - State expired (10 min timeout)
 - State already used (one-time use)
 - CSRF attack attempt
@@ -627,6 +626,7 @@ curl -X POST ... (see setup section)
 **Cause:** User's OAuth email matches existing account
 
 **Flow:**
+
 1. User tries: Sign in with Google
 2. Error: Email already exists
 3. User signs in with password
@@ -634,12 +634,10 @@ curl -X POST ... (see setup section)
 5. Success: Can now use either method
 
 **Frontend handling:**
+
 ```javascript
 if (response.status === 409) {
-    showMessage(
-        'Email already exists. ' +
-        '<a href="/signin">Sign in</a> and link Google from your profile.'
-    );
+  showMessage('Email already exists. ' + '<a href="/signin">Sign in</a> and link Google from your profile.');
 }
 ```
 
@@ -667,6 +665,7 @@ if (response.status === 409) {
 **Cause:** Provider was disabled in config
 
 **Solution:**
+
 ```bash
 curl -X PUT https://api.volcano.dev/projects/PROJECT_ID/oauth/configs/google \
   -H "Authorization: Bearer TOKEN" \
@@ -681,14 +680,15 @@ curl -X PUT https://api.volcano.dev/projects/PROJECT_ID/oauth/configs/google \
 **Cause:** User has email privacy enabled on GitHub
 
 **Solutions:**
+
 1. Request `user:email` scope (already default)
 2. Ask user to provide email manually after OAuth
 3. Handle missing email gracefully in your app
 
 ```javascript
 if (!user.email) {
-    // Ask user to provide email
-    promptForEmail();
+  // Ask user to provide email
+  promptForEmail();
 }
 ```
 
@@ -710,12 +710,12 @@ ngrok http 8000
 
 Some providers allow `http://localhost` for testing:
 
-| Provider | Localhost Support |
-|----------|-------------------|
-| Google | Yes |
-| GitHub | Yes |
-| Microsoft | Sometimes |
-| Apple | No (requires HTTPS) |
+| Provider  | Localhost Support   |
+| --------- | ------------------- |
+| Google    | Yes                 |
+| GitHub    | Yes                 |
+| Microsoft | Sometimes           |
+| Apple     | No (requires HTTPS) |
 
 ---
 
@@ -736,7 +736,7 @@ Each project has independent OAuth configuration:
 
 // Project B - Google OAuth (different app)
 {
-  "project_id": "project-b", 
+  "project_id": "project-b",
   "provider": "google",
   "client_id": "project-b-google-id",
   "redirect_url": "https://app-b.com/callback"
@@ -782,6 +782,3 @@ Can sign in with:
 - Check troubleshooting guide
 - Review security audit
 - Open an issue on GitHub
-
-
-

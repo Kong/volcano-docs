@@ -1,6 +1,6 @@
 ---
-title: "Realtime Function Test"
-description: "This example demonstrates how to test Volcano Realtime capabilities from within a function."
+title: 'Realtime Function Test'
+description: 'This example demonstrates how to test Volcano Realtime capabilities from within a function.'
 ---
 
 This example demonstrates how to test Volcano Realtime capabilities from within a function.
@@ -73,11 +73,11 @@ them; any other `scoped` function that declares or references them receives
 them too. A frontend whose `variable_scope` is `all` receives every project
 variable, these included; new frontends are `scoped`.
 
-| Variable | Description |
-|----------|-------------|
-| `REALTIME_TEST_API_URL` | The Volcano API server URL |
-| `REALTIME_TEST_ANON_KEY` | An anon key with `realtime.connect`, `realtime.subscribe` and `realtime.publish`. The default anon key has auth permissions only. |
-| `REALTIME_TEST_DATABASE_URL` | The `connection_string` of the database Realtime watches |
+| Variable                     | Description                                                                                                                       |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `REALTIME_TEST_API_URL`      | The Volcano API server URL                                                                                                        |
+| `REALTIME_TEST_ANON_KEY`     | An anon key with `realtime.connect`, `realtime.subscribe` and `realtime.publish`. The default anon key has auth permissions only. |
+| `REALTIME_TEST_DATABASE_URL` | The `connection_string` of the database Realtime watches                                                                          |
 
 Realtime watches one database per project: the newest one that is active or
 being restored. Realtime is off until you enable it, so the script below prints

@@ -1,6 +1,6 @@
 ---
-title: "Using the API"
-description: "Create a project access token and drive a real workflow with it: deploy a function, set a variable, read logs, handle errors, and rotate the credential."
+title: 'Using the API'
+description: 'Create a project access token and drive a real workflow with it: deploy a function, set a variable, read logs, handle errors, and rotate the credential.'
 ---
 
 Everything you can do in the dashboard, you can do over HTTP. This guide takes you from no credential to a working deploy pipeline.
@@ -61,11 +61,11 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/access-tokens" \
 }
 ```
 
-| Field | Notes |
-|-------|-------|
-| `name` | Required. Held by any token you have not revoked, including one that has expired, so a retried create cannot mint a second token. Revoking frees the name |
-| `scope` | Required. `full` for deploys, `read_only` for anything that only reads |
-| `expires_at` | Optional RFC 3339 timestamp in the future. Omit for a token that never expires |
+| Field        | Notes                                                                                                                                                     |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`       | Required. Held by any token you have not revoked, including one that has expired, so a retried create cannot mint a second token. Revoking frees the name |
+| `scope`      | Required. `full` for deploys, `read_only` for anything that only reads                                                                                    |
+| `expires_at` | Optional RFC 3339 timestamp in the future. Omit for a token that never expires                                                                            |
 
 > **Warning:** `token` appears in this response and nowhere else. Volcano keeps only a hash of it — there is no endpoint that returns it again. Put it straight into your secret store.
 
@@ -226,19 +226,19 @@ Reads that hand back a credential are the exception. `read_only` is refused on s
 
 ## Errors you will actually hit
 
-| Status | Body | What to do |
-|--------|------|------------|
-| `401` | `{"error": "invalid token"}` | The token is expired, revoked, or not a token. Mint a new one |
-| `403` | `{"error": "project access token is read-only"}` | The job needs `scope: full` |
-| `403` | `{"error": "project access token is read-only; reading this project's credentials needs a full-scope token"}` | Reading a service key, a variable's value, or a database connection string needs `scope: full` |
-| `403` | `{"error": "project access token is not valid for this project"}` | The token belongs to a different project |
-| `403` | `{"error": "project access tokens cannot be used on account-scoped endpoints; use a platform token"}` | The call acts on your account, not one project |
-| `403` | `{"error": "project access tokens cannot manage project access tokens; use a platform token"}` | Token management needs a platform token |
-| `404` | `{"error": "project access token not found"}` | Wrong token ID, or it belongs to another project |
-| `409` | `{"code": "access_token_name_exists"}` | A token you have not revoked still holds that name — an expired one does too. Revoke it to free the name, so rotation can keep the name your CI config already uses |
-| `409` | `{"code": "access_token_limit_reached"}` | Revoke tokens you no longer use |
-| `409` | `{"code": "project_deleting"}` | The project is being deleted; its tokens can no longer be changed |
-| `500` | `{"error": "failed to validate token"}` | Volcano could not check the credential. Retry; do not mint a new token |
+| Status | Body                                                                                                          | What to do                                                                                                                                                          |
+| ------ | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `401`  | `{"error": "invalid token"}`                                                                                  | The token is expired, revoked, or not a token. Mint a new one                                                                                                       |
+| `403`  | `{"error": "project access token is read-only"}`                                                              | The job needs `scope: full`                                                                                                                                         |
+| `403`  | `{"error": "project access token is read-only; reading this project's credentials needs a full-scope token"}` | Reading a service key, a variable's value, or a database connection string needs `scope: full`                                                                      |
+| `403`  | `{"error": "project access token is not valid for this project"}`                                             | The token belongs to a different project                                                                                                                            |
+| `403`  | `{"error": "project access tokens cannot be used on account-scoped endpoints; use a platform token"}`         | The call acts on your account, not one project                                                                                                                      |
+| `403`  | `{"error": "project access tokens cannot manage project access tokens; use a platform token"}`                | Token management needs a platform token                                                                                                                             |
+| `404`  | `{"error": "project access token not found"}`                                                                 | Wrong token ID, or it belongs to another project                                                                                                                    |
+| `409`  | `{"code": "access_token_name_exists"}`                                                                        | A token you have not revoked still holds that name — an expired one does too. Revoke it to free the name, so rotation can keep the name your CI config already uses |
+| `409`  | `{"code": "access_token_limit_reached"}`                                                                      | Revoke tokens you no longer use                                                                                                                                     |
+| `409`  | `{"code": "project_deleting"}`                                                                                | The project is being deleted; its tokens can no longer be changed                                                                                                   |
+| `500`  | `{"error": "failed to validate token"}`                                                                       | Volcano could not check the credential. Retry; do not mint a new token                                                                                              |
 
 A few of those deserve detail.
 
@@ -267,11 +267,11 @@ curl "https://api.volcano.dev/projects/$PROJECT_ID/access-tokens/$TOKEN_ID" \
 
 `status` is one of:
 
-| Value | Meaning |
-|-------|---------|
-| `active` | Usable |
+| Value     | Meaning                                                        |
+| --------- | -------------------------------------------------------------- |
+| `active`  | Usable                                                         |
 | `revoked` | Revoked deliberately, by you or by the deletion of its project |
-| `expired` | Reached `expires_at`. Nobody revoked it |
+| `expired` | Reached `expires_at`. Nobody revoked it                        |
 
 A token revoked before its expiry passed stays `revoked`, because that is the fact worth knowing after a leak.
 
@@ -396,11 +396,11 @@ jobs:
 
 **3. Fix the calls that no longer work.** A project token is refused on anything account-scoped, which usually means one of these:
 
-| Pipeline step | Replacement |
-|---------------|-------------|
-| `GET /projects` to find the project ID | Store the ID as a CI variable |
-| `POST /projects` to create an environment per branch | Keep that step on a platform token in a separate, tightly restricted job |
-| Anything under `/projects/{id}/access-tokens` | Manage tokens outside CI; a deploy job should not be able to mint credentials |
+| Pipeline step                                        | Replacement                                                                   |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `GET /projects` to find the project ID               | Store the ID as a CI variable                                                 |
+| `POST /projects` to create an environment per branch | Keep that step on a platform token in a separate, tightly restricted job      |
+| Anything under `/projects/{id}/access-tokens`        | Manage tokens outside CI; a deploy job should not be able to mint credentials |
 
 **4. Revoke the platform token's role in CI.** Delete the CI secret, and rotate the platform token itself if it was ever exposed to a job.
 
@@ -408,11 +408,11 @@ jobs:
 
 ## What's next
 
-| Reference | Description |
-|-----------|-------------|
-| [Project access tokens](../authentication/security/project-access-tokens.md) | Scopes, revocation timing, and the security model |
-| [Overview](overview.md) | Base URL, pagination, status codes |
-| [Authentication](authentication.md) | Every token type and where it comes from |
-| [Errors](errors.md) | Error codes and handling |
-| [Functions](functions.md) | Deployment and invocation reference |
-| [OpenAPI specification](openapi.md) | Generate a client instead of writing these calls by hand |
+| Reference                                                                    | Description                                              |
+| ---------------------------------------------------------------------------- | -------------------------------------------------------- |
+| [Project access tokens](../authentication/security/project-access-tokens.md) | Scopes, revocation timing, and the security model        |
+| [Overview](overview.md)                                                      | Base URL, pagination, status codes                       |
+| [Authentication](authentication.md)                                          | Every token type and where it comes from                 |
+| [Errors](errors.md)                                                          | Error codes and handling                                 |
+| [Functions](functions.md)                                                    | Deployment and invocation reference                      |
+| [OpenAPI specification](openapi.md)                                          | Generate a client instead of writing these calls by hand |

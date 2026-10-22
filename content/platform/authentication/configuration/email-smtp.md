@@ -1,6 +1,6 @@
 ---
-title: "Email SMTP Configuration"
-description: "Configure SMTP for sending transactional emails (confirmations, password resets, notifications)."
+title: 'Email SMTP Configuration'
+description: 'Configure SMTP for sending transactional emails (confirmations, password resets, notifications).'
 ---
 
 Configure SMTP for sending transactional emails (confirmations, password resets, notifications).
@@ -41,11 +41,13 @@ When `require_email_confirmation` is enabled, this setting cannot be turned off 
 The sender email address. Must be a valid email address.
 
 **Examples:**
+
 - `noreply@myapp.com`
 - `hello@myapp.com`
 - `notifications@myapp.com`
 
 **Important:**
+
 - Must be authorized by your email provider
 - Should match your domain's SPF/DKIM records
 - Use noreply@ for automated emails
@@ -59,11 +61,13 @@ The sender email address. Must be a valid email address.
 Display name shown to recipients.
 
 **Examples:**
+
 - `My App`
 - `My App Support`
 - `My Company`
 
 **Result:**
+
 ```text
 From: My App <noreply@myapp.com>
 ```
@@ -77,6 +81,7 @@ From: My App <noreply@myapp.com>
 SMTP server hostname.
 
 **Common providers:**
+
 - SendGrid: `smtp.sendgrid.net`
 - AWS SES: `email-smtp.{region}.amazonaws.com`
 - Mailgun: `smtp.mailgun.org`
@@ -91,6 +96,7 @@ SMTP server hostname.
 SMTP server port.
 
 **Common ports:**
+
 - `587` - STARTTLS (recommended)
 - `465` - SSL/TLS
 - `25` - Unencrypted (not recommended)
@@ -106,6 +112,7 @@ SMTP server port.
 SMTP authentication username.
 
 **Provider-specific:**
+
 - SendGrid: `apikey` (literal string)
 - AWS SES: Your IAM SMTP username
 - Mailgun: Your SMTP username
@@ -121,12 +128,14 @@ SMTP authentication username.
 SMTP authentication password or API key.
 
 **Provider-specific:**
+
 - SendGrid: Your API key (starts with `SG.`)
 - AWS SES: Your IAM SMTP password
 - Mailgun: Your SMTP password
 - Gmail: App-specific password (not your account password)
 
 **Security:**
+
 - Never commit to version control
 - Use environment variables or secrets management
 - Rotate regularly
@@ -149,16 +158,19 @@ Use STARTTLS for encrypted connection.
 ### SendGrid
 
 **1. Create API Key:**
+
 - Go to https://app.sendgrid.com/settings/api_keys
 - Create key with "Mail Send" permission
 - Copy API key (starts with `SG.`)
 
 **2. Verify Sender:**
+
 - Go to Settings → Sender Authentication
 - Verify your domain or single sender
 - Use verified address as `email_from_address`
 
 **3. Configuration:**
+
 ```json
 {
   "email_enabled": true,
@@ -175,6 +187,7 @@ Use STARTTLS for encrypted connection.
 ### AWS SES
 
 **1. Verify Email/Domain:**
+
 ```bash
 aws ses verify-email-identity --email-address noreply@yourdomain.com
 # Or verify entire domain for any address
@@ -182,11 +195,13 @@ aws ses verify-domain-identity --domain yourdomain.com
 ```
 
 **2. Create SMTP Credentials:**
+
 - Go to SES Console → SMTP Settings
 - Click "Create My SMTP Credentials"
 - Save username and password
 
 **3. Configuration:**
+
 ```json
 {
   "email_enabled": true,
@@ -200,6 +215,7 @@ aws ses verify-domain-identity --domain yourdomain.com
 ```
 
 **Regions:**
+
 - us-east-1: `email-smtp.us-east-1.amazonaws.com`
 - us-west-2: `email-smtp.us-west-2.amazonaws.com`
 - eu-west-1: `email-smtp.eu-west-1.amazonaws.com`
@@ -207,11 +223,13 @@ aws ses verify-domain-identity --domain yourdomain.com
 ### Mailgun
 
 **1. Get SMTP Credentials:**
+
 - Go to Dashboard → Sending → Domain Settings
 - Find SMTP credentials section
 - Copy hostname, username, password
 
 **2. Configuration:**
+
 ```json
 {
   "email_enabled": true,
@@ -227,11 +245,13 @@ aws ses verify-domain-identity --domain yourdomain.com
 ### Gmail (Development Only)
 
 **1. Enable 2FA and Create App Password:**
+
 - Go to Google Account → Security
 - Enable 2-Step Verification
 - Create App Password for "Mail"
 
 **2. Configuration:**
+
 ```json
 {
   "email_enabled": true,
@@ -266,7 +286,7 @@ config — no need to create a user or trigger a signup flow.
 
 **Dashboard:** in **Auth Settings → Email**, after enabling email and entering
 your SMTP settings, **save your changes**, then use **Send a test email**: enter
-a recipient and click *Send test email*. (The button is disabled while there are
+a recipient and click _Send test email_. (The button is disabled while there are
 unsaved changes, because the test uses the persisted configuration.)
 
 **API:**
@@ -296,9 +316,11 @@ preview. See the `testEmailConfig` operation in the API reference for details.
 ### Connection Refused
 
 **Symptoms:**
+
 - Error: "failed to connect to SMTP server"
 
 **Solutions:**
+
 - Verify `smtp_host` and `smtp_port` are correct
 - Check firewall allows outbound connections on SMTP port
 - Verify provider's SMTP service is enabled
@@ -306,9 +328,11 @@ preview. See the `testEmailConfig` operation in the API reference for details.
 ### Authentication Failed
 
 **Symptoms:**
+
 - Error: "SMTP authentication failed"
 
 **Solutions:**
+
 - Verify `smtp_username` and `smtp_password` are correct
 - For SendGrid: ensure password starts with `SG.`
 - For AWS SES: use SMTP credentials (not IAM credentials)
@@ -317,19 +341,23 @@ preview. See the `testEmailConfig` operation in the API reference for details.
 ### Saved Password Can't Be Read
 
 **Symptoms:**
+
 - `smtp_password_configured` is `false` although you saved a password
 - Test email error: "smtp_password could not be read; set it again to send a test email"
 
 **Solutions:**
+
 - Save `smtp_password` again. Until you do, Volcano sends no auth email through
   your SMTP server.
 
 ### TLS/SSL Errors
 
 **Symptoms:**
+
 - Error: "failed to start TLS"
 
 **Solutions:**
+
 - Verify `smtp_use_tls` matches port (587 = TLS, 465 = SSL)
 - Check provider supports TLS on the port
 - Try `smtp_use_tls: false` for port 25 (not recommended)
@@ -337,9 +365,11 @@ preview. See the `testEmailConfig` operation in the API reference for details.
 ### Emails Not Delivered
 
 **Symptoms:**
+
 - No errors but emails don't arrive
 
 **Solutions:**
+
 - Check spam folder
 - Verify sender address is authorized (SPF/DKIM)
 - Check provider's sending quotas/limits
@@ -349,6 +379,7 @@ preview. See the `testEmailConfig` operation in the API reference for details.
 ### Emails Marked as Spam
 
 **Solutions:**
+
 - Set up SPF record for your domain
 - Configure DKIM signing
 - Use verified sender domain
@@ -360,16 +391,17 @@ preview. See the `testEmailConfig` operation in the API reference for details.
 
 ### Protect SMTP Credentials
 
-| Avoid | Do instead |
-|-------|------------|
-| Commit passwords to git | Use environment variables |
+| Avoid                      | Do instead                                         |
+| -------------------------- | -------------------------------------------------- |
+| Commit passwords to git    | Use environment variables                          |
 | Expose in client-side code | Use secrets management (AWS Secrets Manager, etc.) |
-| Log passwords | Rotate credentials regularly |
-| Share between projects | Use separate credentials per environment |
+| Log passwords              | Rotate credentials regularly                       |
+| Share between projects     | Use separate credentials per environment           |
 
 ### Use Dedicated Sending Domain
 
 **Recommended:**
+
 ```text
 Production: noreply@myapp.com
 Staging: noreply@staging.myapp.com
@@ -377,6 +409,7 @@ Development: noreply@dev.myapp.com
 ```
 
 **Benefits:**
+
 - Separate reputation per environment
 - Easy to identify source
 - Easier troubleshooting
@@ -384,12 +417,14 @@ Development: noreply@dev.myapp.com
 ### Monitor Sending
 
 **Track:**
+
 - Emails sent per hour/day
 - Bounce rates
 - Spam complaint rates
 - Delivery rates
 
 **Alert on:**
+
 - High bounce rate (>5%)
 - Authentication failures
 - Unusual sending volume
@@ -399,7 +434,3 @@ Development: noreply@dev.myapp.com
 - [Email Verification](../email-verification.md)
 - [Email Templates](email-templates.md)
 - [Password Reset](../password-reset.md)
-
-
-
-

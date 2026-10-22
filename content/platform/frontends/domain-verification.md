@@ -1,6 +1,6 @@
 ---
-title: "Verify domain ownership"
-description: "Prove your account owns a domain once with a TXT record, then attach any hostname below it to your frontends."
+title: 'Verify domain ownership'
+description: 'Prove your account owns a domain once with a TXT record, then attach any hostname below it to your frontends.'
 ---
 
 A frontend serves a custom domain only for the account that owns it. Verify a
@@ -90,9 +90,7 @@ curl "https://api.volcano.dev/user/domains" \
 
 ```json
 {
-  "domains": [
-    { "domain": "example.com", "verified_at": "2026-10-07T14:03:11Z" }
-  ]
+  "domains": [{ "domain": "example.com", "verified_at": "2026-10-07T14:03:11Z" }]
 }
 ```
 
@@ -112,10 +110,10 @@ consolidates accounts. The new account publishes its own `_volcano` record and
 verifies the domain. Volcano moves the domain only when DNS serves the new
 account's record and no longer serves the old one:
 
-| DNS serves | Result |
-| --- | --- |
-| Only the new account's record | The domain moves to the new account. |
-| Both accounts' records | `409 Conflict`: remove the old account's record first. |
+| DNS serves                    | Result                                                   |
+| ----------------------------- | -------------------------------------------------------- |
+| Only the new account's record | The domain moves to the new account.                     |
+| Both accounts' records        | `409 Conflict`: remove the old account's record first.   |
 | Only the old account's record | `409 Conflict` with the new account's `required_record`. |
 
 A record counts as the old account's only while its value is current. After a
@@ -134,11 +132,11 @@ account can verify them or attach a hostname below them.
 
 ## Errors
 
-| Status | Meaning |
-| --- | --- |
-| `400` | The domain is not a valid hostname, or it is a public suffix. |
-| `403` | The domain is one of Volcano's own, which only its configuration changes. |
-| `404` | Your account has not verified that domain. |
-| `409` | DNS does not yet serve your record, or another account owns the domain. |
-| `501` | Local mode has a single account, so it has no ownership to prove. |
-| `503` | DNS did not answer the ownership check; retry later. |
+| Status | Meaning                                                                   |
+| ------ | ------------------------------------------------------------------------- |
+| `400`  | The domain is not a valid hostname, or it is a public suffix.             |
+| `403`  | The domain is one of Volcano's own, which only its configuration changes. |
+| `404`  | Your account has not verified that domain.                                |
+| `409`  | DNS does not yet serve your record, or another account owns the domain.   |
+| `501`  | Local mode has a single account, so it has no ownership to prove.         |
+| `503`  | DNS did not answer the ownership check; retry later.                      |

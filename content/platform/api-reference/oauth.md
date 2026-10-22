@@ -1,6 +1,6 @@
 ---
-title: "OAuth API reference"
-description: "API reference for OAuth/SSO provider authentication."
+title: 'OAuth API reference'
+description: 'API reference for OAuth/SSO provider authentication.'
 ---
 
 API reference for OAuth/SSO provider authentication.
@@ -8,6 +8,7 @@ API reference for OAuth/SSO provider authentication.
 ## Overview
 
 Volcano supports OAuth 2.0 authentication with major identity providers:
+
 - Google
 - GitHub
 - Microsoft (Azure AD / Personal accounts)
@@ -32,6 +33,7 @@ GET /auth/oauth/{provider}/authorize
 Redirects user to OAuth provider for authorization.
 
 **Path Parameters:**
+
 - `project_id` - UUID of your project
 - `provider` - One of: `google`, `github`, `microsoft`, `apple`
 
@@ -50,11 +52,13 @@ Redirects user to OAuth provider for authorization.
 **Response:** `307 Temporary Redirect` to OAuth provider
 
 **Errors:**
+
 - `404` - OAuth provider not configured
 - `400` - OAuth provider is disabled
 - `400` - `redirect_url` is not registered in `allowed_redirect_urls`
 
 **Example:**
+
 ```bash
 curl -i \
   'http://localhost:8000/auth/oauth/google/authorize?anon_key=<anon_key>&redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fcallback&response_mode=code'
@@ -71,21 +75,25 @@ GET /auth/oauth/{provider}/callback?code={code}&state={state}
 OAuth provider calls this endpoint after user authorization.
 
 **Path Parameters:**
+
 - `project_id` - UUID of your project
 - `provider` - OAuth provider used
 
 **Query Parameters:**
+
 - `code` - Authorization code from provider (required)
 - `state` - CSRF protection state (required)
 - `error` - Error code if authorization failed
 
 **Response:**
+
 - `303 See Other` - Registered browser redirect with a single-use `code` and
   optional application `state`; no session tokens are placed in the URL
 - `200 OK` - Existing user signed in when `redirect_url` was omitted
 - `201 Created` - New user signed in when `redirect_url` was omitted
 
 **Response Body:**
+
 ```json
 {
   "access_token": "eyJhbGci...",
@@ -109,6 +117,7 @@ OAuth provider calls this endpoint after user authorization.
 ```
 
 **Errors:**
+
 - `400` - Missing/invalid code or state
 - `400` - State parameter expired (10 min timeout)
 - `400` - the redirect URL stored with this flow is no longer registered in
@@ -157,9 +166,11 @@ Authorization: Bearer {access_token}
 Get list of OAuth providers linked to current user.
 
 **Headers:**
+
 - `Authorization` - Bearer token (user's access token)
 
 **Response:**
+
 ```json
 {
   "providers": [
@@ -178,6 +189,7 @@ Get list of OAuth providers linked to current user.
 ```
 
 **Errors:**
+
 - `401` - Not authenticated or invalid token
 
 ---
@@ -192,16 +204,20 @@ Authorization: Bearer {access_token}
 Link OAuth provider to current authenticated user.
 
 **Path Parameters:**
+
 - `provider` - Provider to link: `google`, `github`, `microsoft`, `apple`
 
 **Query Parameters (Optional):**
+
 - `redirect_url` - URL to redirect to after linking completes. Same
   `allowed_redirect_urls` requirement as the authorize endpoint above.
 
 **Headers:**
+
 - `Authorization` - Bearer token (user's access token)
 
 **Response:**
+
 ```json
 {
   "authorization_url": "https://accounts.google.com/o/oauth2/v2/auth?..."
@@ -211,6 +227,7 @@ Link OAuth provider to current authenticated user.
 User should be redirected to `authorization_url`. After authorization, provider will be linked.
 
 **Errors:**
+
 - `401` - Not authenticated
 - `404` - OAuth provider not configured
 - `409` - Provider already linked
@@ -229,14 +246,17 @@ Authorization: Bearer {access_token}
 Remove OAuth provider from user's account.
 
 **Path Parameters:**
+
 - `provider` - Provider to unlink
 
 **Headers:**
+
 - `Authorization` - Bearer token (user's access token)
 
 **Response:** `204 No Content`
 
 **Errors:**
+
 - `401` - Not authenticated
 - `404` - Provider not linked
 - `400` - Cannot unlink last authentication method
@@ -257,9 +277,11 @@ Authorization: Bearer {platform_token}
 List all OAuth configurations for a project.
 
 **Headers:**
+
 - `Authorization` - Bearer token (platform admin token)
 
 **Response:**
+
 ```json
 {
   "configs": [
@@ -291,12 +313,13 @@ Authorization: Bearer {platform_token}
 Get specific OAuth configuration.
 
 **Response:**
+
 ```json
 {
   "id": "uuid",
   "provider": "google",
   "client_id": "123456.apps.googleusercontent.com",
-  "client_secret": "GOCS...****",  // Masked
+  "client_secret": "GOCS...****", // Masked
   "enabled": true,
   "redirect_url": "https://yourapp.com/callback",
   "scopes": ["openid", "email", "profile"],
@@ -326,6 +349,7 @@ Content-Type: application/json
 ```
 
 **Request Fields:**
+
 - `provider` - Required: `google`, `github`, `microsoft`, `apple`, `device`
 - `client_id` - Required: Client identifier
 - `client_secret` - Required for non-device providers, not used for `device`
@@ -351,17 +375,18 @@ For `provider=device` (RFC8628 CLI/device flow), a minimal payload is:
 **Response:** `201 Created` with OAuth configuration (secret masked)
 
 **Errors:**
+
 - `400` - Invalid provider or redirect URL
 - `409` - Provider already configured
 
 **Redirect URL validation:**
 
-| URL | Valid | Reason |
-|-----|-------|--------|
-| `https://yourapp.com/callback` | Yes | HTTPS with valid domain |
-| `http://localhost:8080/callback` | Yes | Development only |
-| `http://evil.com@yourapp.com/callback` | No | Contains @ character |
-| `javascript:alert(1)` | No | Invalid protocol |
+| URL                                    | Valid | Reason                  |
+| -------------------------------------- | ----- | ----------------------- |
+| `https://yourapp.com/callback`         | Yes   | HTTPS with valid domain |
+| `http://localhost:8080/callback`       | Yes   | Development only        |
+| `http://evil.com@yourapp.com/callback` | No    | Contains @ character    |
+| `javascript:alert(1)`                  | No    | Invalid protocol        |
 
 ---
 
@@ -390,6 +415,7 @@ PUT /projects/{project_id}/oauth/configs/device?client_id=myapp-cli
 ```
 
 Device clients only support updating:
+
 - `client_id`
 - `enabled`
 
@@ -428,6 +454,7 @@ Authorization: Bearer {platform_token}
 Get list of supported OAuth providers and their default scopes.
 
 **Response:**
+
 ```json
 {
   "providers": [
@@ -462,6 +489,7 @@ Get list of supported OAuth providers and their default scopes.
 ### CSRF protection
 
 OAuth flow uses `state` parameter to prevent CSRF attacks:
+
 - State is randomly generated (32 bytes, base64 encoded)
 - State is verified in callback
 - State expires after 10 minutes
@@ -470,6 +498,7 @@ OAuth flow uses `state` parameter to prevent CSRF attacks:
 ### Open redirect prevention
 
 Redirect URLs are validated:
+
 - Must use `http` or `https` protocol
 - Cannot contain `@` character (prevents `http://evil.com@yourapp.com`)
 - No wildcards allowed
@@ -486,6 +515,7 @@ Redirect URLs are validated:
 ### Email conflict handling
 
 If OAuth email already exists:
+
 - Returns `409 Conflict` error
 - User must sign in with password
 - User can then link OAuth provider via `/link` endpoint
@@ -494,6 +524,7 @@ If OAuth email already exists:
 ### Last authentication method
 
 Users cannot remove their only authentication method:
+
 - If user has ONLY OAuth (no password) → cannot unlink
 - If user has password AND OAuth → can unlink OAuth
 - If user has multiple OAuth → can unlink any single one
@@ -502,18 +533,21 @@ Users cannot remove their only authentication method:
 ## Provider differences
 
 ### Google
+
 - **User ID:** Numeric string
 - **Email:** Always provided
 - **Email verified:** Yes
 - **Scopes:** `openid`, `email`, `profile`
 
 ### GitHub
+
 - **User ID:** Numeric
 - **Email:** Might be private (user setting)
 - **Email verified:** Assumed true if provided
 - **Scopes:** `read:user`, `user:email`
 
 ### Microsoft
+
 - **User ID:** UUID
 - **Email:** From `mail` or `userPrincipalName`
 - **Email verified:** Assumed true
@@ -521,6 +555,7 @@ Users cannot remove their only authentication method:
 - **Scopes:** `openid`, `email`, `profile`
 
 ### Apple
+
 - **User ID:** Stable subject identifier
 - **Email:** Might be Apple relay address
 - **Email verified:** Explicitly provided
@@ -529,16 +564,17 @@ Users cannot remove their only authentication method:
 
 ## Error codes
 
-| Code | Meaning | Solution |
-|------|---------|----------|
-| 400 | Bad request (invalid params) | Check request parameters |
-| 401 | Not authenticated | Provide valid access token |
-| 404 | Provider not configured | Configure OAuth provider first |
-| 409 | Conflict (duplicate) | Provider already exists or email conflict |
+| Code | Meaning                      | Solution                                  |
+| ---- | ---------------------------- | ----------------------------------------- |
+| 400  | Bad request (invalid params) | Check request parameters                  |
+| 401  | Not authenticated            | Provide valid access token                |
+| 404  | Provider not configured      | Configure OAuth provider first            |
+| 409  | Conflict (duplicate)         | Provider already exists or email conflict |
 
 ## Examples
 
 See complete examples:
+
 - [OAuth Example Application](../examples/frontend-auth-nextjs/README.md)
 - [OAuth Setup Guide](../authentication/oauth-providers.md)
 

@@ -1,6 +1,6 @@
 ---
-title: "Quickstart"
-description: "Install the Volcano CLI, run a function locally, then deploy it to the cloud."
+title: 'Quickstart'
+description: 'Install the Volcano CLI, run a function locally, then deploy it to the cloud.'
 ---
 
 Go from zero to a deployed function with the Volcano CLI — develop locally
@@ -87,14 +87,14 @@ schedules, auth, and function and frontend settings) from one manifest — see
 
 ## What's next
 
-| Guide | Description |
-|-------|-------------|
-| [Functions](../functions/overview.md) | Runtimes, dependencies, and environment variables |
-| [Add a database](../databases/quick-start.md) | Provision PostgreSQL with row-level security |
-| [Add authentication](../authentication/quickstart.md) | Let users sign up and sign in |
-| [Deploy a frontend](../frontends/overview.md) | Host a Next.js site on Volcano |
-| [Deploy to production](../guides/production.md) | Ship your project to the cloud |
-| [View logs](../functions/logs.md) | Debug with `volcano cloud functions logs` |
+| Guide                                                 | Description                                       |
+| ----------------------------------------------------- | ------------------------------------------------- |
+| [Functions](../functions/overview.md)                 | Runtimes, dependencies, and environment variables |
+| [Add a database](../databases/quick-start.md)         | Provision PostgreSQL with row-level security      |
+| [Add authentication](../authentication/quickstart.md) | Let users sign up and sign in                     |
+| [Deploy a frontend](../frontends/overview.md)         | Host a Next.js site on Volcano                    |
+| [Deploy to production](../guides/production.md)       | Ship your project to the cloud                    |
+| [View logs](../functions/logs.md)                     | Debug with `volcano cloud functions logs`         |
 
 For the full command set, see the [CLI reference](/cli) or run
 `volcano <command> --help`.

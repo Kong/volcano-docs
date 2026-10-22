@@ -6,11 +6,7 @@ export const metadata: Metadata = {
   description: 'Real-time chat example using Volcano Realtime SDK',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body>{children}</body>

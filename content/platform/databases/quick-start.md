@@ -1,16 +1,16 @@
 ---
-title: "Database quick start"
-description: "Get started with Volcano databases."
+title: 'Database quick start'
+description: 'Get started with Volcano databases.'
 ---
 
 Get started with Volcano databases.
 
 ## Choose your path
 
-| Path | Best for | Features |
-|------|----------|----------|
+| Path                                            | Best for                                      | Features                                 |
+| ----------------------------------------------- | --------------------------------------------- | ---------------------------------------- |
 | [Query Builder API](#query-builder-quick-start) | Frontend apps, mobile apps, quick prototyping | Chainable query methods, no SQL required |
-| [Direct SQL](#direct-sql-quick-start) | Complex queries, backend services | JOINs, CTEs, transactions, ORMs |
+| [Direct SQL](#direct-sql-quick-start)           | Complex queries, backend services             | JOINs, CTEs, transactions, ORMs          |
 
 ---
 
@@ -23,6 +23,7 @@ npm install @volcano.dev/sdk
 ```
 
 Or via CDN:
+
 ```html
 <script src="https://unpkg.com/@volcano.dev/sdk@latest/dist/index.js"></script>
 ```
@@ -34,7 +35,7 @@ import { VolcanoAuth } from '@volcano.dev/sdk';
 
 const volcano = new VolcanoAuth({
   apiUrl: 'https://api.yourapp.com',
-  anonKey: 'your-anon-key'
+  anonKey: 'your-anon-key',
 });
 
 // Set your database name (get from Volcano dashboard)
@@ -49,16 +50,16 @@ volcano.database('notes_db');
 // Sign up new user
 const { user, session } = await volcano.auth.signUp({
   email: 'user@example.com',
-  password: 'securePassword123'
+  password: 'securePassword123',
 });
 
-console.log('User ID:', user.id);  // This is what auth.uid() returns in database
-console.log('Access token:', session.access_token);  // Automatically used for queries
+console.log('User ID:', user.id); // This is what auth.uid() returns in database
+console.log('Access token:', session.access_token); // Automatically used for queries
 
 // Or sign in existing user
 await volcano.auth.signIn({
   email: 'user@example.com',
-  password: 'securePassword123'
+  password: 'securePassword123',
 });
 ```
 
@@ -66,9 +67,7 @@ await volcano.auth.signIn({
 
 ```javascript
 // Get all data - RLS automatically filters to YOUR data!
-const { data, error } = await volcano
-  .from('posts')
-  .select('*');
+const { data, error } = await volcano.from('posts').select('*');
 
 console.log('Your posts:', data);
 
@@ -97,12 +96,11 @@ console.log('Recent posts:', data);
 
 ```javascript
 // Create a new post
-const { data, error } = await volcano
-  .insert('posts', {
-    title: 'My First Post',
-    content: 'Hello Volcano!',
-    status: 'published'
-  });
+const { data, error } = await volcano.insert('posts', {
+  title: 'My First Post',
+  content: 'Hello Volcano!',
+  status: 'published',
+});
 
 const newPost = data[0];
 console.log('Created post:', newPost.id);
@@ -116,7 +114,7 @@ console.log('Created post:', newPost.id);
 const { data } = await volcano
   .update('posts', {
     title: 'Updated Title',
-    status: 'published'
+    status: 'published',
   })
   .eq('id', postId);
 
@@ -128,9 +126,7 @@ console.log('Updated post:', data[0]);
 
 ```javascript
 // Delete a post
-const { data } = await volcano
-  .delete('posts')
-  .eq('id', postId);
+const { data } = await volcano.delete('posts').eq('id', postId);
 
 console.log('Deleted post:', data[0]);
 // RLS ensures you can only delete YOUR posts
@@ -138,11 +134,11 @@ console.log('Deleted post:', data[0]);
 
 You're now querying PostgreSQL from the browser with Query Builder syntax.
 
-| Feature | Description |
-|---------|-------------|
-| Automatic RLS | Row-level security enforced on all queries |
-| No SQL required | Chainable query methods |
-| Direct access | Query databases directly from browser |
+| Feature           | Description                                |
+| ----------------- | ------------------------------------------ |
+| Automatic RLS     | Row-level security enforced on all queries |
+| No SQL required   | Chainable query methods                    |
+| Direct access     | Query databases directly from browser      |
 | Built-in security | Input validation and parameterized queries |
 
 ---
@@ -210,13 +206,13 @@ GRANT ALL ON posts TO authenticated;
 const response = await fetch('https://api.yourapp.com/auth/signup', {
   method: 'POST',
   headers: {
-    'Authorization': 'Bearer ANON_KEY',  // Get from project settings
-    'Content-Type': 'application/json'
+    Authorization: 'Bearer ANON_KEY', // Get from project settings
+    'Content-Type': 'application/json',
   },
   body: JSON.stringify({
     email: 'user@example.com',
-    password: 'securePassword123'
-  })
+    password: 'securePassword123',
+  }),
 });
 
 const { access_token, user } = await response.json();
@@ -232,14 +228,14 @@ console.log('Access Token:', access_token);
 const response = await fetch('https://api.yourapp.com/databases/notes_db/query/select', {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${access_token}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${access_token}`,
+    'Content-Type': 'application/json',
   },
   body: JSON.stringify({
     table: 'posts',
     order: [{ column: 'created_at', ascending: false }],
-    limit: 10
-  })
+    limit: 10,
+  }),
 });
 
 const { data, count } = await response.json();
@@ -254,16 +250,16 @@ console.log(`Found ${count} posts:`, data);
 const response = await fetch('https://api.yourapp.com/databases/notes_db/query/insert', {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${access_token}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${access_token}`,
+    'Content-Type': 'application/json',
   },
   body: JSON.stringify({
     table: 'posts',
     values: {
       title: 'My First Post',
-      content: 'Hello Volcano!'
-    }
-  })
+      content: 'Hello Volcano!',
+    },
+  }),
 });
 
 const { data } = await response.json();
@@ -279,18 +275,16 @@ console.log('Created post:', newPost.id);
 const response = await fetch('https://api.yourapp.com/databases/notes_db/query/update', {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${access_token}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${access_token}`,
+    'Content-Type': 'application/json',
   },
   body: JSON.stringify({
     table: 'posts',
     values: {
-      title: 'Updated Title'
+      title: 'Updated Title',
     },
-    filters: [
-      { column: 'id', operator: 'eq', value: postId }
-    ]
-  })
+    filters: [{ column: 'id', operator: 'eq', value: postId }],
+  }),
 });
 
 const { data } = await response.json();
@@ -304,15 +298,13 @@ const { data } = await response.json();
 const response = await fetch('https://api.yourapp.com/databases/notes_db/query/delete', {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${access_token}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${access_token}`,
+    'Content-Type': 'application/json',
   },
   body: JSON.stringify({
     table: 'posts',
-    filters: [
-      { column: 'id', operator: 'eq', value: postId }
-    ]
-  })
+    filters: [{ column: 'id', operator: 'eq', value: postId }],
+  }),
 });
 
 const { data } = await response.json();
@@ -336,42 +328,45 @@ const { Client } = require('pg');
 
 exports.handler = async (event) => {
   const auth = event.__volcano_auth;
-  
+
   if (!auth) {
     return { statusCode: 401, body: 'Unauthorized' };
   }
-  
+
   // Build connection string with auth context. Replace application_name
   // (DATABASE_URL already carries volcano_full_access) so the connection
   // reliably starts up under RLS.
   const url = new URL(process.env.DATABASE_URL);
   url.searchParams.set('application_name', `volcano_user_access:${auth.user_id}`);
-  
+
   const client = new Client({ connectionString: url.toString() });
   await client.connect();
-  
+
   try {
     // Query with full SQL power!
     // auth.uid() = auth.user_id from event.__volcano_auth
-    const { rows } = await client.query(`
+    const { rows } = await client.query(
+      `
       SELECT id, title, content, created_at 
       FROM posts 
       WHERE status = $1 
       ORDER BY created_at DESC 
       LIMIT $2
-    `, ['published', 10]);
-    
+    `,
+      ['published', 10],
+    );
+
     await client.end();
-    
-    return { 
-      statusCode: 200, 
-      body: JSON.stringify({ posts: rows }) 
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ posts: rows }),
     };
   } catch (error) {
     await client.end();
-    return { 
-      statusCode: 500, 
-      body: JSON.stringify({ error: error.message }) 
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: error.message }),
     };
   }
 };
@@ -396,13 +391,13 @@ import { VolcanoAuth } from '@volcano.dev/sdk';
 
 const volcano = new VolcanoAuth({
   apiUrl: 'https://api.yourapp.com',
-  anonKey: 'ANON_KEY'
+  anonKey: 'ANON_KEY',
 });
 
 // Sign in
-await volcano.auth.signIn({ 
-  email: 'user@example.com', 
-  password: 'password' 
+await volcano.auth.signIn({
+  email: 'user@example.com',
+  password: 'password',
 });
 
 // Call the function (auth automatically passed in event.__volcano_auth)
@@ -411,6 +406,7 @@ console.log('Posts:', result.posts);
 ```
 
 **How auth flows to your function:**
+
 1. User's access token sent with `invoke()` call
 2. Volcano validates token and creates `event.__volcano_auth`
 3. The function uses `event.__volcano_auth` to build connection string
@@ -420,17 +416,17 @@ console.log('Posts:', result.posts);
 
 ## Comparison
 
-| Feature | REST API | Direct SQL |
-|---------|----------|------------|
-| **Where** | Browser, Mobile | Functions |
-| **Requires SQL** | No | Yes |
-| **Complexity** | Simple CRUD | Any query |
-| JOINs | Not supported | Full support |
-| ORMs | Not supported | Full support |
-| Transactions | Single query | Full support |
-| RLS Enforced | Automatic | Automatic |
-| **Performance** | Fast | Faster (direct) |
-| **Learning Curve** | Easy | Moderate |
+| Feature            | REST API        | Direct SQL      |
+| ------------------ | --------------- | --------------- |
+| **Where**          | Browser, Mobile | Functions       |
+| **Requires SQL**   | No              | Yes             |
+| **Complexity**     | Simple CRUD     | Any query       |
+| JOINs              | Not supported   | Full support    |
+| ORMs               | Not supported   | Full support    |
+| Transactions       | Single query    | Full support    |
+| RLS Enforced       | Automatic       | Automatic       |
+| **Performance**    | Fast            | Faster (direct) |
+| **Learning Curve** | Easy            | Moderate        |
 
 **Recommendation:** Start with REST API, use Direct SQL when you need more power.
 
@@ -438,10 +434,10 @@ console.log('Posts:', result.posts);
 
 ## What's next
 
-| Guide | Description |
-|-------|-------------|
-| [REST API](rest-api.md) | Complete REST API documentation |
-| [Row-level security](row-level-security.md) | Secure your data |
+| Guide                                       | Description                       |
+| ------------------------------------------- | --------------------------------- |
+| [REST API](rest-api.md)                     | Complete REST API documentation   |
+| [Row-level security](row-level-security.md) | Secure your data                  |
 | [Connection strings](connection-strings.md) | Using databases in your functions |
-| [Auth helpers](auth-helpers.md) | Database helper functions |
-| [Creating databases](creating-databases.md) | Database management |
+| [Auth helpers](auth-helpers.md)             | Database helper functions         |
+| [Creating databases](creating-databases.md) | Database management               |

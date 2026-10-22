@@ -2,17 +2,17 @@
   "name": "function-service-key-example",
   "version": "1.0.0",
   "description": "Volcano function using service key for admin operations",
+  "keywords": [
+    "admin",
+    "function",
+    "service-key",
+    "volcano"
+  ],
   "main": "index.js",
-  "dependencies": {
-    "@volcano.dev/sdk": "^1.15.1"
-  },
   "scripts": {
     "test": "node index.js"
   },
-  "keywords": [
-    "volcano",
-    "function",
-    "admin",
-    "service-key"
-  ]
+  "dependencies": {
+    "@volcano.dev/sdk": "^1.15.1"
+  }
 }

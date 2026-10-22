@@ -1,16 +1,18 @@
 ---
-title: "Authentication Concepts"
-description: "Core authentication concepts in Volcano: platform vs auth users, token types, project isolation, sessions, and access keys."
+title: 'Authentication Concepts'
+description: 'Core authentication concepts in Volcano: platform vs auth users, token types, project isolation, sessions, and access keys.'
 ---
 
 ## Users
 
 **Platform Users** - Developers who use Volcano (you)
+
 - Created when you sign up for Volcano
 - Own projects and resources
 - Authenticate with a platform token from `volcano login`, or a [project access token](security/project-access-tokens.md) scoped to one project
 
 **Auth Users** - End-users of your application
+
 - Created via your project's auth endpoints
 - Isolated per project
 - Authenticate with access tokens
@@ -92,6 +94,7 @@ Session includes:
 ```
 
 Sessions can be:
+
 - Refreshed (extends lifetime)
 - Timed out (inactivity or max duration)
 - Revoked (logout or admin action)
@@ -150,7 +153,3 @@ const posts = await client.query('SELECT * FROM posts');
 - [Anon Keys](security/anon-keys.md) - Understand anon key security
 - [Token Types](security/token-types.md) - When to use each token
 - [Row-Level Security](../databases/row-level-security.md) - Secure your data at database level
-
-
-
-

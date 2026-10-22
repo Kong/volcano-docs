@@ -1,5 +1,5 @@
 ---
-title: "OpenAPI specification"
+title: 'OpenAPI specification'
 description: "Fetch Volcano's machine-readable API description to generate a client, import the API into a REST client, or check your integration against the contract."
 ---
 
@@ -95,9 +95,9 @@ document you already have.
 
 ## What's next
 
-| Reference | Description |
-|-----------|-------------|
-| [Using the API](using-the-api.md) | Create a token and run a real workflow with it |
-| [Overview](overview.md) | Base URL, request and response format, pagination |
-| [Authentication](authentication.md) | Which token type each endpoint accepts |
-| [Errors](errors.md) | Error codes and how to handle them |
+| Reference                           | Description                                       |
+| ----------------------------------- | ------------------------------------------------- |
+| [Using the API](using-the-api.md)   | Create a token and run a real workflow with it    |
+| [Overview](overview.md)             | Base URL, request and response format, pagination |
+| [Authentication](authentication.md) | Which token type each endpoint accepts            |
+| [Errors](errors.md)                 | Error codes and how to handle them                |

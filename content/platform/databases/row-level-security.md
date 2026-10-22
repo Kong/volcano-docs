@@ -1,5 +1,5 @@
 ---
-title: "Row-Level Security"
+title: 'Row-Level Security'
 description: "Secure your data at the database level using PostgreSQL's RLS."
 ---
 
@@ -10,12 +10,14 @@ Secure your data at the database level using PostgreSQL's RLS.
 Row-Level Security (RLS) automatically filters query results based on the authenticated user.
 
 **Without RLS:**
+
 ```sql
 SELECT * FROM posts;
 -- Returns ALL posts (security hole)
 ```
 
 **With RLS:**
+
 ```sql
 SELECT * FROM posts;
 -- Returns only current user's posts (automatically filtered)
@@ -71,6 +73,7 @@ CREATE POLICY "users_delete_own_posts" ON posts
 ```
 
 Or all operations at once:
+
 ```sql
 CREATE POLICY "users_own_posts" ON posts
   FOR ALL
@@ -85,21 +88,21 @@ When you connect to your database from your functions, Volcano automatically han
 ```javascript
 const { Pool } = require('pg');
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL  // Set by Volcano
+  connectionString: process.env.DATABASE_URL, // Set by Volcano
 });
 
 exports.handler = async (event) => {
   // User context is automatically set by Volcano!
   // No manual SET commands needed
-  
+
   const client = await pool.connect();
   try {
     // RLS automatically filters based on authenticated user
     const result = await client.query('SELECT * FROM posts');
-    
+
     return {
       statusCode: 200,
-      body: JSON.stringify(result.rows)  // Only current user's posts
+      body: JSON.stringify(result.rows), // Only current user's posts
     };
   } finally {
     client.release();
@@ -108,6 +111,7 @@ exports.handler = async (event) => {
 ```
 
 **How it works:**
+
 - Volcano detects the authenticated user from `event.__volcano_auth`
 - User context is automatically injected into the database connection
 - `auth.uid()` returns the current user's ID
@@ -135,10 +139,7 @@ Now you can omit user_id in inserts:
 
 ```javascript
 // user_id automatically set to current user
-await client.query(
-  'INSERT INTO posts (title, content) VALUES ($1, $2)',
-  ['My Post', 'Content']
-);
+await client.query('INSERT INTO posts (title, content) VALUES ($1, $2)', ['My Post', 'Content']);
 ```
 
 ## Public Read, Authenticated Write
@@ -210,11 +211,13 @@ const response2 = await invokeFunction(functionId, {}, user2Token);
 ## Common Patterns
 
 **User-owned resources:**
+
 ```sql
 USING (user_id = auth.uid())
 ```
 
 **Role-based:**
+
 ```sql
 USING (
   auth.role() = 'admin' OR
@@ -223,6 +226,7 @@ USING (
 ```
 
 **Public + owned:**
+
 ```sql
 USING (
   is_public = true OR
@@ -236,7 +240,3 @@ USING (
 - [Auth Helpers](auth-helpers.md) - auth.uid(), auth.email(), auth.role()
 - [Function Integration](../authentication/backend/function-integration.md) - Using RLS in functions
 - Examples - Complete RLS examples
-
-
-
-

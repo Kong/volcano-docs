@@ -1,6 +1,6 @@
 ---
-title: "Dashboard"
-description: "The Volcano dashboard: create and inspect projects, read logs and usage, manage keys, and change configuration in a browser."
+title: 'Dashboard'
+description: 'The Volcano dashboard: create and inspect projects, read logs and usage, manage keys, and change configuration in a browser.'
 order: 2
 ---
 

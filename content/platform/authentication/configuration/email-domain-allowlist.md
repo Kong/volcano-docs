@@ -1,6 +1,6 @@
 ---
-title: "Email Domain Allowlist"
-description: "Restrict which email domains can own an account in your Volcano project, and choose whether the restriction covers signup only or sign-in as well."
+title: 'Email Domain Allowlist'
+description: 'Restrict which email domains can own an account in your Volcano project, and choose whether the restriction covers signup only or sign-in as well.'
 ---
 
 Restrict which email domains can own an account in your project, and decide
@@ -58,11 +58,11 @@ auth:
 `allowed_email_domains_mode` decides how far the list reaches. An empty list
 restricts nothing whatever the mode is.
 
-| Mode | Signup | Sign-in | Existing sessions |
-|------|--------|---------|-------------------|
-| `signup` (default) | Blocked outside the list | Allowed | Kept |
+| Mode                | Signup                   | Sign-in                  | Existing sessions                   |
+| ------------------- | ------------------------ | ------------------------ | ----------------------------------- |
+| `signup` (default)  | Blocked outside the list | Allowed                  | Kept                                |
 | `signup_and_signin` | Blocked outside the list | Blocked outside the list | Revoked for the addresses it blocks |
-| `disabled` | Allowed | Allowed | Kept |
+| `disabled`          | Allowed                  | Allowed                  | Kept                                |
 
 Pick `signup` to stop new accounts while letting everyone who already signed up
 carry on. Pick `signup_and_signin` to cut off accounts outside the list too —
@@ -75,17 +75,17 @@ you can switch the same domains back on later.
 Every path that would give an address an account is checked under `signup` and
 `signup_and_signin`:
 
-| Path | Behavior with a disallowed domain |
-|------|-----------------------------------|
-| `POST /auth/signup` | 403, no user created |
-| OAuth/SSO callback creating a new user | 403, no user created |
-| OAuth/SSO callback claiming an existing unconfirmed account by email | 403 |
-| `POST /auth/oauth/{provider}/link` | 403 when the provider address would become a new address on the account |
-| `POST /auth/user/convert-anonymous` | 403, the user stays anonymous |
-| `POST /auth/user/change-email` | 403, the address is unchanged |
-| `POST /auth/user/confirm-email-change` | 403 if the allowlist narrowed after the change was requested |
-| `POST /auth/user/methods/{methodId}/promote` | 403, the account keeps its current primary |
-| Anonymous signup (no email) | Allowed — nothing to check |
+| Path                                                                 | Behavior with a disallowed domain                                       |
+| -------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `POST /auth/signup`                                                  | 403, no user created                                                    |
+| OAuth/SSO callback creating a new user                               | 403, no user created                                                    |
+| OAuth/SSO callback claiming an existing unconfirmed account by email | 403                                                                     |
+| `POST /auth/oauth/{provider}/link`                                   | 403 when the provider address would become a new address on the account |
+| `POST /auth/user/convert-anonymous`                                  | 403, the user stays anonymous                                           |
+| `POST /auth/user/change-email`                                       | 403, the address is unchanged                                           |
+| `POST /auth/user/confirm-email-change`                               | 403 if the allowlist narrowed after the change was requested            |
+| `POST /auth/user/methods/{methodId}/promote`                         | 403, the account keeps its current primary                              |
+| Anonymous signup (no email)                                          | Allowed — nothing to check                                              |
 
 Promotion is on that list because it re-derives the account's canonical email
 from the promoted identity. An account can hold an identity that predates the
@@ -95,15 +95,15 @@ would refuse.
 Under `signup_and_signin`, every path that hands out a session is checked as
 well:
 
-| Path | Behavior with a disallowed domain |
-|------|-----------------------------------|
-| `POST /auth/signin` | 403, no session issued |
-| OAuth/SSO callback for an already-linked account | 403 |
-| `POST /auth/oauth/exchange` | 403 |
-| `POST /auth/device/token` | 403 `access_denied` |
-| `POST /auth/refresh` | 403, the session cannot be extended |
-| `POST /auth/platform/exchange` | 403, no CLI platform token is minted |
-| Anonymous sign-in | Allowed — anonymous accounts carry an internal address |
+| Path                                             | Behavior with a disallowed domain                      |
+| ------------------------------------------------ | ------------------------------------------------------ |
+| `POST /auth/signin`                              | 403, no session issued                                 |
+| OAuth/SSO callback for an already-linked account | 403                                                    |
+| `POST /auth/oauth/exchange`                      | 403                                                    |
+| `POST /auth/device/token`                        | 403 `access_denied`                                    |
+| `POST /auth/refresh`                             | 403, the session cannot be extended                    |
+| `POST /auth/platform/exchange`                   | 403, no CLI platform token is minted                   |
+| Anonymous sign-in                                | Allowed — anonymous accounts carry an internal address |
 
 Linking a provider whose address the account already owns keeps working, so a
 user grandfathered in before the restriction can still add a provider.
@@ -122,12 +122,12 @@ The error message is `email domain is not allowed for this project`.
 Matching is an exact, case-insensitive comparison of the part after the last
 `@`:
 
-| Allowlist | Address | Result |
-|-----------|---------|--------|
-| `domain1.com` | `user@domain1.com` | Allowed |
-| `domain1.com` | `User@DOMAIN1.COM` | Allowed |
-| `domain1.com` | `user+tag@domain1.com` | Allowed |
-| `domain1.com` | `user@mail.domain1.com` | Rejected |
+| Allowlist     | Address                     | Result   |
+| ------------- | --------------------------- | -------- |
+| `domain1.com` | `user@domain1.com`          | Allowed  |
+| `domain1.com` | `User@DOMAIN1.COM`          | Allowed  |
+| `domain1.com` | `user+tag@domain1.com`      | Allowed  |
+| `domain1.com` | `user@mail.domain1.com`     | Rejected |
 | `domain1.com` | `user@domain1.com.evil.com` | Rejected |
 
 Subdomains are not implied. List `mail.domain1.com` explicitly if you want to
@@ -138,11 +138,11 @@ accept it.
 Entries are normalized before they are stored, so the forms people paste all
 converge:
 
-| You write | Stored as |
-|-----------|-----------|
-| `@Domain1.com` | `domain1.com` |
+| You write         | Stored as     |
+| ----------------- | ------------- |
+| `@Domain1.com`    | `domain1.com` |
 | `  DOMAIN1.com  ` | `domain1.com` |
-| `domain1.com.` | `domain1.com` |
+| `domain1.com.`    | `domain1.com` |
 
 Duplicates are dropped and the configured order is kept. An entry must be a bare
 domain with a top-level domain of at least two letters, so `localhost`,
@@ -228,13 +228,13 @@ keeping strangers out of your app, disable signup
 
 What a HOBBY project can do to the list it configured while on SUPERAGENT:
 
-| Change | HOBBY |
-|--------|------|
+| Change                                                                      | HOBBY                     |
+| --------------------------------------------------------------------------- | ------------------------- |
 | Save the policy it already has (a `volcano-config.yaml` apply, for example) | Allowed — nothing changes |
-| Park the list (`disabled`), leaving the domains as they are | Allowed |
-| Clear the list (`[]`) | Allowed |
-| Add or replace a domain, parked or not | `403`, nothing is saved |
-| Switch to `signup_and_signin`, or turn a parked list back on | `403` |
+| Park the list (`disabled`), leaving the domains as they are                 | Allowed                   |
+| Clear the list (`[]`)                                                       | Allowed                   |
+| Add or replace a domain, parked or not                                      | `403`, nothing is saved   |
+| Switch to `signup_and_signin`, or turn a parked list back on                | `403`                     |
 
 The rule behind the table: a HOBBY project may move toward no restriction, never
 away from it. That keeps a downgrade from stranding a project behind a list it

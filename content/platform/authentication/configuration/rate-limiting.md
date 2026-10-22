@@ -1,6 +1,6 @@
 ---
-title: "Rate Limiting"
-description: "Prevent brute force and abuse with distributed rate limiting."
+title: 'Rate Limiting'
+description: 'Prevent brute force and abuse with distributed rate limiting.'
 ---
 
 Prevent brute force and abuse with distributed rate limiting.
@@ -12,6 +12,7 @@ reaching a different instance. Once the count passes the limit, requests get
 `429 Too Many Requests` until the window resets.
 
 Limits are per:
+
 - IP address
 - Project
 - Endpoint (signup/signin/refresh separate)
@@ -25,10 +26,11 @@ Limits are per:
 Prevent mass account creation.
 
 ```json
-{"rate_limit_signup": 50}
+{ "rate_limit_signup": 50 }
 ```
 
 **When exceeded:**
+
 ```http
 HTTP/1.1 429 Too Many Requests
 X-RateLimit-Limit: 50
@@ -46,7 +48,7 @@ X-RateLimit-Reset: 1704128400
 Prevent brute force password attacks.
 
 ```json
-{"rate_limit_signin": 20}
+{ "rate_limit_signin": 20 }
 ```
 
 **Effect:** After 20 failed login attempts from same IP, further attempts blocked for remainder of hour.
@@ -63,7 +65,7 @@ don't use up Google's allowance.
 Usually higher than signup/signin (legitimate users refresh frequently).
 
 ```json
-{"rate_limit_token_refresh": 500}
+{ "rate_limit_token_refresh": 500 }
 ```
 
 ## Password Reset Rate Limit
@@ -115,14 +117,14 @@ X-Volcano-Client-IP: 203.0.113.42
 The service key must belong to the same project as the anon key and hold the
 scope for the endpoint it proxies:
 
-| Endpoint | Required scope |
-| --- | --- |
-| `POST /auth/signup`, `POST /auth/signup-anonymous` | `auth.signup` |
-| `POST /auth/signin`, `POST /auth/oauth/exchange` | `auth.signin` |
-| `POST /auth/refresh` | `auth.refresh` |
-| `POST /auth/logout` | `auth.logout` |
+| Endpoint                                                  | Required scope        |
+| --------------------------------------------------------- | --------------------- |
+| `POST /auth/signup`, `POST /auth/signup-anonymous`        | `auth.signup`         |
+| `POST /auth/signin`, `POST /auth/oauth/exchange`          | `auth.signin`         |
+| `POST /auth/refresh`                                      | `auth.refresh`        |
+| `POST /auth/logout`                                       | `auth.logout`         |
 | `POST /auth/forgot-password`, `POST /auth/reset-password` | `auth.password_reset` |
-| `GET /auth/password-policy` | Any scope |
+| `GET /auth/password-policy`                               | Any scope             |
 
 These scopes limit only which auth operations the key can proxy. Routes that do
 not enforce service-key scopes, such as database queries, still grant the key
@@ -165,7 +167,7 @@ The same limits live under `auth.rate_limits` in
 
 ```yaml
 auth:
-  rate_limits:   # per hour
+  rate_limits: # per hour
     signup: 20
     signin: 50
     token_refresh: 200
@@ -185,5 +187,3 @@ handling against a cloud project.
 ## See Also
 
 - [Configuration Overview](overview.md)
-
-

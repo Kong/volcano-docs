@@ -1,6 +1,6 @@
 ---
-title: "Configuration"
-description: "Customize authentication settings per project."
+title: 'Configuration'
+description: 'Customize authentication settings per project.'
 ---
 
 Customize authentication settings per project.
@@ -8,15 +8,18 @@ Customize authentication settings per project.
 ## Settings
 
 **Token Lifetimes:**
+
 - [access_token_lifetime](token-lifetimes.md#access-token) - How long access tokens last
-- [refresh_token_lifetime](token-lifetimes.md#refresh-token) - How long refresh tokens last  
+- [refresh_token_lifetime](token-lifetimes.md#refresh-token) - How long refresh tokens last
 - [refresh_token_reuse_interval](token-lifetimes.md#reuse-interval) - Token reuse window
 
 **Session Management:**
+
 - [inactivity_timeout](session-management.md#inactivity) - Force re-login after inactivity
 - [max_session_duration](session-management.md#max-duration) - Force re-login after duration
 
 **Password Requirements:**
+
 - [min_password_length](password-requirements.md#minimum-length) - Minimum characters
 - [require_uppercase](password-requirements.md#uppercase) - Require A-Z
 - [require_lowercase](password-requirements.md#lowercase) - Require a-z
@@ -25,15 +28,18 @@ Customize authentication settings per project.
 - [max_password_history](password-history.md) - Prevent password reuse
 
 **Rate Limiting:**
+
 - [rate_limit_signup](rate-limiting.md#signup) - Signups per hour per IP
 - [rate_limit_signin](rate-limiting.md#signin) - Signins per hour per IP
 - [rate_limit_token_refresh](rate-limiting.md#refresh) - Refreshes per hour per IP
 
 **CORS:**
+
 - [cors_enabled](cors.md#enable) - Enable origin validation
 - [cors_allowed_origins](cors.md#origins) - Whitelist domains
 
 **Access Control:**
+
 - [enable_signup](provider-separation.md#layer-2-master-signup-toggle) - Allow/block public signups
 - [allowed_email_domains](email-domain-allowlist.md) - Restrict signups, and optionally sign-ins, to specific email domains (SUPERAGENT)
 
@@ -62,6 +68,7 @@ curl -X PUT https://api.volcano.dev/projects/PROJECT_ID/auth/config \
 ## Common Configurations
 
 **High Security (Banking):**
+
 ```json
 {
   "access_token_lifetime": 900,
@@ -75,6 +82,7 @@ curl -X PUT https://api.volcano.dev/projects/PROJECT_ID/auth/config \
 ```
 
 **Balanced (SaaS):**
+
 ```json
 {
   "access_token_lifetime": 3600,
@@ -83,6 +91,7 @@ curl -X PUT https://api.volcano.dev/projects/PROJECT_ID/auth/config \
 ```
 
 **Low Friction (Social App):**
+
 ```json
 {
   "access_token_lifetime": 7200,
@@ -94,6 +103,7 @@ curl -X PUT https://api.volcano.dev/projects/PROJECT_ID/auth/config \
 ## See Individual Settings
 
 Each setting has its own documentation page with:
+
 - What it does
 - When to use it
 - Examples

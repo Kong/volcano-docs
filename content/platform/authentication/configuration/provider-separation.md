@@ -1,6 +1,6 @@
 ---
-title: "Authentication Provider Separation"
-description: "Volcano separates authentication provider configuration from the master signup toggle, giving you fine-grained control over your authentication system."
+title: 'Authentication Provider Separation'
+description: 'Volcano separates authentication provider configuration from the master signup toggle, giving you fine-grained control over your authentication system.'
 ---
 
 ## Overview
@@ -13,30 +13,30 @@ Volcano separates authentication provider configuration from the master signup t
 
 Controls **which authentication methods** are available:
 
-| Provider | Config Field | Description |
-|----------|--------------|-------------|
-| Email/Password | `enable_email_password` | Traditional email and password authentication |
-| Anonymous | `enable_anonymous_signins` | Guest mode without credentials |
-| OAuth Google | OAuth config + `enabled: true` | Sign in with Google |
-| OAuth GitHub | OAuth config + `enabled: true` | Sign in with GitHub |
-| OAuth Microsoft | OAuth config + `enabled: true` | Sign in with Microsoft |
-| OAuth Apple | OAuth config + `enabled: true` | Sign in with Apple |
+| Provider        | Config Field                   | Description                                   |
+| --------------- | ------------------------------ | --------------------------------------------- |
+| Email/Password  | `enable_email_password`        | Traditional email and password authentication |
+| Anonymous       | `enable_anonymous_signins`     | Guest mode without credentials                |
+| OAuth Google    | OAuth config + `enabled: true` | Sign in with Google                           |
+| OAuth GitHub    | OAuth config + `enabled: true` | Sign in with GitHub                           |
+| OAuth Microsoft | OAuth config + `enabled: true` | Sign in with Microsoft                        |
+| OAuth Apple     | OAuth config + `enabled: true` | Sign in with Apple                            |
 
 ### Layer 2: Master Signup Toggle
 
 Controls **whether new users can join** via ANY enabled provider:
 
-| Field | Description |
-|-------|-------------|
+| Field           | Description                                    |
+| --------------- | ---------------------------------------------- |
 | `enable_signup` | Master switch for signups across ALL providers |
 
 When `enable_signup = false`:
 
-| Action | Allowed |
-|--------|---------|
-| Existing users sign in | Yes |
-| New user signup (any provider) | No |
-| Session refresh and logout | Yes |
+| Action                         | Allowed |
+| ------------------------------ | ------- |
+| Existing users sign in         | Yes     |
+| New user signup (any provider) | No      |
+| Session refresh and logout     | Yes     |
 
 ## Common Configurations
 
@@ -55,11 +55,11 @@ Perfect for apps that want social login without password management:
 
 Result:
 
-| Method | Available |
-|--------|-----------|
-| New users via Google/GitHub | Yes |
-| Email/password signups | No |
-| Anonymous users | No |
+| Method                      | Available |
+| --------------------------- | --------- |
+| New users via Google/GitHub | Yes       |
+| Email/password signups      | No        |
+| Anonymous users             | No        |
 
 ### 2. Maintenance Mode
 
@@ -75,11 +75,11 @@ Temporarily stop new signups while keeping existing users working:
 
 Result:
 
-| Method | Available |
-|--------|-----------|
-| New signups (any provider) | No |
-| Existing users sign in | Yes |
-| Provider configuration | Preserved |
+| Method                     | Available |
+| -------------------------- | --------- |
+| New signups (any provider) | No        |
+| Existing users sign in     | Yes       |
+| Provider configuration     | Preserved |
 
 ### 3. Gaming App Pattern
 
@@ -96,13 +96,14 @@ Start as guest, upgrade to permanent account:
 
 Result:
 
-| Method | Available |
-|--------|-----------|
-| Anonymous signup (guest mode) | Yes |
-| Email/password | No |
-| Upgrade via Google OAuth linking | Yes |
+| Method                           | Available |
+| -------------------------------- | --------- |
+| Anonymous signup (guest mode)    | Yes       |
+| Email/password                   | No        |
+| Upgrade via Google OAuth linking | Yes       |
 
 **User Flow:**
+
 1. `POST /auth/signup-anonymous` → Guest account
 2. User plays game
 3. `POST /auth/oauth/google/link` → Permanent Google account
@@ -122,11 +123,11 @@ Maximum flexibility for users:
 
 Result:
 
-| Method | Available |
-|--------|-----------|
-| Email/password signups | Yes |
-| Anonymous signups | Yes |
-| OAuth signups (Google, GitHub) | Yes |
+| Method                         | Available |
+| ------------------------------ | --------- |
+| Email/password signups         | Yes       |
+| Anonymous signups              | Yes       |
+| OAuth signups (Google, GitHub) | Yes       |
 
 ## Anonymous User Upgrade Paths
 
@@ -135,10 +136,12 @@ Anonymous users can upgrade to permanent accounts in two ways:
 ### Convert to Email/Password
 
 **Requirements:**
+
 - `enable_email_password = true`
 - `enable_signup = true`
 
 **Endpoint:**
+
 ```text
 POST /auth/user/convert-anonymous
 Authorization: Bearer <access_token>
@@ -152,10 +155,12 @@ Authorization: Bearer <access_token>
 ### Link OAuth Provider
 
 **Requirements:**
+
 - OAuth provider configured and enabled
 - User is authenticated (anonymous or not)
 
 **Endpoint:**
+
 ```text
 POST /auth/oauth/{provider}/link
 Authorization: Bearer <access_token>
@@ -174,27 +179,28 @@ Then redirect user to `authorization_url` to complete OAuth flow.
 
 The API enforces these rules:
 
-| Rule | Description |
-|------|-------------|
-| Provider availability | At least one provider must be available at all times |
-| Lockout prevention | Cannot disable `enable_signup` AND all providers |
-| OAuth signup | Requires `enable_signup = true` |
-| Anonymous signup | Requires `enable_signup = true` AND `enable_anonymous_signins = true` |
-| Email/password signup | Requires `enable_signup = true` AND `enable_email_password = true` |
+| Rule                  | Description                                                           |
+| --------------------- | --------------------------------------------------------------------- |
+| Provider availability | At least one provider must be available at all times                  |
+| Lockout prevention    | Cannot disable `enable_signup` AND all providers                      |
+| OAuth signup          | Requires `enable_signup = true`                                       |
+| Anonymous signup      | Requires `enable_signup = true` AND `enable_anonymous_signins = true` |
+| Email/password signup | Requires `enable_signup = true` AND `enable_email_password = true`    |
 
 ### Configuration warnings
 
 The GUI shows warnings for potentially problematic configurations:
 
-| Warning | Description |
-|---------|-------------|
+| Warning                         | Description                                        |
+| ------------------------------- | -------------------------------------------------- |
 | Signup enabled but no providers | `enable_signup = true` but no providers configured |
-| All providers disabled | Authentication is completely disabled |
-| No anon keys | Frontend applications cannot authenticate |
+| All providers disabled          | Authentication is completely disabled              |
+| No anon keys                    | Frontend applications cannot authenticate          |
 
 ## Migration from Old Architecture
 
 Projects created before this change:
+
 - `enable_email_password` automatically set to match `enable_signup`
 - Behavior identical to before
 - No breaking changes
@@ -246,6 +252,7 @@ Response shows which providers are currently available.
 **Cause:** `enable_signup = true` but all providers disabled
 
 **Solution:** Enable at least one provider:
+
 - Email/Password: `enable_email_password = true`
 - Anonymous: `enable_anonymous_signins = true`
 - OAuth: Configure and enable at least one provider
@@ -255,6 +262,7 @@ Response shows which providers are currently available.
 **Cause:** `enable_email_password = true` (default)
 
 **Solution:** Explicitly disable:
+
 ```json
 {
   "enable_email_password": false
@@ -266,6 +274,6 @@ Response shows which providers are currently available.
 **This is by design!** Existing users CAN still sign in when `enable_signup = false`.
 
 If you want to block ALL authentication:
+
 - Disable the specific provider (e.g., `enable_email_password = false`)
 - Or delete/disable OAuth configurations
-

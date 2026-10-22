@@ -1,6 +1,6 @@
 ---
-title: "Branching"
-description: "Fork a database into a short-lived, isolated copy for development, testing, and CI."
+title: 'Branching'
+description: 'Fork a database into a short-lived, isolated copy for development, testing, and CI.'
 ---
 
 A branch is a copy-on-write fork of one of your databases. It starts as an exact
@@ -67,15 +67,15 @@ only once Volcano has stopped retrying; delete it and try again.
 Every operation on this page is also a `volcano cloud databases branches`
 command:
 
-| Task | Command |
-|------|---------|
-| Create a branch | `volcano cloud databases branches create main_db feature_checkout --ttl 24h` |
+| Task                                 | Command                                                                                  |
+| ------------------------------------ | ---------------------------------------------------------------------------------------- |
+| Create a branch                      | `volcano cloud databases branches create main_db feature_checkout --ttl 24h`             |
 | Show one, with its connection string | `volcano cloud databases branches get main_db feature_checkout --show-connection-string` |
-| List a database's branches | `volcano cloud databases branches list main_db` |
-| Extend its lifetime | `volcano cloud databases branches extend main_db feature_checkout --ttl 168h` |
-| Reset it to the parent's data | `volcano cloud databases branches reset main_db feature_checkout` |
-| Rotate its password | `volcano cloud databases branches rotate-password main_db feature_checkout` |
-| Delete it | `volcano cloud databases branches delete main_db feature_checkout` |
+| List a database's branches           | `volcano cloud databases branches list main_db`                                          |
+| Extend its lifetime                  | `volcano cloud databases branches extend main_db feature_checkout --ttl 168h`            |
+| Reset it to the parent's data        | `volcano cloud databases branches reset main_db feature_checkout`                        |
+| Rotate its password                  | `volcano cloud databases branches rotate-password main_db feature_checkout`              |
+| Delete it                            | `volcano cloud databases branches delete main_db feature_checkout`                       |
 
 `--ttl` takes a duration between `1h` and `720h`, and defaults to `168h`.
 `create` returns while the branch is still `provisioning`; run `get` until it
@@ -111,11 +111,11 @@ A branch has its own connection string, its own username, and its own password.
 Everything you know about connecting to a Volcano database applies unchanged,
 including how `application_name` selects the access mode:
 
-| `application_name` | Access |
-|---|---|
-| `volcano_full_access` | Full admin access — DDL, migrations |
-| `volcano_user_access:{user_id}` | Acts as that end user; RLS enforced |
-| `volcano_user_access` | Anonymous (`anon` role); RLS enforced |
+| `application_name`              | Access                                |
+| ------------------------------- | ------------------------------------- |
+| `volcano_full_access`           | Full admin access — DDL, migrations   |
+| `volcano_user_access:{user_id}` | Acts as that end user; RLS enforced   |
+| `volcano_user_access`           | Anonymous (`anon` role); RLS enforced |
 
 ```bash
 psql "$BRANCH_CONNECTION_STRING"
@@ -303,9 +303,9 @@ as requests against the parent, and appear in the parent's query logs.
 
 ## Limits
 
-| | HOBBY | SUPERAGENT |
-|---|---|---|
-| Branches per database | 10 | 25 |
+|                       | HOBBY | SUPERAGENT |
+| --------------------- | ----- | ---------- |
+| Branches per database | 10    | 25         |
 
 The allowance is per database, not per project, and counts branches in every
 state — a branch that is still provisioning holds a slot. Creating a branch over

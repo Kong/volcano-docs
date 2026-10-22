@@ -1,6 +1,6 @@
 ---
-title: "Variable Environments"
-description: "Create and manage Project-owned variable Environment identities."
+title: 'Variable Environments'
+description: 'Create and manage Project-owned variable Environment identities.'
 ---
 
 Create stable Environment identities for a Project. Every Project starts with a

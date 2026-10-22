@@ -1,6 +1,6 @@
 ---
-title: "Projects"
-description: "A project holds functions, durable functions, databases, auth, storage, realtime, frontends, locks, and API keys."
+title: 'Projects'
+description: 'A project holds functions, durable functions, databases, auth, storage, realtime, frontends, locks, and API keys.'
 ---
 
 A project is a container for your application's resources. Each project has its own functions, durable functions, databases, authentication, file storage, realtime, frontend hosting, distributed locks, and API keys.
@@ -53,7 +53,7 @@ This isolation makes projects suitable for:
 
 Volcano enforces hard caps on resource creation:
 
-- Each user can create up to 1,000 projects.
+- Projects have no plan limit; usage allowances apply across all of your projects. SUPERAGENT subscriptions that started before project limits were removed keep a 1,000-project cap.
 - Each project can contain up to 10,000 functions.
 - Each project can contain up to 10,000 frontends.
 - Each project can contain up to 10,000 databases on SUPERAGENT (1 on HOBBY).
@@ -167,10 +167,10 @@ When you delete a project, Volcano:
 
 ## What's next
 
-| Guide | Description |
-|-------|-------------|
-| [Creating projects](creating-projects.md) | Detailed project creation guide |
-| [Export your source to GitHub](export-to-git.md) | Initialize an empty repository with a project's stored source and deploy it from Git |
-| [Functions overview](../functions/overview.md) | Deploy functions |
-| [Databases overview](../databases/overview.md) | Provision PostgreSQL databases |
-| [Authentication overview](../authentication/overview.md) | Add user authentication |
+| Guide                                                    | Description                                                                          |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| [Creating projects](creating-projects.md)                | Detailed project creation guide                                                      |
+| [Export your source to GitHub](export-to-git.md)         | Initialize an empty repository with a project's stored source and deploy it from Git |
+| [Functions overview](../functions/overview.md)           | Deploy functions                                                                     |
+| [Databases overview](../databases/overview.md)           | Provision PostgreSQL databases                                                       |
+| [Authentication overview](../authentication/overview.md) | Add user authentication                                                              |

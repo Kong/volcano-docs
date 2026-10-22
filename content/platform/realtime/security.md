@@ -1,6 +1,6 @@
 ---
-title: "Realtime Security"
-description: "The Volcano Realtime security model: authentication flow, channel authorization, and best practices for securing realtime features."
+title: 'Realtime Security'
+description: 'The Volcano Realtime security model: authentication flow, channel authorization, and best practices for securing realtime features.'
 ---
 
 Volcano Realtime is designed with security-first principles. This document covers the security model, authentication flow, and best practices for securing your realtime features.
@@ -16,12 +16,13 @@ For frontend applications with authenticated users.
 ```javascript
 const realtime = new VolcanoRealtime({
   apiUrl: 'https://api.yourapp.com',
-  anonKey: 'your-anon-key',    // Required: identifies project
-  accessToken: userToken        // Required: authenticates user
+  anonKey: 'your-anon-key', // Required: identifies project
+  accessToken: userToken, // Required: authenticates user
 });
 ```
 
 **Requirements:**
+
 - Anon key: Contains project ID (safe to expose client-side)
 - Access token: User's JWT from Volcano Auth (contains user ID, project ID)
 - Session must be valid (not expired, not revoked)
@@ -35,38 +36,40 @@ For backend services and server-to-server communication.
 // Service key only - project ID inferred from key
 const realtime = new VolcanoRealtime({
   apiUrl: 'https://api.yourapp.com',
-  anonKey: '',                   // Not required
-  accessToken: 'sk-your-key'     // Service role key
+  anonKey: '', // Not required
+  accessToken: 'sk-your-key', // Service role key
 });
 
 // With anon key for extra validation
 const realtime = new VolcanoRealtime({
   apiUrl: 'https://api.yourapp.com',
-  anonKey: 'your-anon-key',      // Optional: must match service key project
-  accessToken: 'sk-your-key'
+  anonKey: 'your-anon-key', // Optional: must match service key project
+  accessToken: 'sk-your-key',
 });
 ```
 
 **Requirements:**
+
 - Service key must exist in database (not deleted)
 - If anon key is provided, project IDs must match
 - Service key JWT project must match database record
 
 **Security notes:**
+
 - Service keys bypass RLS for Postgres changes
 - Use only in trusted backend environments
 - Never expose in client-side code
 
 ### Authentication Comparison
 
-| Credential | User Token Mode | Service Key Mode |
-|------------|-----------------|------------------|
-| Anon Key | Required | Optional |
-| Access Token | User JWT | Service Key |
-| RLS Enforcement | Yes | Bypassed |
-| Use Case | Frontend apps | Backend services |
-| Session Check | Yes | No |
-| Ban Check | Yes | No |
+| Credential      | User Token Mode | Service Key Mode |
+| --------------- | --------------- | ---------------- |
+| Anon Key        | Required        | Optional         |
+| Access Token    | User JWT        | Service Key      |
+| RLS Enforcement | Yes             | Bypassed         |
+| Use Case        | Frontend apps   | Backend services |
+| Session Check   | Yes             | No               |
+| Ban Check       | Yes             | No               |
 
 ## Automatic project isolation
 
@@ -77,7 +80,7 @@ const realtime = new VolcanoRealtime({
 const realtime = new VolcanoRealtime({
   apiUrl: 'https://api.yourapp.com',
   anonKey: anonKey,
-  accessToken: accessToken
+  accessToken: accessToken,
 });
 
 // Channel names are simple - no project prefix needed
@@ -87,6 +90,7 @@ const db = realtime.channel('public:messages', { type: 'postgres' });
 ```
 
 The server:
+
 1. Extracts project ID from the anon key JWT
 2. Automatically prefixes all channels with the project ID
 3. Enforces that users can only access their project's channels
@@ -100,6 +104,7 @@ Cross-project access is **impossible** by design:
 3. Client cannot override or specify a different project
 
 If a malicious client attempts any manipulation:
+
 - Invalid anon key → connection rejected
 - Forged project in channel name → server ignores it, uses anon key project
 
@@ -137,6 +142,7 @@ const channel = realtime.channel('public:messages', { type: 'postgres' });
 ```
 
 The server:
+
 1. Receives a database change notification
 2. For each subscriber, executes an RLS check
 3. Only forwards the event if the user can SELECT that row
@@ -174,14 +180,15 @@ When a user's session is revoked:
 
 Realtime enforces rate limits to prevent abuse:
 
-| Action | Limit |
-|--------|-------|
-| Concurrent connections | 200 (HOBBY), 100,000 (SUPERAGENT) |
-| Channels per connection | 100 (HOBBY), 500 (SUPERAGENT) |
-| Publishes per second | 10 per connection |
-| Message size | 256 KB (HOBBY), 1 MB (SUPERAGENT) |
+| Action                  | Limit                             |
+| ----------------------- | --------------------------------- |
+| Concurrent connections  | 200 (HOBBY), 100,000 (SUPERAGENT) |
+| Channels per connection | 100 (HOBBY), 500 (SUPERAGENT)     |
+| Publishes per second    | 10 per connection                 |
+| Message size            | 256 KB (HOBBY), 1 MB (SUPERAGENT) |
 
 When a rate limit is exceeded:
+
 1. The action is rejected
 2. An event is logged to server logs
 3. Client receives an error response
@@ -190,12 +197,12 @@ When a rate limit is exceeded:
 
 Limits vary by plan:
 
-| Limit | HOBBY | SUPERAGENT |
-|-------|------|-----|
-| Concurrent connections | 200 | 100,000 |
-| Messages per month | 100,000 | Unlimited |
-| Max message size | 256 KB | 1 MB |
-| Channels per connection | 100 | 500 |
+| Limit                   | HOBBY   | SUPERAGENT |
+| ----------------------- | ------- | ---------- |
+| Concurrent connections  | 200     | 100,000    |
+| Messages per month      | 100,000 | Unlimited  |
+| Max message size        | 256 KB  | 1 MB       |
+| Channels per connection | 100     | 500        |
 
 See [Plans and limits](../guides/plans-and-limits.md) for limits across all resources.
 
@@ -204,6 +211,7 @@ See [Plans and limits](../guides/plans-and-limits.md) for limits across all reso
 All security events are logged to server logs for monitoring:
 
 **Events logged**:
+
 - ✅ `auth_success` - Successful authentication
 - ❌ `auth_failure` - Failed authentication attempt
 - 🚨 `cross_project_attempt` - Cross-project access blocked
@@ -242,14 +250,14 @@ All client inputs are validated before processing:
 ```javascript
 // ❌ DON'T: Hardcode tokens
 const realtime = new VolcanoRealtime({
-  accessToken: 'eyJhbGci...'
+  accessToken: 'eyJhbGci...',
 });
 
 // ✅ DO: Get token from auth flow
 const { accessToken } = await volcano.auth.getSession();
 const realtime = new VolcanoRealtime({
   anonKey,
-  accessToken
+  accessToken,
 });
 ```
 
@@ -264,7 +272,7 @@ const realtime = new VolcanoRealtime({
     // Called when token needs refresh
     const session = await volcano.auth.refreshSession();
     return session.accessToken;
-  }
+  },
 });
 ```
 
@@ -280,7 +288,7 @@ ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "room_messages" ON messages
   FOR SELECT USING (
     room_id IN (
-      SELECT room_id FROM room_members 
+      SELECT room_id FROM room_members
       WHERE user_id = auth.uid()
     )
   );
@@ -317,10 +325,10 @@ if (sanitizedText.length > 0 && sanitizedText.length < 10000) {
 
 Configure security settings in **Realtime > Settings**:
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| Max channels per connection | Limit channel subscriptions | 100 (HOBBY) / 200 (SUPERAGENT) |
-| Max message size | Maximum broadcast payload | 32 KB (HOBBY) / 256 KB (SUPERAGENT) |
+| Setting                     | Description                 | Default                             |
+| --------------------------- | --------------------------- | ----------------------------------- |
+| Max channels per connection | Limit channel subscriptions | 100 (HOBBY) / 200 (SUPERAGENT)      |
+| Max message size            | Maximum broadcast payload   | 32 KB (HOBBY) / 256 KB (SUPERAGENT) |
 
 ## Incident response
 

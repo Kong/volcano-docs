@@ -1,6 +1,6 @@
 ---
-title: "Managed Hosted Auth Pages"
-description: "Managed hosted auth pages let you serve customizable authentication pages directly from Volcano for each project."
+title: 'Managed Hosted Auth Pages'
+description: 'Managed hosted auth pages let you serve customizable authentication pages directly from Volcano for each project.'
 ---
 
 Managed hosted auth pages let you serve customizable authentication pages directly from Volcano for each project.
@@ -130,11 +130,11 @@ auth:
       theme:
         version: 1
         colors:
-          background: "#f7f5f2"
-          surface: "#ffffff"
-          text: "#1a1a1a"
-          accent: "#1d4ed8"
-          accent_text: "#ffffff"
+          background: '#f7f5f2'
+          surface: '#ffffff'
+          text: '#1a1a1a'
+          accent: '#1d4ed8'
+          accent_text: '#ffffff'
         font: humanist
         scale: large
         density: spacious

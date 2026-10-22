@@ -1,6 +1,6 @@
 ---
-title: "Anonymous users"
-description: "Anonymous users allow guest access to your application without requiring registration."
+title: 'Anonymous users'
+description: 'Anonymous users allow guest access to your application without requiring registration.'
 ---
 
 Anonymous users allow guest access to your application without requiring registration.
@@ -9,12 +9,12 @@ Anonymous users allow guest access to your application without requiring registr
 
 Anonymous authentication creates temporary users that can be converted to permanent accounts later. The user receives a unique ID and tokens, allowing them to use your application immediately.
 
-| Use case | Description |
-|----------|-------------|
-| Try before signup | Let users explore your app before committing to an account |
-| Guest checkout | Allow purchases without mandatory registration |
-| Temporary access | Provide limited-time access to features |
-| Gradual onboarding | Capture user data incrementally |
+| Use case           | Description                                                |
+| ------------------ | ---------------------------------------------------------- |
+| Try before signup  | Let users explore your app before committing to an account |
+| Guest checkout     | Allow purchases without mandatory registration             |
+| Temporary access   | Provide limited-time access to features                    |
+| Gradual onboarding | Capture user data incrementally                            |
 
 ## Enable anonymous signins
 
@@ -46,7 +46,7 @@ Response:
   "user": {
     "id": "uuid",
     "email": "anon-xyz@anonymous.volcano.internal",
-    "user_metadata": {"anonymous": true},
+    "user_metadata": { "anonymous": true },
     "status": "active"
   }
 }
@@ -54,12 +54,12 @@ Response:
 
 The anonymous user receives:
 
-| Field | Description |
-|-------|-------------|
-| `id` | Unique user ID for tracking data across sessions |
-| `access_token` | JWT for calling functions and APIs |
-| `refresh_token` | Token for refreshing the session |
-| `email` | Internal email address (not shown to users) |
+| Field           | Description                                      |
+| --------------- | ------------------------------------------------ |
+| `id`            | Unique user ID for tracking data across sessions |
+| `access_token`  | JWT for calling functions and APIs               |
+| `refresh_token` | Token for refreshing the session                 |
+| `email`         | Internal email address (not shown to users)      |
 
 ## Using anonymous users
 
@@ -67,7 +67,7 @@ The anonymous user receives:
 
 ```javascript
 const volcano = new VolcanoAuth({
-  anonKey: 'your-anon-key'
+  anonKey: 'your-anon-key',
 });
 
 // Create anonymous user
@@ -94,10 +94,7 @@ exports.handler = async (event) => {
   }
 
   // Both anonymous and authenticated users have user_id
-  await client.query(
-    'INSERT INTO carts (user_id, items) VALUES ($1, $2)',
-    [user_id, items]
-  );
+  await client.query('INSERT INTO carts (user_id, items) VALUES ($1, $2)', [user_id, items]);
 };
 ```
 
@@ -149,7 +146,7 @@ The conversion process:
 ```javascript
 await volcano.auth.convertAnonymous({
   email: 'user@example.com',
-  password: 'Password123'
+  password: 'Password123',
 });
 
 // Same user ID, now with permanent credentials
@@ -189,31 +186,31 @@ SELECT encrypted_password FROM auth_users WHERE id = $1;
 
 ### User context comparison
 
-| Field | Anonymous | Authenticated |
-|-------|-----------|---------------|
-| `user_id` | UUID | UUID |
-| `email` | `anon-xyz@anonymous.volcano.internal` | `user@example.com` |
-| `project_id` | UUID | UUID |
-| `role` | `anonymous` | `authenticated` |
+| Field        | Anonymous                             | Authenticated      |
+| ------------ | ------------------------------------- | ------------------ |
+| `user_id`    | UUID                                  | UUID               |
+| `email`      | `anon-xyz@anonymous.volcano.internal` | `user@example.com` |
+| `project_id` | UUID                                  | UUID               |
+| `role`       | `anonymous`                           | `authenticated`    |
 
 ## Security
 
 Anonymous users are fully isolated:
 
-| Protection | Description |
-|------------|-------------|
-| Unique ID | Each anonymous user receives a unique identifier |
-| RLS enforcement | Row-level security policies apply based on `user_id` |
-| Project isolation | Anonymous users cannot access other projects |
-| Data isolation | Anonymous users cannot access other users' data |
+| Protection        | Description                                          |
+| ----------------- | ---------------------------------------------------- |
+| Unique ID         | Each anonymous user receives a unique identifier     |
+| RLS enforcement   | Row-level security policies apply based on `user_id` |
+| Project isolation | Anonymous users cannot access other projects         |
+| Data isolation    | Anonymous users cannot access other users' data      |
 
 Conversion safeguards:
 
-| Rule | Description |
-|------|-------------|
-| Email uniqueness | Cannot convert to an email that already exists |
-| Password requirements | New password must meet configured requirements |
-| Authentication required | Must have a valid access token to convert |
+| Rule                    | Description                                    |
+| ----------------------- | ---------------------------------------------- |
+| Email uniqueness        | Cannot convert to an email that already exists |
+| Password requirements   | New password must meet configured requirements |
+| Authentication required | Must have a valid access token to convert      |
 
 ## Configuration
 
@@ -229,19 +226,15 @@ curl -X PUT "https://api.volcano.dev/projects/$PROJECT_ID/auth/config" \
 
 Anonymous users are stored in the `auth_users` table with specific characteristics:
 
-| Field | Anonymous | After conversion |
-|-------|-----------|------------------|
-| `email` | Internal format | Real email |
-| `encrypted_password` | NULL | Hashed password |
-| `user_metadata` | Contains `"anonymous": true` | Updated |
+| Field                | Anonymous                    | After conversion |
+| -------------------- | ---------------------------- | ---------------- |
+| `email`              | Internal format              | Real email       |
+| `encrypted_password` | NULL                         | Hashed password  |
+| `user_metadata`      | Contains `"anonymous": true` | Updated          |
 
 ## What's next
 
-| Guide | Description |
-|-------|-------------|
+| Guide                                                       | Description                                |
+| ----------------------------------------------------------- | ------------------------------------------ |
 | [Provider separation](configuration/provider-separation.md) | Configure which auth methods are available |
-| [Session management](configuration/session-management.md) | Manage user sessions |
-
-
-
-
+| [Session management](configuration/session-management.md)   | Manage user sessions                       |

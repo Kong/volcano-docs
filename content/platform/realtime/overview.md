@@ -1,21 +1,21 @@
 ---
-title: "Realtime"
-description: "Volcano Realtime provides WebSocket-based real-time communication for your applications."
+title: 'Realtime'
+description: 'Volcano Realtime provides WebSocket-based real-time communication for your applications.'
 ---
 
 Volcano Realtime provides WebSocket-based real-time communication for your applications. Enable live updates, collaborative features, and instant notifications with minimal setup.
 
 ## Features
 
-| Feature | Description |
-|---------|-------------|
-| Broadcast | Pub/sub messaging between connected clients |
-| Presence | Track online users and share state in real-time |
-| Postgres Changes | Subscribe to database INSERT/UPDATE/DELETE events |
-| Durable messages | Receive what a running durable function publishes |
-| Per-project | Each project has isolated realtime channels |
-| SDK support | JavaScript/TypeScript SDK with automatic reconnection |
-| Security | JWT-based authentication with automatic project isolation |
+| Feature          | Description                                               |
+| ---------------- | --------------------------------------------------------- |
+| Broadcast        | Pub/sub messaging between connected clients               |
+| Presence         | Track online users and share state in real-time           |
+| Postgres Changes | Subscribe to database INSERT/UPDATE/DELETE events         |
+| Durable messages | Receive what a running durable function publishes         |
+| Per-project      | Each project has isolated realtime channels               |
+| SDK support      | JavaScript/TypeScript SDK with automatic reconnection     |
+| Security         | JWT-based authentication with automatic project isolation |
 
 ## Quick example
 
@@ -26,8 +26,8 @@ import { VolcanoRealtime } from '@volcano.dev/sdk/realtime';
 
 const realtime = new VolcanoRealtime({
   apiUrl: 'https://api.yourapp.com',
-  anonKey: 'your-anon-key',        // Contains your project ID
-  accessToken: 'user-access-token'
+  anonKey: 'your-anon-key', // Contains your project ID
+  accessToken: 'user-access-token',
 });
 
 // Connect
@@ -52,14 +52,14 @@ await channel.send({ event: 'message', text: 'Hello, world!' });
 ```javascript
 // 1. Sign up with metadata (display_name appears in presence)
 const { session } = await volcano.auth.signUpAnonymous({
-  display_name: 'Alice'
+  display_name: 'Alice',
 });
 
 // 2. Connect with the session
 const realtime = new VolcanoRealtime({
   apiUrl,
   anonKey,
-  accessToken: session.access_token
+  accessToken: session.access_token,
 });
 await realtime.connect();
 
@@ -68,9 +68,7 @@ const presenceChannel = realtime.channel('lobby', { type: 'presence' });
 
 presenceChannel.on('presence_sync', () => {
   const state = presenceChannel.getPresenceState();
-  const users = Object.values(state).map(info => 
-    info.connInfo?.user_metadata?.display_name || 'Anonymous'
-  );
+  const users = Object.values(state).map((info) => info.connInfo?.user_metadata?.display_name || 'Anonymous');
   console.log('Online users:', users);
 });
 
@@ -171,12 +169,12 @@ curl -X PUT "$VOLCANO_API_URL/projects/$PROJECT_ID/realtime/config" \
 ```javascript
 const realtime = new VolcanoRealtime({
   apiUrl: 'https://api.yourapp.com',
-  anonKey: 'your-anon-key',         // Contains project_id in JWT claims
-  accessToken: 'user-access-token'
+  anonKey: 'your-anon-key', // Contains project_id in JWT claims
+  accessToken: 'user-access-token',
 });
 
 // These channel names are scoped to your project automatically
-const chat = realtime.channel('chat-room');      // Only accessible within your project
+const chat = realtime.channel('chat-room'); // Only accessible within your project
 const presence = realtime.channel('lobby', { type: 'presence' });
 ```
 
@@ -193,11 +191,12 @@ For frontend applications with authenticated users:
 ```javascript
 const realtime = new VolcanoRealtime({
   apiUrl: 'https://api.yourapp.com',
-  anonKey: 'your-anon-key',       // Required: identifies the project
-  accessToken: 'user-token',      // Required: authenticates the user
-  getToken: async () => {         // Optional: auto-refresh token
+  anonKey: 'your-anon-key', // Required: identifies the project
+  accessToken: 'user-token', // Required: authenticates the user
+  // Optional: auto-refresh token
+  getToken: async () => {
     return await refreshAccessToken();
-  }
+  },
 });
 ```
 
@@ -209,15 +208,15 @@ For backend services, you can use a service role key. The service key contains t
 // Backend - service key only (simplest)
 const realtime = new VolcanoRealtime({
   apiUrl: 'https://api.yourapp.com',
-  anonKey: '',                    // Not required with service key
-  accessToken: 'sk-your-service-key'
+  anonKey: '', // Not required with service key
+  accessToken: 'sk-your-service-key',
 });
 
 // Backend - service key with anon key (extra validation)
 const realtime = new VolcanoRealtime({
   apiUrl: 'https://api.yourapp.com',
-  anonKey: 'your-anon-key',       // Optional: additional validation
-  accessToken: 'sk-your-service-key'
+  anonKey: 'your-anon-key', // Optional: additional validation
+  accessToken: 'sk-your-service-key',
 });
 ```
 
@@ -225,11 +224,11 @@ const realtime = new VolcanoRealtime({
 
 ### Authentication Summary
 
-| Scenario | Anon Key | Access Token | Use Case |
-|----------|----------|--------------|----------|
-| Frontend with user | Required | User JWT | End-user applications |
-| Backend service | Optional | Service Key | Server-to-server, bots |
-| Backend with extra validation | Required | Service Key | Stricter security |
+| Scenario                      | Anon Key | Access Token | Use Case               |
+| ----------------------------- | -------- | ------------ | ---------------------- |
+| Frontend with user            | Required | User JWT     | End-user applications  |
+| Backend service               | Optional | Service Key  | Server-to-server, bots |
+| Backend with extra validation | Required | Service Key  | Stricter security      |
 
 ## Next steps
 

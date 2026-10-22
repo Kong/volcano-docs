@@ -1,6 +1,6 @@
 ---
-title: "Anon keys"
-description: "Anon keys are public API keys that are safe to use in frontend code. They allow users to sign up, sign in, and perform authentication operations."
+title: 'Anon keys'
+description: 'Anon keys are public API keys that are safe to use in frontend code. They allow users to sign up, sign in, and perform authentication operations.'
 ---
 
 Anon keys are public API keys that are safe to use in frontend code. They allow users to sign up, sign in, and perform authentication operations.
@@ -34,19 +34,19 @@ import { VolcanoAuth } from '@volcano.dev/sdk';
 // Safe to use in frontend code
 const volcano = new VolcanoAuth({
   apiUrl: 'https://api.yourproject.volcano.dev',
-  anonKey: 'your-anon-key'
+  anonKey: 'your-anon-key',
 });
 
 // Users can sign up
 await volcano.auth.signUp({
   email: 'user@example.com',
-  password: 'securepassword'
+  password: 'securepassword',
 });
 
 // Users can sign in
 await volcano.auth.signIn({
   email: 'user@example.com',
-  password: 'securepassword'
+  password: 'securepassword',
 });
 ```
 
@@ -100,23 +100,23 @@ Each anon key has a set of permissions that control what operations it allows. B
 
 ### Available permissions
 
-| Category | Permission | Description |
-|----------|------------|-------------|
-| **Auth** | `auth.signup` | Allow users to create new accounts |
-| **Auth** | `auth.signin` | Allow users to sign in to existing accounts |
-| **Auth** | `auth.refresh` | Allow refreshing expired access tokens |
-| **Auth** | `auth.logout` | Allow users to sign out and invalidate sessions |
-| **Auth** | `auth.password_reset` | Allow password reset flow (forgot/reset password) |
-| **Auth** | `auth.confirm_email` | Allow email confirmation via token |
-| **Auth** | `auth.resend_confirmation` | Allow resending email confirmation |
-| **Storage** | `storage.upload` | Allow uploading files to storage buckets |
-| **Storage** | `storage.download` | Allow downloading files from storage buckets |
-| **Storage** | `storage.list` | Allow listing files in storage buckets |
-| **Storage** | `storage.delete` | Allow deleting files from storage buckets |
-| **Realtime** | `realtime.connect` | Allow connecting to realtime WebSocket |
-| **Realtime** | `realtime.subscribe` | Allow subscribing to realtime channels |
-| **Realtime** | `realtime.publish` | Allow publishing messages to broadcast channels |
-| **Functions** | `functions.invoke` | Allow invoking functions whose `visibility` is `public` |
+| Category      | Permission                 | Description                                             |
+| ------------- | -------------------------- | ------------------------------------------------------- |
+| **Auth**      | `auth.signup`              | Allow users to create new accounts                      |
+| **Auth**      | `auth.signin`              | Allow users to sign in to existing accounts             |
+| **Auth**      | `auth.refresh`             | Allow refreshing expired access tokens                  |
+| **Auth**      | `auth.logout`              | Allow users to sign out and invalidate sessions         |
+| **Auth**      | `auth.password_reset`      | Allow password reset flow (forgot/reset password)       |
+| **Auth**      | `auth.confirm_email`       | Allow email confirmation via token                      |
+| **Auth**      | `auth.resend_confirmation` | Allow resending email confirmation                      |
+| **Storage**   | `storage.upload`           | Allow uploading files to storage buckets                |
+| **Storage**   | `storage.download`         | Allow downloading files from storage buckets            |
+| **Storage**   | `storage.list`             | Allow listing files in storage buckets                  |
+| **Storage**   | `storage.delete`           | Allow deleting files from storage buckets               |
+| **Realtime**  | `realtime.connect`         | Allow connecting to realtime WebSocket                  |
+| **Realtime**  | `realtime.subscribe`       | Allow subscribing to realtime channels                  |
+| **Realtime**  | `realtime.publish`         | Allow publishing messages to broadcast channels         |
+| **Functions** | `functions.invoke`         | Allow invoking functions whose `visibility` is `public` |
 
 ### Default permissions
 
@@ -180,19 +180,20 @@ If an anon key doesn't have the required permission, the request is rejected wit
 
 ## Anon key vs service key
 
-| Aspect | Anon key | Service key |
-|--------|----------|-------------|
-| Safe in frontend | Yes | Never |
-| RLS enforced | Yes | No (bypassed) |
-| Data access | User's own data | All data |
-| Use for | User authentication | Admin operations |
-| Risk if exposed | Low | Critical |
+| Aspect           | Anon key            | Service key      |
+| ---------------- | ------------------- | ---------------- |
+| Safe in frontend | Yes                 | Never            |
+| RLS enforced     | Yes                 | No (bypassed)    |
+| Data access      | User's own data     | All data         |
+| Use for          | User authentication | Admin operations |
+| Risk if exposed  | Low                 | Critical         |
 
 Use anon keys for frontend authentication. Use service keys only in secure backend environments.
 
 ## What anon keys can do
 
 With default permissions:
+
 - Sign up new users (`auth.signup`)
 - Sign in existing users (`auth.signin`)
 - Refresh access tokens (`auth.refresh`)
@@ -202,6 +203,7 @@ With default permissions:
 - Resend confirmation emails (`auth.resend_confirmation`)
 
 With additional permissions configured:
+
 - Upload, download, list, and delete files (storage permissions)
 - Connect to WebSocket and subscribe/publish to channels (realtime permissions)
 - Invoke functions (`functions.invoke`)
@@ -210,6 +212,7 @@ With additional permissions configured:
 ## What anon keys cannot do
 
 Regardless of permissions:
+
 - Access other users' data (RLS enforced)
 - Bypass row-level security
 - Manage users (ban, delete)
@@ -264,8 +267,8 @@ This generates a new key and immediately invalidates the old one. Update your fr
 
 ## What's next
 
-| Guide | Description |
-|-------|-------------|
-| [Service keys](service-keys.md) | Admin keys for backend use |
-| [Token types](token-types.md) | Understanding all token types |
-| [Authentication quickstart](../quickstart.md) | Get started with auth |
+| Guide                                         | Description                   |
+| --------------------------------------------- | ----------------------------- |
+| [Service keys](service-keys.md)               | Admin keys for backend use    |
+| [Token types](token-types.md)                 | Understanding all token types |
+| [Authentication quickstart](../quickstart.md) | Get started with auth         |

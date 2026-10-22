@@ -1,6 +1,6 @@
 ---
-title: "Project Locks API Reference"
-description: "REST API endpoints for acquiring, renewing, inspecting, and releasing project lock leases."
+title: 'Project Locks API Reference'
+description: 'REST API endpoints for acquiring, renewing, inspecting, and releasing project lock leases.'
 ---
 
 Project locks are short-lived leases for coordinating backend workers. They are
@@ -27,7 +27,7 @@ The token must be a random UUID generated once by the caller and retained for
 the lease lifetime. A successful request returns:
 
 ```json
-{"expires_at":"2026-07-20T14:00:10Z","fencing_token":4503599627370497}
+{ "expires_at": "2026-07-20T14:00:10Z", "fencing_token": 4503599627370497 }
 ```
 
 Repeating acquire with the same token is safe and resets that lease to the
@@ -36,9 +36,9 @@ a shorter TTL shortens the lease.
 
 A `409` distinguishes the two ways an acquire can fail:
 
-| Code | Meaning |
-| --- | --- |
-| `lock_held` | Another live lease owns the lock. |
+| Code                  | Meaning                                                                                            |
+| --------------------- | -------------------------------------------------------------------------------------------------- |
+| `lock_held`           | Another live lease owns the lock.                                                                  |
 | `lock_ownership_lost` | Your own lease already lapsed and is not yet reclaimable. Stop protected work, then acquire again. |
 
 ## Renew
@@ -86,7 +86,7 @@ No lock token is needed, so monitoring and recovery tooling can call this
 without owning the lease:
 
 ```json
-{"held":true,"expires_at":"2026-07-20T14:00:10Z","fencing_token":4503599627370497}
+{ "held": true, "expires_at": "2026-07-20T14:00:10Z", "fencing_token": 4503599627370497 }
 ```
 
 A free lock returns `{"held":false}` with no other fields. `held` follows
@@ -135,10 +135,10 @@ the TTL, as `withLock` does, costs `180 / ttl_seconds` requests per minute per
 holder:
 
 | TTL | Renewals per holder per minute | Approximate concurrent holders |
-| --- | --- | --- |
-| 10s | 18 | 33 |
-| 30s | 6 | 100 |
-| 60s | 3 | 200 |
+| --- | ------------------------------ | ------------------------------ |
+| 10s | 18                             | 33                             |
+| 30s | 6                              | 100                            |
+| 60s | 3                              | 200                            |
 
 Contended acquires also consume quota, so leave headroom below these numbers.
 Longer TTLs buy more concurrency at the cost of a longer wait before a crashed

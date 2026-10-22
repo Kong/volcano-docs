@@ -1,6 +1,6 @@
 ---
-title: "OAuth / SSO Provider Integration"
-description: "Volcano supports third-party OAuth providers (Google, GitHub, Microsoft, Apple) for user authentication."
+title: 'OAuth / SSO Provider Integration'
+description: 'Volcano supports third-party OAuth providers (Google, GitHub, Microsoft, Apple) for user authentication.'
 ---
 
 Volcano supports third-party OAuth providers (Google, GitHub, Microsoft, Apple) for user authentication. This allows your users to sign up and sign in using their existing accounts.
@@ -8,7 +8,7 @@ Volcano supports third-party OAuth providers (Google, GitHub, Microsoft, Apple) 
 ## Supported Providers
 
 - **Google** - Sign in with Google
-- **GitHub** - Sign in with GitHub  
+- **GitHub** - Sign in with GitHub
 - **Microsoft** - Sign in with Microsoft (Azure AD / Microsoft Account)
 - **Apple** - Sign in with Apple
 
@@ -100,9 +100,7 @@ function signInWithGoogle() {
   const callbackUrl = 'https://yourapp.com/auth/callback';
   const nonce = crypto.randomUUID();
   sessionStorage.setItem('oauth_state', nonce);
-  const authorizeUrl = new URL(
-    'https://api.volcano.dev/auth/oauth/google/authorize'
-  );
+  const authorizeUrl = new URL('https://api.volcano.dev/auth/oauth/google/authorize');
   authorizeUrl.searchParams.set('anon_key', anonKey);
   authorizeUrl.searchParams.set('redirect_url', callbackUrl);
   authorizeUrl.searchParams.set('client_state', nonce);
@@ -424,10 +422,12 @@ OAuth flow uses `state` parameter for CSRF protection. This is handled automatic
 Redirect URLs are validated to prevent **open redirect attacks**. Invalid patterns:
 
 Invalid patterns are blocked:
+
 - `http://evil.com@yourapp.com/callback` (contains @)
 - `javascript:alert(1)` (invalid protocol)
 
 Valid patterns are allowed:
+
 - `https://yourapp.com/auth/callback`
 
 ### Client Secret Storage
@@ -541,7 +541,8 @@ Users cannot unlink their last authentication method:
 
 **Cause:** User trying to sign up with OAuth when email already registered
 
-**Solution:** 
+**Solution:**
+
 1. User signs in with password
 2. User links OAuth provider
 3. User can now use either method
@@ -555,6 +556,7 @@ Users cannot unlink their last authentication method:
 ### "invalid state parameter"
 
 **Causes:**
+
 - State expired (10 minute timeout)
 - State was already used (one-time use)
 - CSRF attack attempt

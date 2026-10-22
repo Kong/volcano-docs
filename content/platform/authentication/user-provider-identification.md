@@ -1,6 +1,6 @@
 ---
-title: "User Provider Identification"
-description: "How to identify which authentication method(s) each user is using in your Volcano project."
+title: 'User Provider Identification'
+description: 'How to identify which authentication method(s) each user is using in your Volcano project.'
 ---
 
 How to identify which authentication method(s) each user is using in your Volcano project.
@@ -51,6 +51,7 @@ auth_providers:
 ### Method 1: Email/Password User
 
 Markers:
+
 - `encrypted_password` IS NOT NULL and not empty
 - No entries in `auth_providers`
 
@@ -82,6 +83,7 @@ if user.EncryptedPassword != "" && len(providers) == 0 {
 ### Method 2: OAuth-Only User
 
 Markers:
+
 - `encrypted_password` IS NULL or empty
 - Has entries in `auth_providers`
 - `raw_user_meta_data` often contains `"provider": "google"` etc.
@@ -116,6 +118,7 @@ if user.EncryptedPassword == "" && len(providers) > 0 {
 ### Method 3: Hybrid User (Password + OAuth)
 
 Markers:
+
 - `encrypted_password` IS NOT NULL
 - Has entries in `auth_providers`
 
@@ -123,7 +126,7 @@ Markers:
 
 ```sql
 -- Find all hybrid users
-SELECT u.id, u.email, 
+SELECT u.id, u.email,
        COUNT(ap.id) as provider_count,
        STRING_AGG(ap.provider, ', ') as providers
 FROM auth_users u
@@ -154,6 +157,7 @@ if user.EncryptedPassword != "" && len(providers) > 0 {
 ### Method 4: Anonymous User
 
 Markers:
+
 - `encrypted_password` IS NULL or empty
 - No entries in `auth_providers`
 - `email` contains `@anonymous.volcano.internal`
@@ -175,8 +179,8 @@ WHERE project_id = 'your-project-id'
 user, _ := db.GetAuthUser(userID)
 providers, _ := db.ListOAuthProviders(userID)
 
-if user.EncryptedPassword == "" && 
-   len(providers) == 0 && 
+if user.EncryptedPassword == "" &&
+   len(providers) == 0 &&
    strings.Contains(user.Email, "@anonymous.volcano.internal") {
     fmt.Println("Anonymous user (guest)")
 }
@@ -211,8 +215,8 @@ func GetUserAuthMethods(db *database.DB, userID string) ([]string, error) {
     }
 
     // Check for anonymous
-    if user.EncryptedPassword == "" && 
-       len(providers) == 0 && 
+    if user.EncryptedPassword == "" &&
+       len(providers) == 0 &&
        strings.Contains(user.Email, "@anonymous.volcano.internal") {
         methods = append(methods, "anonymous")
     }
@@ -251,9 +255,9 @@ WHERE u.project_id = 'your-project-id'
 
 ```sql
 -- Count by method
-SELECT 
+SELECT
     CASE
-        WHEN encrypted_password IS NOT NULL AND encrypted_password != '' 
+        WHEN encrypted_password IS NOT NULL AND encrypted_password != ''
              AND EXISTS (SELECT 1 FROM auth_providers WHERE user_id = auth_users.id)
             THEN 'hybrid'
         WHEN encrypted_password IS NOT NULL AND encrypted_password != ''
@@ -407,12 +411,12 @@ type AuthProfile struct {
 
 ## Identification Matrix
 
-| User Type | encrypted_password | auth_providers | email pattern | Auth Methods |
-|-----------|-------------------|----------------|---------------|--------------|
-| Email/Password | NOT NULL | 0 records | normal email | email_password |
-| OAuth Only | NULL | 1+ records | normal email | oauth_google, oauth_github, etc. |
-| Hybrid | NOT NULL | 1+ records | normal email | email_password, oauth_google, etc. |
-| Anonymous | NULL | 0 records | *@anonymous.volcano.internal | anonymous |
+| User Type      | encrypted_password | auth_providers | email pattern                | Auth Methods                       |
+| -------------- | ------------------ | -------------- | ---------------------------- | ---------------------------------- |
+| Email/Password | NOT NULL           | 0 records      | normal email                 | email_password                     |
+| OAuth Only     | NULL               | 1+ records     | normal email                 | oauth_google, oauth_github, etc.   |
+| Hybrid         | NOT NULL           | 1+ records     | normal email                 | email_password, oauth_google, etc. |
+| Anonymous      | NULL               | 0 records      | *@anonymous.volcano.internal | anonymous                          |
 
 ---
 
@@ -466,11 +470,11 @@ async function shouldShowSetPassword(userId) {
 async function getAvailableProvidersToLink(userId) {
   const linkedProviders = await getLinkedOAuthProviders(userId);
   const allProviders = ['google', 'github', 'microsoft', 'apple'];
-  
-  const linkedNames = linkedProviders.map(p => p.provider);
-  const availableToLink = allProviders.filter(p => !linkedNames.includes(p));
-  
-  return availableToLink;  // ['microsoft', 'apple']
+
+  const linkedNames = linkedProviders.map((p) => p.provider);
+  const availableToLink = allProviders.filter((p) => !linkedNames.includes(p));
+
+  return availableToLink; // ['microsoft', 'apple']
 }
 ```
 
@@ -503,10 +507,10 @@ async function canUnlinkProvider(userId, provider) {
 ```sql
 -- Get breakdown of auth methods
 WITH user_methods AS (
-  SELECT 
+  SELECT
     u.id,
     CASE
-      WHEN u.encrypted_password IS NOT NULL AND u.encrypted_password != '' 
+      WHEN u.encrypted_password IS NOT NULL AND u.encrypted_password != ''
            AND EXISTS (SELECT 1 FROM auth_providers WHERE user_id = u.id)
         THEN 'hybrid'
       WHEN u.encrypted_password IS NOT NULL AND u.encrypted_password != ''
@@ -521,7 +525,7 @@ WITH user_methods AS (
   FROM auth_users u
   WHERE u.project_id = 'your-project-id'
 )
-SELECT primary_method, COUNT(*) as user_count, 
+SELECT primary_method, COUNT(*) as user_count,
        COUNT(DISTINCT oauth_providers) as unique_provider_combos
 FROM user_methods
 GROUP BY primary_method;
@@ -542,6 +546,7 @@ WHERE u.project_id = 'your-project-id'
 ```
 
 **Provider Data Contains:**
+
 - `email` - User's Google email
 - `verified_email` - Email verification status
 - `name` - Full name
@@ -558,6 +563,7 @@ WHERE u.project_id = 'your-project-id'
 ```
 
 **Provider Data Contains:**
+
 - `login` - GitHub username
 - `avatar_url` - Profile picture
 - `name` - Display name
@@ -573,6 +579,7 @@ WHERE u.project_id = 'your-project-id'
 ```
 
 **Provider Data Contains:**
+
 - `id` - Microsoft user ID (UUID)
 - `displayName` - Full name
 - `mail` or `userPrincipalName` - Email
@@ -588,29 +595,29 @@ WHERE u.project_id = 'your-project-id'
 async function getUserAuthMethods() {
   // Get user info
   const { user } = await volcano.auth.getUser();
-  
+
   // Get linked OAuth providers
   const providers = await volcano.auth.getLinkedOAuthProviders();
-  
+
   const methods = [];
-  
+
   // Check for password
   // Note: encrypted_password is never returned in API
   // Check metadata instead
   if (user.raw_user_meta_data?.has_password !== false) {
     methods.push('Email & Password');
   }
-  
+
   // Add OAuth providers
-  providers.forEach(p => {
+  providers.forEach((p) => {
     methods.push(`${p.provider.charAt(0).toUpperCase() + p.provider.slice(1)} OAuth`);
   });
-  
+
   // Check for anonymous
   if (user.email?.includes('@anonymous.volcano.internal')) {
     methods.push('Anonymous');
   }
-  
+
   return methods;
   // Example: ["Email & Password", "Google OAuth", "GitHub OAuth"]
 }
@@ -620,22 +627,23 @@ async function getUserAuthMethods() {
 
 ```javascript
 async function loadUserList() {
-  const users = await fetch('/auth/users').then(r => r.json());
-  
+  const users = await fetch('/auth/users').then((r) => r.json());
+
   for (const user of users.data) {
     // Get providers for each user
     const providers = await getProvidersForUser(user.id);
-    
+
     user.authMethods = [];
-    
-    if (user.has_password) {  // Assuming API returns this
+
+    // Assuming the API returns has_password
+    if (user.has_password) {
       user.authMethods.push('Email/Password');
     }
-    
-    providers.forEach(p => {
+
+    providers.forEach((p) => {
       user.authMethods.push(p.provider);
     });
-    
+
     console.log(`${user.email}: ${user.authMethods.join(', ')}`);
   }
 }
@@ -702,10 +710,10 @@ Instead, use a boolean flag:
 
 The `provider_user_id` is sensitive. It's the user's ID in the external system (Google, GitHub, etc.).
 
-| Allowed | Avoid |
-|---------|-------|
+| Allowed                       | Avoid                 |
+| ----------------------------- | --------------------- |
 | Store in database for linking | Expose in public APIs |
-| Use for user lookups | Log in plaintext |
+| Use for user lookups          | Log in plaintext      |
 
 ---
 
@@ -729,7 +737,7 @@ If `auth_providers` is NULL, user is not OAuth (or OAuth link failed).
 **This is normal!** Hybrid users have both:
 
 ```sql
-SELECT 
+SELECT
     u.email,
     (u.encrypted_password IS NOT NULL) as has_password,
     COUNT(ap.id) as oauth_provider_count
@@ -740,9 +748,10 @@ GROUP BY u.id, u.email, u.encrypted_password;
 ```
 
 Result:
+
 ```text
 email             | has_password | oauth_provider_count
-------------------|--------------|--------------------- 
+------------------|--------------|---------------------
 user@example.com  | true         | 2
 ```
 
@@ -805,31 +814,28 @@ GROUP BY u.id;
 
 ### Clear Identification Markers
 
-| User Type | Identification |
-|-----------|----------------|
-| **Email/Password** | `encrypted_password != NULL` AND no `auth_providers` |
-| **OAuth Only** | `encrypted_password = NULL` AND has `auth_providers` |
-| **Hybrid** | `encrypted_password != NULL` AND has `auth_providers` |
-| **Anonymous** | `encrypted_password = NULL` AND `email` contains `@anonymous.volcano.internal` |
+| User Type          | Identification                                                                 |
+| ------------------ | ------------------------------------------------------------------------------ |
+| **Email/Password** | `encrypted_password != NULL` AND no `auth_providers`                           |
+| **OAuth Only**     | `encrypted_password = NULL` AND has `auth_providers`                           |
+| **Hybrid**         | `encrypted_password != NULL` AND has `auth_providers`                          |
+| **Anonymous**      | `encrypted_password = NULL` AND `email` contains `@anonymous.volcano.internal` |
 
 ### Provider Information
 
 For each OAuth provider link:
+
 - `auth_providers.provider` - Provider name (google, github, etc.)
 - `auth_providers.provider_user_id` - User's ID in external system
 - `auth_providers.provider_data` - Full profile data from provider
 
 ### Available queries
 
-| Query | Supported |
-|-------|-----------|
-| Find all users by auth method | Yes |
-| Find all users by specific provider | Yes |
-| Count users by auth method | Yes |
-| Find hybrid users | Yes |
-| Find users with multiple providers | Yes |
-| Get user's full auth profile | Yes |
-
-
-
-
+| Query                               | Supported |
+| ----------------------------------- | --------- |
+| Find all users by auth method       | Yes       |
+| Find all users by specific provider | Yes       |
+| Count users by auth method          | Yes       |
+| Find hybrid users                   | Yes       |
+| Find users with multiple providers  | Yes       |
+| Get user's full auth profile        | Yes       |

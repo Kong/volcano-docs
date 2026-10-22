@@ -1,6 +1,6 @@
 ---
-title: "OAuth Provider Token Refresh"
-description: "Access OAuth provider APIs (Google, GitHub, etc.) on behalf of your users."
+title: 'OAuth Provider Token Refresh'
+description: 'Access OAuth provider APIs (Google, GitHub, etc.) on behalf of your users.'
 ---
 
 Access OAuth provider APIs (Google, GitHub, etc.) on behalf of your users.
@@ -64,6 +64,7 @@ Authorization: Bearer {user_access_token}
 Refreshes the OAuth provider's access token using stored refresh token.
 
 **Parameters:**
+
 - `provider` - google, github, microsoft, or apple
 
 **Response:**
@@ -77,6 +78,7 @@ Refreshes the OAuth provider's access token using stored refresh token.
 ```
 
 **Errors:**
+
 - `401` - Not authenticated
 - `404` - Provider not linked to user
 - `400` - No refresh token available
@@ -111,6 +113,7 @@ Gets valid access token for provider. Automatically refreshes if expired.
 To get refresh tokens, you must request the appropriate scope:
 
 **Google:**
+
 ```json
 {
   "provider": "google",
@@ -121,6 +124,7 @@ To get refresh tokens, you must request the appropriate scope:
 Add `offline_access` or specific API scopes.
 
 **GitHub:**
+
 ```json
 {
   "scopes": ["read:user", "user:email", "repo"]
@@ -128,6 +132,7 @@ Add `offline_access` or specific API scopes.
 ```
 
 **Microsoft:**
+
 ```json
 {
   "scopes": ["openid", "email", "profile", "offline_access", "Files.Read"]
@@ -137,6 +142,7 @@ Add `offline_access` or specific API scopes.
 ### 2. Tokens Stored Automatically
 
 When user signs in via OAuth, Volcano automatically stores:
+
 - Provider's refresh token (encrypted with AES-256)
 - Token expiration time
 - Provider user ID
@@ -149,19 +155,19 @@ async function callGoogleAPI(endpoint) {
   // 1. Refresh provider token
   await fetch(`/auth/oauth/google/refresh-token`, {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${userAccessToken}` }
+    headers: { Authorization: `Bearer ${userAccessToken}` },
   });
 
   // 2. Get fresh token (already refreshed)
   const tokenResp = await fetch(`/auth/oauth/google/token`, {
-    headers: { 'Authorization': `Bearer ${userAccessToken}` }
+    headers: { Authorization: `Bearer ${userAccessToken}` },
   });
 
   const { access_token } = await tokenResp.json();
 
   // 3. Call Google API
   const data = await fetch(`https://www.googleapis.com/drive/v3${endpoint}`, {
-    headers: { 'Authorization': `Bearer ${access_token}` }
+    headers: { Authorization: `Bearer ${access_token}` },
   });
 
   return data.json();
@@ -186,36 +192,39 @@ auth_providers.refresh_token ≠ '1//actual-refresh-token'
 
 Protection mechanisms:
 
-| Feature | Description |
-|---------|-------------|
-| Database compromise | Tokens remain protected even if database is accessed |
-| AES-256 encryption | NSA Suite B compliant encryption |
-| GCM mode | Tamper detection via authenticated encryption |
-| Consistent encryption | Same encryption as OAuth client secrets |
+| Feature               | Description                                          |
+| --------------------- | ---------------------------------------------------- |
+| Database compromise   | Tokens remain protected even if database is accessed |
+| AES-256 encryption    | NSA Suite B compliant encryption                     |
+| GCM mode              | Tamper detection via authenticated encryption        |
+| Consistent encryption | Same encryption as OAuth client secrets              |
 
 ### Access control
 
 Who can refresh tokens:
 
-| Allowed | Blocked |
-|---------|---------|
-| The user who linked the provider | Other users' tokens |
-| Authenticated requests (valid access token) | Cross-project requests |
-| Tokens tied to correct project | Unauthenticated requests |
+| Allowed                                     | Blocked                  |
+| ------------------------------------------- | ------------------------ |
+| The user who linked the provider            | Other users' tokens      |
+| Authenticated requests (valid access token) | Cross-project requests   |
+| Tokens tied to correct project              | Unauthenticated requests |
 
 ### Token Lifecycle
 
 **Storage:**
+
 - Refresh token stored when user signs in via OAuth
 - Encrypted before database INSERT
 - Decrypted only when needed
 
 **Refresh:**
+
 - Used to get fresh access token from provider
 - New refresh token may be returned (rotation)
 - Expiration tracked automatically
 
 **Deletion:**
+
 - Deleted when provider unlinked
 - Deleted when user deleted (CASCADE)
 - Deleted when project deleted (CASCADE)
@@ -226,21 +235,23 @@ Who can refresh tokens:
 
 ### Provider Support
 
-| Provider | Refresh Token | Notes |
-|----------|---------------|-------|
-| Google | Yes | Requires `offline_access` or API scopes |
-| GitHub | Yes | Refresh tokens supported |
-| Microsoft | Yes | Requires `offline_access` scope |
-| Apple | Limited | Apple tokens have different refresh flow |
+| Provider  | Refresh Token | Notes                                    |
+| --------- | ------------- | ---------------------------------------- |
+| Google    | Yes           | Requires `offline_access` or API scopes  |
+| GitHub    | Yes           | Refresh tokens supported                 |
+| Microsoft | Yes           | Requires `offline_access` scope          |
+| Apple     | Limited       | Apple tokens have different refresh flow |
 
 ### Token Availability
 
 **Refresh tokens are only available if:**
+
 1. Provider supports refresh tokens
 2. Appropriate scopes requested (offline_access)
 3. User granted permission during OAuth flow
 
 **If no refresh token:**
+
 - User must re-authenticate via OAuth
 - Error: "no refresh token available for provider"
 
@@ -257,9 +268,9 @@ Who can refresh tokens:
 
 # Check database (should be encrypted)
 psql $DATABASE_URL -c "
-SELECT user_id, provider, 
+SELECT user_id, provider,
        substring(refresh_token, 1, 20) as token_preview
-FROM auth_providers 
+FROM auth_providers
 WHERE provider = 'google';
 "
 
@@ -290,6 +301,7 @@ curl -X POST https://api.volcano.dev/auth/oauth/google/refresh-token \
 **Cause:** Provider doesn't have refresh token stored
 
 **Solutions:**
+
 1. User must re-authenticate via OAuth
 2. Ensure correct scopes requested (`offline_access`)
 3. Check provider supports refresh tokens
@@ -303,6 +315,7 @@ curl -X POST https://api.volcano.dev/auth/oauth/google/refresh-token \
 ### "failed to refresh provider token"
 
 **Causes:**
+
 1. Refresh token expired or revoked by provider
 2. OAuth config changed (client_id/secret)
 3. Provider service down
@@ -356,17 +369,17 @@ const tokenCache = new Map();
 
 async function getValidProviderToken(provider) {
   const cached = tokenCache.get(provider);
-  
+
   if (cached && cached.expiresAt > Date.now()) {
-    return cached.token;  // Use cached token
+    return cached.token; // Use cached token
   }
 
   // Refresh and cache
   const { access_token, expires_in } = await refreshProviderToken(provider);
-  
+
   tokenCache.set(provider, {
     token: access_token,
-    expiresAt: Date.now() + (expires_in * 1000) - 60000  // 1 min buffer
+    expiresAt: Date.now() + expires_in * 1000 - 60000, // 1 min buffer
   });
 
   return access_token;
@@ -380,11 +393,13 @@ async function getValidProviderToken(provider) {
 ### Google
 
 **Refresh Token Availability:**
+
 - First authorization: Refresh token provided
 - Subsequent authorizations: No refresh token (reuse existing)
 - To force new refresh token: Add `prompt=consent` to auth URL
 
 **Scopes for APIs:**
+
 - Drive: `https://www.googleapis.com/auth/drive.readonly`
 - Calendar: `https://www.googleapis.com/auth/calendar.readonly`
 - Gmail: `https://www.googleapis.com/auth/gmail.readonly`
@@ -392,11 +407,13 @@ async function getValidProviderToken(provider) {
 ### GitHub
 
 **Refresh Token:**
+
 - Supported since 2022
 - No special scope needed
 - Tokens don't expire unless revoked
 
 **Useful Scopes:**
+
 - `repo` - Access repositories
 - `read:org` - Read org data
 - `gist` - Manage gists
@@ -404,10 +421,12 @@ async function getValidProviderToken(provider) {
 ### Microsoft
 
 **Refresh Token:**
+
 - Requires `offline_access` scope
 - Works with personal accounts and Azure AD
 
 **Useful Scopes:**
+
 - `Files.Read` - OneDrive
 - `Mail.Read` - Outlook
 - `Calendars.Read` - Calendar
@@ -419,4 +438,3 @@ async function getValidProviderToken(provider) {
 - [OAuth Providers](./oauth-providers.md) - Provider setup
 - [OAuth Integration Guide](./oauth-integration-guide.md) - Integration
 - [OAuth API Reference](../api-reference/oauth.md) - API docs
-

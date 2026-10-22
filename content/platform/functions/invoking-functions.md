@@ -1,6 +1,6 @@
 ---
-title: "Invoking functions"
-description: "Call your deployed functions."
+title: 'Invoking functions'
+description: 'Call your deployed functions.'
 ---
 
 Call your deployed functions.
@@ -131,6 +131,7 @@ curl -X POST "$INVOKE_URL" \
 > **Warning:** Service keys bypass RLS. Use only in backend environments.
 
 Function receives:
+
 ```javascript
 {
   "action": "process",
@@ -203,26 +204,19 @@ import crypto from 'node:crypto';
 
 exports.handler = async (event) => {
   const signature = event.headers['Provider-Signature']?.[0] || '';
-  const rawBody = Buffer.from(
-    event.body || '',
-    event.is_base64_encoded ? 'base64' : 'utf8'
-  );
-  const expected = crypto
-    .createHmac('sha256', process.env.WEBHOOK_SECRET)
-    .update(rawBody)
-    .digest('hex');
+  const rawBody = Buffer.from(event.body || '', event.is_base64_encoded ? 'base64' : 'utf8');
+  const expected = crypto.createHmac('sha256', process.env.WEBHOOK_SECRET).update(rawBody).digest('hex');
   const supplied = Buffer.from(signature);
   const calculated = Buffer.from(expected);
 
-  if (supplied.length !== calculated.length ||
-      !crypto.timingSafeEqual(supplied, calculated)) {
+  if (supplied.length !== calculated.length || !crypto.timingSafeEqual(supplied, calculated)) {
     return { statusCode: 401, body: 'invalid signature' };
   }
 
   return {
     statusCode: 202,
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ accepted: true })
+    body: JSON.stringify({ accepted: true }),
   };
 };
 ```
@@ -246,6 +240,7 @@ curl -X POST "$INVOKE_URL" \
 ```
 
 Function receives:
+
 ```javascript
 {
   "action": "get_profile",
@@ -271,6 +266,7 @@ curl -X POST "$INVOKE_URL" \
 ```
 
 Requirements:
+
 - Function `visibility` must be `public`
 - Anon key must include `functions.invoke` permission
 
@@ -282,6 +278,7 @@ Requirements:
 Everything on this page is about standard functions. A [durable function](durable-functions.md) is not invocable through any of these: it answers `404` on this endpoint and on a function URL, whatever its visibility, because it runs as an execution you start and then poll.
 
 Function receives:
+
 ```javascript
 {
   "action": "public_ping"
@@ -366,7 +363,7 @@ other header you return is forwarded as written.
 // In function
 return {
   statusCode: 200,
-  body: JSON.stringify({ result: 'success' })
+  body: JSON.stringify({ result: 'success' }),
 };
 ```
 
@@ -386,7 +383,7 @@ Volcano suppresses the response body.
 // In function
 return {
   statusCode: 404,
-  body: JSON.stringify({ error: 'Not found' })
+  body: JSON.stringify({ error: 'Not found' }),
 };
 ```
 
@@ -416,12 +413,12 @@ exports.handler = async (event) => {
   if (!event.__volcano_auth) {
     return {
       statusCode: 401,
-      body: JSON.stringify({ error: 'Unauthorized' })
+      body: JSON.stringify({ error: 'Unauthorized' }),
     };
   }
 
   const { user_id, email, role } = event.__volcano_auth;
-  
+
   // Proceed with authenticated operation
   // All users have a user_id for data tracking
 };
@@ -432,7 +429,7 @@ exports.handler = async (event) => {
 ```javascript
 exports.handler = async (event) => {
   const auth = event.__volcano_auth;
-  
+
   if (!auth) {
     // No authentication - reject or handle as public
     return { statusCode: 401, body: 'Unauthorized' };
@@ -444,8 +441,8 @@ exports.handler = async (event) => {
       statusCode: 200,
       body: JSON.stringify({
         data: result,
-        message: 'Create an account to save your data permanently'
-      })
+        message: 'Create an account to save your data permanently',
+      }),
     };
   }
 
@@ -453,7 +450,7 @@ exports.handler = async (event) => {
     // Full registered user
     return {
       statusCode: 200,
-      body: JSON.stringify({ data: result })
+      body: JSON.stringify({ data: result }),
     };
   }
 };
@@ -465,15 +462,16 @@ When invoked with an auth user token, functions receive:
 
 ```javascript
 event.__volcano_auth = {
-  user_id: "uuid",           // Unique user ID (same for anonymous → authenticated conversion)
-  email: "user@example.com", // User's email (or internal format for anonymous)
-  project_id: "uuid",        // Project the user belongs to
-  role: "authenticated",     // "authenticated" or "anonymous"
-  access_token: "eyJhbGci..." // The caller's access token
-}
+  user_id: 'uuid', // Unique user ID (same for anonymous → authenticated conversion)
+  email: 'user@example.com', // User's email (or internal format for anonymous)
+  project_id: 'uuid', // Project the user belongs to
+  role: 'authenticated', // "authenticated" or "anonymous"
+  access_token: 'eyJhbGci...', // The caller's access token
+};
 ```
 
 **Role values:**
+
 - `"authenticated"` - User signed up with email/password or OAuth
 - `"anonymous"` - Guest user (signed up without credentials)
 
@@ -510,13 +508,13 @@ console.log(result.data);     // Parsed response body
 
 ## Error handling
 
-| Status | Description |
-|--------|-------------|
-| 401 Unauthorized | Missing Authorization header, invalid token, or token for wrong project |
-| 403 Forbidden | Anon key without `functions.invoke`: `anon key does not have functions.invoke permission` |
-| 403 Forbidden | Anon key invoking an `authenticated` function by id: `function is not public; anon keys can only invoke public functions` |
-| 404 Not Found | Function doesn't exist in your project; is `private` and the caller isn't a service key; or an anon key calls a non-`public` function by name through an SDK |
-| 503 Service Unavailable | Function still provisioning; check status and retry |
+| Status                  | Description                                                                                                                                                  |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 401 Unauthorized        | Missing Authorization header, invalid token, or token for wrong project                                                                                      |
+| 403 Forbidden           | Anon key without `functions.invoke`: `anon key does not have functions.invoke permission`                                                                    |
+| 403 Forbidden           | Anon key invoking an `authenticated` function by id: `function is not public; anon keys can only invoke public functions`                                    |
+| 404 Not Found           | Function doesn't exist in your project; is `private` and the caller isn't a service key; or an anon key calls a non-`public` function by name through an SDK |
+| 503 Service Unavailable | Function still provisioning; check status and retry                                                                                                          |
 
 An SDK reports these `404`s as a not-found error, and may keep doing so for
 about 30 seconds after you widen a function's visibility. See
@@ -524,9 +522,9 @@ about 30 seconds after you widen a function's visibility. See
 
 ## What's next
 
-| Guide | Description |
-|-------|-------------|
-| [User context in functions](user-context.md) | Complete guide to accessing user information |
-| [Creating functions](creating-functions.md) | Deploy new functions |
-| [Function logs](logs.md) | View execution logs |
-| [Anonymous users](../authentication/anonymous-users.md) | Guest user authentication |
+| Guide                                                   | Description                                  |
+| ------------------------------------------------------- | -------------------------------------------- |
+| [User context in functions](user-context.md)            | Complete guide to accessing user information |
+| [Creating functions](creating-functions.md)             | Deploy new functions                         |
+| [Function logs](logs.md)                                | View execution logs                          |
+| [Anonymous users](../authentication/anonymous-users.md) | Guest user authentication                    |

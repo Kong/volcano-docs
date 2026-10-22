@@ -1,6 +1,6 @@
 ---
-title: "Postgres Changes"
-description: "Subscribe to real-time notifications when database rows are inserted, updated, or deleted."
+title: 'Postgres Changes'
+description: 'Subscribe to real-time notifications when database rows are inserted, updated, or deleted.'
 ---
 
 Subscribe to real-time notifications when database rows are inserted, updated, or deleted. Changes are filtered through Row Level Security (RLS) policies, ensuring users only receive events for data they're authorized to see.
@@ -33,7 +33,7 @@ import { VolcanoRealtime } from '@volcano.dev/sdk/realtime';
 const realtime = new VolcanoRealtime({
   apiUrl: 'https://api.yourapp.com',
   anonKey: 'your-anon-key',
-  accessToken: accessToken
+  accessToken: accessToken,
 });
 
 await realtime.connect();
@@ -153,6 +153,7 @@ CREATE POLICY "users_own_messages" ON messages
 ```
 
 With this policy:
+
 - User A inserts a message → Only User A receives the INSERT event
 - User B won't see User A's messages in realtime
 
@@ -163,7 +164,7 @@ With this policy:
 CREATE POLICY "room_members" ON messages
   FOR SELECT USING (
     room_id IN (
-      SELECT room_id FROM room_members 
+      SELECT room_id FROM room_members
       WHERE user_id = auth.uid()
     )
   );
@@ -204,37 +205,37 @@ function NotificationFeed({ anonKey, accessToken, volcanoClient, databaseName })
       anonKey,
       accessToken,
       volcanoClient,
-      databaseName
+      databaseName,
     });
 
     async function setup() {
       await realtime.connect();
-      
+
       const channel = realtime.channel('public:notifications', { type: 'postgres' });
-      
+
       channel.onPostgresChanges('INSERT', 'public', 'notifications', (payload) => {
         if (!payload.record) return;
-        setNotifications(prev => [payload.record, ...prev]);
-        
+        setNotifications((prev) => [payload.record, ...prev]);
+
         // Show browser notification
         if (Notification.permission === 'granted') {
           new Notification(payload.record.title, {
-            body: payload.record.message
+            body: payload.record.message,
           });
         }
       });
-      
+
       await channel.subscribe();
     }
-    
+
     setup();
-    
+
     return () => realtime.disconnect();
   }, [anonKey, accessToken, volcanoClient, databaseName]);
 
   return (
     <div className="notifications">
-      {notifications.map(n => (
+      {notifications.map((n) => (
         <div key={n.id} className="notification">
           <h4>{n.title}</h4>
           <p>{n.message}</p>
@@ -254,18 +255,19 @@ Triggers are installed lazily when users subscribe, not when databases are provi
 3. **Subsequent subscriptions**: Trigger already exists, just starts listening
 
 This means:
+
 - Faster database provisioning
 - No overhead for tables without realtime
 - Triggers are created with appropriate permissions
 
 ## Limitations
 
-| Limitation | Description |
-|------------|-------------|
-| RLS required | Tables must have RLS enabled for secure filtering |
-| No JOIN data | Only the changed row is sent, not related data |
-| Primary key required | Tables must have a primary key |
-| Large payloads | Avoid storing large data in realtime columns |
+| Limitation           | Description                                       |
+| -------------------- | ------------------------------------------------- |
+| RLS required         | Tables must have RLS enabled for secure filtering |
+| No JOIN data         | Only the changed row is sent, not related data    |
+| Primary key required | Tables must have a primary key                    |
+| Large payloads       | Avoid storing large data in realtime columns      |
 
 ## Performance considerations
 

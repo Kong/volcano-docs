@@ -1,6 +1,6 @@
 ---
-title: "Presence"
-description: "Presence channels let you track which users are online in real-time. Perfect for showing online indicators, collaborative features, and live user lists."
+title: 'Presence'
+description: 'Presence channels let you track which users are online in real-time. Perfect for showing online indicators, collaborative features, and live user lists.'
 ---
 
 Presence channels let you track which users are online in real-time. Perfect for showing online indicators, collaborative features, and live user lists.
@@ -23,15 +23,15 @@ import { VolcanoRealtime } from '@volcano.dev/sdk/realtime';
 // 1. Sign up with metadata
 const volcano = new VolcanoAuth({ apiUrl, anonKey });
 const { session } = await volcano.auth.signUpAnonymous({
-  display_name: 'Alice',  // This will appear in presence events
-  avatar_url: 'https://example.com/alice.jpg'
+  display_name: 'Alice', // This will appear in presence events
+  avatar_url: 'https://example.com/alice.jpg',
 });
 
 // 2. Connect to realtime
 const realtime = new VolcanoRealtime({
   apiUrl,
   anonKey,
-  accessToken: session.access_token
+  accessToken: session.access_token,
 });
 
 await realtime.connect();
@@ -53,10 +53,10 @@ channel.on('leave', (info) => {
 // Listen for presence state updates
 channel.on('presence_sync', () => {
   const state = channel.getPresenceState();
-  const users = Object.values(state).map(info => ({
+  const users = Object.values(state).map((info) => ({
     id: info.client,
     name: info.connInfo?.user_metadata?.display_name || 'Anonymous',
-    email: info.connInfo?.email
+    email: info.connInfo?.email,
   }));
   console.log('Online users:', users);
 });
@@ -75,7 +75,7 @@ const state = channel.getPresenceState();
 
 // Returns an object like:
 // {
-//   'client-123': { 
+//   'client-123': {
 //     user: 'user-id-1',
 //     client: 'client-123',
 //     connInfo: {
@@ -90,10 +90,10 @@ const state = channel.getPresenceState();
 // }
 
 // Extract user list
-const users = Object.values(state).map(info => ({
+const users = Object.values(state).map((info) => ({
   id: info.client,
   name: info.connInfo?.user_metadata?.display_name,
-  email: info.connInfo?.email
+  email: info.connInfo?.email,
 }));
 
 console.log(`${users.length} users online`);
@@ -108,7 +108,7 @@ Presence information comes from **user metadata set during signup**:
 const { session } = await volcano.auth.signUpAnonymous({
   display_name: 'Alice',
   avatar_url: 'https://example.com/alice.jpg',
-  status: 'online'
+  status: 'online',
 });
 
 // This metadata is automatically included in presence events
@@ -126,26 +126,26 @@ function OnlineUsers({ roomId, anonKey, accessToken }) {
 
     async function setup() {
       await realtime.connect();
-      
+
       const channel = realtime.channel(`room-${roomId}`, { type: 'presence' });
-      
+
       // Update user list on any presence change
       channel.on('presence_sync', () => {
         const state = channel.getPresenceState();
-        const userList = Object.values(state).map(info => ({
+        const userList = Object.values(state).map((info) => ({
           id: info.client,
           name: info.connInfo?.user_metadata?.display_name || 'Anonymous',
-          avatar: info.connInfo?.user_metadata?.avatar_url
+          avatar: info.connInfo?.user_metadata?.avatar_url,
         }));
         setUsers(userList);
       });
-      
+
       await channel.subscribe();
       await channel.track(); // Automatic - uses metadata from signup
     }
-    
+
     setup();
-    
+
     return () => realtime.disconnect();
   }, [roomId]);
 
@@ -153,7 +153,7 @@ function OnlineUsers({ roomId, anonKey, accessToken }) {
     <div className="online-users">
       <h3>Online ({users.length})</h3>
       <ul>
-        {users.map(user => (
+        {users.map((user) => (
           <li key={user.id}>
             {user.avatar && <img src={user.avatar} alt={user.name} />}
             <span>{user.name}</span>
@@ -183,14 +183,14 @@ chatChannel.on('message', (msg) => {
 await chatChannel.send({
   type: 'typing',
   username: currentUser.name,
-  isTyping: true
+  isTyping: true,
 });
 
 // User stops typing
 await chatChannel.send({
   type: 'typing',
   username: currentUser.name,
-  isTyping: false
+  isTyping: false,
 });
 ```
 
@@ -210,6 +210,7 @@ Presence channel names can be up to 64 characters.
 ## What's included in presence
 
 **Automatic fields** (from server):
+
 - `client` - Unique client connection ID
 - `user` - User ID from authentication
 - `connInfo.user_id` - User ID
@@ -222,10 +223,10 @@ Presence channel names can be up to 64 characters.
 
 Presence limits are based on your project plan:
 
-| Limit | HOBBY | SUPERAGENT |
-|-------|------|-----|
-| Max channels per connection | 100 | 200 |
-| Max presences per channel | 10,000 | 10,000 |
+| Limit                        | HOBBY      | SUPERAGENT |
+| ---------------------------- | ---------- | ---------- |
+| Max channels per connection  | 100        | 200        |
+| Max presences per channel    | 10,000     | 10,000     |
 | Message size (for broadcast) | Plan-based | Plan-based |
 
 ## Best practices
@@ -235,7 +236,7 @@ Presence limits are based on your project plan:
    ```javascript
    await volcano.auth.signUpAnonymous({
      display_name: 'Alice',
-     avatar_url: 'https://example.com/alice.jpg'
+     avatar_url: 'https://example.com/alice.jpg',
    });
    ```
 

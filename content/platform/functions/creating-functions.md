@@ -1,17 +1,17 @@
 ---
-title: "Creating functions"
-description: "Deploy functions to Volcano. Volcano supports Node.js, Python, and Ruby runtimes."
+title: 'Creating functions'
+description: 'Deploy functions to Volcano. Volcano supports Node.js, Python, and Ruby runtimes.'
 ---
 
 Deploy functions to Volcano. Volcano supports Node.js, Python, and Ruby runtimes.
 
 ## Supported runtimes
 
-| Language | Runtimes | Default handler |
-|----------|----------|-----------------|
-| Node.js | nodejs24.x, nodejs22.x | `handler` |
-| Python | python3.14, python3.13, python3.12, python3.11, python3.10 | `handler` |
-| Ruby | ruby4.0, ruby3.4, ruby3.3 | `handler` |
+| Language | Runtimes                                                   | Default handler |
+| -------- | ---------------------------------------------------------- | --------------- |
+| Node.js  | nodejs24.x, nodejs22.x                                     | `handler`       |
+| Python   | python3.14, python3.13, python3.12, python3.11, python3.10 | `handler`       |
+| Ruby     | ruby4.0, ruby3.4, ruby3.3                                  | `handler`       |
 
 Your code is automatically packaged with a standard filename (`index.js`, `main.py`, or `main.rb`). You only need to specify the function name.
 
@@ -23,14 +23,14 @@ Your code is automatically packaged with a standard filename (`index.js`, `main.
 // index.js
 exports.handler = async (event) => {
   console.log('Event:', JSON.stringify(event));
-  
+
   return {
     statusCode: 200,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       message: 'Hello from Node.js!',
-      data: event
-    })
+      data: event,
+    }),
   };
 };
 ```
@@ -43,7 +43,7 @@ import json
 
 def handler(event, context):
     print(f'Event: {json.dumps(event)}')
-    
+
     return {
         'statusCode': 200,
         'headers': {'Content-Type': 'application/json'},
@@ -62,7 +62,7 @@ require 'json'
 
 def handler(event:, context:)
   puts "Event: #{event.to_json}"
-  
+
   {
     statusCode: 200,
     headers: { 'Content-Type' => 'application/json' },
@@ -95,6 +95,7 @@ volcano/functions/worker.rb
 ```
 
 Examples:
+
 - `volcano/functions/hello.js` -> function name `hello`
 - `volcano/functions/notes.py` -> function name `notes`
 - `volcano/functions/worker.rb` -> function name `worker`
@@ -112,10 +113,12 @@ volcano/functions/reports/main.rb
 The directory name becomes the function name.
 
 Discovery rules:
+
 - The CLI first looks for `index.*` inside the directory.
 - If no `index.*` file exists, it falls back to the first supported runtime file it finds.
 
 Examples:
+
 - `volcano/functions/api/index.js` -> function name `api`
 - `volcano/functions/jobs/main.py` -> function name `jobs`
 
@@ -241,6 +244,7 @@ curl -X POST https://api.volcano.dev/projects/PROJECT_ID/functions \
 ```
 
 **Parameters:**
+
 - `name` (required) - Function name (unique per project, DNS-safe, max 63 characters)
   Allowed characters: lowercase letters, numbers, and hyphens (`-`), without leading/trailing hyphen.
 - `code` (required) - ZIP or `tar.gz` file containing the function source bundle
@@ -250,11 +254,13 @@ curl -X POST https://api.volcano.dev/projects/PROJECT_ID/functions \
 
 **Handler format:**
 You only need to specify the function name (e.g., `handler`). Volcano automatically packages your code with the standard filename for your language:
+
 - Node.js: `exports.handler` in `index.js`
 - Python: `def handler()` in `main.py`
 - Ruby: `def handler()` in `main.rb`
 
 **Response:**
+
 ```json
 {
   "id": "func-uuid",
@@ -275,11 +281,11 @@ Status transitions: `provisioning` → `active` (usually 5-10 seconds).
 A function's `visibility` decides which credentials can invoke it. New functions
 are `private`.
 
-| Visibility | Service keys and schedulers | Your project's signed-in users | Anon keys with `functions.invoke` |
-| --- | --- | --- | --- |
-| `private` (default) | Yes | No | No |
-| `authenticated` | Yes | Yes | No |
-| `public` | Yes | Yes | Yes |
+| Visibility          | Service keys and schedulers | Your project's signed-in users | Anon keys with `functions.invoke` |
+| ------------------- | --------------------------- | ------------------------------ | --------------------------------- |
+| `private` (default) | Yes                         | No                             | No                                |
+| `authenticated`     | Yes                         | Yes                            | No                                |
+| `public`            | Yes                         | Yes                            | Yes                               |
 
 [Anonymous sign-ins](../authentication/anonymous-users.md) count as signed-in
 users for `authenticated`. If your project allows them, anyone can get a token
@@ -317,13 +323,13 @@ volcano cloud functions update notes-summary --visibility authenticated
 
 The function does not run for a caller its level does not admit:
 
-| Caller | Response |
-| --- | --- |
-| Signed-in user, `private` function | `404` `function not found` |
-| Anon key, `private` function | `404` `function not found` |
-| Anon key, `authenticated` function, by id | `403` `function is not public; anon keys can only invoke public functions` |
-| Anon key, `authenticated` function, by name through an SDK | `404` `function not found` |
-| Anon key without `functions.invoke`, any function | `403` `anon key does not have functions.invoke permission` |
+| Caller                                                     | Response                                                                   |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Signed-in user, `private` function                         | `404` `function not found`                                                 |
+| Anon key, `private` function                               | `404` `function not found`                                                 |
+| Anon key, `authenticated` function, by id                  | `403` `function is not public; anon keys can only invoke public functions` |
+| Anon key, `authenticated` function, by name through an SDK | `404` `function not found`                                                 |
+| Anon key without `functions.invoke`, any function          | `403` `anon key does not have functions.invoke permission`                 |
 
 A `private` function answers exactly like one that doesn't exist, so signed-in
 users and visitors can't discover its name or id. If your app gets `404` from a
@@ -351,6 +357,7 @@ became `public`. A manifest that still says `public: false` applies
 Access project variables in your function:
 
 ### Node.js
+
 ```javascript
 exports.handler = async (event) => {
   const apiKey = process.env.API_KEY;
@@ -360,6 +367,7 @@ exports.handler = async (event) => {
 ```
 
 ### Python
+
 ```python
 import os
 
@@ -370,6 +378,7 @@ def handler(event, context):
 ```
 
 ### Ruby
+
 ```ruby
 def handler(event:, context:)
   api_key = ENV['API_KEY']
@@ -389,10 +398,11 @@ See [Environment Variables](environment-variables.md) for details.
 > [Direct connection](../databases/direct-connection.md#authentication--user-impersonation).
 
 ### Node.js
+
 ```javascript
 const { Pool } = require('pg');
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
+  connectionString: process.env.DATABASE_URL,
 });
 
 exports.handler = async (event) => {
@@ -401,7 +411,7 @@ exports.handler = async (event) => {
     const result = await client.query('SELECT * FROM posts');
     return {
       statusCode: 200,
-      body: JSON.stringify(result.rows)
+      body: JSON.stringify(result.rows),
     };
   } finally {
     client.release();
@@ -410,6 +420,7 @@ exports.handler = async (event) => {
 ```
 
 ### Python
+
 ```python
 import os
 import psycopg2
@@ -422,7 +433,7 @@ def handler(event, context):
     rows = cur.fetchall()
     cur.close()
     conn.close()
-    
+
     return {
         'statusCode': 200,
         'body': json.dumps(rows)
@@ -430,6 +441,7 @@ def handler(event, context):
 ```
 
 ### Ruby
+
 ```ruby
 require 'pg'
 require 'json'
@@ -439,7 +451,7 @@ def handler(event:, context:)
   result = conn.exec('SELECT * FROM posts')
   rows = result.map { |row| row }
   conn.close
-  
+
   {
     statusCode: 200,
     body: rows.to_json
@@ -474,9 +486,9 @@ This permanently removes the function.
 
 ## What's next
 
-| Guide | Description |
-|-------|-------------|
-| [Invoking functions](invoking-functions.md) | Call your deployed functions |
-| [Function logs](logs.md) | View function execution logs |
+| Guide                                           | Description                                             |
+| ----------------------------------------------- | ------------------------------------------------------- |
+| [Invoking functions](invoking-functions.md)     | Call your deployed functions                            |
+| [Function logs](logs.md)                        | View function execution logs                            |
 | [Deploy from GitHub](../projects/git-deploy.md) | Deploy `volcano/functions/` automatically on every push |
-| [Examples](../examples/README.md) | Complete working examples |
+| [Examples](../examples/README.md)               | Complete working examples                               |

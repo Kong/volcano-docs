@@ -1,6 +1,6 @@
 ---
-title: "Durable functions"
-description: "Durable functions checkpoint their progress and resume where they left off, so a single execution can run for up to a year across many invocations."
+title: 'Durable functions'
+description: 'Durable functions checkpoint their progress and resume where they left off, so a single execution can run for up to a year across many invocations.'
 ---
 
 A durable function checkpoints its progress as it runs. If it is interrupted — because it suspended on a wait, or because an attempt crashed — it resumes from the last completed step instead of starting over. That lets one execution run for up to a year, far longer than the 300 or 900 seconds a single attempt is allowed.
@@ -21,9 +21,7 @@ exports.handler = durable(async (input, ctx) => {
 
   await ctx.wait('settle', '30s');
 
-  const packed = await ctx.map('pack', input.items, (item, itemCtx) =>
-    itemCtx.step('pack-item', () => pack(item)),
-  );
+  const packed = await ctx.map('pack', input.items, (item, itemCtx) => itemCtx.step('pack-item', () => pack(item)));
 
   return { charged: charge.id, packed: packed.results };
 });
@@ -64,18 +62,18 @@ Python durable operations are synchronous — there is no `await`, and a step's 
 
 Every context operation is checkpointed: what finished is recorded, and a resumed execution replays the recorded outcome instead of doing the work again. That is the one rule the handler has to respect — the code between operations runs again on every resume, so it has to reach the same operations in the same order. Keep decisions that must not change inside a `step`, and do not branch on the clock or a random value.
 
-| Operation | What it does |
-|---|---|
-| `ctx.step(name?, fn, options?)` | Runs work once and records its result. `options.retry` sets the retry policy, `options.atMostOnce` marks work that must not repeat. |
-| `ctx.wait(name?, duration)` | Suspends the execution. `'30s'`, `'2h'`, a whole number of seconds, or `{ hours, minutes }`. Anything shorter than a second is rejected. |
-| `ctx.waitUntil(name?, check, options)` | Polls your own state until `options.until` holds, suspending between checks. `options.initialState` is required. |
-| `ctx.waitForApproval(name, options)` | Suspends until a person approves or denies, or `options.timeout` passes, and resumes with the decision. See [Durable approvals](durable-approvals.md). |
-| `ctx.waitForMessage(name, options?)` | Suspends until a message with that name is sent to the execution, or `options.timeout` passes, and resumes with the message or `null`. See [Durable messages](durable-messages.md). |
-| `ctx.publish(name, data?)` | Records a message that applications list or receive live. See [Durable messages](durable-messages.md#publish-a-message). |
-| `ctx.map(name?, items, fn, options?)` | Runs one child context per item, with `options.concurrency`. |
-| `ctx.parallel(name?, branches, options?)` | Runs independent branches concurrently. |
-| `ctx.child(name?, fn)` | Groups operations under one checkpointed context. |
-| `ctx.log` | The execution's logger, with the execution's identifiers attached. |
+| Operation                                 | What it does                                                                                                                                                                        |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ctx.step(name?, fn, options?)`           | Runs work once and records its result. `options.retry` sets the retry policy, `options.atMostOnce` marks work that must not repeat.                                                 |
+| `ctx.wait(name?, duration)`               | Suspends the execution. `'30s'`, `'2h'`, a whole number of seconds, or `{ hours, minutes }`. Anything shorter than a second is rejected.                                            |
+| `ctx.waitUntil(name?, check, options)`    | Polls your own state until `options.until` holds, suspending between checks. `options.initialState` is required.                                                                    |
+| `ctx.waitForApproval(name, options)`      | Suspends until a person approves or denies, or `options.timeout` passes, and resumes with the decision. See [Durable approvals](durable-approvals.md).                              |
+| `ctx.waitForMessage(name, options?)`      | Suspends until a message with that name is sent to the execution, or `options.timeout` passes, and resumes with the message or `null`. See [Durable messages](durable-messages.md). |
+| `ctx.publish(name, data?)`                | Records a message that applications list or receive live. See [Durable messages](durable-messages.md#publish-a-message).                                                            |
+| `ctx.map(name?, items, fn, options?)`     | Runs one child context per item, with `options.concurrency`.                                                                                                                        |
+| `ctx.parallel(name?, branches, options?)` | Runs independent branches concurrently.                                                                                                                                             |
+| `ctx.child(name?, fn)`                    | Groups operations under one checkpointed context.                                                                                                                                   |
+| `ctx.log`                                 | The execution's logger, with the execution's identifiers attached.                                                                                                                  |
 
 Waits and polls are held by the platform rather than by your code, so a function suspended for an hour costs nothing while it waits — but the execution timeout still applies. To wait for a person's sign-off, use [`ctx.waitForApproval`](durable-approvals.md). To wait for a webhook, your application, or another function, have it send a message and wait with [`ctx.waitForMessage`](durable-messages.md); for state only you can check, poll it with `ctx.waitUntil`. Full reference and worked examples are in the SDK's [durable functions guide](/sdk/js/durable-functions).
 
@@ -139,7 +137,14 @@ Rather than hardcoding that list, read it from `GET /functions/runtimes` and kee
         "file_extensions": [".js", ".mjs"],
         "entrypoint": "index.js",
         "handler": "handler",
-        "dependency_manifests": ["package.json", "package-lock.json", "npm-shrinkwrap.json", "pnpm-lock.yaml", "yarn.lock", ".yarnrc.yml"]
+        "dependency_manifests": [
+          "package.json",
+          "package-lock.json",
+          "npm-shrinkwrap.json",
+          "pnpm-lock.yaml",
+          "yarn.lock",
+          ".yarnrc.yml"
+        ]
       }
     },
     {
@@ -279,10 +284,10 @@ An execution is pinned to one region for its whole life, because its checkpoints
 
 Starting has two endpoints, because starting and managing are done by different callers with different credentials.
 
-| Endpoint | Credentials | Use it for |
-|---|---|---|
-| `POST /durable-functions/{functionId}/executions` | Service key; auth user token or anon key as the function's [visibility](#who-can-start-executions) allows | Applications starting work |
-| `POST /projects/{id}/durable-functions/{functionId}/executions` | Project owner token, or a `full` project access token | Scripts and tooling already working against a project |
+| Endpoint                                                        | Credentials                                                                                               | Use it for                                            |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `POST /durable-functions/{functionId}/executions`               | Service key; auth user token or anon key as the function's [visibility](#who-can-start-executions) allows | Applications starting work                            |
+| `POST /projects/{id}/durable-functions/{functionId}/executions` | Project owner token, or a `full` project access token                                                     | Scripts and tooling already working against a project |
 
 They behave identically otherwise: the same body, the same idempotency header, the same `202` and handle. `volcano.durable.start` calls the first one.
 
@@ -355,12 +360,12 @@ exports.handler = durable(async (input, ctx) => {
 });
 ```
 
-| Field | Value |
-|---|---|
-| `user_id` | The user's ID |
-| `email` | The user's email |
-| `role` | `authenticated` or `anonymous` |
-| `project_id` | The project's ID |
+| Field          | Value                                |
+| -------------- | ------------------------------------ |
+| `user_id`      | The user's ID                        |
+| `email`        | The user's email                     |
+| `role`         | `authenticated` or `anonymous`       |
+| `project_id`   | The project's ID                     |
 | `access_token` | The token that started the execution |
 
 The input has to be a JSON object, or empty, to carry it; an array or scalar
@@ -436,15 +441,15 @@ curl "https://api.volcano.dev/projects/$PROJECT_ID/durable-functions/$FUNCTION_I
 }
 ```
 
-| Status | Meaning |
-|---|---|
-| `pending` | Accepted, not yet under way |
-| `running` | Executing, or suspended on a wait |
-| `succeeded` | Finished; `result` holds what the function returned |
-| `failed` | Ended with an error; `error` holds its type and message |
-| `timed_out` | Exceeded the execution timeout |
-| `stopped` | Cancelled through the stop endpoint |
-| `unknown` | The platform lost track of the outcome; no result or error is available |
+| Status      | Meaning                                                                 |
+| ----------- | ----------------------------------------------------------------------- |
+| `pending`   | Accepted, not yet under way                                             |
+| `running`   | Executing, or suspended on a wait                                       |
+| `succeeded` | Finished; `result` holds what the function returned                     |
+| `failed`    | Ended with an error; `error` holds its type and message                 |
+| `timed_out` | Exceeded the execution timeout                                          |
+| `stopped`   | Cancelled through the stop endpoint                                     |
+| `unknown`   | The platform lost track of the outcome; no result or error is available |
 
 The last five are terminal. `result` is whatever the function returned, verbatim. It is absent while the execution is still running, absent when the result was too large to return and was checkpointed instead, and absent once the function's retention period lapses. Only the last of those sets `result_expired` to `true`, which distinguishes a discarded result from an empty one; a checkpointed result reads exactly like a function that returned nothing, so keep what you need to read back small. A finished execution is dropped entirely a day or so after its retention lapses, and reads and listings stop returning it — record anything you need to keep for longer while the execution is still readable.
 
@@ -601,17 +606,17 @@ curl "https://api.volcano.dev/projects/$PROJECT_ID/durable-functions/$FUNCTION_I
 
 The execution comes first and is the only operation without a `parent_id`. Everything else follows in the order it started, with `parent_id` naming what it ran inside, so the list is a tree. `kind` is the operation as you wrote it:
 
-| Your code | `kind` | Children |
-|---|---|---|
-| `ctx.step` | `step` | Each run of the body is an entry in `attempts` |
-| `ctx.wait` | `wait` | `scheduled_end_at` is when it elapses |
-| `ctx.waitUntil` | `wait_until` | Each check is an attempt; `next_attempt_at` is the next one |
-| `ctx.waitForApproval` | `child` | A `callback`, `waiting` until the decision arrives, and the `step` that registered the request |
-| `ctx.waitForMessage` | `child` | A `callback`, `waiting` until a message arrives, and the `step` that registered the wait |
-| `ctx.publish` | `step`, or `child` in JavaScript | Nothing inside a JavaScript publish. The first publish in a context also opens a `child` named `volcano:messages-session` |
-| `ctx.child` | `child` | The operations inside it |
-| `ctx.map` | `map` | One `map_item` per item |
-| `ctx.parallel` | `parallel` | One `parallel_branch` per branch |
+| Your code             | `kind`                           | Children                                                                                                                  |
+| --------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `ctx.step`            | `step`                           | Each run of the body is an entry in `attempts`                                                                            |
+| `ctx.wait`            | `wait`                           | `scheduled_end_at` is when it elapses                                                                                     |
+| `ctx.waitUntil`       | `wait_until`                     | Each check is an attempt; `next_attempt_at` is the next one                                                               |
+| `ctx.waitForApproval` | `child`                          | A `callback`, `waiting` until the decision arrives, and the `step` that registered the request                            |
+| `ctx.waitForMessage`  | `child`                          | A `callback`, `waiting` until a message arrives, and the `step` that registered the wait                                  |
+| `ctx.publish`         | `step`, or `child` in JavaScript | Nothing inside a JavaScript publish. The first publish in a context also opens a `child` named `volcano:messages-session` |
+| `ctx.child`           | `child`                          | The operations inside it                                                                                                  |
+| `ctx.map`             | `map`                            | One `map_item` per item                                                                                                   |
+| `ctx.parallel`        | `parallel`                       | One `parallel_branch` per branch                                                                                          |
 
 A map item or parallel branch you did not name carries the SDK's positional name, such as `map-item-0` or `parallel-branch-1`.
 
@@ -815,18 +820,18 @@ Durable executions are metered on three allowances of their own and spend nothin
 
 **Operations** are what the execution did. One for the execution itself, and one more for everything it begins:
 
-| Charged as an operation | Notes |
-|---|---|
-| The execution | One per execution, whatever it goes on to do |
-| Each `ctx.step` attempt | A retried step is another attempt, so another operation |
-| Each `ctx.wait` | One per wait, however long it lasts |
-| Each `ctx.waitUntil` check | Size `maxAttempts` with this in mind: 200 checks is 200 operations |
-| Each `ctx.child` context | Plus whatever the child itself does |
-| Each `ctx.map` item and `ctx.parallel` branch | Each runs in a child context of its own |
-| Each `ctx.waitForApproval` | Three: the approval, the wait for its decision, and the step that registers it |
-| Each `ctx.waitForMessage` | Three: the wait, the callback the message completes, and the step that registers it |
-| Each `ctx.publish` | One. The first publish in a context also opens a messages session, which is three more |
-| Each function an execution invokes from inside itself | One for making the call, on top of whatever the call costs |
+| Charged as an operation                               | Notes                                                                                  |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| The execution                                         | One per execution, whatever it goes on to do                                           |
+| Each `ctx.step` attempt                               | A retried step is another attempt, so another operation                                |
+| Each `ctx.wait`                                       | One per wait, however long it lasts                                                    |
+| Each `ctx.waitUntil` check                            | Size `maxAttempts` with this in mind: 200 checks is 200 operations                     |
+| Each `ctx.child` context                              | Plus whatever the child itself does                                                    |
+| Each `ctx.map` item and `ctx.parallel` branch         | Each runs in a child context of its own                                                |
+| Each `ctx.waitForApproval`                            | Three: the approval, the wait for its decision, and the step that registers it         |
+| Each `ctx.waitForMessage`                             | Three: the wait, the callback the message completes, and the step that registers it    |
+| Each `ctx.publish`                                    | One. The first publish in a context also opens a messages session, which is three more |
+| Each function an execution invokes from inside itself | One for making the call, on top of whatever the call costs                             |
 
 Only beginning something is charged. How it turned out — a step that succeeded, a wait that elapsed, an execution that failed — is a record of work already counted, not a second operation.
 
@@ -840,18 +845,18 @@ Waiting is not running. An execution suspended in a `wait` or a `waitUntil` betw
 
 Operations and compute are both counted once an execution has finished, so a long execution's usage appears when it ends rather than as it runs.
 
-| Limit | HOBBY | SUPERAGENT |
-|---|---|---|
-| Execution allowance | 5,000 / month | 10,000 / month |
-| Operation allowance | 100,000 / month | 200,000 / month |
-| Compute allowance | 10,000 GB-s / month | 100,000 GB-s / month |
-| Memory | 128 MB | 1 GB |
-| Operations per execution | 3,000 | 3,000 |
-| Step timeout | 300 s | 900 s |
-| Execution timeout | 366 days | 366 days |
-| Result retention | 30 days | 30 days |
-| Concurrent executions per project | 10 | 100 |
-| Durable functions per project | 10,000 | 10,000 |
+| Limit                             | HOBBY               | SUPERAGENT           |
+| --------------------------------- | ------------------- | -------------------- |
+| Execution allowance               | 5,000 / month       | 10,000 / month       |
+| Operation allowance               | 100,000 / month     | 200,000 / month      |
+| Compute allowance                 | 10,000 GB-s / month | 100,000 GB-s / month |
+| Memory                            | 128 MB              | 1 GB                 |
+| Operations per execution          | 3,000               | 3,000                |
+| Step timeout                      | 300 s               | 900 s                |
+| Execution timeout                 | 366 days            | 366 days             |
+| Result retention                  | 30 days             | 30 days              |
+| Concurrent executions per project | 10                  | 100                  |
+| Durable functions per project     | 10,000              | 10,000               |
 
 All three allowances are combined across your projects. Once any of them is reached, HOBBY stops starting new executions within a few seconds and SUPERAGENT bills the excess. See [how HOBBY allowances are enforced](../guides/plans-and-limits.md#how-hobby-allowances-are-enforced).
 
@@ -873,11 +878,11 @@ Durable functions are counted against their own per-project cap, so they cannot 
 
 ## What's next
 
-| Guide | Description |
-|-------|-------------|
-| [Durable approvals](durable-approvals.md) | Pause a workflow until a person approves or denies |
-| [Durable messages](durable-messages.md) | Send messages to a running workflow and read what it publishes |
-| [Functions overview](overview.md) | Standard functions, runtimes, and packaging |
-| [Environment variables](environment-variables.md) | Configure secrets and settings |
-| [Logs](logs.md) | View and filter function logs |
-| [Plans and limits](../guides/plans-and-limits.md) | HOBBY and SUPERAGENT limits in full |
+| Guide                                             | Description                                                    |
+| ------------------------------------------------- | -------------------------------------------------------------- |
+| [Durable approvals](durable-approvals.md)         | Pause a workflow until a person approves or denies             |
+| [Durable messages](durable-messages.md)           | Send messages to a running workflow and read what it publishes |
+| [Functions overview](overview.md)                 | Standard functions, runtimes, and packaging                    |
+| [Environment variables](environment-variables.md) | Configure secrets and settings                                 |
+| [Logs](logs.md)                                   | View and filter function logs                                  |
+| [Plans and limits](../guides/plans-and-limits.md) | HOBBY and SUPERAGENT limits in full                            |

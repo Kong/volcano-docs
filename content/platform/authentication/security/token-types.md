@@ -1,6 +1,6 @@
 ---
-title: "Token Types"
-description: "Volcano uses different token types for different purposes."
+title: 'Token Types'
+description: 'Volcano uses different token types for different purposes.'
 ---
 
 Volcano uses different token types for different purposes.
@@ -12,6 +12,7 @@ Volcano uses different token types for different purposes.
 **Created via:** `volcano login` (browser sign-in), or the dashboard
 
 **Used for:**
+
 - Creating/deleting projects
 - Managing functions and databases
 - Viewing logs
@@ -24,6 +25,7 @@ Volcano uses different token types for different purposes.
 **Scope:** Your whole account. For automation, mint a project access token with it rather than sharing it.
 
 **Example:**
+
 ```bash
 curl -X GET https://api.volcano.dev/projects \
   -H "Authorization: Bearer $PLATFORM_TOKEN"
@@ -38,6 +40,7 @@ curl -X GET https://api.volcano.dev/projects \
 **Created via:** `POST /projects/{id}/access-tokens`, which requires a platform token
 
 **Used for:**
+
 - Deploying functions and frontends
 - Reading and writing variables and project settings
 - Provisioning databases
@@ -50,6 +53,7 @@ curl -X GET https://api.volcano.dev/projects \
 **Shown once:** The secret is returned only in the create response. Volcano stores a hash, so it cannot be retrieved later.
 
 **Example:**
+
 ```bash
 # Create (platform token required)
 curl -X POST https://api.volcano.dev/projects/abc-123/access-tokens \
@@ -64,6 +68,7 @@ curl -X POST https://api.volcano.dev/projects/abc-123/functions \
 ```
 
 **Why it's safer than a platform token:**
+
 - Works on one project only; another project's route returns 403
 - Refused on account-scoped endpoints
 - Cannot create, list, read, or revoke project access tokens, including itself
@@ -81,8 +86,9 @@ See [Project access tokens](project-access-tokens.md) for the full security mode
 **Created:** Automatically with each project
 
 **Used for:**
+
 - Signup endpoint
-- Signin endpoint  
+- Signin endpoint
 - Refresh endpoint
 - Logout endpoint
 - Invoking functions whose `visibility` is `public` (requires `functions.invoke` permission)
@@ -92,6 +98,7 @@ See [Project access tokens](project-access-tokens.md) for the full security mode
 **Safe to expose:** Yes (designed for frontend)
 
 **Example:**
+
 ```javascript
 // Frontend code (safe to include)
 const volcano = new VolcanoAuth({
@@ -102,6 +109,7 @@ await volcano.auth.signUp({...});  // Uses anon key
 ```
 
 **Why it's safe:**
+
 - Only works for YOUR project
 - Can't create users in other projects
 - Can't access admin endpoints
@@ -116,6 +124,7 @@ await volcano.auth.signUp({...});  // Uses anon key
 **Created:** Returned from signup/signin
 
 **Used for:**
+
 - Invoking functions whose `visibility` is `authenticated` or `public` (with user context)
 - Accessing user profile (`GET /auth/user`)
 - Updating profile (`PUT /auth/user`)
@@ -125,6 +134,7 @@ await volcano.auth.signUp({...});  // Uses anon key
 **Lifetime:** 1 hour (configurable)
 
 **Contains:**
+
 ```json
 {
   "user_id": "uuid",
@@ -135,6 +145,7 @@ await volcano.auth.signUp({...});  // Uses anon key
 ```
 
 **Example:**
+
 ```javascript
 // After signin, SDK stores access token
 await volcano.auth.signIn({...});
@@ -146,6 +157,7 @@ await volcano.functions.invoke('my-function', {
 ```
 
 **In your function:**
+
 ```javascript
 exports.handler = async (event) => {
   const { user_id, email } = event.__volcano_auth;
@@ -170,6 +182,7 @@ exports.handler = async (event) => {
 **Stored:** Database (can be revoked)
 
 **Example:**
+
 ```javascript
 // Automatically handled by SDK
 await volcano.auth.refreshSession();
@@ -178,12 +191,12 @@ await volcano.auth.refreshSession();
 const response = await fetch('/auth/refresh', {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${anonKey}`,  // Note: uses anon key!
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${anonKey}`, // Note: uses anon key!
+    'Content-Type': 'application/json',
   },
   body: JSON.stringify({
-    refresh_token: refreshToken
-  })
+    refresh_token: refreshToken,
+  }),
 });
 ```
 
@@ -196,6 +209,7 @@ const response = await fetch('/auth/refresh', {
 **Created via:** Platform Dashboard or API
 
 **Used for:**
+
 - Function invocation (background jobs, webhooks, cron)
 - Database queries with RLS bypass (admin access)
 - Admin operations across all users
@@ -207,6 +221,7 @@ const response = await fetch('/auth/refresh', {
 **No user context:** Functions don't receive `__volcano_auth`
 
 **Example:**
+
 ```bash
 # Create service key
 curl -X POST https://api.volcano.dev/projects/abc-123/service-keys \
@@ -225,12 +240,14 @@ curl -X POST https://api.volcano.dev/databases/db-id/query/select \
 ```
 
 **When to use:**
+
 - Background jobs (no specific user)
 - Admin operations (need to see all data)
 - Analytics across all users
 - Content moderation
 
 **Security:**
+
 - Bypasses Row-Level Security
 - Can access ALL users' data
 - Store in environment variables only
@@ -240,14 +257,14 @@ curl -X POST https://api.volcano.dev/databases/db-id/query/select \
 
 ## Comparison
 
-| Token Type | Created By | Used For | Scoped To | User Context | RLS |
-|------------|------------|----------|-----------|--------------|-----|
-| **Platform Token** | You (`volcano login` or dashboard) | Project management | Account | No | N/A |
-| **Project Access Token** | You (platform token required) | Project management from CI, scripts, agents | Project | No | N/A |
-| **Anon Key** | Auto (per project) | Public auth + public function invoke | Project | No | N/A |
-| **Access Token** | Signup/signin | Functions + DB queries | Project + User | Yes | Enforced |
-| **Refresh Token** | Signup/signin | Token refresh | User | No | N/A |
-| **Service Key** | You (Platform API) | Functions + DB (admin) | Project | No | Bypassed |
+| Token Type               | Created By                         | Used For                                    | Scoped To      | User Context | RLS      |
+| ------------------------ | ---------------------------------- | ------------------------------------------- | -------------- | ------------ | -------- |
+| **Platform Token**       | You (`volcano login` or dashboard) | Project management                          | Account        | No           | N/A      |
+| **Project Access Token** | You (platform token required)      | Project management from CI, scripts, agents | Project        | No           | N/A      |
+| **Anon Key**             | Auto (per project)                 | Public auth + public function invoke        | Project        | No           | N/A      |
+| **Access Token**         | Signup/signin                      | Functions + DB queries                      | Project + User | Yes          | Enforced |
+| **Refresh Token**        | Signup/signin                      | Token refresh                               | User           | No           | N/A      |
+| **Service Key**          | You (Platform API)                 | Functions + DB (admin)                      | Project        | No           | Bypassed |
 
 ## Which Token to Use?
 
@@ -281,6 +298,3 @@ curl -X POST https://api.volcano.dev/databases/db-id/query/select \
 - [Anon Keys](anon-keys.md) - Public keys for frontend authentication
 - [Service Keys](service-keys.md) - Admin keys for backend operations
 - [Using the API](../../api-reference/using-the-api.md) - Task-oriented guide to the REST API
-
-
-

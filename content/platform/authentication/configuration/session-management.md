@@ -1,6 +1,6 @@
 ---
-title: "Session Management"
-description: "Force users to re-authenticate based on activity or time."
+title: 'Session Management'
+description: 'Force users to re-authenticate based on activity or time.'
 ---
 
 Force users to re-authenticate based on activity or time.
@@ -14,11 +14,13 @@ Force users to re-authenticate based on activity or time.
 Force re-login after period of no activity.
 
 **Use cases:**
+
 - Banking: 300 (5 minutes)
 - Admin panels: 1800 (30 minutes)
 - Social apps: 0 (never)
 
 **How it works:**
+
 ```text
 User signs in → last_activity: now
 User refreshes token → last_activity: now (updated)
@@ -27,8 +29,9 @@ User must sign in again
 ```
 
 **Configuration:**
+
 ```json
-{"inactivity_timeout": 1800}  // 30 minutes
+{ "inactivity_timeout": 1800 } // 30 minutes
 ```
 
 ## Max Session Duration
@@ -40,11 +43,13 @@ User must sign in again
 Force re-login after total session time, regardless of activity.
 
 **Use cases:**
+
 - Compliance (must re-auth daily): 86400 (24 hours)
 - Shift-based (8-hour workday): 28800
 - No limit: 0
 
 **How it works:**
+
 ```text
 User signs in → session_started: now
 User active, keeps refreshing
@@ -53,8 +58,9 @@ User must sign in again
 ```
 
 **Configuration:**
+
 ```json
-{"max_session_duration": 86400}  // 24 hours max
+{ "max_session_duration": 86400 } // 24 hours max
 ```
 
 ## Combining Both
@@ -63,12 +69,13 @@ You can use both timeouts:
 
 ```json
 {
-  "inactivity_timeout": 1800,      // 30 min inactive = logout
-  "max_session_duration": 28800    // 8 hours max = logout
+  "inactivity_timeout": 1800, // 30 min inactive = logout
+  "max_session_duration": 28800 // 8 hours max = logout
 }
 ```
 
 User logs out if:
+
 - Inactive for 30 minutes, OR
 - Signed in for 8 hours total
 
@@ -86,6 +93,7 @@ curl -X PUT https://api.volcano.dev/projects/PROJECT_ID/auth/config \
 ## User Session Management
 
 Users can view and manage their own sessions through the SDK or API. This allows users to:
+
 - See all devices where they're logged in
 - Sign out from specific devices
 - Sign out from all other devices
@@ -106,7 +114,7 @@ const result = await volcano.auth.getSessions({ page: 2, limit: 10 });
 
 if (!error) {
   console.log(`Page ${page} of ${total_pages} (${total} total sessions)`);
-  sessions.forEach(session => {
+  sessions.forEach((session) => {
     console.log(`${session.provider} - ${session.user_agent}`);
     console.log(`  IP: ${session.ip_address}`);
     console.log(`  Active: ${session.is_active}`);
@@ -128,10 +136,12 @@ curl "https://api.volcano.dev/auth/user/sessions?page=2&limit=10" \
 ```
 
 **Query Parameters:**
+
 - `page` - Page number (1-indexed, default: 1)
 - `limit` - Sessions per page (1-100, default: 20)
 
 Response:
+
 ```json
 {
   "sessions": [
@@ -206,10 +216,12 @@ curl "https://api.volcano.dev/projects/PROJECT_ID/auth/users/USER_ID/sessions?pa
 ```
 
 **Query Parameters:**
+
 - `page` - Page number (1-indexed, default: 1)
 - `limit` - Sessions per page (1-100, default: 20)
 
 Response:
+
 ```json
 {
   "sessions": [
@@ -234,6 +246,7 @@ Response:
 ```
 
 **Session Fields:**
+
 - `provider` - Authentication method used: `email`, `google`, `github`, `facebook`, `apple`, `anonymous`
 - `ip_address` - Client IP address when the session was created
 - `last_ip_address` - Client IP address of the most recent activity (token refresh)
@@ -261,6 +274,7 @@ curl -X DELETE https://api.volcano.dev/auth/users/USER_ID/sessions \
 ### GUI Access
 
 In the Volcano dashboard:
+
 1. Navigate to **Auth Users**
 2. Click the phone icon next to any user
 3. View active and expired sessions
@@ -271,7 +285,3 @@ In the Volcano dashboard:
 
 - [Token Lifetimes](token-lifetimes.md)
 - [Configuration Overview](overview.md)
-
-
-
-

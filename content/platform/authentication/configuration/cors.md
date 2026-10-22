@@ -1,6 +1,6 @@
 ---
-title: "CORS Configuration"
-description: "Restrict which domains can call your auth endpoints."
+title: 'CORS Configuration'
+description: 'Restrict which domains can call your auth endpoints.'
 ---
 
 Restrict which domains can call your auth endpoints.
@@ -10,12 +10,14 @@ Restrict which domains can call your auth endpoints.
 Cross-Origin Resource Sharing controls which websites can make requests to your API.
 
 **Without CORS:**
+
 ```text
 Any website can use your anon key to call signup/signin
 (Even with valid anon key, attackers can embed forms on their sites)
 ```
 
 **With CORS:**
+
 ```text
 Only YOUR websites can use your anon key
 Attackers blocked even with valid anon key
@@ -41,6 +43,7 @@ Attackers blocked even with valid anon key
 List of origins that can call your auth endpoints.
 
 **Examples:**
+
 ```json
 {
   "cors_allowed_origins": [
@@ -53,12 +56,11 @@ List of origins that can call your auth endpoints.
 ```
 
 **Wildcard subdomains:**
+
 ```json
 {
   "cors_allow_credentials": false,
-  "cors_allowed_origins": [
-    "https://*.myapp.com"
-  ]
+  "cors_allowed_origins": ["https://*.myapp.com"]
 }
 ```
 
@@ -77,6 +79,7 @@ the same update before changing other auth settings.
 ## How It Works
 
 Request from allowed origin:
+
 ```http
 POST /auth/signup
 Origin: https://myapp.com
@@ -87,6 +90,7 @@ Access-Control-Allow-Origin: https://myapp.com
 ```
 
 Request from blocked origin:
+
 ```http
 POST /auth/signup
 Origin: https://evil.com
@@ -99,18 +103,21 @@ Response: 403 Forbidden
 ## Important Notes
 
 **Protocol matters:**
+
 ```text
 Allowed: https://myapp.com
 Blocked: http://myapp.com  (different protocol)
 ```
 
 **Hostnames are case-insensitive:**
+
 ```text
 Allowed: https://myapp.com
 Allowed: https://MyApp.com
 ```
 
 **Exact match:**
+
 ```text
 Allowed: https://myapp.com
 Blocked: https://www.myapp.com  (different subdomain)
@@ -124,10 +131,10 @@ Allow both production and local development:
 {
   "cors_enabled": true,
   "cors_allowed_origins": [
-    "https://myapp.com",           // Production
-    "https://staging.myapp.com",   // Staging
-    "http://localhost:3000",       // Local dev
-    "http://localhost:5173"        // Vite dev server
+    "https://myapp.com", // Production
+    "https://staging.myapp.com", // Staging
+    "http://localhost:3000", // Local dev
+    "http://localhost:5173" // Vite dev server
   ]
 }
 ```
@@ -146,12 +153,14 @@ curl -X PUT https://api.volcano.dev/projects/PROJECT_ID/auth/config \
 ## Troubleshooting
 
 **Error: "origin not allowed by CORS policy"**
+
 - Add your domain to `cors_allowed_origins`
 - Check protocol (HTTP vs HTTPS)
 - Check for typos
 - Configure an origin only; paths, query strings, and fragments are rejected
 
 **Preflight requests failing:**
+
 - Browser sends OPTIONS request first
 - Make sure CORS is configured
 - Check browser console for details

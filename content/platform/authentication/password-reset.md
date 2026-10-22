@@ -1,6 +1,6 @@
 ---
-title: "Password Reset"
-description: "Allow users to reset forgotten passwords."
+title: 'Password Reset'
+description: 'Allow users to reset forgotten passwords.'
 ---
 
 Allow users to reset forgotten passwords.
@@ -25,6 +25,7 @@ Content-Type: application/json
 ```
 
 **Request:**
+
 ```json
 {
   "email": "user@example.com"
@@ -32,6 +33,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "message": "If the email exists, a password reset link has been sent"
@@ -49,6 +51,7 @@ Content-Type: application/json
 ```
 
 **Request:**
+
 ```json
 {
   "token": "recovery-token-from-email",
@@ -57,6 +60,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "message": "Password reset successful. Please sign in with your new password."
@@ -70,14 +74,15 @@ All existing sessions are revoked for security.
 Recovery tokens expire after configured timeout (default: 1 hour).
 
 **Configuration:**
+
 ```json
-{"password_reset_timeout": 3600}  // 1 hour in seconds
+{ "password_reset_timeout": 3600 } // 1 hour in seconds
 ```
 
 ## Disabling Password Reset
 
 ```json
-{"allow_password_reset": false}
+{ "allow_password_reset": false }
 ```
 
 When disabled, forgot-password endpoint returns 403.
@@ -85,20 +90,24 @@ When disabled, forgot-password endpoint returns 403.
 ## Security
 
 **Email enumeration prevented:**
+
 - Same response whether email exists or not
 - Generic success message
 
 **Token security:**
+
 - Random, cryptographically secure
 - One-time use (cleared after successful reset)
 - Time-limited expiration
 - Project-scoped (cannot use across projects)
 
 **Session revocation:**
+
 - All sessions invalidated on reset
 - User must sign in again everywhere
 
 **Password validation:**
+
 - New password must meet requirements
 - Cannot reuse recent passwords (if history enabled)
 
@@ -109,12 +118,12 @@ When disabled, forgot-password endpoint returns 403.
 await fetch('/auth/forgot-password', {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${anonKey}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${anonKey}`,
+    'Content-Type': 'application/json',
   },
   body: JSON.stringify({
-    email: 'user@example.com'
-  })
+    email: 'user@example.com',
+  }),
 });
 
 // User receives email (when email service configured)
@@ -124,13 +133,13 @@ await fetch('/auth/forgot-password', {
 await fetch('/auth/reset-password', {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${anonKey}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${anonKey}`,
+    'Content-Type': 'application/json',
   },
   body: JSON.stringify({
     token: tokenFromUrl,
-    new_password: 'NewPassword123'
-  })
+    new_password: 'NewPassword123',
+  }),
 });
 
 // User can now sign in with new password
@@ -141,6 +150,7 @@ await fetch('/auth/reset-password', {
 To send actual reset emails, integrate an email service:
 
 **SendGrid:**
+
 ```go
 // internal/email/sendgrid.go
 func SendPasswordResetEmail(to, token string) {
@@ -168,7 +178,3 @@ curl -X PUT https://api.volcano.dev/projects/PROJECT_ID/auth/config \
 ## See Also
 
 - [Configuration Overview](configuration/overview.md)
-
-
-
-

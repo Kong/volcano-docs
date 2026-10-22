@@ -1,6 +1,6 @@
 ---
-title: "Databases API"
-description: "Manage PostgreSQL databases."
+title: 'Databases API'
+description: 'Manage PostgreSQL databases.'
 ---
 
 Manage PostgreSQL databases.
@@ -13,6 +13,7 @@ Authorization: Bearer <platform_token>
 ```
 
 **Response:**
+
 ```json
 {
   "data": [
@@ -43,7 +44,7 @@ endpoint's `current_storage_bytes`, which measures on request.
 List, count and project-lookup failures return `500` with a fixed message, such as:
 
 ```json
-{"error":"failed to list databases"}
+{ "error": "failed to list databases" }
 ```
 
 Internal connection details are omitted. Include the response's `X-Request-Id`
@@ -58,6 +59,7 @@ Authorization: Bearer <platform_token>
 ```
 
 **Response:**
+
 ```json
 {
   "id": "abc-123-456-789",
@@ -82,6 +84,7 @@ Content-Type: application/json
 ```
 
 **Request:**
+
 ```json
 {
   "name": "main_db"
@@ -118,6 +121,7 @@ Authorization: Bearer <platform_token>
 ```
 
 **Response:**
+
 ```json
 {
   "message": "Password reset successful",
@@ -149,6 +153,7 @@ Authorization: Bearer <platform_token>
 ```
 
 **Response:**
+
 ```json
 {
   "data": [
@@ -181,6 +186,7 @@ Content-Type: application/json
 ```
 
 **Request:**
+
 ```json
 {
   "name": "feature_checkout",
@@ -195,13 +201,13 @@ connection string. Poll [Get Branch](#get-branch) until it reports `active`.
 to seven days. Names are lowercase letters, numbers, and underscores, up to 64
 characters, unique within the parent database.
 
-| Status | Meaning |
-|---|---|
-| `400` | Invalid name or lifetime |
-| `403` | Branch allowance reached, or branching is not on this plan |
-| `404` | Project or database not found |
-| `409` | Name already exists, or the database cannot be branched right now |
-| `503` | Branching is temporarily unavailable |
+| Status | Meaning                                                           |
+| ------ | ----------------------------------------------------------------- |
+| `400`  | Invalid name or lifetime                                          |
+| `403`  | Branch allowance reached, or branching is not on this plan        |
+| `404`  | Project or database not found                                     |
+| `409`  | Name already exists, or the database cannot be branched right now |
+| `503`  | Branching is temporarily unavailable                              |
 
 **Limit:** 10 branches per database on HOBBY, 25 on SUPERAGENT. Branches in every state
 count, including those still provisioning.
@@ -214,6 +220,7 @@ Authorization: Bearer <platform_token>
 ```
 
 **Response:**
+
 ```json
 {
   "id": "9b1f0f4c-2b8e-4f43-9a71-1f6c2f0f2c31",
@@ -244,6 +251,7 @@ Content-Type: application/json
 ```
 
 **Request:**
+
 ```json
 {
   "ttl_seconds": 604800
@@ -337,6 +345,7 @@ Authorization: Bearer <platform_token>
 ```
 
 **Response:**
+
 ```json
 {
   "data": [
@@ -374,6 +383,7 @@ Content-Type: application/json
 ```
 
 **Request:**
+
 ```json
 {
   "name": "before_migration"
@@ -387,13 +397,13 @@ Names are lowercase letters, numbers, underscores, and hyphens, up to 63
 characters, unique within the database. Names beginning with `volcano-` are
 reserved for the platform's own snapshots.
 
-| Status | Meaning |
-|---|---|
-| `400` | Invalid backup name |
-| `403` | Backup allowance reached, or backups are SUPERAGENT-only |
-| `404` | Project or database not found |
-| `409` | Name already exists, a backup was taken less than a minute ago, or the database is restoring |
-| `503` | Backups are temporarily unavailable |
+| Status | Meaning                                                                                      |
+| ------ | -------------------------------------------------------------------------------------------- |
+| `400`  | Invalid backup name                                                                          |
+| `403`  | Backup allowance reached, or backups are SUPERAGENT-only                                     |
+| `404`  | Project or database not found                                                                |
+| `409`  | Name already exists, a backup was taken less than a minute ago, or the database is restoring |
+| `503`  | Backups are temporarily unavailable                                                          |
 
 **Limit:** 50 backups per database on SUPERAGENT, counting only backups you took. HOBBY
 has none — every endpoint in this section answers `403`.
@@ -415,6 +425,7 @@ Authorization: Bearer <platform_token>
 ```
 
 **Response:**
+
 ```json
 {
   "status": "deleted",
@@ -434,11 +445,10 @@ Authorization: Bearer <platform_token>
 ```
 
 **Response:**
+
 ```json
 {
-  "entries": [
-    { "frequency": "daily", "hour": 3, "retention_seconds": 2592000 }
-  ]
+  "entries": [{ "frequency": "daily", "hour": 3, "retention_seconds": 2592000 }]
 }
 ```
 
@@ -453,6 +463,7 @@ Content-Type: application/json
 ```
 
 **Request:**
+
 ```json
 {
   "entries": [
@@ -473,11 +484,11 @@ clamped to it.
 
 Scheduled backups do not count against the plan's backup allowance.
 
-| Status | Meaning |
-|---|---|
-| `400` | Invalid frequency, hour, or day |
-| `403` | Backups are SUPERAGENT-only |
-| `409` | The database is not active |
+| Status | Meaning                         |
+| ------ | ------------------------------- |
+| `400`  | Invalid frequency, hour, or day |
+| `403`  | Backups are SUPERAGENT-only     |
+| `409`  | The database is not active      |
 
 ### List Restores
 
@@ -498,6 +509,7 @@ Content-Type: application/json
 ```
 
 **Request:** exactly one of `backup_name` or `restore_to`.
+
 ```json
 {
   "backup_name": "before_migration"
@@ -511,6 +523,7 @@ Content-Type: application/json
 ```
 
 **Response:** `202 Accepted`
+
 ```json
 {
   "id": "7f3a1c2e-5d4b-4a91-8c6f-2b1e9d0a4c73",
@@ -532,13 +545,13 @@ restored point is discarded, and the connection string is unchanged throughout.
 `restore_to` must fall inside the `restore_window` from [List
 Backups](#list-backups).
 
-| Status | Meaning |
-|---|---|
-| `400` | Both targets or neither, or a time outside the window |
-| `403` | Backups and point-in-time restore are SUPERAGENT-only |
-| `404` | Project, database, or backup not found |
-| `409` | A restore is already in progress, the database is not active, another database operation is running, or too many pre-restore states are still held open |
-| `503` | Restores are temporarily unavailable |
+| Status | Meaning                                                                                                                                                 |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `400`  | Both targets or neither, or a time outside the window                                                                                                   |
+| `403`  | Backups and point-in-time restore are SUPERAGENT-only                                                                                                   |
+| `404`  | Project, database, or backup not found                                                                                                                  |
+| `409`  | A restore is already in progress, the database is not active, another database operation is running, or too many pre-restore states are still held open |
+| `503`  | Restores are temporarily unavailable                                                                                                                    |
 
 ### Get Restore
 
@@ -548,6 +561,7 @@ Authorization: Bearer <platform_token>
 ```
 
 **Response:**
+
 ```json
 {
   "id": "7f3a1c2e-5d4b-4a91-8c6f-2b1e9d0a4c73",
@@ -584,6 +598,7 @@ Content-Type: application/json
 ```
 
 **Request:**
+
 ```json
 {
   "table": "posts",
@@ -592,15 +607,14 @@ Content-Type: application/json
     { "column": "status", "operator": "eq", "value": "published" },
     { "column": "views", "operator": "gt", "value": 100 }
   ],
-  "order": [
-    { "column": "created_at", "ascending": false }
-  ],
+  "order": [{ "column": "created_at", "ascending": false }],
   "limit": 10,
   "offset": 0
 }
 ```
 
 **Response:**
+
 ```json
 {
   "data": [
@@ -622,6 +636,7 @@ Content-Type: application/json
 **Row-Level Security:** Automatically enforced - users see only their own data
 
 **Filter Operators:**
+
 - `eq` (equals)
 - `neq` (not equals)
 - `gt` (greater than)
@@ -644,6 +659,7 @@ Content-Type: application/json
 ```
 
 **Request:**
+
 ```json
 {
   "table": "posts",
@@ -656,6 +672,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "data": [
@@ -683,6 +700,7 @@ Content-Type: application/json
 ```
 
 **Request:**
+
 ```json
 {
   "table": "posts",
@@ -690,13 +708,12 @@ Content-Type: application/json
     "title": "Updated Title",
     "status": "published"
   },
-  "filters": [
-    { "column": "id", "operator": "eq", "value": "post-uuid" }
-  ]
+  "filters": [{ "column": "id", "operator": "eq", "value": "post-uuid" }]
 }
 ```
 
 **Response:**
+
 ```json
 {
   "data": [
@@ -722,16 +739,16 @@ Content-Type: application/json
 ```
 
 **Request:**
+
 ```json
 {
   "table": "posts",
-  "filters": [
-    { "column": "id", "operator": "eq", "value": "post-uuid" }
-  ]
+  "filters": [{ "column": "id", "operator": "eq", "value": "post-uuid" }]
 }
 ```
 
 **Response:**
+
 ```json
 {
   "data": [
@@ -758,11 +775,13 @@ Authorization: Bearer <platform_token>
 ```
 
 **Query Parameters:**
+
 - `from` - Start time (RFC3339, default: 24h ago)
 - `to` - End time (RFC3339, default: now)
 - `granularity` - `hourly`, `daily`, `monthly` (default: `hourly`)
 
 **Response:**
+
 ```json
 {
   "current_storage_bytes": 1610612736,
@@ -815,9 +834,11 @@ Only data statements (`SELECT`, `INSERT`, `UPDATE`, `DELETE`, `MERGE`) are liste
 **SUPERAGENT plan required.**
 
 **Query Parameters:**
+
 - `limit` - Maximum number of queries to return, from 1 to 100 (default: 10)
 
 **Response:**
+
 ```json
 {
   "data": [

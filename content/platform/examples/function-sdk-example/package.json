@@ -2,16 +2,16 @@
   "name": "function-sdk-example",
   "version": "1.0.0",
   "description": "Volcano function using @volcano.dev/sdk",
+  "keywords": [
+    "function",
+    "sdk",
+    "volcano"
+  ],
   "main": "index.js",
-  "dependencies": {
-    "@volcano.dev/sdk": "^1.15.1"
-  },
   "scripts": {
     "test": "node index.js"
   },
-  "keywords": [
-    "volcano",
-    "function",
-    "sdk"
-  ]
+  "dependencies": {
+    "@volcano.dev/sdk": "^1.15.1"
+  }
 }

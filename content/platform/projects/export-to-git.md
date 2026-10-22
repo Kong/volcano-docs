@@ -1,6 +1,6 @@
 ---
-title: "Export your source to GitHub"
-description: "Initialize an empty GitHub repository with the source Volcano stores for your project, then deploy it from Git."
+title: 'Export your source to GitHub'
+description: 'Initialize an empty GitHub repository with the source Volcano stores for your project, then deploy it from Git.'
 ---
 
 Export creates the first commit in an empty GitHub repository. It pushes the
@@ -21,9 +21,7 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/source-export" \
   "commit_sha": "6f2b1c9a4e8d3f7b0a5c2e9d1f4b8a6c3e7d0b25",
   "file_count": 12,
   "skipped": [],
-  "omitted": [
-    { "kind": "migrations", "resource": "", "path": "volcano/migrations" }
-  ]
+  "omitted": [{ "kind": "migrations", "resource": "", "path": "volcano/migrations" }]
 }
 ```
 
@@ -112,13 +110,13 @@ not remove other stored files from the export commit.
 
 The `omitted` list reports content Volcano cannot or should not publish:
 
-| Kind | Why |
-|------|-----|
-| `migrations` | Volcano does not retain the migration files. |
-| `variable_values` | Secret values are never committed. Configure them through Volcano. |
-| `ignored_secret` | Credential-shaped files such as `.env` are excluded. |
-| `dependency_cache` | Generated dependency directories such as `node_modules` are rebuilt. |
-| `unsupported_entry` | Symlinks and other unsupported archive entries are excluded. |
+| Kind                | Why                                                                  |
+| ------------------- | -------------------------------------------------------------------- |
+| `migrations`        | Volcano does not retain the migration files.                         |
+| `variable_values`   | Secret values are never committed. Configure them through Volcano.   |
+| `ignored_secret`    | Credential-shaped files such as `.env` are excluded.                 |
+| `dependency_cache`  | Generated dependency directories such as `node_modules` are rebuilt. |
+| `unsupported_entry` | Symlinks and other unsupported archive entries are excluded.         |
 
 Export fails and names the path when stored source contains a file that should
 never be committed, such as a private key or credential store.
@@ -206,7 +204,7 @@ in the repository and the one-time export remains consumed.
 
 ## Related
 
-| Guide | Description |
-|-------|-------------|
-| [Deploy from GitHub](git-deploy.md) | Connect a repository and deploy on every push |
-| [Configuration manifest](configuration.md) | `volcano-config.yaml` reference |
+| Guide                                      | Description                                   |
+| ------------------------------------------ | --------------------------------------------- |
+| [Deploy from GitHub](git-deploy.md)        | Connect a repository and deploy on every push |
+| [Configuration manifest](configuration.md) | `volcano-config.yaml` reference               |

@@ -1,6 +1,6 @@
 ---
-title: "Database REST API"
-description: "Query your PostgreSQL databases directly from your application using a REST API."
+title: 'Database REST API'
+description: 'Query your PostgreSQL databases directly from your application using a REST API.'
 ---
 
 Query your PostgreSQL databases directly from your application using a REST API.
@@ -9,12 +9,12 @@ Query your PostgreSQL databases directly from your application using a REST API.
 
 The Database REST API lets you perform CRUD operations on your database tables using HTTP requests.
 
-| Feature | Description |
-|---------|-------------|
+| Feature               | Description                                  |
+| --------------------- | -------------------------------------------- |
 | Frontend applications | Query databases directly from browser/mobile |
-| Quick prototyping | No SQL knowledge required |
-| Automatic security | Row-level security enforced automatically |
-| Type-safe | Structured queries with validation |
+| Quick prototyping     | No SQL knowledge required                    |
+| Automatic security    | Row-level security enforced automatically    |
+| Type-safe             | Structured queries with validation           |
 
 **Authentication:** Requires an auth user access token (obtained via signup/signin)
 
@@ -35,13 +35,13 @@ this page applies unchanged. See [Branching](branching.md).
 const response = await fetch('https://api.yourapp.com/auth/signup', {
   method: 'POST',
   headers: {
-    'Authorization': 'Bearer YOUR_ANON_KEY',
-    'Content-Type': 'application/json'
+    Authorization: 'Bearer YOUR_ANON_KEY',
+    'Content-Type': 'application/json',
   },
   body: JSON.stringify({
     email: 'user@example.com',
-    password: 'securePassword123'
-  })
+    password: 'securePassword123',
+  }),
 });
 
 const { access_token } = await response.json();
@@ -54,20 +54,16 @@ const { access_token } = await response.json();
 const response = await fetch('https://api.yourapp.com/databases/notes_db/query/select', {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${access_token}`,  // ← Your access token (proves your identity!)
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${access_token}`, // ← Your access token (proves your identity!)
+    'Content-Type': 'application/json',
   },
   body: JSON.stringify({
     table: 'posts',
     select: ['id', 'title', 'content'],
-    filters: [
-      { column: 'status', operator: 'eq', value: 'published' }
-    ],
-    order: [
-      { column: 'created_at', ascending: false }
-    ],
-    limit: 10
-  })
+    filters: [{ column: 'status', operator: 'eq', value: 'published' }],
+    order: [{ column: 'created_at', ascending: false }],
+    limit: 10,
+  }),
 });
 
 const { data } = await response.json();
@@ -87,6 +83,7 @@ console.log('Posts:', data);
 **Endpoint:** `POST /databases/{databaseName}/query/select`
 
 **Request Body:**
+
 ```json
 {
   "table": "posts",
@@ -95,15 +92,14 @@ console.log('Posts:', data);
     { "column": "status", "operator": "eq", "value": "published" },
     { "column": "views", "operator": "gt", "value": 100 }
   ],
-  "order": [
-    { "column": "created_at", "ascending": false }
-  ],
+  "order": [{ "column": "created_at", "ascending": false }],
   "limit": 20,
   "offset": 0
 }
 ```
 
 **Response:**
+
 ```json
 {
   "data": [
@@ -119,6 +115,7 @@ console.log('Posts:', data);
 ```
 
 **Parameters:**
+
 - `table` (required): Table name
 - `select` (optional): Columns to return (omit for `*`)
 - `filters` (optional): WHERE conditions
@@ -133,6 +130,7 @@ console.log('Posts:', data);
 **Endpoint:** `POST /databases/{databaseName}/query/insert`
 
 **Request Body:**
+
 ```json
 {
   "table": "posts",
@@ -145,6 +143,7 @@ console.log('Posts:', data);
 ```
 
 **Response:**
+
 ```json
 {
   "data": [
@@ -172,6 +171,7 @@ JSON objects and arrays in `values` are stored as JSON, so send them to `json` o
 **Endpoint:** `POST /databases/{databaseName}/query/update`
 
 **Request Body:**
+
 ```json
 {
   "table": "posts",
@@ -179,13 +179,12 @@ JSON objects and arrays in `values` are stored as JSON, so send them to `json` o
     "title": "Updated Title",
     "status": "published"
   },
-  "filters": [
-    { "column": "id", "operator": "eq", "value": "post-uuid" }
-  ]
+  "filters": [{ "column": "id", "operator": "eq", "value": "post-uuid" }]
 }
 ```
 
 **Response:**
+
 ```json
 {
   "data": [
@@ -209,16 +208,16 @@ JSON objects and arrays in `values` are stored as JSON, so send them to `json` o
 **Endpoint:** `POST /databases/{databaseName}/query/delete`
 
 **Request Body:**
+
 ```json
 {
   "table": "posts",
-  "filters": [
-    { "column": "id", "operator": "eq", "value": "post-uuid" }
-  ]
+  "filters": [{ "column": "id", "operator": "eq", "value": "post-uuid" }]
 }
 ```
 
 **Response:**
+
 ```json
 {
   "data": [
@@ -239,18 +238,18 @@ JSON objects and arrays in `values` are stored as JSON, so send them to `json` o
 
 ## Filter Operators
 
-| Operator | SQL Equivalent | Example |
-|----------|----------------|---------|
-| `eq` | `=` | `{ "column": "status", "operator": "eq", "value": "published" }` |
-| `neq` | `<>` | `{ "column": "status", "operator": "neq", "value": "draft" }` |
-| `gt` | `>` | `{ "column": "views", "operator": "gt", "value": 100 }` |
-| `gte` | `>=` | `{ "column": "views", "operator": "gte", "value": 100 }` |
-| `lt` | `<` | `{ "column": "price", "operator": "lt", "value": 50 }` |
-| `lte` | `<=` | `{ "column": "price", "operator": "lte", "value": 50 }` |
-| `like` | `LIKE` | `{ "column": "title", "operator": "like", "value": "%search%" }` |
-| `ilike` | `ILIKE` | `{ "column": "title", "operator": "ilike", "value": "%search%" }` (case-insensitive) |
-| `is` | `IS NULL` | `{ "column": "deleted_at", "operator": "is", "value": null }` |
-| `in` | `IN` | `{ "column": "id", "operator": "in", "value": ["id1", "id2"] }` |
+| Operator | SQL Equivalent | Example                                                                              |
+| -------- | -------------- | ------------------------------------------------------------------------------------ |
+| `eq`     | `=`            | `{ "column": "status", "operator": "eq", "value": "published" }`                     |
+| `neq`    | `<>`           | `{ "column": "status", "operator": "neq", "value": "draft" }`                        |
+| `gt`     | `>`            | `{ "column": "views", "operator": "gt", "value": 100 }`                              |
+| `gte`    | `>=`           | `{ "column": "views", "operator": "gte", "value": 100 }`                             |
+| `lt`     | `<`            | `{ "column": "price", "operator": "lt", "value": 50 }`                               |
+| `lte`    | `<=`           | `{ "column": "price", "operator": "lte", "value": 50 }`                              |
+| `like`   | `LIKE`         | `{ "column": "title", "operator": "like", "value": "%search%" }`                     |
+| `ilike`  | `ILIKE`        | `{ "column": "title", "operator": "ilike", "value": "%search%" }` (case-insensitive) |
+| `is`     | `IS NULL`      | `{ "column": "deleted_at", "operator": "is", "value": null }`                        |
+| `in`     | `IN`           | `{ "column": "id", "operator": "in", "value": ["id1", "id2"] }`                      |
 
 ---
 
@@ -262,8 +261,8 @@ JSON objects and arrays in `values` are stored as JSON, so send them to `json` o
 const response = await fetch(`${apiUrl}/databases/${databaseName}/query/select`, {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${access_token}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${access_token}`,
+    'Content-Type': 'application/json',
   },
   body: JSON.stringify({
     table: 'orders',
@@ -272,13 +271,11 @@ const response = await fetch(`${apiUrl}/databases/${databaseName}/query/select`,
       { column: 'status', operator: 'neq', value: 'cancelled' },
       { column: 'total', operator: 'gte', value: 50 },
       { column: 'created_at', operator: 'gte', value: '2026-01-01' },
-      { column: 'customer_name', operator: 'ilike', value: '%smith%' }
+      { column: 'customer_name', operator: 'ilike', value: '%smith%' },
     ],
-    order: [
-      { column: 'created_at', ascending: false }
-    ],
-    limit: 100
-  })
+    order: [{ column: 'created_at', ascending: false }],
+    limit: 100,
+  }),
 });
 
 const { data, count } = await response.json();
@@ -291,8 +288,8 @@ console.log(`Found ${count} orders:`, data);
 const response = await fetch(`${apiUrl}/databases/${databaseName}/query/select`, {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${access_token}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${access_token}`,
+    'Content-Type': 'application/json',
   },
   body: JSON.stringify({
     table: 'posts',
@@ -300,14 +297,14 @@ const response = await fetch(`${apiUrl}/databases/${databaseName}/query/select`,
     filters: [
       { column: 'like_count', operator: 'gt', value: 10 },
       { column: 'visibility', operator: 'eq', value: 'public' },
-      { column: 'deleted_at', operator: 'is', value: null }
+      { column: 'deleted_at', operator: 'is', value: null },
     ],
     order: [
       { column: 'like_count', ascending: false },
-      { column: 'created_at', ascending: false }
+      { column: 'created_at', ascending: false },
     ],
-    limit: 50
-  })
+    limit: 50,
+  }),
 });
 
 const { data } = await response.json();
@@ -320,17 +317,17 @@ const { data } = await response.json();
 const response = await fetch(`${apiUrl}/databases/${databaseName}/query/insert`, {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${access_token}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${access_token}`,
+    'Content-Type': 'application/json',
   },
   body: JSON.stringify({
     table: 'posts',
     values: {
       title: 'My New Post',
       content: 'This is my first post!',
-      status: 'published'
-    }
-  })
+      status: 'published',
+    },
+  }),
 });
 
 const { data } = await response.json();
@@ -345,19 +342,17 @@ console.log('Created post:', newPost.id);
 const response = await fetch(`${apiUrl}/databases/${databaseName}/query/update`, {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${access_token}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${access_token}`,
+    'Content-Type': 'application/json',
   },
   body: JSON.stringify({
     table: 'posts',
     values: {
       title: 'Updated Title',
-      status: 'published'
+      status: 'published',
     },
-    filters: [
-      { column: 'id', operator: 'eq', value: postId }
-    ]
-  })
+    filters: [{ column: 'id', operator: 'eq', value: postId }],
+  }),
 });
 
 const { data } = await response.json();
@@ -370,15 +365,13 @@ const { data } = await response.json();
 const response = await fetch(`${apiUrl}/databases/${databaseName}/query/delete`, {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${access_token}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${access_token}`,
+    'Content-Type': 'application/json',
   },
   body: JSON.stringify({
     table: 'posts',
-    filters: [
-      { column: 'id', operator: 'eq', value: postId }
-    ]
-  })
+    filters: [{ column: 'id', operator: 'eq', value: postId }],
+  }),
 });
 
 const { data } = await response.json();
@@ -396,17 +389,18 @@ import { VolcanoAuth } from '@volcano.dev/sdk';
 
 const volcano = new VolcanoAuth({
   apiUrl: 'https://api.yourapp.com',
-  anonKey: 'your-anon-key'
+  anonKey: 'your-anon-key',
 });
 
 // Sign in
-await volcano.auth.signIn({ 
-  email: 'user@example.com', 
-  password: 'password' 
+await volcano.auth.signIn({
+  email: 'user@example.com',
+  password: 'password',
 });
 
 // Query database (future SDK feature)
-const posts = await volcano.from('posts')
+const posts = await volcano
+  .from('posts')
   .select('id, title, content')
   .eq('status', 'published')
   .order('created_at', { ascending: false })
@@ -441,11 +435,13 @@ CREATE POLICY "users_own_posts" ON posts
 ### No manual work required
 
 You don't need to:
+
 - Manually add `WHERE user_id = $1` to queries
 - Pass user ID in every request
 - Worry about forgetting security filters
 
 Volcano automatically:
+
 - Injects your user ID into the database session
 - Ensures `auth.uid()` returns your ID
 - Lets RLS policies filter data
@@ -461,21 +457,21 @@ Combine `limit` and `offset` for pagination:
 const page1 = await query({
   table: 'posts',
   limit: 10,
-  offset: 0
+  offset: 0,
 });
 
 // Page 2 (rows 11-20)
 const page2 = await query({
   table: 'posts',
   limit: 10,
-  offset: 10
+  offset: 10,
 });
 
 // Page 3 (rows 21-30)
 const page3 = await query({
   table: 'posts',
   limit: 10,
-  offset: 20
+  offset: 20,
 });
 ```
 
@@ -488,9 +484,7 @@ const page3 = await query({
 ```json
 {
   "table": "posts",
-  "order": [
-    { "column": "created_at", "ascending": false }
-  ]
+  "order": [{ "column": "created_at", "ascending": false }]
 }
 ```
 
@@ -511,9 +505,7 @@ const page3 = await query({
 ```json
 {
   "table": "posts",
-  "order": [
-    { "column": "priority", "ascending": false, "nulls_first": true }
-  ]
+  "order": [{ "column": "priority", "ascending": false, "nulls_first": true }]
 }
 ```
 
@@ -538,10 +530,11 @@ All filters are combined with AND:
 ```
 
 SQL equivalent:
+
 ```sql
-WHERE category = 'electronics' 
-  AND price >= 100 
-  AND price <= 500 
+WHERE category = 'electronics'
+  AND price >= 100
+  AND price <= 500
   AND in_stock = true
 ```
 
@@ -550,9 +543,7 @@ WHERE category = 'electronics'
 ```json
 {
   "table": "users",
-  "filters": [
-    { "column": "name", "operator": "ilike", "value": "%john%" }
-  ]
+  "filters": [{ "column": "name", "operator": "ilike", "value": "%john%" }]
 }
 ```
 
@@ -563,9 +554,7 @@ Matches: "John", "JOHN", "john", "Johnny", etc.
 ```json
 {
   "table": "posts",
-  "filters": [
-    { "column": "deleted_at", "operator": "is", "value": null }
-  ]
+  "filters": [{ "column": "deleted_at", "operator": "is", "value": null }]
 }
 ```
 
@@ -595,9 +584,7 @@ Returns orders created in January 2026.
 {
   "table": "posts",
   "select": ["id", "title", "created_at"],
-  "order": [
-    { "column": "created_at", "ascending": false }
-  ],
+  "order": [{ "column": "created_at", "ascending": false }],
   "limit": 10
 }
 ```
@@ -609,9 +596,7 @@ Row-Level Security automatically filters to current user's posts!
 ```json
 {
   "table": "posts",
-  "filters": [
-    { "column": "title", "operator": "ilike", "value": "%search term%" }
-  ]
+  "filters": [{ "column": "title", "operator": "ilike", "value": "%search term%" }]
 }
 ```
 
@@ -624,9 +609,7 @@ Row-Level Security automatically filters to current user's posts!
     { "column": "like_count", "operator": "gt", "value": 100 },
     { "column": "status", "operator": "eq", "value": "published" }
   ],
-  "order": [
-    { "column": "like_count", "ascending": false }
-  ],
+  "order": [{ "column": "like_count", "ascending": false }],
   "limit": 50
 }
 ```
@@ -640,9 +623,7 @@ Row-Level Security automatically filters to current user's posts!
     "bio": "Updated bio",
     "avatar_url": "https://example.com/avatar.jpg"
   },
-  "filters": [
-    { "column": "id", "operator": "eq", "value": "profile-uuid" }
-  ]
+  "filters": [{ "column": "id", "operator": "eq", "value": "profile-uuid" }]
 }
 ```
 
@@ -713,21 +694,23 @@ Row-Level Security silently filters out data you don't have access to.
 
 ### Automatic protection
 
-| Protection | Description |
-|------------|-------------|
-| Row-level security | Enforced on all queries |
-| SQL injection prevention | All inputs validated |
-| Parameterized queries | Values never interpolated |
-| Identity verification | JWT validated on every request |  
+| Protection               | Description                    |
+| ------------------------ | ------------------------------ |
+| Row-level security       | Enforced on all queries        |
+| SQL injection prevention | All inputs validated           |
+| Parameterized queries    | Values never interpolated      |
+| Identity verification    | JWT validated on every request |
 
 ### What's protected
 
 **Your identity:**
+
 - Extracted from your JWT access token
 - Cannot be spoofed or modified
 - Automatically used in RLS policies
 
 **Your data:**
+
 - RLS policies filter automatically
 - You can only see/modify data you own
 - No manual security checks needed
@@ -735,6 +718,7 @@ Row-Level Security silently filters out data you don't have access to.
 ### Best practices
 
 1. **Always use RLS policies** on tables with user data
+
    ```sql
    ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
    CREATE POLICY "users_own_posts" ON posts
@@ -742,8 +726,9 @@ Row-Level Security silently filters out data you don't have access to.
    ```
 
 2. **Auto-set user_id** on INSERT using triggers
+
    ```sql
-   CREATE TRIGGER set_user_id 
+   CREATE TRIGGER set_user_id
      BEFORE INSERT ON posts
      FOR EACH ROW
      EXECUTE FUNCTION set_user_id_trigger();
@@ -757,22 +742,22 @@ Row-Level Security silently filters out data you don't have access to.
 
 ### Use REST API when:
 
-| Use case | Description |
-|----------|-------------|
-| Simple CRUD operations | SELECT, INSERT, UPDATE, DELETE |
-| Frontend applications | Browser/mobile can't use direct PostgreSQL |
-| Quick prototyping | No SQL knowledge required |
-| Standard queries | Filtering, sorting, pagination |
+| Use case               | Description                                |
+| ---------------------- | ------------------------------------------ |
+| Simple CRUD operations | SELECT, INSERT, UPDATE, DELETE             |
+| Frontend applications  | Browser/mobile can't use direct PostgreSQL |
+| Quick prototyping      | No SQL knowledge required                  |
+| Standard queries       | Filtering, sorting, pagination             |
 
 ### Use Direct SQL when:
 
-| Use case | Description |
-|----------|-------------|
-| Complex queries | JOINs, subqueries, CTEs, window functions |
-| Full PostgreSQL power | Advanced features and extensions |
-| ORM integration | Sequelize, Prisma, TypeORM, etc. |
-| Transactions | Multi-step operations |
-| Performance | Direct connection is faster |
+| Use case              | Description                               |
+| --------------------- | ----------------------------------------- |
+| Complex queries       | JOINs, subqueries, CTEs, window functions |
+| Full PostgreSQL power | Advanced features and extensions          |
+| ORM integration       | Sequelize, Prisma, TypeORM, etc.          |
+| Transactions          | Multi-step operations                     |
+| Performance           | Direct connection is faster               |
 
 Both methods use the same RLS enforcement.
 
@@ -824,13 +809,13 @@ reached — and 14 ms on the database.
 
 ## What's next
 
-| Guide | Description |
-|-------|-------------|
-| [Authentication flow](authentication-flow.md) | How tokens are passed to database |
-| [Query Builder API](query-builder-api.md) | Easier query builder syntax |
-| [Row-level security](row-level-security.md) | Secure your tables |
-| [Auth helpers](auth-helpers.md) | Using auth.uid(), auth.email() |
-| [Authentication overview](../authentication/overview.md) | User signup/signin |
+| Guide                                                    | Description                       |
+| -------------------------------------------------------- | --------------------------------- |
+| [Authentication flow](authentication-flow.md)            | How tokens are passed to database |
+| [Query Builder API](query-builder-api.md)                | Easier query builder syntax       |
+| [Row-level security](row-level-security.md)              | Secure your tables                |
+| [Auth helpers](auth-helpers.md)                          | Using auth.uid(), auth.email()    |
+| [Authentication overview](../authentication/overview.md) | User signup/signin                |
 
 ---
 

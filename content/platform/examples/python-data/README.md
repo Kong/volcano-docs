@@ -1,6 +1,6 @@
 ---
-title: "Python Data Processing Example"
-description: "A function that processes data arrays and demonstrates environment variable usage."
+title: 'Python Data Processing Example'
+description: 'A function that processes data arrays and demonstrates environment variable usage.'
 ---
 
 # Python Data Processing Example

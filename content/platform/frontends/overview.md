@@ -1,6 +1,6 @@
 ---
-title: "Frontends overview"
-description: "Deploy static and server-rendered sites on Volcano, with build/runtime variables, custom domains, and zero-downtime redeploys."
+title: 'Frontends overview'
+description: 'Deploy static and server-rendered sites on Volcano, with build/runtime variables, custom domains, and zero-downtime redeploys.'
 ---
 
 A **frontend** is a web site — static or server-rendered — that Volcano builds,
@@ -59,7 +59,7 @@ exactly as the route wrote them, never compressed a second time:
 ```js
 // pages/api/report.js
 export default function handler(req, res) {
-  res.setHeader("Content-Encoding", "gzip");
+  res.setHeader('Content-Encoding', 'gzip');
   res.status(200).send(gzipSync(Buffer.from(report)));
 }
 ```
@@ -92,12 +92,12 @@ curl -sI https://your-site.frontends.volcano.run/pricing | grep -i x-volcano
 **Your app decides what is shared.** The edge stores nothing that does not ask
 to be stored, so Next.js's own rendering choice is the whole contract:
 
-| Route | What Next.js sends | At the edge |
-| --- | --- | --- |
-| Prerendered at build | `s-maxage=31536000` | Cached until something replaces it |
-| `export const revalidate = 60` | `s-maxage=60` | Cached for 60 seconds |
-| `export const dynamic = 'force-dynamic'` | `no-store` | Never cached |
-| Reads cookies, headers, or search params | `no-store` | Never cached |
+| Route                                    | What Next.js sends  | At the edge                        |
+| ---------------------------------------- | ------------------- | ---------------------------------- |
+| Prerendered at build                     | `s-maxage=31536000` | Cached until something replaces it |
+| `export const revalidate = 60`           | `s-maxage=60`       | Cached for 60 seconds              |
+| `export const dynamic = 'force-dynamic'` | `no-store`          | Never cached                       |
+| Reads cookies, headers, or search params | `no-store`          | Never cached                       |
 
 So a page that is always a `Miss` is a page your app is rendering per request.
 If you expected it to be cached, make it static — the usual cause is a dynamic
@@ -116,10 +116,10 @@ the cache for the rest of your site:
 
 ```js
 // app/api/publish/route.js
-import { revalidatePath } from "next/cache";
+import { revalidatePath } from 'next/cache';
 
 export async function POST() {
-  revalidatePath("/blog"); // /blog is refetched on the next visit; nothing else moves
+  revalidatePath('/blog'); // /blog is refetched on the next visit; nothing else moves
   return Response.json({ revalidated: true });
 }
 ```
@@ -137,7 +137,7 @@ string as its own entry, so clearing `/blog` leaves `/blog?utm_source=newsletter
 serving until that entry's own lifetime runs out. Redeploy when you need every
 variant of a page gone at once. A rewritten route is cleared at the address the
 visitor requested, not the destination the rewrite resolved. And the route has to
-be one Volcano can name: a path *ending* in `*` is rejected, because there is no
+be one Volcano can name: a path _ending_ in `*` is rejected, because there is no
 way to clear that one page without also clearing every page sharing its prefix.
 An asterisk anywhere else in a path is fine, and so is a path of up to about
 3,950 characters. A path Volcano cannot clear is refused and recorded in your
@@ -161,10 +161,10 @@ page carrying the tag when you mark it — wherever those pages live:
 
 ```js
 // app/api/publish/route.js
-import { revalidateTag } from "next/cache";
+import { revalidateTag } from 'next/cache';
 
 export async function POST() {
-  revalidateTag("posts"); // every page built from `posts` is cleared; nothing else moves
+  revalidateTag('posts'); // every page built from `posts` is cleared; nothing else moves
   return Response.json({ revalidated: true });
 }
 ```
@@ -223,7 +223,7 @@ matched route out of the shared cache:
 
 ```js
 // proxy.js — /dashboard is never cached, everything else still is
-export const config = { matcher: ["/dashboard/:path*"] };
+export const config = { matcher: ['/dashboard/:path*'] };
 ```
 
 Narrow the `matcher` to the routes that need it. Middleware declared without a
@@ -292,7 +292,7 @@ Every response Volcano proxies from your site carries:
 X-Volcano-Origin-Ms: 42
 ```
 
-That is how long your site took to *start* answering, measured from the moment
+That is how long your site took to _start_ answering, measured from the moment
 Volcano asked it. A page streams to the browser as it is produced, so by the
 time the last byte leaves there is nowhere left to write a header — first byte
 is the part that can be reported. Compare it against the browser's total load
@@ -319,11 +319,11 @@ does not stop it, though: it keeps running until it returns or reaches the
 runtime limit below. Put a timeout on the outbound calls a route makes so it
 can fail inside the window with an error of your own.
 
-| Limit | HOBBY | SUPERAGENT |
-| --- | --- | --- |
-| Time to start a response | 60 s | 60 s |
-| Time between chunks of a streamed response | 60 s | 60 s |
-| Total time the runtime gives one request | 30 s | 180 s |
+| Limit                                      | HOBBY | SUPERAGENT |
+| ------------------------------------------ | ----- | ---------- |
+| Time to start a response                   | 60 s  | 60 s       |
+| Time between chunks of a streamed response | 60 s  | 60 s       |
+| Total time the runtime gives one request   | 30 s  | 180 s      |
 
 On HOBBY the runtime limit comes first, so a route that has not answered fails
 at 30 seconds. Next.js's `maxDuration` export does not change any of these.
@@ -336,7 +336,7 @@ Send the headers and a first chunk right away, then the rest as it is ready:
 
 ```js
 // app/api/report/route.js
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   const encoder = new TextEncoder();
@@ -346,12 +346,12 @@ export async function GET() {
         controller.enqueue(encoder.encode(`data: step ${step}\n\n`));
         await new Promise((resolve) => setTimeout(resolve, 10_000));
       }
-      controller.enqueue(encoder.encode("data: done\n\n"));
+      controller.enqueue(encoder.encode('data: done\n\n'));
       controller.close();
     },
   });
   return new Response(stream, {
-    headers: { "content-type": "text/event-stream", "cache-control": "no-store" },
+    headers: { 'content-type': 'text/event-stream', 'cache-control': 'no-store' },
   });
 }
 ```
@@ -370,18 +370,18 @@ with a key from a selected variable:
 // app/api/chat/route.js
 export async function POST(request) {
   const { messages } = await request.json();
-  const upstream = await fetch("https://api.example-llm.com/v1/chat/completions", {
-    method: "POST",
+  const upstream = await fetch('https://api.example-llm.com/v1/chat/completions', {
+    method: 'POST',
     headers: {
       authorization: `Bearer ${process.env.LLM_API_KEY}`,
-      "content-type": "application/json",
+      'content-type': 'application/json',
     },
-    body: JSON.stringify({ model: "example-model", messages, stream: true }),
+    body: JSON.stringify({ model: 'example-model', messages, stream: true }),
     signal: AbortSignal.timeout(25_000),
   });
   return new Response(upstream.body, {
     status: upstream.status,
-    headers: { "content-type": upstream.headers.get("content-type") ?? "text/plain" },
+    headers: { 'content-type': upstream.headers.get('content-type') ?? 'text/plain' },
   });
 }
 ```
@@ -405,13 +405,13 @@ can outlast the runtime limit.
 When Volcano cannot route or serve a frontend request, browsers receive a
 self-contained HTML error page. The status code identifies the failure:
 
-| Status | Meaning |
-| --- | --- |
-| `403` | Project traffic is disabled. |
-| `404` | No deployed frontend serves the address, or the requested `/_next/static` file is in no build the frontend still serves. |
-| `429` | The project reached a rate or monthly request limit. |
-| `502` | The deployed frontend is temporarily unreachable. |
-| `503` | A platform dependency is temporarily unavailable. |
+| Status | Meaning                                                                                                                  |
+| ------ | ------------------------------------------------------------------------------------------------------------------------ |
+| `403`  | Project traffic is disabled.                                                                                             |
+| `404`  | No deployed frontend serves the address, or the requested `/_next/static` file is in no build the frontend still serves. |
+| `429`  | The project reached a rate or monthly request limit.                                                                     |
+| `502`  | The deployed frontend is temporarily unreachable.                                                                        |
+| `503`  | A platform dependency is temporarily unavailable.                                                                        |
 
 The page may include a reference ID for support. `502` and `503` pages link to
 the platform status page. Clients that prefer `application/json` receive a JSON
@@ -424,13 +424,13 @@ Your server-side code finds the visitor's IP address in the usual headers:
 ```javascript
 // app/api/whoami/route.js
 export function GET(request) {
-  return Response.json({ ip: request.headers.get("x-real-ip") });
+  return Response.json({ ip: request.headers.get('x-real-ip') });
 }
 ```
 
-| Header | Value |
-| --- | --- |
-| `X-Real-IP` | The visitor's address |
+| Header            | Value                                                 |
+| ----------------- | ----------------------------------------------------- |
+| `X-Real-IP`       | The visitor's address                                 |
 | `X-Forwarded-For` | The visitor's address, followed by Volcano's own hops |
 
 Volcano replaces any `X-Real-IP` or `X-Forwarded-For` the visitor sends, so
@@ -453,12 +453,12 @@ except `NEXT_PUBLIC_*` is also set in the deployed frontend's server
 **runtime**, which is capped at 4096 bytes including about 900 bytes Volcano
 uses itself (see [Environment size](deploy.md#environment-size)):
 
-| Variable | Build | Server runtime |
-| --- | --- | --- |
-| `NEXT_PUBLIC_*` | Yes | No. Next.js inlines the build-time value wherever your code reads `process.env.NEXT_PUBLIC_…` literally, in browser and server code alike |
-| A name Volcano sets in the runtime, listed below | Yes, unless the [build reserves it](../functions/environment-variables.md#names-reserved-during-builds) | No. Volcano's value replaces yours |
-| Any other selected name | Yes, unless the build reserves it | Yes, including other names the build reserves, such as `VOLCANO_*` |
-| A name you did not select | No | No |
+| Variable                                         | Build                                                                                                   | Server runtime                                                                                                                            |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_*`                                  | Yes                                                                                                     | No. Next.js inlines the build-time value wherever your code reads `process.env.NEXT_PUBLIC_…` literally, in browser and server code alike |
+| A name Volcano sets in the runtime, listed below | Yes, unless the [build reserves it](../functions/environment-variables.md#names-reserved-during-builds) | No. Volcano's value replaces yours                                                                                                        |
+| Any other selected name                          | Yes, unless the build reserves it                                                                       | Yes, including other names the build reserves, such as `VOLCANO_*`                                                                        |
+| A name you did not select                        | No                                                                                                      | No                                                                                                                                        |
 
 Changing a `NEXT_PUBLIC_*` value takes a redeploy. Any other value reaches the
 running frontend without one. Read secrets such as API keys in server code
@@ -467,12 +467,12 @@ browser bundle.
 
 Volcano sets these runtime variables itself:
 
-| Variable | Value |
-| --- | --- |
-| `VOLCANO_FRONTEND_ID` | The frontend's ID |
-| `VOLCANO_FRONTEND_NAME` | The frontend's name |
+| Variable                     | Value                                      |
+| ---------------------------- | ------------------------------------------ |
+| `VOLCANO_FRONTEND_ID`        | The frontend's ID                          |
+| `VOLCANO_FRONTEND_NAME`      | The frontend's name                        |
 | `VOLCANO_FRONTEND_FRAMEWORK` | The frontend's framework, such as `nextjs` |
-| `NODE_ENV` | `production` |
+| `NODE_ENV`                   | `production`                               |
 
 It also sets the frontend's
 [cache wiring](../functions/environment-variables.md#names-reserved-during-builds).
@@ -527,15 +527,26 @@ with a `_volcano` TXT record, and every hostname below it attaches to any of you
 frontends, in either TLS mode, without another record. See
 [Verify domain ownership](domain-verification.md).
 
-Each frontend has at most one custom domain. Attaching a second, different
-domain returns `409 Conflict`; to serve the same site on several hostnames,
-deploy the same source as one frontend per hostname.
+Each frontend has one custom domain for now, on every plan. Attaching a
+second, different domain returns `409 Conflict`, or `403` through the
+[domains routes](../api-reference/frontend-endpoints.md#frontend-custom-domains);
+to serve the same site on several hostnames, deploy the same source as one
+frontend per hostname.
 
-HOBBY allows one project with one frontend, so a HOBBY account has one custom
-domain. SUPERAGENT puts a custom domain on every frontend. See
+Every frontend can have a custom domain, but managed TLS certificates are
+limited per account: HOBBY includes one and SUPERAGENT includes 100. See
 [Plans and limits](../guides/plans-and-limits.md#frontends).
 
-For managed TLS, declare the domain in `volcano-config.yaml` and deploy it:
+For managed TLS, attach the domain with `--tls managed`:
+
+```bash
+volcano cloud frontends domain create my-site --domain app.example.com --tls managed
+volcano cloud frontends domain get my-site
+```
+
+`--tls` needs the Volcano CLI 0.50 or later. A `volcano-config.yaml` entry for
+this frontend that omits `custom_domain` leaves the domain attached;
+`custom_domain: null` removes it. The manifest can also attach it on its own:
 
 ```yaml
 version: 1
@@ -547,13 +558,8 @@ frontends:
         mode: managed
 ```
 
-```bash
-volcano cloud config deploy
-volcano cloud frontends domain get my-site
-```
-
-If your account already owns the domain, the response's `verification_records`
-names the certificate validation CNAME right away. Otherwise it names a
+If your account already owns the domain, the verification records name the
+certificate validation CNAME right away. Otherwise they name a
 `_volcano` TXT record for the hostname's registrable domain, such as
 `_volcano.example.com` for `app.example.com`. Publish it; Volcano holds the
 hostname for your account while it waits. Once the account owns the domain,
@@ -580,8 +586,8 @@ volcano cloud frontends domain create my-site \
 volcano cloud frontends domain get my-site
 ```
 
-You can also attach a custom domain declaratively — see
-[`custom_domain` in the configuration reference](../projects/configuration.md).
+You can also attach custom domains declaratively — see
+[`custom_domain` and `custom_domains` in the configuration reference](../projects/configuration.md).
 
 Removing a domain takes about a minute for BYOC and a few minutes for managed
 TLS, while Volcano detaches it and releases the hostname. Until then, attaching
@@ -640,21 +646,10 @@ curl -sSI https://app.example.com/ | grep -i -E '^(HTTP|x-volcano)'
 An active domain switches between BYOC and managed TLS in place, without
 downtime. The current certificate keeps serving until its replacement does.
 
-To move a BYOC domain to managed TLS, change its `tls` block to
-`mode: managed` and deploy:
-
-```yaml
-version: 1
-frontends:
-  - name: my-site
-    custom_domain:
-      domain: app.example.com
-      tls:
-        mode: managed
-```
+To move a BYOC domain to managed TLS, attach it again with `--tls managed`:
 
 ```bash
-volcano cloud config deploy
+volcano cloud frontends domain create my-site --domain app.example.com --tls managed
 volcano cloud frontends domain get my-site
 ```
 
@@ -679,12 +674,18 @@ volcano cloud frontends domain create my-site \
 ```
 
 Your certificate replaces the managed one at once, and Volcano stops renewing
-the managed certificate. You can then delete the `_acme-challenge` CNAME. In
-`volcano-config.yaml`, declare `tls.mode: byoc` with `certificate_pem` and
-`private_key_pem` instead.
+the managed certificate. You can then delete the `_acme-challenge` CNAME.
+
+If `volcano-config.yaml` declares the domain, keep its `tls.mode` in step with
+the switch. Otherwise its next deploy switches the domain back or, for
+`mode: byoc` without certificate fields, fails. To switch in the manifest
+itself, change `tls.mode` and run `volcano cloud config deploy`. Switching to
+managed there means removing every PEM field; switching to BYOC needs
+`certificate_pem` and `private_key_pem`. Once a domain is BYOC,
+`tls.mode: byoc` without them keeps its certificate.
 
 A domain that is not yet `active` has no certificate to keep serving. Wait
-until it is active, or remove it and declare it again with the other mode.
+until it is active, or remove it and attach it again with the other mode.
 
 ## Next
 

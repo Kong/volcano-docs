@@ -1,6 +1,6 @@
 ---
-title: "Manage SDK sessions"
-description: "Read, adopt, refresh, and sign out Volcano sessions with the JavaScript, Python, and Ruby SDKs."
+title: 'Manage SDK sessions'
+description: 'Read, adopt, refresh, and sign out Volcano sessions with the JavaScript, Python, and Ruby SDKs.'
 ---
 
 Use the SDK session facade to move credentials between configured clients, rotate an expiring session, or sign out.

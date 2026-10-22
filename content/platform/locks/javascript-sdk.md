@@ -1,6 +1,6 @@
 ---
-title: "Project Locks JavaScript SDK"
-description: "Coordinate backend workers with renewable project lock leases using the Volcano JavaScript SDK."
+title: 'Project Locks JavaScript SDK'
+description: 'Coordinate backend workers with renewable project lock leases using the Volcano JavaScript SDK.'
 ---
 
 Project locks coordinate backend functions in the same Volcano project. Use a
@@ -12,20 +12,16 @@ import { VolcanoAuth } from '@volcano.dev/sdk';
 const volcano = new VolcanoAuth({
   apiUrl: process.env.VOLCANO_API_URL,
   anonKey: process.env.ANON_KEY,
-  accessToken: process.env.SERVICE_ROLE_KEY
+  accessToken: process.env.SERVICE_ROLE_KEY,
 });
 ```
 
 ## Run work while leader
 
 ```javascript
-const result = await volcano.locks.withLock(
-  'daily-rollup',
-  { ttl: 30 },
-  async ({ signal }) => {
-    await runRollup({ signal });
-  }
-);
+const result = await volcano.locks.withLock('daily-rollup', { ttl: 30 }, async ({ signal }) => {
+  await runRollup({ signal });
+});
 
 if (result.error) {
   throw result.error;
@@ -43,14 +39,10 @@ returns an ownership error. The callback must stop when the signal is aborted.
 
 ```javascript
 export const handler = async () => {
-  const result = await volcano.locks.withLock(
-    'scheduled-cleanup',
-    { ttl: 60 },
-    async ({ signal }) => {
-      const deleted = await deleteExpiredRecords({ signal });
-      return { deleted };
-    }
-  );
+  const result = await volcano.locks.withLock('scheduled-cleanup', { ttl: 60 }, async ({ signal }) => {
+    const deleted = await deleteExpiredRecords({ signal });
+    return { deleted };
+  });
 
   if (result.error) {
     throw result.error;
@@ -58,11 +50,7 @@ export const handler = async () => {
 
   return {
     statusCode: 200,
-    body: JSON.stringify(
-      result.acquired
-        ? { leader: true, ...result.data }
-        : { leader: false, skipped: true }
-    )
+    body: JSON.stringify(result.acquired ? { leader: true, ...result.data } : { leader: false, skipped: true }),
   };
 };
 ```

@@ -1,6 +1,6 @@
 ---
-title: "Creating Projects"
-description: "Projects organize your functions, durable functions, databases, authentication, file storage, realtime, frontend hosting, and distributed locks."
+title: 'Creating Projects'
+description: 'Projects organize your functions, durable functions, databases, authentication, file storage, realtime, frontend hosting, and distributed locks.'
 ---
 
 Projects organize your functions, durable functions, databases, authentication, file storage, realtime, frontend hosting, and distributed locks.
@@ -24,19 +24,21 @@ curl -X POST https://api.volcano.dev/projects \
 ```
 
 **Response:**
+
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
   "name": "my-app",
   "status": "active",
   "all_regions": true,
-  "selected_regions": ["us-east-1","us-west-2"],
+  "selected_regions": ["us-east-1", "us-west-2"],
   "created_at": "2024-01-01T00:00:00Z",
   "updated_at": "2024-01-01T00:00:00Z"
 }
 ```
 
 **Fields:**
+
 - `id` - Unique project identifier (use in all API calls)
 - `status` - `active`, `provisioning`, or `failed`
 
@@ -68,6 +70,7 @@ curl https://api.volcano.dev/projects \
 ```
 
 With pagination:
+
 ```bash
 curl "https://api.volcano.dev/projects?page=1&limit=20" \
   -H "Authorization: Bearer $PLATFORM_TOKEN"
@@ -88,6 +91,7 @@ curl -X DELETE https://api.volcano.dev/projects/PROJECT_ID \
 ```
 
 **Warning:** This deletes:
+
 - All functions in the project
 - All databases in the project
 - All auth users in the project
@@ -103,7 +107,3 @@ This action cannot be undone.
 - [Deploy a Function](../functions/creating-functions.md)
 - [Create a Database](../databases/creating-databases.md)
 - [Add Authentication](../authentication/quickstart.md)
-
-
-
-

@@ -1,6 +1,6 @@
 ---
-title: "Database Connection Pool Example"
-description: "Production-ready example showing how to use connection pooling with Volcano SDK for optimal performance."
+title: 'Database Connection Pool Example'
+description: 'Production-ready example showing how to use connection pooling with Volcano SDK for optimal performance.'
 ---
 
 # Database Connection Pool Example
@@ -19,12 +19,14 @@ Production-ready example showing how to use connection pooling with Volcano SDK 
 ## Performance Comparison
 
 **Without Pool (Simple Pattern):**
+
 ```text
 Request → Create connection (50-100ms) → Query (10ms) → Close → Response
 Total: ~60-110ms per request
 ```
 
 **With Pool (Production Pattern):**
+
 ```text
 Request → Get from pool (1-5ms) → Query (10ms) → Release → Response
 Total: ~11-15ms per request
@@ -89,12 +91,13 @@ Then set the [environment variables](#environment-variables) it reads.
 ### 3. Usage
 
 **From Browser:**
+
 ```javascript
 import { VolcanoAuth } from '@volcano.dev/sdk';
 
 const volcano = new VolcanoAuth({
   apiUrl: 'https://api.yourapp.com',
-  anonKey: 'your-anon-key'
+  anonKey: 'your-anon-key',
 });
 
 // Sign in
@@ -103,7 +106,7 @@ await volcano.auth.signIn({ email, password });
 // Get posts (calls the function, which queries the database)
 const result = await volcano.functions.invoke('posts', {
   action: 'get_posts',
-  filter: 'recent'
+  filter: 'recent',
 });
 
 console.log('Posts:', result.posts);
@@ -112,13 +115,14 @@ console.log('Posts:', result.posts);
 await volcano.functions.invoke('posts', {
   action: 'create_post',
   title: 'My First Post',
-  content: 'Hello World!'
+  content: 'Hello World!',
 });
 ```
 
 ## Why Use Connection Pooling?
 
 ### Benefits:
+
 1. **Faster** - Reuses connections (1-5ms vs 50-100ms)
 2. **Efficient** - Fewer database connections
 3. **Scalable** - Handles concurrent requests better
@@ -127,11 +131,13 @@ await volcano.functions.invoke('posts', {
 ### When to Use Each Pattern:
 
 **Simple Pattern (createClient):**
+
 - Learning/prototyping
 - Low-traffic apps (<100 requests/day)
 - Simple functions
 
 **Pool Pattern (createPool):**
+
 - Production apps
 - High-traffic (>100 requests/day)
 - Need maximum performance

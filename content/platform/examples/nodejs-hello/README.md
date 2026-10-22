@@ -1,6 +1,6 @@
 ---
-title: "Node.js Hello World Example"
-description: "This is a simple function that demonstrates the Volcano platform."
+title: 'Node.js Hello World Example'
+description: 'This is a simple function that demonstrates the Volcano platform.'
 ---
 
 # Node.js Hello World Example

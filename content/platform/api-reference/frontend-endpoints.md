@@ -1,6 +1,6 @@
 ---
-title: "Frontend Endpoints"
-description: "Frontend hosting APIs are project-scoped and require a platform user token."
+title: 'Frontend Endpoints'
+description: 'Frontend hosting APIs are project-scoped and require a platform user token.'
 ---
 
 Frontend hosting APIs are project-scoped and require a platform user token.
@@ -10,6 +10,7 @@ Frontend hosting APIs are project-scoped and require a platform user token.
 `POST /projects/{project_id}/frontends`
 
 Multipart form fields:
+
 - `name` (required): DNS-safe frontend name.
 - `framework` (optional): currently `nextjs`.
 - `app_root` (optional): relative POSIX path from the uploaded archive root to the Next.js app to build, such as `apps/web` for a monorepo. Omit it for single-app archives. The directory normally holds the app's `package.json`. If it has none, the nearest `package.json` above it must build it with `next build <dir>`, as the `volcano init nextjs` layout does with `next build web`; the build then runs from that `package.json`.
@@ -18,6 +19,7 @@ Multipart form fields:
 - `archive` (required): ZIP or `tar.gz` bundle of the frontend project or monorepo workspace root. The API stores a normalized `tar.gz` archive.
 
 Size limits:
+
 - Uploaded and normalized source archives are limited to 256 MB, enforced by the API.
 - Each final frontend image is limited to 4096 MB, enforced by the build.
 - The CLI uploads `tar.gz` and does not enforce its own source archive size limit.
@@ -37,12 +39,14 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/frontends" \
 ```
 
 Responses:
+
 - `201 Created`: new frontend created with a `Frontend` resource in `provisioning` state.
 - `200 OK`: existing frontend with the same name was updated and its deployment was started or queued (frontend ID and site URL are preserved). A queued response keeps the frontend's current status and sets `pending_deployment_id`.
 - `409 Conflict`: deletion is already queued or running for that frontend.
 - `403 Forbidden`: the project has reached a frontend limit.
 
 Deployment availability and concurrency:
+
 - Existing traffic remains on an available runtime while a redeploy builds and provisions.
 - Each deployment publishes its own static assets before the runtimes switch to its build, and the live build's assets keep serving until the new deployment goes live, so a page loaded mid-deployment resolves its hashed chunks whichever of the two builds served it. The previous build's assets are retained briefly after cutover, then removed.
 - A failed redeploy keeps the previous deployment serving: the runtimes are put back on the build they were running, the frontend stays `active` on it, and only the attempted deployment is recorded as failed.
@@ -54,6 +58,7 @@ Deployment availability and concurrency:
 - If edge recovery exhausts its retries, the frontend stays `degraded` and keeps serving; another redeploy retries recovery while preserving availability.
 
 Build environment:
+
 - Project variables stored through the variables API are resolved before the frontend build according to the frontend's selection. New frontends default to `scoped` with no selected names; existing frontends keep their stored selection when a deploy omits `variable_scope` and `variables`.
 - A scoped deploy selects the repeated `variables` names. `variable_scope=all` explicitly selects every project variable. Selected variables are available to the build, except names the build itself reserves, which it drops with a warning in the build log. See [Environment Variables](../functions/environment-variables.md#names-reserved-during-builds).
 - Selected variables other than `NEXT_PUBLIC_*` are also available to the deployed frontend runtime.
@@ -61,6 +66,7 @@ Build environment:
 - For monorepos, `app_root` selects the Next.js app inside the uploaded archive. Redeploys reuse the frontend's stored `app_root`.
 
 Supported frontend environments:
+
 - Next.js `15.x` and `16.x`.
 - Node.js `22.x` and `24.x`, inferred from `package.json` `engines.node`.
 
@@ -69,11 +75,12 @@ Volcano runs the `build` script from `package.json`, or `next build` when it is 
 Your selected Node.js family must satisfy the installed Next.js package's `engines.node` constraint. The runtime matrix is tested against the pinned Next versions' npm metadata: Next `15.5.28` requires `^18.18.0 || ^19.8.0 || >=20.0.0`, and Next `16.4.2` requires `>=20.9.0`.
 
 Plan limits:
-- HOBBY users can create one frontend per project.
-- SUPERAGENT users can create frontends up to the project hard limit.
-- When exceeded, the API returns `403` with an error like `frontend deployment limit exceeded for your plan`.
+
+- HOBBY and SUPERAGENT users can create frontends up to the project hard limit.
+- When exceeded, the API returns `403` with an error like `frontend limit exceeded (max 10000 per project)`.
 
 Hard limit:
+
 - Each project can contain up to 10,000 frontends, regardless of plan.
 
 ## List Frontends
@@ -87,6 +94,7 @@ Response: paginated `Frontend` list.
 `GET /projects/{project_id}/frontends/{frontend_id}`
 
 Response includes:
+
 - `status`
 - `app_root` (when configured)
 - `site_url` (when active)
@@ -97,6 +105,7 @@ Response includes:
 - `function_routes` (the frontend's [Function routes](#function-routes), most specific first; also in each item of the list response)
 
 Frontend status values:
+
 - `provisioning`: a deployment is building or provisioning.
 - `active`: the deployment and edge are ready.
 - `degraded`: the runtime remains available while edge-only recovery retries, and after those retries are spent.
@@ -104,6 +113,7 @@ Frontend status values:
 - `deleting`: asynchronous cleanup is running.
 
 Frontend deployment history also uses:
+
 - `queued`: accepted and waiting for the running deployment.
 - `superseded`: replaced by a newer queued deployment and will not run.
 
@@ -119,9 +129,86 @@ Triggers a new deployment using the latest uploaded artifact. If `app_root` is c
 
 Returns `202 Accepted` and schedules asynchronous deprovisioning. If another deployment is running, list/get responses keep the frontend's current status and expose the queued deletion as `pending_deployment_id`. The status changes to `deleting` when cleanup starts. When cleanup finishes, the frontend no longer appears in lists and `GET /projects/{project_id}/frontends/{frontend_id}` returns `404`.
 
+## Frontend Custom Domains
+
+These routes manage a frontend's custom domains as a list. A frontend holds one
+custom domain for now, on every plan. Each domain response carries a
+`redirect` field, which is `null` while a frontend has no second domain to
+redirect to.
+
+### List domains
+
+`GET /projects/{project_id}/frontends/{frontend_id}/domains`
+
+Returns the frontend's domains, oldest first, each in the
+[domain response](#get-frontend-custom-domain) shape:
+
+```json
+{
+  "data": [
+    {
+      "domain": "www.example.com",
+      "tls_mode": "managed",
+      "domain_status": "active",
+      "verification_status": "verified",
+      "serving_certificate": "managed",
+      "routing_target_hostname": "my-frontend.frontends.volcano.run",
+      "effective_urls": ["https://my-frontend.frontends.volcano.run/", "https://www.example.com/"],
+      "redirect": null,
+      "created_at": "2026-09-02T12:00:00Z",
+      "updated_at": "2026-09-02T12:05:00Z"
+    }
+  ]
+}
+```
+
+### Add a domain
+
+`POST /projects/{project_id}/frontends/{frontend_id}/domains`
+
+Takes the [create request](#create-frontend-custom-domain) body:
+
+```bash
+curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/frontends/$FRONTEND_ID/domains" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "domain": "www.example.com",
+    "tls": {"mode": "managed"}
+  }'
+```
+
+- Returns `201` for a new domain. For a hostname the frontend already has, returns `200`, or switches its TLS mode in place as described below.
+- Returns `403` with an error like `custom domain limit exceeded for your plan (1 per frontend)` when the frontend already has a domain.
+- While the frontend's previous domain is detaching, returns `409` with `code: custom_domain_releasing` and a `Retry-After` header; send the same request again after it.
+- Ownership, managed TLS, BYOC, and the other `409` responses work as in [Create Frontend Custom Domain](#create-frontend-custom-domain).
+
+### Get a domain
+
+`GET /projects/{project_id}/frontends/{frontend_id}/domains/{domain}`
+
+Returns one domain by hostname, case-insensitively, or `404`.
+
+### Update a domain
+
+`PATCH /projects/{project_id}/frontends/{frontend_id}/domains/{domain}`
+
+Sets the domain's `redirect`. A redirect points at another domain of the same
+frontend, so until a frontend can hold a second domain, `{"redirect": null}` is
+the only value that succeeds; any other returns `400`.
+
+### Remove a domain
+
+`DELETE /projects/{project_id}/frontends/{frontend_id}/domains/{domain}`
+
+Returns `204` once the detach is queued.
+
 ## Create Frontend Custom Domain
 
 `POST /projects/{project_id}/frontends/{frontend_id}/domain`
+
+Deprecated: use [Add a domain](#add-a-domain). This route returns `409` when
+the frontend already has a different domain.
 
 Ask Volcano to issue and renew the certificate:
 
@@ -157,9 +244,7 @@ challenge for the hostname's registrable domain:
     }
   ],
   "routing_target_hostname": "my-frontend.frontends.volcano.run",
-  "effective_urls": [
-    "https://my-frontend.frontends.volcano.run/"
-  ],
+  "effective_urls": ["https://my-frontend.frontends.volcano.run/"],
   "created_at": "2026-09-02T12:00:00Z",
   "updated_at": "2026-09-02T12:00:00Z"
 }
@@ -250,9 +335,7 @@ returns it right away:
     }
   ],
   "routing_target_hostname": "my-frontend.frontends.volcano.run",
-  "effective_urls": [
-    "https://my-frontend.frontends.volcano.run/"
-  ],
+  "effective_urls": ["https://my-frontend.frontends.volcano.run/"],
   "created_at": "2026-09-02T12:00:00Z",
   "updated_at": "2026-09-02T12:00:00Z"
 }
@@ -264,6 +347,7 @@ Keep the `_volcano` TXT record too. Point your hostname at
 `routing_target_hostname` separately to send traffic to the frontend.
 
 Behavior:
+
 - Configures one custom domain per frontend on every plan.
 - Managed TLS issues and renews the certificate without accepting or returning certificate material.
 - Managed TLS accepts hostnames up to 219 characters; BYOC accepts up to 253.
@@ -282,6 +366,7 @@ Behavior:
 - Local mode does not provide managed certificate issuance. Use BYOC when running locally.
 
 Provisioning lifecycle:
+
 - `pending_verification`: waiting for the ownership TXT record or the later certificate validation CNAME.
 - An ownership reservation expires after 72 hours and the domain moves to `detaching`. Once it is removed, submit the domain again to receive a new TXT challenge.
 - `provisioning`: validation succeeded and activation is in progress.
@@ -298,7 +383,10 @@ Volcano validates the key pair and hostname before accepting it.
 
 `GET /projects/{project_id}/frontends/{frontend_id}/domain`
 
+Deprecated: use [List domains](#list-domains).
+
 Response fields:
+
 - `domain`
 - `domain_status`
 - `tls_mode`
@@ -312,10 +400,12 @@ Response fields:
 - `required_routing_record` (deprecated; no longer returned)
 - `routing_target_hostname`
 - `effective_urls[]`
+- `redirect`: `null` for now; see [Frontend Custom Domains](#frontend-custom-domains)
 - `created_at`
 - `updated_at`
 
 Notes:
+
 - When the frontend has no custom domain configured, returns `200` with a JSON `null` body (the empty state), not `404`.
 - Returns `404` only when the frontend itself does not exist.
 - `verification_records[]` is usually empty for BYOC because certificate ownership/validation comes from the uploaded cert.
@@ -327,6 +417,8 @@ Notes:
 ## Delete Frontend Custom Domain
 
 `DELETE /projects/{project_id}/frontends/{frontend_id}/domain`
+
+Deprecated: use [Remove a domain](#remove-a-domain).
 
 Removes custom-domain configuration from the frontend and frees shard capacity.
 Returns `204` when the detach request is queued successfully, or `409` when the
@@ -350,6 +442,7 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/frontends/$FRONTEND_I
 ```
 
 JSON body:
+
 - `function_id` (required): a standard function in the same project with `visibility: public` and `invocation_mode: http`.
 - `path_prefix` (required): starts with `/`, isn't `/` alone, doesn't end with `/`, and is at most 512 bytes.
 - `strip_prefix` (optional, default `false`): remove the prefix from the path the function sees.
@@ -370,6 +463,7 @@ Returns `201` with the route:
 ```
 
 Errors:
+
 - `400`: the path prefix is invalid, or the function is durable or not in HTTP mode.
 - `404`: the frontend or function isn't in the project.
 - `409`: the path is already routed, the frontend has 64 routes, or the function isn't `public`.

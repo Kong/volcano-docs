@@ -1,6 +1,6 @@
 ---
-title: "Volcano SDK in a Function"
-description: "This example shows how to use the @volcano.dev/sdk inside a Volcano function for clean, expressive database queries with automatic Row-Level Security."
+title: 'Volcano SDK in a Function'
+description: 'This example shows how to use the @volcano.dev/sdk inside a Volcano function for clean, expressive database queries with automatic Row-Level Security.'
 ---
 
 # Volcano SDK in a Function
@@ -51,7 +51,7 @@ import { VolcanoAuth } from '@volcano.dev/sdk';
 
 const volcano = new VolcanoAuth({
   apiUrl: 'https://your-volcano-instance.com',
-  anonKey: 'your-anon-key'
+  anonKey: 'your-anon-key',
 });
 
 // Sign in user
@@ -62,14 +62,14 @@ if (error) throw error;
 const response = await fetch('https://your-function-url.com', {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${session.access_token}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${session.access_token}`,
+    'Content-Type': 'application/json',
   },
   body: JSON.stringify({
     action: 'get_posts',
     filter: 'published',
-    limit: 20
-  })
+    limit: 20,
+  }),
 });
 
 const { posts } = await response.json();
@@ -198,13 +198,11 @@ The SDK uses the access token to enforce Row-Level Security:
 const volcano = new VolcanoAuth({
   apiUrl: process.env.VOLCANO_API_URL,
   anonKey: process.env.ANON_KEY,
-  accessToken: auth.access_token  // ← User's token!
+  accessToken: auth.access_token, // ← User's token!
 });
 
 // All queries are scoped to this user
-const { data } = await volcano
-  .from('posts')
-  .select('*');
+const { data } = await volcano.from('posts').select('*');
 // Only returns posts where user_id = auth.user_id
 ```
 
@@ -259,6 +257,7 @@ const { data } = await volcano
 ```
 
 **Pros:**
+
 - ✅ Clean, expressive syntax
 - ✅ No connection management
 - ✅ Automatic RLS enforcement
@@ -281,12 +280,13 @@ await client.connect();
 
 const { rows } = await client.query(
   'SELECT id, title, content FROM posts WHERE status = $1 ORDER BY created_at DESC LIMIT 10',
-  ['published']
+  ['published'],
 );
 await client.end();
 ```
 
 **Use when:**
+
 - ⚠️ Need advanced SQL features
 - ⚠️ Complex joins or transactions
 - ⚠️ Performance-critical bulk operations
@@ -345,10 +345,10 @@ const testEvent = {
     email: 'test@example.com',
     role: 'authenticated',
     project_id: 'test-project',
-    access_token: 'test-jwt-token'
+    access_token: 'test-jwt-token',
   },
   action: 'get_posts',
-  filter: 'all'
+  filter: 'all',
 };
 
 // Run handler

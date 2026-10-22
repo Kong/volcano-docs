@@ -1,6 +1,6 @@
 ---
-title: "Function Upload API"
-description: "Upload a function as a ZIP or tar.gz archive; the API normalizes it to tar.gz and starts the cloud build."
+title: 'Function Upload API'
+description: 'Upload a function as a ZIP or tar.gz archive; the API normalizes it to tar.gz and starts the cloud build.'
 ---
 
 ## Endpoint
@@ -17,12 +17,12 @@ Upload a function as a ZIP or `tar.gz` source archive. The API accepts either fo
 
 ### Form Fields
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `name` | string | Yes | Function name (unique within project) |
-| `code` | file (binary) | Yes | ZIP or `tar.gz` archive containing function source code plus dependency manifests/lockfiles |
-| `runtime` | string | Yes | Runtime environment |
-| `handler` | string | No | Function name to invoke (default: `handler`) |
+| Field     | Type          | Required | Description                                                                                 |
+| --------- | ------------- | -------- | ------------------------------------------------------------------------------------------- |
+| `name`    | string        | Yes      | Function name (unique within project)                                                       |
+| `code`    | file (binary) | Yes      | ZIP or `tar.gz` archive containing function source code plus dependency manifests/lockfiles |
+| `runtime` | string        | Yes      | Runtime environment                                                                         |
+| `handler` | string        | No       | Function name to invoke (default: `handler`)                                                |
 
 ### Supported Runtimes
 
@@ -59,16 +59,13 @@ formData.append('code', fileInput.files[0]); // File from <input type="file">
 formData.append('runtime', 'nodejs24.x');
 formData.append('handler', 'handler');
 
-const response = await fetch(
-  `https://api.volcano.dev/projects/${projectId}/functions`,
-  {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`
-    },
-    body: formData
-  }
-);
+const response = await fetch(`https://api.volcano.dev/projects/${projectId}/functions`, {
+  method: 'POST',
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+  body: formData,
+});
 
 const result = await response.json();
 console.log('Function created:', result);
@@ -86,17 +83,14 @@ form.append('code', fs.createReadStream('./function.zip'));
 form.append('runtime', 'nodejs24.x');
 form.append('handler', 'handler');
 
-const response = await fetch(
-  `https://api.volcano.dev/projects/${projectId}/functions`,
-  {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      ...form.getHeaders()
-    },
-    body: form
-  }
-);
+const response = await fetch(`https://api.volcano.dev/projects/${projectId}/functions`, {
+  method: 'POST',
+  headers: {
+    Authorization: `Bearer ${token}`,
+    ...form.getHeaders(),
+  },
+  body: form,
+});
 ```
 
 ### Python (requests)
@@ -138,33 +132,33 @@ func uploadFunction(projectID, token string) error {
 	// Create multipart form
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	
+
 	// Add form fields
 	writer.WriteField("name", "my-api")
 	writer.WriteField("runtime", "nodejs24.x")
 	writer.WriteField("handler", "handler")
-	
+
 	// Add file
 	file, _ := os.Open("function.zip")
 	defer file.Close()
-	
+
 	part, _ := writer.CreateFormFile("code", "function.zip")
 	io.Copy(part, file)
 	writer.Close()
-	
+
 	// Make request
 	url := fmt.Sprintf("https://api.volcano.dev/projects/%s/functions", projectID)
 	req, _ := http.NewRequest("POST", url, body)
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
-	
+
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
-	
+
 	return nil
 }
 ```
@@ -204,12 +198,12 @@ After upload, the cloud compile build installs dependencies from manifests such 
 
 **Recommendations**:
 
-| Package Size | Status |
-|-------------|--------|
-| < 1MB | Excellent |
-| 1-10MB | Good |
-| 10-50MB | Large (consider optimization) |
-| Above the configured upload limit | Rejected |
+| Package Size                      | Status                        |
+| --------------------------------- | ----------------------------- |
+| < 1MB                             | Excellent                     |
+| 1-10MB                            | Good                          |
+| 10-50MB                           | Large (consider optimization) |
+| Above the configured upload limit | Rejected                      |
 
 ## File Requirements
 
@@ -289,6 +283,7 @@ file function.zip
 ### "function code too large"
 
 Your source archive exceeds the 256 MB limit. Common solutions:
+
 1. Remove unnecessary files
 2. Bundle and minify application code
 3. Exclude installed dependencies, dependency caches, and development-only files
@@ -325,5 +320,4 @@ If one function fails before its workflow starts, successful functions are left 
 **Faster uploads** - Direct binary transfer
 **Simpler** - Standard file upload
 **Works with standard tooling** - Any client that can send multipart form data can upload functions
-**Browser compatible** - Works with `<input type="file">`  
-
+**Browser compatible** - Works with `<input type="file">`

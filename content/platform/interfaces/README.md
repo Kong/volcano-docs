@@ -1,6 +1,6 @@
 ---
-title: "Ways to use Volcano"
-description: "Volcano is one platform behind five interfaces — dashboard, CLI, SDK, REST API, and MCP server. Which one to reach for, and what each takes."
+title: 'Ways to use Volcano'
+description: 'Volcano is one platform behind five interfaces — dashboard, CLI, SDK, REST API, and MCP server. Which one to reach for, and what each takes.'
 order: 1
 ---
 
@@ -8,13 +8,13 @@ Everything Volcano does is one API. The dashboard, the CLI, the SDKs, and the
 MCP server are all ways of calling it, so nothing is available through only one
 of them, and moving between them does not mean rebuilding anything.
 
-| Interface | Reach for it when | Credential |
-|-----------|-------------------|------------|
-| [Dashboard](dashboard.md) | Exploring, one-off changes, reading logs and usage, anything you would rather click than script | Your login |
-| [CLI](/cli) | Deploying from a terminal or CI, migrations, local development | Platform token (`pk-`) or project access token (`pt-`) |
-| [SDK](/sdk/js) | Writing application code — auth, queries, storage, realtime — from a browser, a function, or a server | Anon key, service key, or a signed-in user's token |
-| [REST API](../api-reference/overview.md) | Automating something the CLI does not cover, or calling Volcano from a language with no SDK | Platform token (`pk-`) or project access token (`pt-`) |
-| [MCP server](mcp.md) | Letting an AI agent inspect or change one project | Project access token (`pt-`) |
+| Interface                                | Reach for it when                                                                                     | Credential                                             |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| [Dashboard](dashboard.md)                | Exploring, one-off changes, reading logs and usage, anything you would rather click than script       | Your login                                             |
+| [CLI](/cli)                              | Deploying from a terminal or CI, migrations, local development                                        | Platform token (`pk-`) or project access token (`pt-`) |
+| [SDK](/sdk/js)                           | Writing application code — auth, queries, storage, realtime — from a browser, a function, or a server | Anon key, service key, or a signed-in user's token     |
+| [REST API](../api-reference/overview.md) | Automating something the CLI does not cover, or calling Volcano from a language with no SDK           | Platform token (`pk-`) or project access token (`pt-`) |
+| [MCP server](mcp.md)                     | Letting an AI agent inspect or change one project                                                     | Project access token (`pt-`)                           |
 
 ## Choosing one
 
@@ -29,9 +29,9 @@ directory, and the source it packages and uploads.
 
 **Use an SDK from application code.** There are SDKs for
 [JavaScript](/sdk/js), [Python](/sdk/python), and [Ruby](/sdk/ruby), and they
-are how your *users* reach Volcano — signing in, querying with row-level
+are how your _users_ reach Volcano — signing in, querying with row-level
 security applied, uploading files, subscribing to changes. That is a different
-job from the three above, which are how *you* manage the project. Each feature
+job from the three above, which are how _you_ manage the project. Each feature
 also has its own guide: [auth](../authentication/volcano-sdk.md),
 [databases](../databases/query-builder-api.md),
 [storage](../storage/javascript-sdk.md), and

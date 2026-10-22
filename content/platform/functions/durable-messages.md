@@ -1,6 +1,6 @@
 ---
-title: "Durable messages"
-description: "Send named messages to a running durable function from a webhook, a backend, a browser, or another function, and read or subscribe to the messages it publishes."
+title: 'Durable messages'
+description: 'Send named messages to a running durable function from a webhook, a backend, a browser, or another function, and read or subscribe to the messages it publishes.'
 ---
 
 A durable function can wait for something outside it to happen, and tell the outside world how it is getting on. `ctx.waitForMessage` suspends the execution until a message with that name arrives; `ctx.publish` records a message that applications list or receive live. A webhook receiver, a backend, a browser, or another function sends the message, with the credential it already holds.
@@ -74,10 +74,10 @@ def handler(event, ctx):
 
 Both suspend an execution until something outside it answers. They differ in who may answer.
 
-| Use | When |
-|---|---|
-| [`ctx.waitForApproval`](durable-approvals.md) | A person has to decide. Only a signed-in person can approve or deny; a project access token, a service key, or the workflow itself cannot. |
-| `ctx.waitForMessage` | Anything else: a webhook, a payment provider, a user clicking a button in your app, another function finishing. Whoever the function's [visibility](#who-can-send-and-read) admits can send. |
+| Use                                           | When                                                                                                                                                                                         |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`ctx.waitForApproval`](durable-approvals.md) | A person has to decide. Only a signed-in person can approve or deny; a project access token, a service key, or the workflow itself cannot.                                                   |
+| `ctx.waitForMessage`                          | Anything else: a webhook, a payment provider, a user clicking a button in your app, another function finishing. Whoever the function's [visibility](#who-can-send-and-read) admits can send. |
 
 A message never decides an approval, whatever it carries, so moving a step from an approval to a message changes who may answer it. Keep an approval wherever an answer from code would defeat the point.
 
@@ -87,21 +87,21 @@ A message never decides an approval, whatever it carries, so moving a step from 
 const message = await ctx.waitForMessage('payment-confirmed', { timeout: '30m' });
 ```
 
-| Argument | Description |
-|---|---|
-| `name` | Required. The message name to wait for, and the operation's name in the execution's history. Up to 237 printable ASCII characters. |
+| Argument  | Description                                                                                                                                                              |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `name`    | Required. The message name to wait for, and the operation's name in the execution's history. Up to 237 printable ASCII characters.                                       |
 | `timeout` | How long to wait, in the format `ctx.wait` takes (`'30m'`, `'3d'`, a number of seconds), from 1 second to 366 days. Without it, the wait lasts as long as the execution. |
 
 It resolves with the message, or with `null` (`None` in Python) when the timeout passes first. A timeout is an outcome to branch on, not an error.
 
-| JavaScript | Python | Value |
-|---|---|---|
-| `id` | `id` | The message's id |
-| `name` | `name` | The name it was sent with |
-| `data` | `data` | The JSON value sent, or `null` |
-| `sender.type` | `sender.type` | `service_key`, `user`, `anon`, or `project` |
+| JavaScript      | Python           | Value                                              |
+| --------------- | ---------------- | -------------------------------------------------- |
+| `id`            | `id`             | The message's id                                   |
+| `name`          | `name`           | The name it was sent with                          |
+| `data`          | `data`           | The JSON value sent, or `null`                     |
+| `sender.type`   | `sender.type`    | `service_key`, `user`, `anon`, or `project`        |
 | `sender.userId` | `sender.user_id` | The user who sent it, when `sender.type` is `user` |
-| `sentAt` | `sent_at` | ISO 8601 timestamp |
+| `sentAt`        | `sent_at`        | ISO 8601 timestamp                                 |
 
 Each wait takes one message. Messages that arrive before anything waits for their name are kept, and each wait takes the oldest one with its name, so a burst of sends is consumed first in, first out by a loop:
 
@@ -157,20 +157,20 @@ curl -X POST "https://api.volcano.dev/durable-functions/checkout/executions/$EXE
   -d '{"name": "address-confirmed", "data": {"address_id": "addr_19"}}'
 ```
 
-| Field | Description |
-|---|---|
+| Field  | Description                                                                  |
+| ------ | ---------------------------------------------------------------------------- |
 | `name` | Required. The name a wait takes it by. Up to 237 printable ASCII characters. |
-| `data` | Any JSON value up to 64 KiB. Omitted means `null`. |
+| `data` | Any JSON value up to 64 KiB. Omitted means `null`.                           |
 
 The response is the message, with `201`. `status` is `delivered` when a wait took it at once, `delivering` when a wait took it but the handover is still being confirmed, and `queued` when nothing is waiting for its name yet. A send answers within a few seconds even when the handover takes longer; [list the messages](#list-an-executions-messages) to see it land:
 
-| Status | Meaning |
-|---|---|
-| `queued` | Kept until a wait for its name takes it |
+| Status       | Meaning                                       |
+| ------------ | --------------------------------------------- |
+| `queued`     | Kept until a wait for its name takes it       |
 | `delivering` | A wait took it and Volcano is handing it over |
-| `delivered` | The execution has it |
-| `dropped` | The execution ended before any wait took it |
-| `published` | Every message the execution published itself |
+| `delivered`  | The execution has it                          |
+| `dropped`    | The execution ended before any wait took it   |
+| `published`  | Every message the execution published itself  |
 
 A message the execution cannot take right then — because its wait timed out at that moment, or the execution was stopped — goes back to `queued` rather than being lost.
 
@@ -214,11 +214,11 @@ A send that arrives in the moments before Volcano has seen the execution end is 
 
 The same rule covers sending, listing, and subscribing on the application endpoint. First the function's [visibility](durable-functions.md#who-can-start-executions) has to admit the caller. Sends and lists check it on every request, so a function made private stops answering them at once; a [subscription](#subscribe-to-an-execution) is checked when it is made and about once a minute while it is open, and ends when the check fails. Then the caller has to be allowed to reach the execution:
 
-| Credential | Reaches |
-|---|---|
-| Service key | Any execution of the project, unless the key is scoped without `functions.invoke` |
-| Signed-in user's access token | Executions that user started, and any execution whose client token they send |
-| Anon key | Only executions whose client token it sends |
+| Credential                    | Reaches                                                                           |
+| ----------------------------- | --------------------------------------------------------------------------------- |
+| Service key                   | Any execution of the project, unless the key is scoped without `functions.invoke` |
+| Signed-in user's access token | Executions that user started, and any execution whose client token they send      |
+| Anon key                      | Only executions whose client token it sends                                       |
 
 While an execution is still `pending`, only the service key reaches it, because a retried start can still hand it to another caller; send and read once it is `running`.
 
@@ -250,11 +250,11 @@ The service key can retry any start that failed before it began. A signed-in use
 
 Tooling working against a project uses `/projects/{id}/durable-functions/{functionId}/executions/{executionId}/messages`, with the same body and responses:
 
-| Credential | List | Send |
-|---|---|---|
-| Project owner's token | Yes | Yes |
-| Project access token (`pt-`), `full` | Yes | Yes |
-| Project access token (`pt-`), `read_only` | Yes | No, `403` |
+| Credential                                | List | Send      |
+| ----------------------------------------- | ---- | --------- |
+| Project owner's token                     | Yes  | Yes       |
+| Project access token (`pt-`), `full`      | Yes  | Yes       |
+| Project access token (`pt-`), `read_only` | Yes  | No, `403` |
 
 Unlike approvals, sending does not need a person, because a message never decides an approval. The [dashboard](../interfaces/dashboard.md), the [CLI](#from-the-cli), and the [MCP server](../interfaces/mcp.md) use this endpoint.
 
@@ -287,12 +287,12 @@ curl "https://api.volcano.dev/durable-functions/report-builder/executions/$EXECU
 
 Messages in both directions are listed oldest first, ordered by `seq`. `seq` increases with every message but can skip numbers.
 
-| Parameter | Description |
-|---|---|
-| `direction` | `in` for messages sent to the execution, `out` for what it published. Both by default. |
-| `name` | Only messages with this name |
-| `after` | Only messages with a greater `seq`. Pass the last `seq` you read to read what came next. |
-| `limit` | 1 to 500, 100 by default. A page whose messages carry over 1 MiB of data between them stops early, so read on while `has_more` is `true` rather than until a page is short. |
+| Parameter   | Description                                                                                                                                                                 |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `direction` | `in` for messages sent to the execution, `out` for what it published. Both by default.                                                                                      |
+| `name`      | Only messages with this name                                                                                                                                                |
+| `after`     | Only messages with a greater `seq`. Pass the last `seq` you read to read what came next.                                                                                    |
+| `limit`     | 1 to 500, 100 by default. A page whose messages carry over 1 MiB of data between them stops early, so read on while `has_more` is `true` rather than until a page is short. |
 
 Open waits are listed, for the project endpoint only, at `GET .../executions/{executionId}/message-waits`. Each has a `name`, its `expires_at`, and a `status`: `waiting`, or `matched` while the message it took is handed over.
 
@@ -414,18 +414,18 @@ Every command takes `--json`. Against `volcano start`, drop `cloud`. See [Develo
 
 ## Limits and billing
 
-| Limit | Value |
-|---|---|
-| Message data | 64 KiB, counting each number written out in full, so `1e300` takes about 300 bytes |
-| Message name | 237 printable ASCII characters |
-| `Idempotency-Key` | 255 printable ASCII characters |
-| Queued messages per execution | 100 |
-| Published messages per execution | 1,000 over the execution's life |
-| Open waits per execution | 100 |
-| Messages sessions per execution | 1,000 over the execution's life |
-| Sends | 3,600 per hour per execution for each kind of sender on the application endpoint (the service key, signed-in users, and anon key callers), and 3,600 through the project-scoped endpoints |
-| Waits and sessions | 3,600 per hour per execution |
-| Wait timeout | 1 second to 366 days |
+| Limit                            | Value                                                                                                                                                                                     |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Message data                     | 64 KiB, counting each number written out in full, so `1e300` takes about 300 bytes                                                                                                        |
+| Message name                     | 237 printable ASCII characters                                                                                                                                                            |
+| `Idempotency-Key`                | 255 printable ASCII characters                                                                                                                                                            |
+| Queued messages per execution    | 100                                                                                                                                                                                       |
+| Published messages per execution | 1,000 over the execution's life                                                                                                                                                           |
+| Open waits per execution         | 100                                                                                                                                                                                       |
+| Messages sessions per execution  | 1,000 over the execution's life                                                                                                                                                           |
+| Sends                            | 3,600 per hour per execution for each kind of sender on the application endpoint (the service key, signed-in users, and anon key callers), and 3,600 through the project-scoped endpoints |
+| Waits and sessions               | 3,600 per hour per execution                                                                                                                                                              |
+| Wait timeout                     | 1 second to 366 days                                                                                                                                                                      |
 
 These are the same on both plans. The per-execution counts stop runaway loops rather than meter use: requests that race at a count can each be accepted, so an execution can briefly hold a few more. Sends and lists through the application endpoint also share the function's [rate limit](../guides/plans-and-limits.md) with its invocations and starts: on HOBBY, 100 requests per 10 seconds for one function and 600 across the project. Poll `list` no faster than you need to. The project-scoped endpoints do not share the function's rate limit; their sends count only toward their own send limit.
 
@@ -435,42 +435,42 @@ Messages are not a separate allowance: each `waitForMessage` is three durable op
 
 Errors on the send and list endpoints:
 
-| Status | `code` | When |
-|---|---|---|
-| `400` | | The name, data, filters, or `Idempotency-Key` are invalid |
-| `401` | | The credential is missing or not valid |
-| `403` | | An anon key or scoped service key without `functions.invoke`, an anon key on an `authenticated` function, an origin the project's CORS policy refuses, or a `read_only` project access token sending |
-| `404` | | No such function or execution, or the caller may not reach it |
-| `409` | `execution_not_running` | The execution has ended |
-| `409` | `too_many_queued_messages` | The execution already holds 100 messages nothing has taken |
-| `413` | | The request body is larger than 72 KiB |
-| `429` | | Too many messages sent to this execution, the application endpoint's rate limit for the function or the project, or the project is over its bandwidth cap |
-| `503` | | The application endpoint could not read the project's plan terms. Retry with backoff |
+| Status | `code`                     | When                                                                                                                                                                                                 |
+| ------ | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `400`  |                            | The name, data, filters, or `Idempotency-Key` are invalid                                                                                                                                            |
+| `401`  |                            | The credential is missing or not valid                                                                                                                                                               |
+| `403`  |                            | An anon key or scoped service key without `functions.invoke`, an anon key on an `authenticated` function, an origin the project's CORS policy refuses, or a `read_only` project access token sending |
+| `404`  |                            | No such function or execution, or the caller may not reach it                                                                                                                                        |
+| `409`  | `execution_not_running`    | The execution has ended                                                                                                                                                                              |
+| `409`  | `too_many_queued_messages` | The execution already holds 100 messages nothing has taken                                                                                                                                           |
+| `413`  |                            | The request body is larger than 72 KiB                                                                                                                                                               |
+| `429`  |                            | Too many messages sent to this execution, the application endpoint's rate limit for the function or the project, or the project is over its bandwidth cap                                            |
+| `503`  |                            | The application endpoint could not read the project's plan terms. Retry with backoff                                                                                                                 |
 
 Errors `waitForMessage` and `publish` can raise inside the workflow. Those marked retried are retried for about 30 seconds and raised only if they persist:
 
-| Status | `code` | When |
-|---|---|---|
-| `400` | | The name or data is invalid |
-| `401` | | `publish` sent a session token Volcano does not accept. Only a modified SDK sends this |
-| `404` | | No running durable execution Volcano started matches the request. Retried |
-| `409` | `callback_not_ready` | Volcano cannot see the execution waiting yet. Retried |
-| `409` | `callback_taken` | The callback is already registered as an approval or as another wait or session. Only a modified SDK sends this |
-| `409` | `execution_ended` | `waitForMessage`, or the session `publish` opens, after the execution finished |
-| `409` | `execution_not_running` | `publish` after the execution finished |
-| `409` | `too_many_message_waits` | The execution already has 100 waits open |
-| `409` | `too_many_message_sessions` | The execution already opened 1,000 sessions |
-| `409` | `too_many_published_messages` | The execution already published 1,000 messages |
-| `429` | | Too many requests from this execution. Retried |
-| `5xx` | | The request could not be confirmed right now. Retried |
+| Status | `code`                        | When                                                                                                            |
+| ------ | ----------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `400`  |                               | The name or data is invalid                                                                                     |
+| `401`  |                               | `publish` sent a session token Volcano does not accept. Only a modified SDK sends this                          |
+| `404`  |                               | No running durable execution Volcano started matches the request. Retried                                       |
+| `409`  | `callback_not_ready`          | Volcano cannot see the execution waiting yet. Retried                                                           |
+| `409`  | `callback_taken`              | The callback is already registered as an approval or as another wait or session. Only a modified SDK sends this |
+| `409`  | `execution_ended`             | `waitForMessage`, or the session `publish` opens, after the execution finished                                  |
+| `409`  | `execution_not_running`       | `publish` after the execution finished                                                                          |
+| `409`  | `too_many_message_waits`      | The execution already has 100 waits open                                                                        |
+| `409`  | `too_many_message_sessions`   | The execution already opened 1,000 sessions                                                                     |
+| `409`  | `too_many_published_messages` | The execution already published 1,000 messages                                                                  |
+| `429`  |                               | Too many requests from this execution. Retried                                                                  |
+| `5xx`  |                               | The request could not be confirmed right now. Retried                                                           |
 
 A `409` with `callback_closed` is not raised: the wait's timeout already passed, so `waitForMessage` resolves with `null`. Like approvals, both need the `VOLCANO_PLATFORM_API_URL` variable Volcano sets on durable functions; a function last deployed before approvals were available has to be redeployed once.
 
 ## What's next
 
-| Guide | Description |
-|-------|-------------|
-| [Durable functions](durable-functions.md) | Operations, executions, and billing |
-| [Durable approvals](durable-approvals.md) | Wait for a person's decision |
-| [Developing durable functions locally](../guides/durable-functions-locally.md) | Send messages on your machine |
-| [Errors](../api-reference/errors.md) | Every API error body |
+| Guide                                                                          | Description                         |
+| ------------------------------------------------------------------------------ | ----------------------------------- |
+| [Durable functions](durable-functions.md)                                      | Operations, executions, and billing |
+| [Durable approvals](durable-approvals.md)                                      | Wait for a person's decision        |
+| [Developing durable functions locally](../guides/durable-functions-locally.md) | Send messages on your machine       |
+| [Errors](../api-reference/errors.md)                                           | Every API error body                |

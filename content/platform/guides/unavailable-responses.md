@@ -1,5 +1,5 @@
 ---
-title: "Unavailable Responses"
+title: 'Unavailable Responses'
 description: "What visitors to your app see when Volcano stops serving your project's traffic, and how to detect it from a client."
 ---
 
@@ -27,11 +27,11 @@ API, function, and storage callers get JSON:
 Match on `code`, not on the human-readable text:
 
 ```javascript
-const res = await fetch("https://your-site.frontends.volcano.run/api/items");
+const res = await fetch('https://your-site.frontends.volcano.run/api/items');
 
 if (res.status === 503) {
   const body = await res.json().catch(() => null);
-  if (body?.code === "service_unavailable") {
+  if (body?.code === 'service_unavailable') {
     // Traffic is paused. Back off and retry.
   }
 }
@@ -39,11 +39,11 @@ if (res.status === 503) {
 
 Every unavailable response carries these headers:
 
-| Header | Value | Meaning |
-| ------ | ----- | ------- |
+| Header          | Value      | Meaning                                                               |
+| --------------- | ---------- | --------------------------------------------------------------------- |
 | `Cache-Control` | `no-store` | Never cached, so service resumes immediately once traffic is restored |
-| `Retry-After` | `60` | Suggested retry delay, in seconds |
-| `X-Robots-Tag` | `noindex` | Keeps the page out of search results |
+| `Retry-After`   | `60`       | Suggested retry delay, in seconds                                     |
+| `X-Robots-Tag`  | `noindex`  | Keeps the page out of search results                                  |
 
 ### Cross-origin callers
 
@@ -75,15 +75,15 @@ application/json` on any request whose response your code parses as JSON.
 
 ## Per-protocol behavior
 
-| Surface | Response |
-| ------- | -------- |
-| Frontends | HTML page for navigations, JSON otherwise |
-| Function invocation | `503` with the JSON body, regardless of `Accept` |
-| Storage | `503` with the JSON body, regardless of `Accept` |
-| Database REST API | `503` with the JSON body, regardless of `Accept` |
-| Auth-user endpoints (signup, signin, refresh, profile, etc.) | `503` with the JSON body, regardless of `Accept` |
-| Realtime | WebSocket close code `4503` |
-| pgproxy | Postgres `ErrorResponse`, SQLSTATE `57P03` (`cannot_connect_now`) |
+| Surface                                                      | Response                                                          |
+| ------------------------------------------------------------ | ----------------------------------------------------------------- |
+| Frontends                                                    | HTML page for navigations, JSON otherwise                         |
+| Function invocation                                          | `503` with the JSON body, regardless of `Accept`                  |
+| Storage                                                      | `503` with the JSON body, regardless of `Accept`                  |
+| Database REST API                                            | `503` with the JSON body, regardless of `Accept`                  |
+| Auth-user endpoints (signup, signin, refresh, profile, etc.) | `503` with the JSON body, regardless of `Accept`                  |
+| Realtime                                                     | WebSocket close code `4503`                                       |
+| pgproxy                                                      | Postgres `ErrorResponse`, SQLSTATE `57P03` (`cannot_connect_now`) |
 
 The codes above are what a **new** connection attempt gets. When `read_only`
 status propagates, Volcano also force-closes already-established pgproxy

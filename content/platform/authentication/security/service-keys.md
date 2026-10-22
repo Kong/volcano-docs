@@ -1,6 +1,6 @@
 ---
-title: "Service keys"
-description: "Service keys provide admin-level access to your project. They bypass row-level security (RLS) and can access all data across all users."
+title: 'Service keys'
+description: 'Service keys provide admin-level access to your project. They bypass row-level security (RLS) and can access all data across all users.'
 ---
 
 Service keys provide admin-level access to your project. They bypass row-level security (RLS) and can access all data across all users.
@@ -61,25 +61,25 @@ When you invoke a function with a service key, `event.__volcano_auth` is not pre
 const response = await fetch(`https://api.volcano.dev/databases/${DB_ID}/query/select`, {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${process.env.SERVICE_KEY}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${process.env.SERVICE_KEY}`,
+    'Content-Type': 'application/json',
   },
   body: JSON.stringify({
-    table: 'posts'
+    table: 'posts',
     // Returns ALL posts from ALL users
-  })
+  }),
 });
 ```
 
 ## Service key vs user token
 
-| Aspect | User access token | Service key |
-|--------|-------------------|-------------|
-| Purpose | Authenticate as a specific user | Admin operations |
-| RLS | Enforced | Bypassed |
-| Use in frontend | Yes | Never |
-| Data access | Only user's own data | All data |
-| Has user context | Yes | No |
+| Aspect           | User access token               | Service key      |
+| ---------------- | ------------------------------- | ---------------- |
+| Purpose          | Authenticate as a specific user | Admin operations |
+| RLS              | Enforced                        | Bypassed         |
+| Use in frontend  | Yes                             | Never            |
+| Data access      | Only user's own data            | All data         |
+| Has user context | Yes                             | No               |
 
 ### Example: User token (RLS enforced)
 
@@ -94,7 +94,7 @@ const { data } = await volcano.from('posts').select('*');
 ```javascript
 // Query with service key (backend only)
 const response = await fetch('/api/admin/posts', {
-  headers: { 'Authorization': `Bearer ${SERVICE_KEY}` }
+  headers: { Authorization: `Bearer ${SERVICE_KEY}` },
 });
 // Returns: ALL posts from ALL users
 ```
@@ -180,8 +180,8 @@ When you create a project, a default service key is automatically created. You c
 
 ## What's next
 
-| Guide | Description |
-|-------|-------------|
-| [Anon keys](anon-keys.md) | Public keys safe for frontend use |
-| [Token types](token-types.md) | Understanding all token types |
-| [Row-level security](../../databases/row-level-security.md) | How RLS protects your data |
+| Guide                                                       | Description                       |
+| ----------------------------------------------------------- | --------------------------------- |
+| [Anon keys](anon-keys.md)                                   | Public keys safe for frontend use |
+| [Token types](token-types.md)                               | Understanding all token types     |
+| [Row-level security](../../databases/row-level-security.md) | How RLS protects your data        |

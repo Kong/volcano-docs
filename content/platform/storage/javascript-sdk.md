@@ -1,6 +1,6 @@
 ---
-title: "Storage JavaScript SDK"
-description: "The Volcano JavaScript SDK provides a Supabase-like interface for storage operations."
+title: 'Storage JavaScript SDK'
+description: 'The Volcano JavaScript SDK provides a Supabase-like interface for storage operations.'
 ---
 
 The Volcano JavaScript SDK provides a Supabase-like interface for storage operations. All methods return promises with `{ data, error }` patterns for consistent error handling.
@@ -20,7 +20,7 @@ import { VolcanoAuth } from '@volcano.dev/sdk';
 
 const volcano = new VolcanoAuth({
   apiUrl: 'https://api.yourapp.com',
-  anonKey: 'your-anon-key'
+  anonKey: 'your-anon-key',
 });
 
 // Sign in to access storage
@@ -48,9 +48,7 @@ Upload files to storage. Supports `File`, `Blob`, and `ArrayBuffer` inputs.
 const fileInput = document.querySelector('input[type="file"]');
 const file = fileInput.files[0];
 
-const { data, error } = await volcano.storage
-  .from('avatars')
-  .upload('user/avatar.png', file);
+const { data, error } = await volcano.storage.from('avatars').upload('user/avatar.png', file);
 
 if (error) {
   console.error('Upload failed:', error.message);
@@ -65,11 +63,9 @@ if (error) {
 ```javascript
 const blob = new Blob([jsonData], { type: 'application/json' });
 
-const { data, error } = await volcano.storage
-  .from('data')
-  .upload('config.json', blob, {
-    contentType: 'application/json'
-  });
+const { data, error } = await volcano.storage.from('data').upload('config.json', blob, {
+  contentType: 'application/json',
+});
 ```
 
 ### Upload from ArrayBuffer
@@ -77,11 +73,9 @@ const { data, error } = await volcano.storage
 ```javascript
 const buffer = await file.arrayBuffer();
 
-const { data, error } = await volcano.storage
-  .from('files')
-  .upload('binary.dat', buffer, {
-    contentType: 'application/octet-stream'
-  });
+const { data, error } = await volcano.storage.from('files').upload('binary.dat', buffer, {
+  contentType: 'application/octet-stream',
+});
 ```
 
 ### Drag and drop upload
@@ -91,12 +85,10 @@ const dropZone = document.getElementById('drop-zone');
 
 dropZone.addEventListener('drop', async (e) => {
   e.preventDefault();
-  
+
   for (const file of e.dataTransfer.files) {
-    const { data, error } = await volcano.storage
-      .from('uploads')
-      .upload(file.name, file);
-    
+    const { data, error } = await volcano.storage.from('uploads').upload(file.name, file);
+
     if (error) {
       console.error(`Failed to upload ${file.name}:`, error.message);
     }
@@ -111,9 +103,7 @@ Download files as `Blob` objects.
 ### Basic download
 
 ```javascript
-const { data, error } = await volcano.storage
-  .from('documents')
-  .download('report.pdf');
+const { data, error } = await volcano.storage.from('documents').download('report.pdf');
 
 if (error) {
   console.error('Download failed:', error.message);
@@ -128,9 +118,7 @@ window.open(url);
 ### Download and display image
 
 ```javascript
-const { data, error } = await volcano.storage
-  .from('avatars')
-  .download('user/profile.jpg');
+const { data, error } = await volcano.storage.from('avatars').download('user/profile.jpg');
 
 if (!error) {
   const img = document.getElementById('avatar');
@@ -141,9 +129,7 @@ if (!error) {
 ### Download and save
 
 ```javascript
-const { data, error } = await volcano.storage
-  .from('exports')
-  .download('data.csv');
+const { data, error } = await volcano.storage.from('exports').download('data.csv');
 
 if (!error) {
   const url = URL.createObjectURL(data);
@@ -159,9 +145,7 @@ if (!error) {
 
 ```javascript
 // Download first 1KB of a file
-const { data, error } = await volcano.storage
-  .from('large-files')
-  .download('video.mp4', { range: 'bytes=0-1023' });
+const { data, error } = await volcano.storage.from('large-files').download('video.mp4', { range: 'bytes=0-1023' });
 ```
 
 ## List files
@@ -171,12 +155,10 @@ List files in a bucket with optional prefix filtering and pagination.
 ### List all files
 
 ```javascript
-const { data: files, error, nextCursor } = await volcano.storage
-  .from('uploads')
-  .list();
+const { data: files, error, nextCursor } = await volcano.storage.from('uploads').list();
 
 if (!error) {
-  files.forEach(file => {
+  files.forEach((file) => {
     console.log(`${file.name} - ${file.size} bytes - ${file.mime_type}`);
   });
 }
@@ -185,9 +167,7 @@ if (!error) {
 ### List with prefix (folder)
 
 ```javascript
-const { data: files, error } = await volcano.storage
-  .from('uploads')
-  .list('user/documents/');
+const { data: files, error } = await volcano.storage.from('uploads').list('user/documents/');
 
 // Returns only files starting with "user/documents/"
 ```
@@ -196,15 +176,11 @@ const { data: files, error } = await volcano.storage
 
 ```javascript
 // First page
-const { data: files, nextCursor } = await volcano.storage
-  .from('uploads')
-  .list('', { limit: 100 });
+const { data: files, nextCursor } = await volcano.storage.from('uploads').list('', { limit: 100 });
 
 // Next page
 if (nextCursor) {
-  const { data: moreFiles } = await volcano.storage
-    .from('uploads')
-    .list('', { limit: 100, cursor: nextCursor });
+  const { data: moreFiles } = await volcano.storage.from('uploads').list('', { limit: 100, cursor: nextCursor });
 }
 ```
 
@@ -214,16 +190,16 @@ Each file in the list includes:
 
 ```typescript
 interface StorageObject {
-  id: string;           // Unique identifier
-  bucket_id: string;    // Parent bucket ID
-  name: string;         // Full path/name
-  owner_id?: string;    // User who uploaded the file
-  size: number;         // Size in bytes
-  mime_type: string;    // MIME type
-  etag?: string;        // Entity tag for caching
-  metadata?: object;    // Custom metadata
-  created_at: string;   // ISO timestamp
-  updated_at: string;   // ISO timestamp
+  id: string; // Unique identifier
+  bucket_id: string; // Parent bucket ID
+  name: string; // Full path/name
+  owner_id?: string; // User who uploaded the file
+  size: number; // Size in bytes
+  mime_type: string; // MIME type
+  etag?: string; // Entity tag for caching
+  metadata?: object; // Custom metadata
+  created_at: string; // ISO timestamp
+  updated_at: string; // ISO timestamp
 }
 ```
 
@@ -234,9 +210,7 @@ Delete one or more files.
 ### Delete single file
 
 ```javascript
-const { data, error } = await volcano.storage
-  .from('uploads')
-  .remove('old-file.txt');
+const { data, error } = await volcano.storage.from('uploads').remove('old-file.txt');
 
 if (!error) {
   console.log('Deleted:', data.deleted);
@@ -246,9 +220,7 @@ if (!error) {
 ### Delete multiple files
 
 ```javascript
-const { data, error } = await volcano.storage
-  .from('uploads')
-  .remove(['file1.txt', 'file2.txt', 'folder/file3.txt']);
+const { data, error } = await volcano.storage.from('uploads').remove(['file1.txt', 'file2.txt', 'folder/file3.txt']);
 
 if (error) {
   // Note: error is set if ANY file failed, but data.deleted still
@@ -267,9 +239,7 @@ console.log('Successfully deleted:', data?.deleted || []);
 Move or rename a file within the same bucket.
 
 ```javascript
-const { data, error } = await volcano.storage
-  .from('documents')
-  .move('drafts/report.docx', 'published/report.docx');
+const { data, error } = await volcano.storage.from('documents').move('drafts/report.docx', 'published/report.docx');
 
 if (!error) {
   console.log('Moved to:', data.name);
@@ -281,9 +251,7 @@ if (!error) {
 Create a copy of a file.
 
 ```javascript
-const { data, error } = await volcano.storage
-  .from('templates')
-  .copy('invoice-template.pdf', 'invoices/2024-001.pdf');
+const { data, error } = await volcano.storage.from('templates').copy('invoice-template.pdf', 'invoices/2024-001.pdf');
 
 if (!error) {
   console.log('Copied to:', data.name);
@@ -297,9 +265,7 @@ Files are **private by default**. You can make individual files public so they c
 ### Make a file public
 
 ```javascript
-const { data, error } = await volcano.storage
-  .from('documents')
-  .updateVisibility('report.pdf', true);
+const { data, error } = await volcano.storage.from('documents').updateVisibility('report.pdf', true);
 
 if (!error) {
   console.log('File is now public:', data.is_public);
@@ -309,9 +275,7 @@ if (!error) {
 ### Make a file private
 
 ```javascript
-const { data, error } = await volcano.storage
-  .from('documents')
-  .updateVisibility('report.pdf', false);
+const { data, error } = await volcano.storage.from('documents').updateVisibility('report.pdf', false);
 
 if (!error) {
   console.log('File is now private');
@@ -346,14 +310,10 @@ Get a truly shareable URL for public files. The URL requires **no authentication
 
 ```javascript
 // First, make the file public
-await volcano.storage
-  .from('avatars')
-  .updateVisibility('profile.jpg', true);
+await volcano.storage.from('avatars').updateVisibility('profile.jpg', true);
 
 // Then get the shareable URL
-const { data, error } = volcano.storage
-  .from('avatars')
-  .getPublicUrl('profile.jpg');
+const { data, error } = volcano.storage.from('avatars').getPublicUrl('profile.jpg');
 
 if (!error) {
   console.log(data.publicUrl);
@@ -369,6 +329,7 @@ https://api.yourapp.com/public/{projectId}/{bucketName}/{filePath}
 
 ### Usage examples
 
+<!-- prettier-ignore -->
 ```javascript
 // In HTML (no SDK needed)
 <img src="https://api.yourapp.com/public/proj-123/avatars/profile.jpg" />
@@ -389,9 +350,7 @@ const shareUrl = data.publicUrl;
 All methods return `{ data, error }`. Always check for errors:
 
 ```javascript
-const { data, error } = await volcano.storage
-  .from('files')
-  .upload('document.pdf', file);
+const { data, error } = await volcano.storage.from('files').upload('document.pdf', file);
 
 if (error) {
   switch (true) {
@@ -425,19 +384,17 @@ import { VolcanoAuth, StorageObject, StorageUploadResponse } from '@volcano.dev/
 
 const volcano = new VolcanoAuth({
   apiUrl: 'https://api.yourapp.com',
-  anonKey: 'your-anon-key'
+  anonKey: 'your-anon-key',
 });
 
 async function uploadFile(file: File): Promise<StorageObject | null> {
-  const { data, error }: StorageUploadResponse = await volcano.storage
-    .from('uploads')
-    .upload(file.name, file);
-  
+  const { data, error }: StorageUploadResponse = await volcano.storage.from('uploads').upload(file.name, file);
+
   if (error) {
     console.error(error);
     return null;
   }
-  
+
   return data;
 }
 ```
@@ -451,15 +408,13 @@ For files over 100MB or when you need resume capability for unreliable networks,
 The simplest way to upload large files with progress tracking:
 
 ```javascript
-const { data, error } = await volcano.storage
-  .from('uploads')
-  .uploadResumable('large-video.mp4', file, {
-    onProgress: (uploaded, total) => {
-      const percent = Math.round(uploaded / total * 100);
-      console.log(`Uploading: ${percent}%`);
-      progressBar.style.width = `${percent}%`;
-    }
-  });
+const { data, error } = await volcano.storage.from('uploads').uploadResumable('large-video.mp4', file, {
+  onProgress: (uploaded, total) => {
+    const percent = Math.round((uploaded / total) * 100);
+    console.log(`Uploading: ${percent}%`);
+    progressBar.style.width = `${percent}%`;
+  },
+});
 
 if (!error) {
   console.log('Upload complete:', data.name, data.size);
@@ -479,12 +434,10 @@ the anon key, subsequent part upload, status, completion, and abort requests ret
 #### 1. Create upload session
 
 ```javascript
-const { data: session, error } = await volcano.storage
-  .from('uploads')
-  .createUploadSession('large-video.mp4', {
-    totalSize: file.size,
-    contentType: 'video/mp4'
-  });
+const { data: session, error } = await volcano.storage.from('uploads').createUploadSession('large-video.mp4', {
+  totalSize: file.size,
+  contentType: 'video/mp4',
+});
 
 if (error) {
   console.error('Failed to create session:', error.message);
@@ -523,9 +476,7 @@ for (let partNumber = 1; partNumber <= total_parts; partNumber++) {
 #### 3. Complete the upload
 
 ```javascript
-const { data, error } = await volcano.storage
-  .from('uploads')
-  .completeUploadSession('large-video.mp4', session_id);
+const { data, error } = await volcano.storage.from('uploads').completeUploadSession('large-video.mp4', session_id);
 
 if (!error) {
   console.log('Upload complete:', data.name, data.size);
@@ -557,15 +508,11 @@ for (const partNumber of status.missing_parts) {
   const end = Math.min(start + status.part_size, file.size);
   const partData = file.slice(start, end);
 
-  await volcano.storage
-    .from('uploads')
-    .uploadPart('large-video.mp4', savedSessionId, partNumber, partData);
+  await volcano.storage.from('uploads').uploadPart('large-video.mp4', savedSessionId, partNumber, partData);
 }
 
 // Complete the upload
-await volcano.storage
-  .from('uploads')
-  .completeUploadSession('large-video.mp4', savedSessionId);
+await volcano.storage.from('uploads').completeUploadSession('large-video.mp4', savedSessionId);
 ```
 
 ### Abort an upload
@@ -573,9 +520,7 @@ await volcano.storage
 To cancel an upload and clean up uploaded parts:
 
 ```javascript
-const { error } = await volcano.storage
-  .from('uploads')
-  .abortUploadSession('large-video.mp4', sessionId);
+const { error } = await volcano.storage.from('uploads').abortUploadSession('large-video.mp4', sessionId);
 
 if (!error) {
   console.log('Upload aborted and cleaned up');
@@ -584,24 +529,24 @@ if (!error) {
 
 ### Resumable upload limits
 
-| Limit | Value |
-|-------|-------|
-| Minimum part size | 5MB |
-| Maximum part size | 25MB |
-| Default part size | 25MB |
-| Maximum parts | 10,000 |
+| Limit             | Value                                                |
+| ----------------- | ---------------------------------------------------- |
+| Minimum part size | 5MB                                                  |
+| Maximum part size | 25MB                                                 |
+| Default part size | 25MB                                                 |
+| Maximum parts     | 10,000                                               |
 | Maximum file size | Limited by plan storage quota (up to 5TB per object) |
-| Session expiry | 7 days |
+| Session expiry    | 7 days                                               |
 
 ### When to use resumable uploads
 
-| Scenario | Recommended method |
-|----------|-------------------|
-| Files under 100MB | `upload()` - simple, single request |
-| Files over 100MB | `uploadResumable()` - automatic chunking |
-| Unreliable network | `uploadResumable()` with `onProgress` to save state |
-| Need to pause/resume | Manual methods with `createUploadSession()` |
-| Very large files (1GB+) | Manual methods for better control |
+| Scenario                | Recommended method                                  |
+| ----------------------- | --------------------------------------------------- |
+| Files under 100MB       | `upload()` - simple, single request                 |
+| Files over 100MB        | `uploadResumable()` - automatic chunking            |
+| Unreliable network      | `uploadResumable()` with `onProgress` to save state |
+| Need to pause/resume    | Manual methods with `createUploadSession()`         |
+| Very large files (1GB+) | Manual methods for better control                   |
 
 ## Complete example
 
@@ -614,28 +559,24 @@ See the [Next.js example](../examples/frontend-auth-nextjs/README.md) for a comp
 - Error handling
 
 ```typescript
-// From examples/frontend-auth-nextjs/app/files/page.tsx
+// Simplified from examples/frontend-auth-nextjs/app/files/fileActions.ts
 
 const handleUpload = async (files: FileList) => {
   for (const file of Array.from(files)) {
-    const { error } = await volcano.storage
-      .from('user-files')
-      .upload(file.name, file);
-    
+    const { error } = await volcano.storage.from('user-files').upload(file.name, file);
+
     if (error) {
       console.error(`Failed to upload ${file.name}:`, error.message);
     }
   }
-  
+
   // Refresh file list
   loadFiles();
 };
 
 const handleDownload = async (file: StorageObject) => {
-  const { data, error } = await volcano.storage
-    .from('user-files')
-    .download(file.name);
-  
+  const { data, error } = await volcano.storage.from('user-files').download(file.name);
+
   if (!error && data) {
     const url = URL.createObjectURL(data);
     const a = document.createElement('a');
