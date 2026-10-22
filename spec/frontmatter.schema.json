@@ -23,6 +23,11 @@
       "type": "string",
       "minLength": 1
     },
+    "cover": {
+      "type": "string",
+      "pattern": "^/[^/]",
+      "description": "Blog card cover image, as a site-absolute path under public/."
+    },
     "published": {
       "type": "string",
       "format": "date"

@@ -9,6 +9,7 @@ export const docs = defineDocs({
   docs: {
     schema: pageSchema.extend({
       author: pageSchema.shape.title.optional(),
+      cover: pageSchema.shape.title.regex(/^\/[^/]/).optional(),
       published: pageSchema.shape.title.regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
       tags: pageSchema.shape.title.array().optional(),
       draft: pageSchema.shape.full,

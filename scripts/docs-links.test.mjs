@@ -76,6 +76,22 @@ try {
   fs.unlinkSync(path.join(content, "sdk", "README.md"));
   fs.unlinkSync(guide);
 
+  const coverPost = path.join(content, "cover-post.md");
+  fs.writeFileSync(path.join(publicDir, "cover.png"), "image fixture");
+  fs.writeFileSync(coverPost, '---\ntitle: Cover\ndescription: Cover fixture.\ncover: /cover.png\n---\n');
+  assert.match(run("check-links.mjs", content, publicDir), /links OK/);
+  fs.unlinkSync(path.join(publicDir, "cover.png"));
+  assert.throws(
+    () => run("check-links.mjs", content, publicDir),
+    (error) => error.status === 1 && error.stderr.includes("cover: /cover.png"),
+  );
+  fs.writeFileSync(coverPost, '---\ntitle: Cover\ndescription: Cover fixture.\ncover: /sdk\n---\n');
+  assert.throws(
+    () => run("check-links.mjs", content, publicDir),
+    (error) => error.status === 1 && error.stderr.includes("cover: /sdk"),
+  );
+  fs.unlinkSync(coverPost);
+
   const invalidLinks = [
     `[bad](/bogus "details")`,
     `[bad][target]\n\n[target]: /bogus`,

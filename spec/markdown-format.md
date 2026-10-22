@@ -32,6 +32,7 @@ order: 3
 | `nav_title` | string | no | Short label for the sidebar when `title` is long. |
 | `tags` | string[] | no | Topical grouping / filtering. |
 | `author` | string | no | Author byline for a blog post. |
+| `cover` | string | no | Blog card image, using a site-absolute path to an asset in `public/` (for example `/blog/sandbox-cover.png`). |
 | `published` | date (`YYYY-MM-DD`) | no | Blog publication date; quote the value in YAML. |
 | `keywords` | string[] | no | Extra search synonyms not in the prose. |
 | `draft` | boolean | no | `true` hides the page, navigation entry, search results, and sitemap entry in production. Visible in local development for preview. |
@@ -64,6 +65,11 @@ Docusaurus `sidebar_position` / Starlight `sidebar.order`; `nav_title` →
 - Images and other assets go in an `assets/` folder next to the doc and are
   referenced relatively: `![diagram](./assets/flow.png)`.
 - No `.DS_Store` or editor cruft in `docs/`.
+
+### Video demos
+
+Link to a public `.mp4` asset with descriptive link text to embed a native video player: `[Demo description](/blog/example/demo.mp4)`.
+The player autoplays muted and loops, with playback controls available to pause it.
 
 ## Links
 
