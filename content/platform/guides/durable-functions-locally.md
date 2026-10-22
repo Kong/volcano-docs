@@ -1,6 +1,6 @@
 ---
-title: "Developing durable functions locally"
-description: "Write a durable function, watch it suspend and resume locally, then deploy it unchanged."
+title: 'Developing durable functions locally'
+description: 'Write a durable function, watch it suspend and resume locally, then deploy it unchanged.'
 ---
 
 A durable function runs on your machine the same way it runs deployed. The handler is the same code, the manifest is the same file, and the suspend-and-resume you see locally is the suspend-and-resume you get in production — so there is nothing to change when you deploy.
@@ -98,7 +98,7 @@ The point of a step is that its result is recorded and not recomputed. Log insid
 
 ```javascript
 const charge = await ctx.step('charge', () => {
-  console.log('charging');            // once, ever
+  console.log('charging'); // once, ever
   return chargeCard(input.card_token, input.amount);
 });
 ```

@@ -1,6 +1,6 @@
 ---
-title: "JavaScript SDK"
-description: "The Volcano Realtime JavaScript SDK: WebSocket connections with automatic reconnection, subscription management, and TypeScript support."
+title: 'JavaScript SDK'
+description: 'The Volcano Realtime JavaScript SDK: WebSocket connections with automatic reconnection, subscription management, and TypeScript support.'
 ---
 
 The Volcano Realtime JavaScript SDK provides a simple interface for WebSocket connections with automatic reconnection, subscription management, and TypeScript support.
@@ -21,7 +21,7 @@ import { VolcanoRealtime } from '@volcano.dev/sdk/realtime';
 const realtime = new VolcanoRealtime({
   apiUrl: 'https://api.yourapp.com',
   anonKey: 'your-anon-key',
-  accessToken: 'user-access-token'
+  accessToken: 'user-access-token',
 });
 
 // Connect
@@ -48,18 +48,18 @@ import type { VolcanoAuth } from '@volcano.dev/sdk';
 
 interface RealtimeConfig {
   // Required
-  apiUrl: string;           // Your Volcano API URL
-  anonKey: string;          // Your project's anon key (or empty for service key)
-  accessToken: string;      // User's access token or service key
-  
+  apiUrl: string; // Your Volcano API URL
+  anonKey: string; // Your project's anon key (or empty for service key)
+  accessToken: string; // User's access token or service key
+
   // Optional
-  getToken?: () => Promise<string>;  // Function to refresh token
-  volcanoClient?: VolcanoAuth;      // Authenticated client for row fetching
-  databaseName?: string;            // Database used for row fetching
+  getToken?: () => Promise<string>; // Function to refresh token
+  volcanoClient?: VolcanoAuth; // Authenticated client for row fetching
+  databaseName?: string; // Database used for row fetching
   fetchConfig?: {
-    enabled?: boolean;             // Default: true when a client is provided
-    batchWindowMs?: number;         // Default: 20
-    maxBatchSize?: number;          // Default: 50
+    enabled?: boolean; // Default: true when a client is provided
+    batchWindowMs?: number; // Default: 20
+    maxBatchSize?: number; // Default: 50
   };
 }
 ```
@@ -69,13 +69,13 @@ interface RealtimeConfig {
 ```javascript
 const realtime = new VolcanoRealtime({
   apiUrl: 'https://api.yourapp.com',
-  anonKey: anonKey,         // Required for user tokens
+  anonKey: anonKey, // Required for user tokens
   accessToken: accessToken,
   getToken: async () => {
     // Called when token needs refresh
     const newToken = await refreshAccessToken();
     return newToken;
-  }
+  },
 });
 ```
 
@@ -87,19 +87,20 @@ For server-side applications, use a service role key:
 // Service key only - project ID inferred from key
 const realtime = new VolcanoRealtime({
   apiUrl: 'https://api.yourapp.com',
-  anonKey: '',                   // Not required with service key
-  accessToken: process.env.SERVICE_KEY  // sk-...
+  anonKey: '', // Not required with service key
+  accessToken: process.env.SERVICE_KEY, // sk-...
 });
 
 // With anon key for additional validation
 const realtime = new VolcanoRealtime({
   apiUrl: 'https://api.yourapp.com',
   anonKey: process.env.ANON_KEY,
-  accessToken: process.env.SERVICE_KEY
+  accessToken: process.env.SERVICE_KEY,
 });
 ```
 
 **Service key notes:**
+
 - Project ID is extracted from the service key JWT
 - If anon key is provided, project IDs must match
 - Service keys bypass RLS for Postgres changes
@@ -114,15 +115,15 @@ Unlike some other SDKs, you never specify a `projectId`. The project is automati
 const realtime = new VolcanoRealtime({
   apiUrl: 'https://api.yourapp.com',
   anonKey: 'your-anon-key',
-  accessToken: accessToken
+  accessToken: accessToken,
 });
 
 // ❌ Wrong - don't pass projectId
 const realtime = new VolcanoRealtime({
   apiUrl: 'https://api.yourapp.com',
-  projectId: 'proj-123',  // Not needed!
+  projectId: 'proj-123', // Not needed!
   anonKey: 'your-anon-key',
-  accessToken: accessToken
+  accessToken: accessToken,
 });
 ```
 
@@ -238,10 +239,10 @@ channel.on('*', (payload) => {
 
 ```javascript
 // Send a message to all subscribers
-await channel.send({ 
+await channel.send({
   event: 'message',
   text: 'Hello everyone!',
-  userId: 'user-123'
+  userId: 'user-123',
 });
 ```
 
@@ -254,9 +255,9 @@ const presence = realtime.channel('lobby', { type: 'presence' });
 await presence.subscribe();
 
 // Start tracking your presence
-presence.track({ 
+presence.track({
   name: 'Alice',
-  status: 'online' 
+  status: 'online',
 });
 ```
 
@@ -342,7 +343,7 @@ import { VolcanoRealtime, RealtimeChannel } from '@volcano.dev/sdk/realtime';
 const realtime = new VolcanoRealtime({
   apiUrl: 'https://api.yourapp.com',
   anonKey: anonKey,
-  accessToken: accessToken
+  accessToken: accessToken,
 });
 
 // Typed channel
@@ -365,12 +366,12 @@ export function useRealtime(apiUrl: string, anonKey: string, accessToken: string
     const rt = new VolcanoRealtime({
       apiUrl,
       anonKey,
-      accessToken
+      accessToken,
     });
-    
+
     rt.onConnect(() => setIsConnected(true));
     rt.onDisconnect(() => setIsConnected(false));
-    
+
     rt.connect();
     setRealtime(rt);
 
@@ -390,7 +391,7 @@ function ChatRoom({ roomId }) {
   const { realtime, isConnected } = useRealtime(
     process.env.NEXT_PUBLIC_API_URL,
     process.env.NEXT_PUBLIC_ANON_KEY,
-    accessToken
+    accessToken,
   );
 
   const [messages, setMessages] = useState([]);
@@ -399,11 +400,11 @@ function ChatRoom({ roomId }) {
     if (!realtime || !isConnected) return;
 
     const channel = realtime.channel(`chat-${roomId}`);
-    
+
     channel.on('message', (payload) => {
-      setMessages(prev => [...prev, payload]);
+      setMessages((prev) => [...prev, payload]);
     });
-    
+
     channel.subscribe();
 
     return () => {

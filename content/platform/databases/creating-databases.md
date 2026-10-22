@@ -1,6 +1,6 @@
 ---
-title: "Creating Databases"
-description: "Provision PostgreSQL databases."
+title: 'Creating Databases'
+description: 'Provision PostgreSQL databases.'
 ---
 
 Provision PostgreSQL databases.
@@ -14,6 +14,7 @@ curl https://api.volcano.dev/databases/regions
 ```
 
 **Response:**
+
 ```json
 [
   {
@@ -44,6 +45,7 @@ curl https://api.volcano.dev/databases/postgres-versions
 ```
 
 **Response:**
+
 ```json
 [
   {
@@ -87,6 +89,7 @@ curl -X POST https://api.volcano.dev/projects/PROJECT_ID/databases \
 ```
 
 **Request Body:**
+
 - `name` (required): Database name. Lowercase letters, digits, and underscores
   only, up to 64 characters. Uppercase letters are lowercased; hyphens, spaces,
   and other characters return `400`. `builder_debug` is reserved, and so is
@@ -103,7 +106,19 @@ A `pg_version` outside that list returns `400 Bad Request`:
 }
 ```
 
+An internal failure returns `500 Internal Server Error` with a stable message
+identifying the failed step, for example:
+
+```json
+{
+  "error": "failed to provision database"
+}
+```
+
+Connection details and internal diagnostic messages are omitted from the response.
+
 **Response:**
+
 ```json
 {
   "id": "db-uuid",
@@ -117,24 +132,25 @@ A `pg_version` outside that list returns `400 Bad Request`:
 ```
 
 **Status progression:**
+
 - `provisioning` - Being created (5-10 seconds)
 - `active` - Ready to use
 - `restoring` - Being restored from a backup; not connectable, and most operations on it return `409`
-- `failed` - Creation failed
+- `failed` - Creation failed. This is final: the database never becomes `active`. It keeps its name and counts toward your plan's database limit until you delete it, so delete it before creating it again.
 - `deleting` - Being torn down
 
 ## Database Types
 
 Choose a size based on your workload:
 
-| Type | RAM | Use Case |
-|------|-----|----------|
-| `volcano-db-xs` | Up to ~1GB | Development, small apps |
-| `volcano-db-s` | Up to ~4GB | Production-ready, light traffic |
-| `volcano-db-m` | Up to ~8GB | Medium traffic applications |
-| `volcano-db-l` | Up to ~16GB | High traffic, larger datasets |
-| `volcano-db-xl` | Up to ~32GB | Heavy workloads |
-| `volcano-db-2xl` | Up to ~64GB | Enterprise-scale |
+| Type             | RAM         | Use Case                        |
+| ---------------- | ----------- | ------------------------------- |
+| `volcano-db-xs`  | Up to ~1GB  | Development, small apps         |
+| `volcano-db-s`   | Up to ~4GB  | Production-ready, light traffic |
+| `volcano-db-m`   | Up to ~8GB  | Medium traffic applications     |
+| `volcano-db-l`   | Up to ~16GB | High traffic, larger datasets   |
+| `volcano-db-xl`  | Up to ~32GB | Heavy workloads                 |
+| `volcano-db-2xl` | Up to ~64GB | Enterprise-scale                |
 
 **Automatic scaling:** All databases automatically scale to zero when idle (after 3 minutes of inactivity) and scale up on demand within their type's limits.
 
@@ -152,6 +168,9 @@ curl -X PATCH https://api.volcano.dev/projects/PROJECT_ID/databases/DB_ID/type \
 ```
 
 **Warning:** Changing the database type will briefly interrupt database connections while the compute endpoint is reconfigured.
+
+If Volcano cannot save the type change, it returns `500 Internal Server Error`
+with `{"error":"failed to update database type"}`. Internal diagnostics are omitted.
 
 ## Get Database Details
 
@@ -180,14 +199,16 @@ The username and password are Volcano-managed client credentials. The password s
 ## Using the Connection String
 
 **In functions:** set `connection_string` as a project variable (e.g. `DATABASE_URL`) — Volcano doesn't set it automatically:
+
 ```javascript
 const { Pool } = require('pg');
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
+  connectionString: process.env.DATABASE_URL,
 });
 ```
 
 **Direct connection:**
+
 ```bash
 psql "postgresql://user:pass@database.volcano.dev:5432/db"
 ```
@@ -203,6 +224,7 @@ auth.role()    -- Get current user role
 ```
 
 Verify:
+
 ```bash
 psql $CONNECTION_STRING -c "SELECT auth.uid();"
 ```
@@ -246,6 +268,9 @@ curl -X DELETE https://api.volcano.dev/projects/PROJECT_ID/databases/DB_ID \
 
 This permanently deletes the database. Cannot be undone.
 
+If Volcano cannot schedule deletion, it returns `500 Internal Server Error`
+with `{"error":"failed to schedule database deletion"}`. Internal diagnostics are omitted.
+
 ## Reset Password
 
 ```bash
@@ -254,6 +279,7 @@ curl -X POST https://api.volcano.dev/projects/PROJECT_ID/databases/DB_ID/reset-p
 ```
 
 **Response:**
+
 ```json
 {
   "message": "Password reset successful",
@@ -271,4 +297,3 @@ The old Volcano password stops opening new connections within a few seconds of t
 - [Connection Strings](connection-strings.md)
 - [Row-Level Security](row-level-security.md)
 - [Auth Helpers](auth-helpers.md)
-

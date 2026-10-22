@@ -1,6 +1,6 @@
 ---
-title: "Projects API"
-description: "Manage projects via REST API."
+title: 'Projects API'
+description: 'Manage projects via REST API.'
 ---
 
 Manage projects via REST API.
@@ -30,6 +30,7 @@ combine `page` with `cursor` or `ending_before`.
 The endpoint excludes projects whose status is `deleting` or `deleted`.
 
 **Response:**
+
 ```json
 {
   "data": [
@@ -67,6 +68,7 @@ Authorization: Bearer <platform_token>
 ```
 
 **Response:**
+
 ```json
 {
   "id": "uuid",
@@ -88,6 +90,7 @@ Content-Type: application/json
 ```
 
 **Request:**
+
 ```json
 {
   "name": "my-app",
@@ -106,6 +109,7 @@ To restrict a project to specific regions (SUPERAGENT plan):
 ```
 
 **Response:** 201 Created
+
 ```json
 {
   "id": "uuid",
@@ -118,7 +122,7 @@ To restrict a project to specific regions (SUPERAGENT plan):
 }
 ```
 
-**Limit:** Each user can create up to 1,000 projects. Requests over this cap return `403 Forbidden`.
+**Limit:** Projects have no plan limit; usage allowances apply across all of your projects. Accounts on an older paid pricing revision keep that revision's project cap, and requests over it return `403 Forbidden`.
 
 ## Update Project
 
@@ -131,6 +135,7 @@ Content-Type: application/json
 Update only the fields you need.
 
 **Name-only update (keeps existing region policy):**
+
 ```json
 {
   "name": "my-renamed-app"
@@ -138,6 +143,7 @@ Update only the fields you need.
 ```
 
 **Switch to single-region deployment policy:**
+
 ```json
 {
   "all_regions": false,
@@ -217,12 +223,18 @@ changing anything.
 ```json
 {
   "results": [
-    {"section": "variables", "name": "STRIPE_SECRET_KEY", "action": "created"},
-    {"section": "realtime", "action": "updated", "notice": "disabling realtime drops active websocket connections"}
+    { "section": "variables", "name": "STRIPE_SECRET_KEY", "action": "created" },
+    { "section": "realtime", "action": "updated", "notice": "disabling realtime drops active websocket connections" },
+    {
+      "section": "frontends.custom_domain",
+      "name": "web",
+      "action": "deleted",
+      "notice": "deletes custom domain app.example.com"
+    }
   ],
-  "skipped": [{"type": "function", "name": "hello", "reason": "not deployed"}],
-  "missing": [{"type": "bucket", "name": "avatars"}],
-  "summary": {"created": 1, "updated": 1, "deleted": 0, "unchanged": 0, "errors": 0, "skipped": 1, "missing": 1}
+  "skipped": [{ "type": "function", "name": "hello", "reason": "not deployed" }],
+  "missing": [{ "type": "bucket", "name": "avatars" }],
+  "summary": { "created": 1, "updated": 1, "deleted": 1, "unchanged": 0, "errors": 0, "skipped": 1, "missing": 1 }
 }
 ```
 
@@ -273,7 +285,7 @@ Windows end at the most recent completed UTC minute. Use `observed_at` and
       "metric": "request_count",
       "unit": "count",
       "data_status": "partial",
-      "values": [{"dimensions": {}, "value": 1842}]
+      "values": [{ "dimensions": {}, "value": 1842 }]
     },
     {
       "id": "availability_by_region",
@@ -281,8 +293,8 @@ Windows end at the most recent completed UTC minute. Use `observed_at` and
       "unit": "ratio",
       "data_status": "partial",
       "values": [
-        {"dimensions": {"region": "us-east-1"}, "value": 0.998},
-        {"dimensions": {"region": "us-west-2"}, "value": 0.995}
+        { "dimensions": { "region": "us-east-1" }, "value": 0.998 },
+        { "dimensions": { "region": "us-west-2" }, "value": 0.995 }
       ]
     }
   ]
@@ -307,6 +319,7 @@ Authorization: Bearer <platform_token>
 Returns the current-month total, the lifetime (all-time) total, and recent daily/hourly series for each tracked metric, plus a per-frontend request breakdown for the current usage period. `Durable Operations` and `Durable Compute (MB-Seconds)` lag the others: both are counted once an execution finishes, so work still running has not reached the series yet.
 
 **Response:**
+
 ```json
 {
   "project_id": "uuid",

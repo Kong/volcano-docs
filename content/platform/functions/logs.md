@@ -1,6 +1,6 @@
 ---
-title: "Function Logs"
-description: "View historical and live execution logs for your functions."
+title: 'Function Logs'
+description: 'View historical and live execution logs for your functions.'
 ---
 
 View historical and live execution logs for your functions.
@@ -86,16 +86,16 @@ available.
 
 Supported request body fields:
 
-| Field | Description |
-| --- | --- |
-| `resource.type` | Required. Use `function`. |
-| `resource.ids` | Optional function IDs. Omit or pass an empty array to search all functions in the project. |
-| `resource.kind` | Optional. `standard` or `durable` reads only functions of that kind; omit it for both. With `resource.ids`, IDs of the other kind return no logs. A cursor is bound to the kind. |
-| `q` | Optional query. Unqualified terms search the body. Supports quoted text, implicit `AND`, `AND`/`OR`/`NOT`, parentheses, and the fields `body`, `level`, `region`, `invocation.id`, `resource.id`, and `resource.name`. The resource-name aliases `function`, `frontend`, and `database` are also supported. `level` accepts `trace`, `debug`, `info`, `warn`, `error`, and `fatal`, plus the aliases `log`, `information`, `warning`, `err`, and `critical`. |
-| `limit` | Max records to return. Default `100`, max `1000`. |
-| `cursor` | Opaque cursor from the previous response. |
-| `start_time` | Inclusive lower bound as an RFC3339 timestamp. |
-| `end_time` | Inclusive upper bound as an RFC3339 timestamp. |
+| Field           | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `resource.type` | Required. Use `function`.                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `resource.ids`  | Optional function IDs. Omit or pass an empty array to search all functions in the project.                                                                                                                                                                                                                                                                                                                                                                   |
+| `resource.kind` | Optional. `standard` or `durable` reads only functions of that kind; omit it for both. With `resource.ids`, IDs of the other kind return no logs. A cursor is bound to the kind.                                                                                                                                                                                                                                                                             |
+| `q`             | Optional query. Unqualified terms search the body. Supports quoted text, implicit `AND`, `AND`/`OR`/`NOT`, parentheses, and the fields `body`, `level`, `region`, `invocation.id`, `resource.id`, and `resource.name`. The resource-name aliases `function`, `frontend`, and `database` are also supported. `level` accepts `trace`, `debug`, `info`, `warn`, `error`, and `fatal`, plus the aliases `log`, `information`, `warning`, `err`, and `critical`. |
+| `limit`         | Max records to return. Default `100`, max `1000`.                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `cursor`        | Opaque cursor from the previous response.                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `start_time`    | Inclusive lower bound as an RFC3339 timestamp.                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `end_time`      | Inclusive upper bound as an RFC3339 timestamp.                                                                                                                                                                                                                                                                                                                                                                                                               |
 
 ```bash
 # Find "checkout_failed" in warn and error logs in one region
@@ -149,9 +149,9 @@ curl -X POST "https://api.volcano.dev/projects/PROJECT_ID/logs/activity" \
       "start_time": "2024-01-01T12:00:00Z",
       "end_time": "2024-01-01T12:30:00Z",
       "counts": {
-        "levels": {"debug": 0, "error": 3, "fatal": 0, "info": 0, "trace": 0, "warn": 0},
-        "regions": {"us-east-1": 3},
-        "resource_ids": {"550e8400-e29b-41d4-a716-446655440000": 3}
+        "levels": { "debug": 0, "error": 3, "fatal": 0, "info": 0, "trace": 0, "warn": 0 },
+        "regions": { "us-east-1": 3 },
+        "resource_ids": { "550e8400-e29b-41d4-a716-446655440000": 3 }
       },
       "total": 3
     },
@@ -159,9 +159,9 @@ curl -X POST "https://api.volcano.dev/projects/PROJECT_ID/logs/activity" \
       "start_time": "2024-01-01T12:30:00Z",
       "end_time": "2024-01-01T13:00:00Z",
       "counts": {
-        "levels": {"debug": 0, "error": 1, "fatal": 0, "info": 0, "trace": 0, "warn": 0},
-        "regions": {"us-east-1": 1},
-        "resource_ids": {"550e8400-e29b-41d4-a716-446655440000": 1}
+        "levels": { "debug": 0, "error": 1, "fatal": 0, "info": 0, "trace": 0, "warn": 0 },
+        "regions": { "us-east-1": 1 },
+        "resource_ids": { "550e8400-e29b-41d4-a716-446655440000": 1 }
       },
       "total": 1
     },
@@ -169,7 +169,7 @@ curl -X POST "https://api.volcano.dev/projects/PROJECT_ID/logs/activity" \
       "start_time": "2024-01-01T13:00:00Z",
       "end_time": "2024-01-01T13:30:00Z",
       "counts": {
-        "levels": {"debug": 0, "error": 0, "fatal": 0, "info": 0, "trace": 0, "warn": 0},
+        "levels": { "debug": 0, "error": 0, "fatal": 0, "info": 0, "trace": 0, "warn": 0 },
         "regions": {},
         "resource_ids": {}
       },
@@ -290,17 +290,67 @@ Deployment log rows include deployment context:
 }
 ```
 
+### Installed Packages
+
+After installing dependencies, a function build lists each dependency your
+manifest declares, with the version that was installed:
+
+```text
+Installing dependencies...
+added 42 packages in 3s
+Installed packages:
+  @volcano.dev/sdk@1.7.2
+  pg@8.13.1
+  sharp (not installed)
+```
+
+The list covers `dependencies` and `optionalDependencies` in `package.json`,
+the packages named in `requirements.txt` and the files it includes with `-r`,
+and the `Gemfile` gems outside the `development` and `test` groups. A
+requirement given as a URL or path, editable (`-e`) or not, is listed when it
+names its package, as in `name @ git+https://...` or `#egg=name`. The list
+shows at most 50 entries.
+
+If a package your function imports is missing from the list, declare it in the
+manifest the build installs from. For Node.js, declare it under `dependencies`:
+the list leaves out `devDependencies`, which your function should not rely on at
+runtime. An entry marked `(not installed)` is declared, but the install did not
+add it; `(optional, not installed)` is an optional dependency the install
+skipped, such as one for another platform; `(installed, no version)` is a
+package the install added whose `package.json` names no version, as a local
+`file:` dependency may. A requirements file included from a URL is marked
+`(not listed)`: the install reads it, but the list does not. The URL is shown
+without its credentials or query, or as `<url>` when it uses an environment
+variable. A requirement marked
+`(not installed; environment marker)` has a marker, such as
+`; sys_platform == "win32"`, that excludes the build's platform, so the install
+skipped it on purpose.
+
+## Read Errors
+
+An internal failure while loading log resources returns HTTP `500` with a
+message identifying the operation, for example:
+
+```json
+{ "error": "failed to list functions" }
+```
+
+The message omits internal connection details. Retry the request; include its
+`X-Request-Id` if you contact support.
+
 ## Logging Best Practices
 
 Use structured logging so important fields can be indexed:
 
 ```javascript
-console.log(JSON.stringify({
-  level: 'info',
-  action: 'user_login',
-  user_id: user.id,
-  timestamp: new Date().toISOString()
-}));
+console.log(
+  JSON.stringify({
+    level: 'info',
+    action: 'user_login',
+    user_id: user.id,
+    timestamp: new Date().toISOString(),
+  }),
+);
 ```
 
 Use consistent log levels:

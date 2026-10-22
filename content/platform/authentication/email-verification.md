@@ -1,6 +1,6 @@
 ---
-title: "Email Verification"
-description: "Require users to confirm their email addresses before signing in."
+title: 'Email Verification'
+description: 'Require users to confirm their email addresses before signing in.'
 ---
 
 Require users to confirm their email addresses before signing in.
@@ -16,6 +16,7 @@ Email verification adds a security layer by ensuring users own the email address
 ```
 
 **Use cases:**
+
 - Prevent fake account creation
 - Verify email ownership
 - Enable password reset functionality
@@ -34,6 +35,7 @@ Email verification adds a security layer by ensuring users own the email address
 ```
 
 **Settings:**
+
 - `require_email_confirmation` - Enable/disable (default: false)
 - `email_confirmation_timeout` - Token expiry in seconds (default: 86400 = 24 hours)
 - `require_email_confirmation=true` requires `email_enabled=true`
@@ -58,6 +60,7 @@ Email verification requires SMTP configuration:
 If `require_email_confirmation` is enabled, API updates that set `email_enabled` to `false` are rejected until `require_email_confirmation` is disabled first.
 
 **SMTP Providers:**
+
 - **SendGrid:** smtp.sendgrid.net:587
 - **AWS SES:** email-smtp.{region}.amazonaws.com:587
 - **Mailgun:** smtp.mailgun.org:587
@@ -75,6 +78,7 @@ Content-Type: application/json
 ```
 
 **Request:**
+
 ```json
 {
   "email": "user@example.com",
@@ -83,6 +87,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "access_token": "...",
@@ -96,6 +101,7 @@ Content-Type: application/json
 ```
 
 **What happens:**
+
 - User created with `email_confirmed: false`
 - Confirmation token generated and stored
 - Confirmation email sent to user
@@ -103,11 +109,13 @@ Content-Type: application/json
 ### 2. Confirmation Email Sent
 
 **Email contains:**
+
 - Confirmation link with token
 - Link expires after configured timeout
 - Clear call-to-action button
 
 **Example link:**
+
 ```text
 https://yourapp.com/confirm?token=abc123xyz789
 ```
@@ -121,6 +129,7 @@ Content-Type: application/json
 ```
 
 **Request:**
+
 ```json
 {
   "token": "abc123xyz789"
@@ -128,6 +137,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "message": "Email confirmed successfully"
@@ -135,6 +145,7 @@ Content-Type: application/json
 ```
 
 **Also possible:**
+
 ```json
 {
   "message": "Email already confirmed"
@@ -142,6 +153,7 @@ Content-Type: application/json
 ```
 
 **What happens:**
+
 - Token validated (project-scoped + expiration checked)
 - User marked as `email_confirmed: true`
 - Token cleared (one-time use)
@@ -154,6 +166,7 @@ Authorization: Bearer <anon_key>
 ```
 
 **Before confirmation:**
+
 ```json
 {
   "error": "email confirmation required - please check your email for confirmation link"
@@ -161,6 +174,7 @@ Authorization: Bearer <anon_key>
 ```
 
 **After confirmation:**
+
 ```json
 {
   "access_token": "...",
@@ -182,6 +196,7 @@ Content-Type: application/json
 ```
 
 **Request:**
+
 ```json
 {
   "email": "user@example.com"
@@ -189,6 +204,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "message": "If the email exists and is unconfirmed, a confirmation link has been sent"
@@ -196,6 +212,7 @@ Content-Type: application/json
 ```
 
 **Security:**
+
 - Generic response (doesn't reveal if email exists)
 - Doesn't reveal if already confirmed
 - If user exists and is unconfirmed, resend rotates token (old link becomes invalid)
@@ -207,7 +224,7 @@ Content-Type: application/json
 // Sign up
 const { user, session } = await volcano.auth.signUp({
   email: 'user@example.com',
-  password: 'password123'
+  password: 'password123',
 });
 
 if (!user.email_confirmed) {
@@ -223,7 +240,7 @@ showMessage('Email confirmed! You can now sign in.');
 // Sign in
 const { user, session } = await volcano.auth.signIn({
   email: 'user@example.com',
-  password: 'password123'
+  password: 'password123',
 });
 // ✓ Success - email is confirmed
 
@@ -255,6 +272,7 @@ Content-Type: application/json
 ```
 
 **Request:**
+
 ```json
 {
   "template_type": "confirmation",
@@ -265,6 +283,7 @@ Content-Type: application/json
 ```
 
 **Template variables:**
+
 - `{{.Email}}` - User's email address
 - `{{.ConfirmationURL}}` - Confirmation link with token
 - `{{.ProjectName}}` - Your project name
@@ -275,18 +294,21 @@ Content-Type: application/json
 ### Token Security
 
 **Cryptographically secure:**
+
 - Generated using crypto/rand
 - 64 characters (32 bytes hex-encoded)
 - One-time use (cleared after confirmation)
 - Time-limited expiration
 
 **Project-scoped:**
+
 - Tokens only work within their project
 - Cannot use Project A token in Project B
 
 ### Email Enumeration Prevention
 
 **All responses are generic:**
+
 - Resend confirmation: Same message whether email exists or not
 - Already confirmed: Same message as not found
 - Prevents attackers from discovering registered emails
@@ -355,16 +377,19 @@ curl -X PUT https://api.volcano.dev/projects/PROJECT_ID/auth/config \
 ### When Email Verification Enabled
 
 **Signup:**
+
 - User created with `email_confirmed: false`
 - Confirmation email sent automatically
 - Returns access token (can use app but can't sign in again)
 
 **Signin:**
+
 - Blocked if email not confirmed
 - Error: "email confirmation required"
 - User must confirm email first
 
 **Resend:**
+
 - Generates new token
 - Sends new email
 - Previous token becomes invalid
@@ -372,11 +397,13 @@ curl -X PUT https://api.volcano.dev/projects/PROJECT_ID/auth/config \
 ### When Email Verification Disabled
 
 **Signup:**
+
 - User created with `email_confirmed: false` (or true, doesn't matter)
 - No confirmation email sent
 - Can sign in immediately
 
 **Signin:**
+
 - Works regardless of email_confirmed status
 - No blocking
 
@@ -385,12 +412,14 @@ curl -X PUT https://api.volcano.dev/projects/PROJECT_ID/auth/config \
 **Default:** 24 hours (86400 seconds)
 
 **Configurable:**
+
 ```json
 {"email_confirmation_timeout": 3600}  // 1 hour
 {"email_confirmation_timeout": 604800}  // 7 days
 ```
 
 **After expiration:**
+
 - Token becomes invalid
 - User must request new confirmation email
 - Use resend-confirmation endpoint
@@ -400,6 +429,7 @@ curl -X PUT https://api.volcano.dev/projects/PROJECT_ID/auth/config \
 ### Emails Not Sending
 
 **Check configuration:**
+
 ```bash
 # Get current config
 curl https://api.volcano.dev/projects/PROJECT_ID/auth/config \
@@ -413,6 +443,7 @@ curl https://api.volcano.dev/projects/PROJECT_ID/auth/config \
 ```
 
 **Test SMTP connection:**
+
 - Use `telnet smtp.host.com 587` to verify connectivity
 - Check SMTP credentials with provider
 - Verify from address is authorized (SPF/DKIM)
@@ -420,6 +451,7 @@ curl https://api.volcano.dev/projects/PROJECT_ID/auth/config \
 ### Emails Going to Spam
 
 **Improve deliverability:**
+
 - Set up SPF records for your domain
 - Configure DKIM signing
 - Use verified sender address
@@ -429,12 +461,14 @@ curl https://api.volcano.dev/projects/PROJECT_ID/auth/config \
 ### User Can't Find Email
 
 **Common issues:**
+
 - Email in spam folder
 - Wrong email address entered
 - Email service delay
 - Token expired (user waited too long)
 
 **Solution:**
+
 - Use resend-confirmation endpoint
 - Check spam folder
 - Verify email address is correct
@@ -444,8 +478,3 @@ curl https://api.volcano.dev/projects/PROJECT_ID/auth/config \
 - [SMTP Configuration](configuration/email-smtp.md)
 - [Email Templates](configuration/email-templates.md)
 - [Password Reset](password-reset.md)
-
-
-
-
-

@@ -1,6 +1,6 @@
 ---
-title: "Connection Strings"
-description: "Connect to your PostgreSQL databases."
+title: 'Connection Strings'
+description: 'Connect to your PostgreSQL databases.'
 ---
 
 Connect to your PostgreSQL databases.
@@ -15,6 +15,7 @@ curl https://api.volcano.dev/projects/PROJECT_ID/databases/DB_ID \
 ```
 
 **Response:**
+
 ```json
 {
   "id": "abc-123-456-789",
@@ -37,11 +38,13 @@ postgresql://username:password@hostname:port/database
 ```
 
 **Example:**
+
 ```text
 postgresql://volcano_client_11111111-1111-1111-1111-111111111111:vpg_abc123@database.volcano.dev:5432/myapp_main?sslmode=require&application_name=volcano_full_access
 ```
 
 **Components:**
+
 - `username` - Volcano-managed per-database client user (`volcano_client_{database_id}`)
 - `password` - Volcano-managed generated password (starts with `vpg_`)
 - `hostname` - Volcano pgproxy hostname
@@ -65,7 +68,7 @@ Then reference it in your function:
 ```javascript
 const { Pool } = require('pg');
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
+  connectionString: process.env.DATABASE_URL,
 });
 ```
 
@@ -93,7 +96,7 @@ const { Pool } = require('pg');
 // Create pool once (outside handler)
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  max: 1  // Limit connections per function instance
+  max: 1, // Limit connections per function instance
 });
 
 // Reuse in handlers
@@ -103,7 +106,7 @@ exports.handler = async (event) => {
     const result = await client.query('SELECT NOW()');
     return { statusCode: 200, body: JSON.stringify(result.rows) };
   } finally {
-    client.release();  // Always release
+    client.release(); // Always release
   }
 };
 ```
@@ -154,6 +157,7 @@ All database connections use SSL/TLS encryption by default for security.
 **Keep Credentials Safe:**
 
 > **Warning:**
+>
 > - Never commit connection strings to git
 > - Use environment variables (DATABASE_URL)
 > - Rotate passwords if exposed (see Resetting Passwords below)
@@ -163,6 +167,7 @@ All database connections use SSL/TLS encryption by default for security.
 Databases have connection limits based on your plan.
 
 For functions, use:
+
 - Connection pooling (pg.Pool)
 - max: 1 connection per function instance
 - Always release connections
@@ -182,4 +187,3 @@ Rotates the Volcano-managed client password and returns a new connection string.
 
 - [Creating Databases](creating-databases.md)
 - [Row-Level Security](row-level-security.md)
-

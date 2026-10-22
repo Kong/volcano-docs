@@ -1,6 +1,6 @@
 ---
-title: "Storage Policies"
-description: "Storage policies provide RLS-style access control for files. Policies are evaluated at request time to determine whether an operation is allowed."
+title: 'Storage Policies'
+description: 'Storage policies provide RLS-style access control for files. Policies are evaluated at request time to determine whether an operation is allowed.'
 ---
 
 Storage policies provide RLS-style access control for files. Policies are evaluated at request time to determine whether an operation is allowed.
@@ -17,12 +17,12 @@ For declarative CLI management with `volcano cloud config deploy`, including ful
 
 ## Policy operations
 
-| Operation | Description | Applies to |
-|-----------|-------------|------------|
-| `SELECT` | Read/download files | `download`, `list` |
-| `INSERT` | Upload new files | `upload` (new files) |
-| `UPDATE` | Overwrite existing files | `upload` (existing files) |
-| `DELETE` | Remove files | `remove`, `move` (source) |
+| Operation | Description              | Applies to                |
+| --------- | ------------------------ | ------------------------- |
+| `SELECT`  | Read/download files      | `download`, `list`        |
+| `INSERT`  | Upload new files         | `upload` (new files)      |
+| `UPDATE`  | Overwrite existing files | `upload` (existing files) |
+| `DELETE`  | Remove files             | `remove`, `move` (source) |
 
 > Note: `move` requires DELETE on the source path and INSERT on the destination path.
 
@@ -30,23 +30,23 @@ For declarative CLI management with `volcano cloud config deploy`, including ful
 
 Policies have access to these variables:
 
-| Variable | Type | Description |
-|----------|------|-------------|
-| `auth.uid()` | UUID | Current user's ID (null for an anon key) |
-| `auth.role()` | TEXT | Request role: `'anon'` for an anon key, `'anonymous'` for an anonymous user session, `'authenticated'` for a registered user session, or `'service_role'` |
-| `auth.email()` | TEXT | Current user's email |
-| `owner_id` | UUID | The user who uploaded the file |
-| `name` | TEXT | The file path/name |
-| `bucket.name` | TEXT | The bucket name |
-| `bucket.id` | UUID | The bucket ID |
+| Variable       | Type | Description                                                                                                                                               |
+| -------------- | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `auth.uid()`   | UUID | Current user's ID (null for an anon key)                                                                                                                  |
+| `auth.role()`  | TEXT | Request role: `'anon'` for an anon key, `'anonymous'` for an anonymous user session, `'authenticated'` for a registered user session, or `'service_role'` |
+| `auth.email()` | TEXT | Current user's email                                                                                                                                      |
+| `owner_id`     | UUID | The user who uploaded the file                                                                                                                            |
+| `name`         | TEXT | The file path/name                                                                                                                                        |
+| `bucket.name`  | TEXT | The bucket name                                                                                                                                           |
+| `bucket.id`    | UUID | The bucket ID                                                                                                                                             |
 
 ### Helper functions
 
-| Function | Description | Example |
-|----------|-------------|---------|
-| `storage.foldername(name)` | Returns array of folder parts | `"a/b/file.txt"` → `["a", "b"]` |
-| `storage.filename(name)` | Returns the filename without path | `"a/b/file.txt"` → `"file.txt"` |
-| `storage.extension(name)` | Returns the file extension (lowercase, no dot) | `"photo.PNG"` → `"png"` |
+| Function                   | Description                                    | Example                         |
+| -------------------------- | ---------------------------------------------- | ------------------------------- |
+| `storage.foldername(name)` | Returns array of folder parts                  | `"a/b/file.txt"` → `["a", "b"]` |
+| `storage.filename(name)`   | Returns the filename without path              | `"a/b/file.txt"` → `"file.txt"` |
+| `storage.extension(name)`  | Returns the file extension (lowercase, no dot) | `"photo.PNG"` → `"png"`         |
 
 ## Creating policies
 
@@ -122,6 +122,7 @@ Users can only access files in their own folder:
 ```
 
 This matches paths like:
+
 - `abc123/profile.jpg` (where `abc123` is the user ID)
 - `abc123/documents/report.pdf`
 
@@ -245,14 +246,10 @@ Usage in SDK:
 
 ```javascript
 // Upload to user's folder
-await volcano.storage
-  .from('user-files')
-  .upload(`${userId}/avatar.png`, file);
+await volcano.storage.from('user-files').upload(`${userId}/avatar.png`, file);
 
 // List user's files
-const { data } = await volcano.storage
-  .from('user-files')
-  .list(`${userId}/`);
+const { data } = await volcano.storage.from('user-files').list(`${userId}/`);
 ```
 
 ### Shared team storage
@@ -426,6 +423,7 @@ JSON
 ```
 
 A user can read a file if:
+
 - They own it (policy 1), OR
 - It's in the `shared/` folder (policy 2)
 
@@ -438,13 +436,11 @@ Service keys (used server-side) bypass all policies:
 const volcanoAdmin = new VolcanoAuth({
   apiUrl: 'https://api.yourapp.com',
   anonKey: process.env.ANON_KEY,
-  accessToken: process.env.SERVICE_KEY // sk-...
+  accessToken: process.env.SERVICE_KEY, // sk-...
 });
 
 // Can read any file regardless of policies
-const { data } = await volcanoAdmin.storage
-  .from('private-bucket')
-  .download('any-file.txt');
+const { data } = await volcanoAdmin.storage.from('private-bucket').download('any-file.txt');
 ```
 
 > Warning: Never expose service keys in client-side code.
@@ -480,9 +476,7 @@ If access is unexpectedly denied:
 
 ```javascript
 // Check if any policies allow access
-const { data, error } = await volcano.storage
-  .from('bucket')
-  .download('file.txt');
+const { data, error } = await volcano.storage.from('bucket').download('file.txt');
 
 if (error?.message.includes('denied')) {
   console.log('No matching policy for this operation');

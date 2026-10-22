@@ -1,6 +1,6 @@
 ---
-title: "Volcano Realtime Chat"
-description: "Minimal real-time chat with presence tracking using the Volcano SDK. Shows how easy it is to build a full-featured chat app with online user lists."
+title: 'Volcano Realtime Chat'
+description: 'Minimal real-time chat with presence tracking using the Volcano SDK. Shows how easy it is to build a full-featured chat app with online user lists.'
 ---
 
 # Volcano Realtime Chat
@@ -26,7 +26,7 @@ yarn dev
 
 ## How It Works
 
-The entire app is in `app/page.tsx` (~250 lines):
+All SDK calls are in `app/page.tsx`. Condensed, the flow is:
 
 ```typescript
 import { VolcanoAuth } from '@volcano.dev/sdk';
@@ -34,16 +34,16 @@ import { VolcanoRealtime } from '@volcano.dev/sdk/realtime';
 
 // 1. Sign in anonymously with display_name
 const volcano = new VolcanoAuth({ apiUrl, anonKey });
-const { session, error } = await volcano.auth.signInAnonymously({ 
-  display_name: 'Alice'  // This appears in presence events!
+const { session, error } = await volcano.auth.signInAnonymously({
+  display_name: 'Alice', // This appears in presence events!
 });
 if (error || !session) throw error ?? new Error('No session returned');
 
 // 2. Connect to realtime
-const realtime = new VolcanoRealtime({ 
-  apiUrl, 
-  anonKey, 
-  accessToken: session.access_token 
+const realtime = new VolcanoRealtime({
+  apiUrl,
+  anonKey,
+  accessToken: session.access_token,
 });
 await realtime.connect();
 
@@ -58,7 +58,7 @@ await chat.subscribe();
 const presence = realtime.channel('chat-general', { type: 'presence' });
 
 presence.onPresenceSync((state) => {
-  const users = Object.values(state).map(info => {
+  const users = Object.values(state).map((info) => {
     // connInfo is untyped; app/page.tsx checks each field's type
     const metadata = info.connInfo?.user_metadata as { display_name?: string } | undefined;
     return { id: info.client, name: metadata?.display_name || 'Anonymous' };
@@ -73,7 +73,7 @@ await presence.track(); // Automatic
 await chat.send({
   username: 'Alice',
   text: 'Hello everyone!',
-  timestamp: new Date().toISOString()
+  timestamp: new Date().toISOString(),
 });
 ```
 
@@ -115,11 +115,16 @@ Use the correct event names:
 ```
 realtime-chat/
 ├── app/
-│   ├── page.tsx         # Main app (~250 lines)
-│   ├── layout.tsx       # Root layout
-│   └── globals.css      # Styles
+│   ├── page.tsx          # SDK calls and screen state
+│   ├── ConfigScreen.tsx  # API URL and anon key form
+│   ├── JoinScreen.tsx    # Name entry
+│   ├── ChatRoom.tsx      # Messages and message form
+│   ├── OnlineUsers.tsx   # Online user list
+│   ├── types.ts          # Shared types
+│   ├── layout.tsx        # Root layout
+│   └── globals.css       # Styles
 ├── package.json
 └── README.md
 ```
 
-All SDK functionality in one file - no abstractions, just pure SDK usage.
+All SDK calls are in `app/page.tsx`. The other components get data and callbacks as props and never call the SDK.

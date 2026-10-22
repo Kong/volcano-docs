@@ -1,6 +1,6 @@
 ---
-title: "Broadcast Channels"
-description: "Broadcast channels for pub/sub messaging between connected clients — chat rooms, live updates, and notifications."
+title: 'Broadcast Channels'
+description: 'Broadcast channels for pub/sub messaging between connected clients — chat rooms, live updates, and notifications.'
 ---
 
 Broadcast channels enable pub/sub messaging between connected clients. Use them for chat rooms, live updates, notifications, and any scenario where multiple clients need to receive the same messages.
@@ -23,7 +23,7 @@ import { VolcanoRealtime } from '@volcano.dev/sdk/realtime';
 const realtime = new VolcanoRealtime({
   apiUrl: 'https://api.yourapp.com',
   anonKey: 'your-anon-key',
-  accessToken: accessToken
+  accessToken: accessToken,
 });
 
 await realtime.connect();
@@ -44,11 +44,11 @@ await channel.subscribe();
 
 ```javascript
 // Send a message to all subscribers
-await channel.send({ 
+await channel.send({
   event: 'message',
   text: 'Hello everyone!',
   userId: 'user-123',
-  timestamp: Date.now()
+  timestamp: Date.now(),
 });
 ```
 
@@ -76,13 +76,13 @@ Channel names are simple strings. Use descriptive, consistent naming:
 
 ```javascript
 // Good patterns - simple and descriptive
-'chat-room-123'           // Chat room by ID
-'notifications'           // User notifications
-'game-match-789'          // Game session
-'product-updates'         // Product updates
+'chat-room-123'; // Chat room by ID
+'notifications'; // User notifications
+'game-match-789'; // Game session
+'product-updates'; // Product updates
 
 // Channel names are case-sensitive
-'Chat-Room' !== 'chat-room'
+'Chat-Room' !== 'chat-room';
 ```
 
 **Note**: You don't need to include project IDs in channel names. Project isolation is automatic based on your anon key.
@@ -130,7 +130,7 @@ class ChatRoom {
     this.realtime = new VolcanoRealtime({
       apiUrl: 'https://api.yourapp.com',
       anonKey: anonKey,
-      accessToken: accessToken
+      accessToken: accessToken,
     });
     this.channel = null;
     this.onMessage = () => {};
@@ -139,20 +139,20 @@ class ChatRoom {
 
   async connect() {
     await this.realtime.connect();
-    
+
     // Simple channel name - no project prefix needed
     this.channel = this.realtime.channel(`chat-${this.roomId}`);
-    
+
     this.channel.on('message', (payload) => {
       this.onMessage(payload);
     });
-    
+
     this.channel.on('typing', (payload) => {
       if (payload.userId !== this.userId) {
         this.onTyping(payload);
       }
     });
-    
+
     await this.channel.subscribe();
   }
 
@@ -161,7 +161,7 @@ class ChatRoom {
       event: 'message',
       userId: this.userId,
       text,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -169,7 +169,7 @@ class ChatRoom {
     await this.channel.send({
       event: 'typing',
       userId: this.userId,
-      isTyping
+      isTyping,
     });
   }
 
@@ -206,12 +206,12 @@ const channelB = realtimeB.channel('chat');  // Only Project B users
 
 ## Limits
 
-| Limit | HOBBY Plan | SUPERAGENT Plan |
-|-------|-----------|----------|
-| Max message size | 256 KB | 1 MB |
-| Max channels per connection | 100 | 500 |
-| Messages per month | 100,000 | Unlimited |
-| Concurrent connections | 200 | 100,000 |
+| Limit                       | HOBBY Plan | SUPERAGENT Plan |
+| --------------------------- | ---------- | --------------- |
+| Max message size            | 256 KB     | 1 MB            |
+| Max channels per connection | 100        | 500             |
+| Messages per month          | 100,000    | Unlimited       |
+| Concurrent connections      | 200        | 100,000         |
 
 ## Best practices
 

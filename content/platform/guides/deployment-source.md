@@ -1,6 +1,6 @@
 ---
-title: "Deployment source"
-description: "Identify what initiated each deployment — a Git push, the CLI, the dashboard, the API, or the platform itself."
+title: 'Deployment source'
+description: 'Identify what initiated each deployment — a Git push, the CLI, the dashboard, the API, or the platform itself.'
 ---
 
 Every deployment records a **`deploy_source`**: what initiated it. Use it to tell an automated Git push apart from a manual CLI deploy, or to filter a project's deployment history by origin.
@@ -9,14 +9,14 @@ Every deployment records a **`deploy_source`**: what initiated it. Use it to tel
 
 ## Values
 
-| Value | Meaning |
-| --- | --- |
-| `git` | A Git push to the connected repository's production branch (auto-deploy). |
-| `cli` | A deploy from the Volcano CLI. |
-| `web` | A deploy from the dashboard. |
-| `api` | A deploy from a direct API call with a platform token. |
-| `system` | Platform-initiated work with no user actor, such as region convergence or a project-delete cascade. |
-| `unknown` | Origin not recorded — historical deployments created before this field existed. |
+| Value     | Meaning                                                                                             |
+| --------- | --------------------------------------------------------------------------------------------------- |
+| `git`     | A Git push to the connected repository's production branch (auto-deploy).                           |
+| `cli`     | A deploy from the Volcano CLI.                                                                      |
+| `web`     | A deploy from the dashboard.                                                                        |
+| `api`     | A deploy from a direct API call with a platform token.                                              |
+| `system`  | Platform-initiated work with no user actor, such as region convergence or a project-delete cascade. |
+| `unknown` | Origin not recorded — historical deployments created before this field existed.                     |
 
 A deployment correlated to a Git deployment run is always `git`, regardless of how the request reached the API.
 

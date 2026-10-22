@@ -1,6 +1,6 @@
 ---
-title: "Functions"
-description: "Functions are code that runs on demand. You write the code, deploy it to Volcano, and invoke it via HTTP."
+title: 'Functions'
+description: 'Functions are code that runs on demand. You write the code, deploy it to Volcano, and invoke it via HTTP.'
 ---
 
 Functions are code that runs on demand. You write the code, deploy it to Volcano, and invoke it via HTTP. Volcano handles provisioning, scaling, and execution.
@@ -29,6 +29,7 @@ Functions are code that runs on demand. You write the code, deploy it to Volcano
 ```
 
 Functions:
+
 - Scale automatically based on demand
 - Run only when invoked (no idle costs)
 - Can access databases with user context
@@ -46,14 +47,17 @@ volcano/functions/
 ```
 
 Supported layouts:
+
 - single-file functions such as `volcano/functions/hello.js`
 - directory-based functions such as `volcano/functions/api/index.js`
 
 The CLI derives the function name from:
+
 - the filename for single-file functions
 - the directory name for directory-based functions
 
 The CLI packages cloud function sources as `tar.gz` archives and also automatically packages:
+
 - shared files/directories whose names start with `_`
 - dependency manifests such as `package.json`, `requirements.txt`, and `Gemfile`
 
@@ -82,11 +86,11 @@ while cleanup runs, then the function disappears from `get` and `list` results.
 
 ## Supported runtimes
 
-| Language | Runtimes | Default handler |
-|----------|----------|-----------------|
-| Node.js | nodejs24.x, nodejs22.x | `index.handler` |
-| Python | python3.14, python3.13, python3.12, python3.11, python3.10 | `main.handler` |
-| Ruby | ruby4.0, ruby3.4, ruby3.3 | `main.handler` |
+| Language | Runtimes                                                   | Default handler |
+| -------- | ---------------------------------------------------------- | --------------- |
+| Node.js  | nodejs24.x, nodejs22.x                                     | `index.handler` |
+| Python   | python3.14, python3.13, python3.12, python3.11, python3.10 | `main.handler`  |
+| Ruby     | ruby4.0, ruby3.4, ruby3.3                                  | `main.handler`  |
 
 The handler is the entry point Volcano calls when your code runs. For Node.js, `index.handler` means the `handler` export in `index.js`. You can customize this when deploying.
 
@@ -103,8 +107,8 @@ exports.handler = async (event) => {
     statusCode: 200,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      message: `Hello, ${name}!`
-    })
+      message: `Hello, ${name}!`,
+    }),
   };
 };
 ```
@@ -178,7 +182,7 @@ exports.handler = async (event) => {
   if (!event.__volcano_auth) {
     return {
       statusCode: 401,
-      body: JSON.stringify({ error: 'Unauthorized' })
+      body: JSON.stringify({ error: 'Unauthorized' }),
     };
   }
 
@@ -189,8 +193,8 @@ exports.handler = async (event) => {
     body: JSON.stringify({
       message: `Hello, ${email}!`,
       userId: user_id,
-      role: role  // 'authenticated' or 'anonymous'
-    })
+      role: role, // 'authenticated' or 'anonymous'
+    }),
   };
 };
 ```
@@ -270,25 +274,25 @@ Point the handler at the file directly if you want the behavior above.
 
 Your plan sets each function's resource limits:
 
-| Resource | HOBBY plan | SUPERAGENT plan |
-|----------|-----------|----------|
-| Timeout | 30 seconds | 180 seconds |
-| Memory | 128 MB | 256 MB |
-| Disk | 512 MB | 1024 MB |
-| Rate limit (per function) | 10 RPS | Unlimited |
-| Rate limit (project-wide) | 60 RPS | Unlimited |
+| Resource                  | HOBBY plan | SUPERAGENT plan |
+| ------------------------- | ---------- | --------------- |
+| Timeout                   | 30 seconds | 180 seconds     |
+| Memory                    | 128 MB     | 256 MB          |
+| Disk                      | 512 MB     | 1024 MB         |
+| Rate limit (per function) | 10 RPS     | Unlimited       |
+| Rate limit (project-wide) | 60 RPS     | Unlimited       |
 
 A step in a [durable function](durable-functions.md) gets its own, longer
 timeout. See [Plans and limits](../guides/plans-and-limits.md#durable-functions).
 
 ## What's next
 
-| Guide | Description |
-|-------|-------------|
-| [Creating functions](creating-functions.md) | Detailed deployment guide with examples |
-| [Durable functions](durable-functions.md) | Long-running work that checkpoints and resumes |
-| [Invoking functions](invoking-functions.md) | Call functions from your app |
-| [User context](user-context.md) | Access authenticated user data |
-| [Environment variables](environment-variables.md) | Configure secrets and settings |
-| [Logs](logs.md) | View and filter function logs |
-| [Deployment guide](deployment-guide.md) | Optimize package size and dependencies |
+| Guide                                             | Description                                    |
+| ------------------------------------------------- | ---------------------------------------------- |
+| [Creating functions](creating-functions.md)       | Detailed deployment guide with examples        |
+| [Durable functions](durable-functions.md)         | Long-running work that checkpoints and resumes |
+| [Invoking functions](invoking-functions.md)       | Call functions from your app                   |
+| [User context](user-context.md)                   | Access authenticated user data                 |
+| [Environment variables](environment-variables.md) | Configure secrets and settings                 |
+| [Logs](logs.md)                                   | View and filter function logs                  |
+| [Deployment guide](deployment-guide.md)           | Optimize package size and dependencies         |

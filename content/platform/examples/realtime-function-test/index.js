@@ -37,8 +37,7 @@ exports.handler = async (event) => {
   const databaseUrl = process.env.REALTIME_TEST_DATABASE_URL;
   if (!apiUrl || !anonKey || !databaseUrl) {
     return respond(500, {
-      error:
-        'Set the REALTIME_TEST_API_URL, REALTIME_TEST_ANON_KEY and REALTIME_TEST_DATABASE_URL project variables',
+      error: 'Set the REALTIME_TEST_API_URL, REALTIME_TEST_ANON_KEY and REALTIME_TEST_DATABASE_URL project variables',
     });
   }
 
@@ -49,6 +48,32 @@ exports.handler = async (event) => {
 
   // Connecting as the caller makes Realtime apply their RLS policies.
   const realtime = new VolcanoRealtime({ apiUrl, anonKey, accessToken: auth.access_token });
+  const connection = trackConnection(realtime);
+
+  try {
+    // Test 1: Connection. The other tests need it.
+    if (!(await testConnection(realtime, connection, addResult))) {
+      return report(tests);
+    }
+
+    // Test 2: Broadcast Channel
+    await testBroadcast(realtime, addResult);
+
+    // Test 3: Presence Channel
+    await testPresence(realtime, connection, addResult);
+
+    // Tests 4 and 5: Postgres Changes and RLS Isolation
+    await testPostgresChanges(realtime, databaseUrl, auth.user_id, addResult);
+  } finally {
+    realtime.disconnect();
+  }
+
+  return report(tests);
+};
+
+// Records the client ID the server gives this connection, and why the server
+// disconnects it.
+function trackConnection(realtime) {
   const connection = { clientId: '', disconnectReason: '' };
   realtime.onConnect((context) => {
     connection.clientId = context.client ?? '';
@@ -58,79 +83,60 @@ exports.handler = async (event) => {
   realtime.onDisconnect((context) => {
     connection.disconnectReason = context.reason ?? '';
   });
+  return connection;
+}
 
+async function testConnection(realtime, connection, addResult) {
   try {
-    // ==========================
-    // Test 1: Connection
-    // ==========================
-    try {
-      await withTimeout(realtime.connect(), 'Connection');
-      addResult('Connection', realtime.isConnected());
-    } catch (error) {
-      const reason = connection.disconnectReason || error.message;
-      addResult('Connection', false, { message: `Failed to connect: ${reason}` });
-      return report(tests);
-    }
-
-    // ==========================
-    // Test 2: Broadcast Channel
-    // ==========================
-    try {
-      const broadcastChannel = realtime.channel('test-function-broadcast');
-      await withTimeout(broadcastChannel.subscribe(), 'Broadcast subscribe');
-      addResult('Broadcast Subscribe', true, { channel: broadcastChannel.name });
-
-      await broadcastChannel.send({ event: 'test', from: 'function', timestamp: Date.now() });
-      addResult('Broadcast Send', true);
-
-      broadcastChannel.unsubscribe();
-    } catch (error) {
-      addResult('Broadcast Channel', false, { message: `Broadcast failed: ${error.message}` });
-    }
-
-    // ==========================
-    // Test 3: Presence Channel
-    // ==========================
-    try {
-      const presenceChannel = realtime.channel('test-function-presence', { type: 'presence' });
-      await withTimeout(presenceChannel.subscribe(), 'Presence subscribe');
-
-      // Subscribing adds this connection to the presence state, keyed by client,
-      // which the SDK fetches shortly afterwards.
-      const present = await waitFor(() => connection.clientId in presenceChannel.getPresenceState());
-      addResult('Presence Channel', present, {
-        channel: presenceChannel.name,
-        presenceKeys: Object.keys(presenceChannel.getPresenceState()).length,
-      });
-
-      presenceChannel.unsubscribe();
-    } catch (error) {
-      addResult('Presence Channel', false, { message: `Presence failed: ${error.message}` });
-    }
-
-    // ==========================
-    // Tests 4 and 5: Postgres Changes and RLS Isolation
-    // ==========================
-    await testPostgresChanges(realtime, databaseUrl, auth.user_id, addResult);
-  } finally {
-    realtime.disconnect();
+    await withTimeout(realtime.connect(), 'Connection');
+    addResult('Connection', realtime.isConnected());
+    return true;
+  } catch (error) {
+    const reason = connection.disconnectReason || error.message;
+    addResult('Connection', false, { message: `Failed to connect: ${reason}` });
+    return false;
   }
+}
 
-  return report(tests);
-};
+async function testBroadcast(realtime, addResult) {
+  try {
+    const broadcastChannel = realtime.channel('test-function-broadcast');
+    await withTimeout(broadcastChannel.subscribe(), 'Broadcast subscribe');
+    addResult('Broadcast Subscribe', true, { channel: broadcastChannel.name });
+
+    await broadcastChannel.send({ event: 'test', from: 'function', timestamp: Date.now() });
+    addResult('Broadcast Send', true);
+
+    broadcastChannel.unsubscribe();
+  } catch (error) {
+    addResult('Broadcast Channel', false, { message: `Broadcast failed: ${error.message}` });
+  }
+}
+
+async function testPresence(realtime, connection, addResult) {
+  try {
+    const presenceChannel = realtime.channel('test-function-presence', { type: 'presence' });
+    await withTimeout(presenceChannel.subscribe(), 'Presence subscribe');
+
+    // Subscribing adds this connection to the presence state, keyed by client,
+    // which the SDK fetches shortly afterwards.
+    const present = await waitFor(() => connection.clientId in presenceChannel.getPresenceState());
+    addResult('Presence Channel', present, {
+      channel: presenceChannel.name,
+      presenceKeys: Object.keys(presenceChannel.getPresenceState()).length,
+    });
+
+    presenceChannel.unsubscribe();
+  } catch (error) {
+    addResult('Presence Channel', false, { message: `Presence failed: ${error.message}` });
+  }
+}
 
 async function testPostgresChanges(realtime, databaseUrl, userId, addResult) {
   let db;
   const insertedIds = [];
   try {
-    // Full access bypasses RLS, which the setup and the other user's row need.
-    db = new Client({
-      connectionString: databaseConnectionString(databaseUrl),
-      connectionTimeoutMillis: STEP_TIMEOUT_MS,
-      query_timeout: STEP_TIMEOUT_MS,
-    });
-    // A dropped connection fails the next query, which reports it.
-    db.on('error', () => {});
+    db = createDatabaseClient(databaseUrl);
     await db.connect();
     await createTestTable(db);
 
@@ -146,41 +152,20 @@ async function testPostgresChanges(realtime, databaseUrl, userId, addResult) {
     addResult('Postgres Subscribe', true, { channel: pgChannel.name });
 
     // Insert the other user's row first, so its change is in the same batch as
-    // the caller's or an earlier one (see the marker below).
+    // the caller's or an earlier one (see waitForMarkerChange).
     const otherRowId = await insertRow(db, OTHER_USER_ID, 'This should be invisible to us');
     insertedIds.push(otherRowId);
     const ownRowId = await insertRow(db, userId, `Function test at ${new Date().toISOString()}`);
     insertedIds.push(ownRowId);
 
     const ownChangeReceived = await waitFor(() => receivedIds.has(ownRowId));
-    addResult('Postgres Change Received', ownChangeReceived, {
-      receivedCount: receivedIds.size,
-    });
+    addResult('Postgres Change Received', ownChangeReceived, { receivedCount: receivedIds.size });
 
-    // A Realtime server takes up a database's changes in batches, one batch at
-    // a time, but in no set order within a batch, so the other user's change
-    // can come after the caller's. Once the caller's change has arrived, a
-    // marker row lands in a later batch, so the server checks the other user's
-    // row, and sends any leaked change, before the marker's. With several
-    // servers, that holds for each server's own deliveries; see the README.
-    let markerChangeReceived = false;
-    if (ownChangeReceived) {
-      const markerRowId = await insertRow(db, userId, 'Marker');
-      insertedIds.push(markerRowId);
-      markerChangeReceived = await waitFor(() => receivedIds.has(markerRowId));
-    }
-
+    const markerChangeReceived = ownChangeReceived && (await waitForMarkerChange(db, userId, receivedIds, insertedIds));
     const otherUserChangeReceived = receivedIds.has(otherRowId);
-    let message = 'Correctly did not receive change for other user';
-    if (otherUserChangeReceived) {
-      message = 'SECURITY ISSUE: Received change for other user';
-    } else if (!ownChangeReceived) {
-      // Without the caller's own change, a missing event proves nothing.
-      message = 'Inconclusive: no change arrived for the caller either';
-    } else if (!markerChangeReceived) {
-      message = "Inconclusive: the marker row's change didn't arrive";
-    }
-    addResult('RLS Isolation', markerChangeReceived && !otherUserChangeReceived, { message });
+    addResult('RLS Isolation', markerChangeReceived && !otherUserChangeReceived, {
+      message: rlsIsolationMessage(otherUserChangeReceived, ownChangeReceived, markerChangeReceived),
+    });
 
     pgChannel.unsubscribe();
   } catch (error) {
@@ -192,6 +177,38 @@ async function testPostgresChanges(realtime, databaseUrl, userId, addResult) {
     }
     await db?.end();
   }
+}
+
+// Full access bypasses RLS, which the setup and the other user's row need.
+function createDatabaseClient(databaseUrl) {
+  const db = new Client({
+    connectionString: databaseConnectionString(databaseUrl),
+    connectionTimeoutMillis: STEP_TIMEOUT_MS,
+    query_timeout: STEP_TIMEOUT_MS,
+  });
+  // A dropped connection fails the next query, which reports it.
+  db.on('error', () => {});
+  return db;
+}
+
+// A Realtime server takes up a database's changes in batches, one batch at
+// a time, but in no set order within a batch, so the other user's change
+// can come after the caller's. Once the caller's change has arrived, a
+// marker row lands in a later batch, so the server checks the other user's
+// row, and sends any leaked change, before the marker's. With several
+// servers, that holds for each server's own deliveries; see the README.
+async function waitForMarkerChange(db, userId, receivedIds, insertedIds) {
+  const markerRowId = await insertRow(db, userId, 'Marker');
+  insertedIds.push(markerRowId);
+  return waitFor(() => receivedIds.has(markerRowId));
+}
+
+function rlsIsolationMessage(otherUserChangeReceived, ownChangeReceived, markerChangeReceived) {
+  if (otherUserChangeReceived) return 'SECURITY ISSUE: Received change for other user';
+  // Without the caller's own change, a missing event proves nothing.
+  if (!ownChangeReceived) return 'Inconclusive: no change arrived for the caller either';
+  if (!markerChangeReceived) return "Inconclusive: the marker row's change didn't arrive";
+  return 'Correctly did not receive change for other user';
 }
 
 // Once the policy exists the DDL is skipped, so its table locks don't hold up
@@ -235,10 +252,10 @@ async function testPolicyExists(db) {
 }
 
 async function insertRow(db, userId, data) {
-  const { rows } = await db.query(
-    'INSERT INTO public.realtime_test (user_id, data) VALUES ($1, $2) RETURNING id',
-    [userId, data]
-  );
+  const { rows } = await db.query('INSERT INTO public.realtime_test (user_id, data) VALUES ($1, $2) RETURNING id', [
+    userId,
+    data,
+  ]);
   return rows[0].id;
 }
 

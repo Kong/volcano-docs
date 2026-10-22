@@ -1,6 +1,6 @@
 ---
-title: "Function with Service Key Example"
-description: "CRITICAL SECURITY WARNING"
+title: 'Function with Service Key Example'
+description: 'CRITICAL SECURITY WARNING'
 ---
 
 # Function with Service Key Example
@@ -10,12 +10,14 @@ description: "CRITICAL SECURITY WARNING"
 Service keys **BYPASS Row-Level Security** and grant admin access to ALL data from ALL users.
 
 **DO:**
+
 - ✅ Use ONLY in backend functions
 - ✅ Store in environment variables
 - ✅ Use for admin operations (analytics, moderation, bulk updates)
 - ✅ Audit all service key usage
 
 **DON'T:**
+
 - ❌ NEVER expose in frontend code
 - ❌ NEVER commit to git
 - ❌ NEVER use for regular user operations
@@ -40,6 +42,7 @@ This example demonstrates admin operations using service keys:
 ### 1. Get Service Key
 
 From Volcano Dashboard:
+
 1. Navigate to **Service Keys** page
 2. Copy an existing key OR create new one
 3. **NEVER expose this key publicly!**
@@ -69,16 +72,25 @@ volcano deploy --function function-service-key-example
 
 ## Usage Examples
 
+Keep the function `private`, the default, so only service keys can invoke it
+([visibility](../../functions/creating-functions.md#choose-who-can-invoke-it)).
+Call it from server-side code: send a `POST` to its `invoke_url` with the action
+inside the `payload` envelope, which the function receives as its event. See
+[Invoking functions](../../functions/invoking-functions.md) for how to read
+`invoke_url`; these examples read it from `INVOKE_URL`.
+
 ### 1. Get Analytics (All Users)
 
 ```javascript
-// Call from admin dashboard or cron job
-const response = await fetch('https://your-function-url.com', {
+// Call from a backend or cron job, never from a browser
+const response = await fetch(process.env.INVOKE_URL, {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+  headers: { Authorization: `Bearer ${process.env.SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    action: 'get_analytics'
-  })
+    payload: {
+      action: 'get_analytics',
+    },
+  }),
 });
 
 const { analytics } = await response.json();
@@ -106,17 +118,22 @@ console.log(analytics);
 
 ### 2. Moderate Content
 
+`action` selects the operation, so the moderation goes in `moderation_action`:
+`flag`, `remove`, or `restore`. Restoring a post clears its `moderation_reason`.
+
 ```javascript
 // Flag inappropriate posts
-const response = await fetch('https://your-function-url.com', {
+const response = await fetch(process.env.INVOKE_URL, {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+  headers: { Authorization: `Bearer ${process.env.SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    action: 'moderate_content',
-    post_ids: ['post-uuid-1', 'post-uuid-2'],
-    action: 'flag',
-    reason: 'Inappropriate content'
-  })
+    payload: {
+      action: 'moderate_content',
+      post_ids: ['post-uuid-1', 'post-uuid-2'],
+      moderation_action: 'flag',
+      reason: 'Inappropriate content',
+    },
+  }),
 });
 
 const result = await response.json();
@@ -131,15 +148,17 @@ const result = await response.json();
 
 ```javascript
 // Update all draft posts to published
-const response = await fetch('https://your-function-url.com', {
+const response = await fetch(process.env.INVOKE_URL, {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+  headers: { Authorization: `Bearer ${process.env.SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    action: 'bulk_update',
-    table: 'posts',
-    updates: { status: 'published' },
-    filters: { status: 'draft' }
-  })
+    payload: {
+      action: 'bulk_update',
+      table: 'posts',
+      updates: { status: 'published' },
+      filters: { status: 'draft' },
+    },
+  }),
 });
 
 const result = await response.json();
@@ -153,12 +172,14 @@ const result = await response.json();
 
 ```javascript
 // Backup all data
-const response = await fetch('https://your-function-url.com', {
+const response = await fetch(process.env.INVOKE_URL, {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+  headers: { Authorization: `Bearer ${process.env.SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    action: 'export_all_data'
-  })
+    payload: {
+      action: 'export_all_data',
+    },
+  }),
 });
 
 const { export: data } = await response.json();
@@ -175,28 +196,32 @@ const { export: data } = await response.json();
 
 ```javascript
 // Dry run first (see what would be deleted)
-const dryRun = await fetch('https://your-function-url.com', {
+const dryRun = await fetch(process.env.INVOKE_URL, {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+  headers: { Authorization: `Bearer ${process.env.SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    action: 'cleanup_old_posts',
-    days_old: 365,
-    dry_run: true
-  })
+    payload: {
+      action: 'cleanup_old_posts',
+      days_old: 365,
+      dry_run: true,
+    },
+  }),
 });
 
 const { would_delete } = await dryRun.json();
 console.log(`Would delete ${would_delete} posts`);
 
 // Actually delete
-const result = await fetch('https://your-function-url.com', {
+const result = await fetch(process.env.INVOKE_URL, {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+  headers: { Authorization: `Bearer ${process.env.SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    action: 'cleanup_old_posts',
-    days_old: 365,
-    dry_run: false
-  })
+    payload: {
+      action: 'cleanup_old_posts',
+      days_old: 365,
+      dry_run: false,
+    },
+  }),
 });
 ```
 
@@ -211,15 +236,13 @@ const result = await fetch('https://your-function-url.com', {
 const volcano = new VolcanoAuth({
   apiUrl: process.env.VOLCANO_API_URL,
   anonKey: process.env.ANON_KEY,
-  accessToken: process.env.SERVICE_ROLE_KEY  // ← Admin key overrides anonKey!
+  accessToken: process.env.SERVICE_ROLE_KEY, // ← Admin key overrides anonKey!
 });
 
 volcano.database(process.env.DATABASE_NAME);
 
 // Query ALL data from ALL users (RLS BYPASSED)
-const { data } = await volcano
-  .from('posts')
-  .select('*');
+const { data } = await volcano.from('posts').select('*');
 // Returns ALL posts, regardless of user_id
 ```
 
@@ -230,15 +253,13 @@ const { data } = await volcano
 const volcano = new VolcanoAuth({
   apiUrl: process.env.VOLCANO_API_URL,
   anonKey: process.env.ANON_KEY,
-  accessToken: auth.access_token  // ← User's token
+  accessToken: auth.access_token, // ← User's token
 });
 
 volcano.database(process.env.DATABASE_NAME);
 
 // Query ONLY user's data (RLS ENFORCED)
-const { data } = await volcano
-  .from('posts')
-  .select('*');
+const { data } = await volcano.from('posts').select('*');
 // Returns only posts where user_id = current user
 ```
 
@@ -253,22 +274,22 @@ exports.handler = async (event) => {
   const volcano = new VolcanoAuth({
     apiUrl: process.env.VOLCANO_API_URL,
     anonKey: process.env.ANON_KEY,
-    accessToken: process.env.SERVICE_ROLE_KEY
+    accessToken: process.env.SERVICE_ROLE_KEY,
   });
-  
+
   volcano.database(process.env.DATABASE_NAME);
-  
+
   // Get all data for analytics
   const { data: posts } = await volcano.from('posts').select('*');
   const { data: users } = await volcano.from('users').select('*');
-  
+
   return {
     statusCode: 200,
     body: JSON.stringify({
       total_posts: posts.length,
       total_users: users.length,
-      active_users: users.filter(u => u.status === 'active').length
-    })
+      active_users: users.filter((u) => u.status === 'active').length,
+    }),
   };
 };
 ```
@@ -278,9 +299,9 @@ exports.handler = async (event) => {
 ```javascript
 // Flag inappropriate content
 const { data } = await volcano
-  .update('posts', { 
+  .update('posts', {
     status: 'flagged',
-    moderation_reason: 'Spam detected'
+    moderation_reason: 'Spam detected',
   })
   .eq('id', postId);
 ```
@@ -289,10 +310,7 @@ const { data } = await volcano
 
 ```javascript
 // Get all users for newsletter
-const { data: users } = await volcano
-  .from('users')
-  .select('email, name')
-  .eq('email_notifications', true);
+const { data: users } = await volcano.from('users').select('email, name').eq('email_notifications', true);
 
 // Send emails to all users
 for (const user of users) {
@@ -308,8 +326,8 @@ const { data: posts } = await volcano.from('posts').select('*');
 
 for (const post of posts) {
   await volcano
-    .update('posts', { 
-      new_field: transformData(post.old_field) 
+    .update('posts', {
+      new_field: transformData(post.old_field),
     })
     .eq('id', post.id);
 }
@@ -318,10 +336,8 @@ for (const post of posts) {
 ### Single-Leader Work
 
 ```javascript
-const result = await volcano.locks.withLock(
-  'data-migration',
-  { ttl: 30 },
-  async ({ signal }) => migrateData({ signal })
+const result = await volcano.locks.withLock('data-migration', { ttl: 30 }, async ({ signal }) =>
+  migrateData({ signal }),
 );
 
 if (result.error) {
@@ -341,6 +357,7 @@ abort signal fires because a lease cannot forcibly stop stale work.
 
 ### 1. Environment Variables Only
 
+<!-- prettier-ignore -->
 ```javascript
 // ✅ GOOD - From environment
 accessToken: process.env.SERVICE_ROLE_KEY
@@ -356,18 +373,18 @@ exports.handler = async (event) => {
   console.log('Admin operation:', {
     action: event.action,
     timestamp: new Date().toISOString(),
-    params: event
+    params: event,
   });
-  
+
   // Perform operation
   const result = await performAdminOperation(event);
-  
+
   // Log result
   console.log('Operation completed:', {
     success: true,
-    records_affected: result.count
+    records_affected: result.count,
   });
-  
+
   return result;
 };
 ```
@@ -375,18 +392,12 @@ exports.handler = async (event) => {
 ### 3. Action Validation
 
 ```javascript
-const ALLOWED_ACTIONS = [
-  'get_analytics',
-  'moderate_content',
-  'bulk_update',
-  'export_all_data',
-  'cleanup_old_posts'
-];
+const ALLOWED_ACTIONS = ['get_analytics', 'moderate_content', 'bulk_update', 'export_all_data', 'cleanup_old_posts'];
 
 if (!ALLOWED_ACTIONS.includes(event.action)) {
   return {
     statusCode: 403,
-    body: JSON.stringify({ error: 'Action not allowed' })
+    body: JSON.stringify({ error: 'Action not allowed' }),
   };
 }
 ```
@@ -402,7 +413,7 @@ const count = await redis.incr(key);
 if (count > 10) {
   return {
     statusCode: 429,
-    body: JSON.stringify({ error: 'Rate limit exceeded' })
+    body: JSON.stringify({ error: 'Rate limit exceeded' }),
   };
 }
 ```
@@ -434,7 +445,7 @@ if (count > 10) {
 ```javascript
 // Test event
 const testEvent = {
-  action: 'get_analytics'
+  action: 'get_analytics',
 };
 
 // Run handler

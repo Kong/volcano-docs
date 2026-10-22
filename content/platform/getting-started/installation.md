@@ -1,6 +1,6 @@
 ---
-title: "Installation"
-description: "This guide covers installing the Volcano SDK for your frontend application and setting up your development environment."
+title: 'Installation'
+description: 'This guide covers installing the Volcano SDK for your frontend application and setting up your development environment.'
 ---
 
 This guide covers installing the Volcano SDK for your frontend application and setting up your development environment.
@@ -12,11 +12,13 @@ The Volcano CLI lets you deploy and manage your projects from the terminal.
 ### Installation
 
 **macOS (Homebrew):**
+
 ```bash
 brew install Kong/volcano/volcano
 ```
 
 **Linux:**
+
 ```bash
 curl -fsSL https://download.volcano.dev/builds/install.sh | bash
 ```
@@ -26,6 +28,7 @@ it. To verify the script itself before it runs, or to install with npm, pnpm, or
 Bun, see [CLI installation](/cli/installation).
 
 **Or download directly:**
+
 - [macOS (Intel)](https://download.volcano.dev/builds/releases/latest/download/volcano-macos-amd64)
 - [macOS (Apple Silicon)](https://download.volcano.dev/builds/releases/latest/download/volcano-macos-arm64)
 - [Linux](https://download.volcano.dev/builds/releases/latest/download/volcano-linux-amd64)
@@ -34,11 +37,13 @@ Bun, see [CLI installation](/cli/installation).
 ### Authenticate
 
 **Browser-based (easiest):**
+
 ```bash
 volcano login
 ```
 
 **Token-based (CI/CD):**
+
 ```bash
 volcano login --token pk-xxxxxxxxxx
 ```
@@ -98,7 +103,7 @@ import { VolcanoAuth } from '@volcano.dev/sdk';
 
 const volcano = new VolcanoAuth({
   apiUrl: 'https://api.yourproject.volcano.dev',
-  anonKey: 'your-anon-key'
+  anonKey: 'your-anon-key',
 });
 ```
 
@@ -120,7 +125,7 @@ import { VolcanoAuth } from '@volcano.dev/sdk';
 
 export const volcano = new VolcanoAuth({
   apiUrl: process.env.REACT_APP_VOLCANO_API_URL,
-  anonKey: process.env.REACT_APP_VOLCANO_ANON_KEY
+  anonKey: process.env.REACT_APP_VOLCANO_ANON_KEY,
 });
 ```
 
@@ -139,11 +144,7 @@ function App() {
     });
   }, []);
 
-  return (
-    <div>
-      {user ? <Dashboard user={user} /> : <LoginForm />}
-    </div>
-  );
+  return <div>{user ? <Dashboard user={user} /> : <LoginForm />}</div>;
 }
 ```
 
@@ -155,7 +156,7 @@ import { VolcanoAuth } from '@volcano.dev/sdk';
 
 export const volcano = new VolcanoAuth({
   apiUrl: process.env.NEXT_PUBLIC_VOLCANO_API_URL!,
-  anonKey: process.env.NEXT_PUBLIC_VOLCANO_ANON_KEY!
+  anonKey: process.env.NEXT_PUBLIC_VOLCANO_ANON_KEY!,
 });
 ```
 
@@ -168,7 +169,7 @@ import { VolcanoAuth } from '@volcano.dev/sdk';
 export const volcanoAdmin = new VolcanoAuth({
   apiUrl: process.env.VOLCANO_API_URL!,
   anonKey: process.env.VOLCANO_ANON_KEY!,
-  accessToken: process.env.VOLCANO_SERVICE_KEY!
+  accessToken: process.env.VOLCANO_SERVICE_KEY!,
 });
 ```
 
@@ -182,7 +183,7 @@ import { VolcanoAuth } from '@volcano.dev/sdk';
 
 export const volcano = new VolcanoAuth({
   apiUrl: import.meta.env.VITE_VOLCANO_API_URL,
-  anonKey: import.meta.env.VITE_VOLCANO_ANON_KEY
+  anonKey: import.meta.env.VITE_VOLCANO_ANON_KEY,
 });
 ```
 
@@ -198,13 +199,13 @@ VOLCANO_ANON_KEY=your-anon-key
 VOLCANO_SERVICE_KEY=your-service-key  # Server-side only
 ```
 
-| Variable | Description | Safe for frontend |
-|----------|-------------|-------------------|
-| `VOLCANO_PROJECT_ID` | Your project identifier | Yes |
-| `VOLCANO_API_URL` | Your Volcano API endpoint | Yes |
-| `VOLCANO_ANON_KEY` | Public key for SDK initialization | Yes |
-| `VOLCANO_SERVICE_KEY` | Secret key with admin access | No |
-| `VOLCANO_PLATFORM_TOKEN` | Account-level API token (`pk-`) | No |
+| Variable                 | Description                       | Safe for frontend |
+| ------------------------ | --------------------------------- | ----------------- |
+| `VOLCANO_PROJECT_ID`     | Your project identifier           | Yes               |
+| `VOLCANO_API_URL`        | Your Volcano API endpoint         | Yes               |
+| `VOLCANO_ANON_KEY`       | Public key for SDK initialization | Yes               |
+| `VOLCANO_SERVICE_KEY`    | Secret key with admin access      | No                |
+| `VOLCANO_PLATFORM_TOKEN` | Account-level API token (`pk-`)   | No                |
 
 For automation, prefer a project access token (`pt-`) over the account-level
 token. See [Project access tokens](../authentication/security/project-access-tokens.md).
@@ -218,13 +219,13 @@ import { VolcanoAuth, User, Session } from '@volcano.dev/sdk';
 
 const volcano = new VolcanoAuth({
   apiUrl: 'https://api.yourproject.volcano.dev',
-  anonKey: 'your-anon-key'
+  anonKey: 'your-anon-key',
 });
 
 // Types are inferred
 const { user, error } = await volcano.auth.signUp({
   email: 'user@example.com',
-  password: 'securepassword'
+  password: 'securepassword',
 });
 
 if (user) {
@@ -245,7 +246,7 @@ async function test() {
     // This will fail if credentials are invalid
     const { user, error } = await volcano.auth.signUp({
       email: 'test@example.com',
-      password: 'testpassword123'
+      password: 'testpassword123',
     });
 
     if (error) {
@@ -264,8 +265,8 @@ test();
 
 ## What's next
 
-| Guide | Description |
-|-------|-------------|
-| [Quickstart](quickstart.md) | Deploy your first function |
-| [Authentication quickstart](../authentication/quickstart.md) | Add user login |
-| [Database quick start](../databases/quick-start.md) | Query data from the browser |
+| Guide                                                        | Description                 |
+| ------------------------------------------------------------ | --------------------------- |
+| [Quickstart](quickstart.md)                                  | Deploy your first function  |
+| [Authentication quickstart](../authentication/quickstart.md) | Add user login              |
+| [Database quick start](../databases/quick-start.md)          | Query data from the browser |

@@ -1,21 +1,21 @@
 ---
-title: "Storage Buckets"
-description: "Buckets are containers for organizing files in Volcano Storage. Each project can have multiple buckets with different configurations and access policies."
+title: 'Storage Buckets'
+description: 'Buckets are containers for organizing files in Volcano Storage. Each project can have multiple buckets with different configurations and access policies.'
 ---
 
 Buckets are containers for organizing files in Volcano Storage. Each project can have multiple buckets with different configurations and access policies.
 
 ## Bucket properties
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `id` | UUID | Unique identifier |
-| `name` | string | Bucket name (unique per project) |
-| `project_id` | UUID | Parent project |
-| `file_size_limit` | integer | Maximum file size in bytes (null = unlimited) |
-| `allowed_mime_types` | string[] | Allowed MIME types (empty = all types) |
-| `created_at` | timestamp | Creation time |
-| `updated_at` | timestamp | Last modification time |
+| Property             | Type      | Description                                   |
+| -------------------- | --------- | --------------------------------------------- |
+| `id`                 | UUID      | Unique identifier                             |
+| `name`               | string    | Bucket name (unique per project)              |
+| `project_id`         | UUID      | Parent project                                |
+| `file_size_limit`    | integer   | Maximum file size in bytes (null = unlimited) |
+| `allowed_mime_types` | string[]  | Allowed MIME types (empty = all types)        |
+| `created_at`         | timestamp | Creation time                                 |
+| `updated_at`         | timestamp | Last modification time                        |
 
 > **Note:** Public access is controlled at the individual file level using `is_public`, not at the bucket level. See [Policies](./policies.md) for controlling access.
 
@@ -84,6 +84,7 @@ buckets:
 ```
 
 If `-f` is omitted, the CLI auto-discovers in this order:
+
 - `volcano/volcano-config.yaml`
 - `./volcano-config.yaml`
 
@@ -181,12 +182,14 @@ Response:
 - Must be unique within the project
 
 Valid names:
+
 - `avatars`
 - `user-uploads`
 - `public_assets`
 - `files-2024`
 
 Invalid names:
+
 - `My Bucket` (spaces and uppercase)
 - `bucket.name` (periods not allowed)
 - `a` (too short for meaningful names, but technically valid)
@@ -219,9 +222,7 @@ To share files publicly (without authentication), mark individual files as publi
 
 ```javascript
 // Make a specific file public
-await volcano.storage
-  .from('assets')
-  .updateVisibility('logo.png', true);
+await volcano.storage.from('assets').updateVisibility('logo.png', true);
 
 // The file now has a public_url for sharing
 console.log(file.public_url);
@@ -246,13 +247,13 @@ curl -X POST ".../storage/buckets" \
 
 The limit is in bytes:
 
-| Size | Bytes |
-|------|-------|
-| 1 KB | 1024 |
-| 1 MB | 1048576 |
-| 10 MB | 10485760 |
-| 100 MB | 104857600 |
-| 1 GB | 1073741824 |
+| Size   | Bytes      |
+| ------ | ---------- |
+| 1 KB   | 1024       |
+| 1 MB   | 1048576    |
+| 10 MB  | 10485760   |
+| 100 MB | 104857600  |
+| 1 GB   | 1073741824 |
 
 Uploads exceeding the limit receive a `400 Bad Request` response:
 
@@ -276,19 +277,19 @@ curl -X POST ".../storage/buckets" \
 
 Common MIME types:
 
-| Type | MIME |
-|------|------|
-| JPEG image | `image/jpeg` |
-| PNG image | `image/png` |
-| GIF | `image/gif` |
-| WebP | `image/webp` |
-| PDF | `application/pdf` |
-| JSON | `application/json` |
-| Plain text | `text/plain` |
-| CSV | `text/csv` |
-| ZIP | `application/zip` |
-| MP4 video | `video/mp4` |
-| MP3 audio | `audio/mpeg` |
+| Type       | MIME               |
+| ---------- | ------------------ |
+| JPEG image | `image/jpeg`       |
+| PNG image  | `image/png`        |
+| GIF        | `image/gif`        |
+| WebP       | `image/webp`       |
+| PDF        | `application/pdf`  |
+| JSON       | `application/json` |
+| Plain text | `text/plain`       |
+| CSV        | `text/csv`         |
+| ZIP        | `application/zip`  |
+| MP4 video  | `video/mp4`        |
+| MP3 audio  | `audio/mpeg`       |
 
 Uploads with disallowed MIME types receive a `400 Bad Request`:
 

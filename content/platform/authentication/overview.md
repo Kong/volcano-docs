@@ -1,21 +1,21 @@
 ---
-title: "Authentication"
-description: "Volcano provides a complete authentication system for your applications. Each project has its own isolated set of users, tokens, and configuration."
+title: 'Authentication'
+description: 'Volcano provides a complete authentication system for your applications. Each project has its own isolated set of users, tokens, and configuration.'
 ---
 
 Volcano provides a complete authentication system for your applications. Each project has its own isolated set of users, tokens, and configuration.
 
 ## Features
 
-| Feature | Description |
-|---------|-------------|
-| Email/password | Traditional sign up and sign in with email and password |
-| OAuth providers | Sign in with Google, GitHub, Microsoft, or Apple |
-| Anonymous users | Guest access that can be upgraded to full accounts |
-| JWT tokens | Secure access and refresh tokens with configurable lifetimes |
-| Password reset | Email-based forgot password flow |
-| Session management | Track and revoke user sessions |
-| Row-level security | Automatic data isolation when combined with databases |
+| Feature            | Description                                                  |
+| ------------------ | ------------------------------------------------------------ |
+| Email/password     | Traditional sign up and sign in with email and password      |
+| OAuth providers    | Sign in with Google, GitHub, Microsoft, or Apple             |
+| Anonymous users    | Guest access that can be upgraded to full accounts           |
+| JWT tokens         | Secure access and refresh tokens with configurable lifetimes |
+| Password reset     | Email-based forgot password flow                             |
+| Session management | Track and revoke user sessions                               |
+| Row-level security | Automatic data isolation when combined with databases        |
 
 ## How authentication works
 
@@ -61,7 +61,7 @@ The anon key is safe to use in frontend applications. It allows users to:
 ```javascript
 const volcano = new VolcanoAuth({
   apiUrl: 'https://api.yourproject.volcano.dev',
-  anonKey: 'your-anon-key'
+  anonKey: 'your-anon-key',
 });
 ```
 
@@ -82,7 +82,7 @@ The service key has admin access and should only be used in secure server enviro
 const volcanoAdmin = new VolcanoAuth({
   apiUrl: process.env.VOLCANO_API_URL,
   anonKey: process.env.VOLCANO_ANON_KEY,
-  accessToken: process.env.VOLCANO_SERVICE_KEY
+  accessToken: process.env.VOLCANO_SERVICE_KEY,
 });
 ```
 
@@ -118,13 +118,13 @@ Traditional authentication where users create an account with their email addres
 // Sign up
 const { user, session } = await volcano.auth.signUp({
   email: 'user@example.com',
-  password: 'securepassword123'
+  password: 'securepassword123',
 });
 
 // Sign in
 const { user, session } = await volcano.auth.signIn({
   email: 'user@example.com',
-  password: 'securepassword123'
+  password: 'securepassword123',
 });
 ```
 
@@ -147,7 +147,7 @@ OAuth authentication doesn't require users to create a password. Users can also 
 // Redirect to OAuth provider
 await volcano.auth.signInWithOAuth({
   provider: 'google',
-  redirectTo: 'https://yourapp.com/callback'
+  redirectTo: 'https://yourapp.com/callback',
 });
 ```
 
@@ -164,7 +164,7 @@ const { user, session } = await volcano.auth.signUpAnonymous();
 // Later: convert to full account
 await volcano.auth.convertAnonymous({
   email: 'user@example.com',
-  password: 'securepassword123'
+  password: 'securepassword123',
 });
 ```
 
@@ -178,13 +178,13 @@ import { VolcanoAuth } from '@volcano.dev/sdk';
 // Initialize with anon key (safe for frontend)
 const volcano = new VolcanoAuth({
   apiUrl: 'https://api.yourproject.volcano.dev',
-  anonKey: 'your-anon-key'
+  anonKey: 'your-anon-key',
 });
 
 // Sign up a new user
 const { user, error } = await volcano.auth.signUp({
   email: 'user@example.com',
-  password: 'securepassword123'
+  password: 'securepassword123',
 });
 
 if (error) {
@@ -200,18 +200,18 @@ console.log('User created:', user.id);
 // Invoke a function with user context; the function's visibility
 // must be authenticated or public
 const result = await volcano.functions.invoke('my-function', {
-  payload: { action: 'get_profile' }
+  payload: { action: 'get_profile' },
 });
 ```
 
 ## What's next
 
-| Guide | Description |
-|-------|-------------|
-| [Quickstart](quickstart.md) | Add authentication to your app in 5 minutes |
-| [Concepts](concepts.md) | Understand users, tokens, and sessions |
-| [OAuth providers](oauth-providers.md) | Set up social sign-in |
-| [Anonymous users](anonymous-users.md) | Enable guest access |
-| [Manage SDK sessions](./session-management.md) | Adopt, refresh, and sign out SDK sessions |
-| [Configuration](configuration/overview.md) | Customize authentication behavior |
-| [Security](security/token-types.md) | Learn about token types and security |
+| Guide                                          | Description                                 |
+| ---------------------------------------------- | ------------------------------------------- |
+| [Quickstart](quickstart.md)                    | Add authentication to your app in 5 minutes |
+| [Concepts](concepts.md)                        | Understand users, tokens, and sessions      |
+| [OAuth providers](oauth-providers.md)          | Set up social sign-in                       |
+| [Anonymous users](anonymous-users.md)          | Enable guest access                         |
+| [Manage SDK sessions](./session-management.md) | Adopt, refresh, and sign out SDK sessions   |
+| [Configuration](configuration/overview.md)     | Customize authentication behavior           |
+| [Security](security/token-types.md)            | Learn about token types and security        |

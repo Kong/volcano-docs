@@ -10,7 +10,7 @@ const STORAGE_KEY = 'volcano_config';
 
 export function getStoredConfig(): VolcanoCredentials | null {
   if (typeof window === 'undefined') return null;
-  
+
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
@@ -19,13 +19,13 @@ export function getStoredConfig(): VolcanoCredentials | null {
   } catch (error) {
     console.error('Failed to load stored config:', error);
   }
-  
+
   return null;
 }
 
 export function saveConfig(config: VolcanoCredentials): void {
   if (typeof window === 'undefined') return;
-  
+
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
   } catch (error) {
@@ -35,7 +35,7 @@ export function saveConfig(config: VolcanoCredentials): void {
 
 export function clearConfig(): void {
   if (typeof window === 'undefined') return;
-  
+
   try {
     localStorage.removeItem(STORAGE_KEY);
   } catch (error) {
@@ -75,4 +75,3 @@ export function isConfigured(): boolean {
   const config = getConfig();
   return !!config.anonKey;
 }
-

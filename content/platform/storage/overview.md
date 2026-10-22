@@ -1,20 +1,20 @@
 ---
-title: "Storage"
-description: "Volcano Storage provides durable object storage with RLS-style access control policies."
+title: 'Storage'
+description: 'Volcano Storage provides durable object storage with RLS-style access control policies.'
 ---
 
 Volcano Storage provides durable object storage with RLS-style access control policies. Store user files, images, documents, and any binary data with automatic per-user isolation.
 
 ## Features
 
-| Feature | Description |
-|---------|-------------|
-| Durable | Files are stored redundantly and served through the Volcano API |
-| RLS policies | Fine-grained access control per object |
-| Per-project | Each project has isolated storage namespaces |
-| Buckets | Organize files into logical buckets |
-| File limits | Set per-bucket file size and MIME type restrictions |
-| SDK support | Full JavaScript/TypeScript SDK for browser and Node.js |
+| Feature      | Description                                                     |
+| ------------ | --------------------------------------------------------------- |
+| Durable      | Files are stored redundantly and served through the Volcano API |
+| RLS policies | Fine-grained access control per object                          |
+| Per-project  | Each project has isolated storage namespaces                    |
+| Buckets      | Organize files into logical buckets                             |
+| File limits  | Set per-bucket file size and MIME type restrictions             |
+| SDK support  | Full JavaScript/TypeScript SDK for browser and Node.js          |
 
 ## Quick example
 
@@ -25,7 +25,7 @@ import { VolcanoAuth } from '@volcano.dev/sdk';
 
 const volcano = new VolcanoAuth({
   apiUrl: 'https://api.yourapp.com',
-  anonKey: 'your-anon-key'
+  anonKey: 'your-anon-key',
 });
 
 // Sign in first
@@ -33,9 +33,7 @@ await volcano.auth.signIn({ email: 'user@example.com', password: 'password' });
 
 // Upload a file
 const file = document.querySelector('input[type="file"]').files[0];
-const { data, error } = await volcano.storage
-  .from('avatars')
-  .upload('profile.jpg', file);
+const { data, error } = await volcano.storage.from('avatars').upload('profile.jpg', file);
 
 if (error) {
   console.error('Upload failed:', error.message);
@@ -47,9 +45,7 @@ if (error) {
 ### Download a file
 
 ```javascript
-const { data, error } = await volcano.storage
-  .from('avatars')
-  .download('profile.jpg');
+const { data, error } = await volcano.storage.from('avatars').download('profile.jpg');
 
 if (!error) {
   // data is a Blob
@@ -61,11 +57,9 @@ if (!error) {
 ### List files
 
 ```javascript
-const { data: files, error } = await volcano.storage
-  .from('documents')
-  .list('user/reports/');
+const { data: files, error } = await volcano.storage.from('documents').list('user/reports/');
 
-files.forEach(file => {
+files.forEach((file) => {
   console.log(`${file.name} - ${file.size} bytes`);
 });
 ```
@@ -91,6 +85,7 @@ CREATE POLICY "user_folder" ON storage_objects
 ```
 
 Policies are defined per-bucket and support:
+
 - `SELECT` - Read/download files
 - `INSERT` - Upload new files
 - `UPDATE` - Overwrite existing files
@@ -111,14 +106,14 @@ Buckets organize your files into logical groups. Each bucket can have:
 const response = await fetch('/storage/buckets', {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${serviceKey}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${serviceKey}`,
+    'Content-Type': 'application/json',
   },
   body: JSON.stringify({
     name: 'user-uploads',
     file_size_limit: 10 * 1024 * 1024, // 10MB
-    allowed_mime_types: ['image/jpeg', 'image/png', 'image/gif']
-  })
+    allowed_mime_types: ['image/jpeg', 'image/png', 'image/gif'],
+  }),
 });
 ```
 
@@ -131,6 +126,7 @@ Your plan sets the account-wide storage allowance and maximum object size. See
 [Plans and limits](../guides/plans-and-limits.md#object-storage) for current values.
 
 **Error codes for file size violations:**
+
 - `413` - Plan-based storage quota exceeded or plan-based file size limit exceeded
 - `400` - Bucket-level `file_size_limit` exceeded, MIME type not allowed, or file exceeds the global 10 GB limit
 
@@ -149,14 +145,10 @@ Files are **private by default**. You can make individual files public:
 
 ```javascript
 // Make a file public
-await volcano.storage
-  .from('files')
-  .updateVisibility('report.pdf', true);
+await volcano.storage.from('files').updateVisibility('report.pdf', true);
 
 // Get a shareable public URL (no authentication required)
-const { data } = volcano.storage
-  .from('files')
-  .getPublicUrl('report.pdf');
+const { data } = volcano.storage.from('files').getPublicUrl('report.pdf');
 
 console.log(data.publicUrl);
 // https://api.yourapp.com/public/{projectId}/files/report.pdf
@@ -176,17 +168,17 @@ to propagate to clients that already cached the file.
 
 The JavaScript SDK provides these methods:
 
-| Method | Description |
-|--------|-------------|
-| `from(bucket)` | Select a bucket for operations |
-| `upload(path, file)` | Upload a file (private by default) |
-| `download(path)` | Download a file as Blob |
-| `list(prefix)` | List files with optional prefix |
-| `remove(paths)` | Delete one or more files |
-| `move(from, to)` | Move/rename a file |
-| `copy(from, to)` | Copy a file |
-| `updateVisibility(path, isPublic)` | Make file public or private |
-| `getPublicUrl(path)` | Get shareable public URL (no auth needed) |
+| Method                             | Description                               |
+| ---------------------------------- | ----------------------------------------- |
+| `from(bucket)`                     | Select a bucket for operations            |
+| `upload(path, file)`               | Upload a file (private by default)        |
+| `download(path)`                   | Download a file as Blob                   |
+| `list(prefix)`                     | List files with optional prefix           |
+| `remove(paths)`                    | Delete one or more files                  |
+| `move(from, to)`                   | Move/rename a file                        |
+| `copy(from, to)`                   | Copy a file                               |
+| `updateVisibility(path, isPublic)` | Make file public or private               |
+| `getPublicUrl(path)`               | Get shareable public URL (no auth needed) |
 
 See [JavaScript SDK](javascript-sdk.md) for the complete reference.
 
@@ -194,24 +186,24 @@ See [JavaScript SDK](javascript-sdk.md) for the complete reference.
 
 All storage operations are also available via REST API:
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/storage/{bucket}/{path}` | Upload file |
-| `GET` | `/storage/{bucket}/{path}` | Download file |
-| `DELETE` | `/storage/{bucket}/{path}` | Delete file |
-| `GET` | `/storage/{bucket}` | List files |
-| `POST` | `/storage/{bucket}/move` | Move file |
-| `POST` | `/storage/{bucket}/copy` | Copy file |
-| `PATCH` | `/storage/{bucket}/{path}/visibility` | Set public/private |
-| `GET` | `/public/{projectId}/{bucket}/{path}` | Download public file (no auth) |
+| Method   | Endpoint                              | Description                    |
+| -------- | ------------------------------------- | ------------------------------ |
+| `POST`   | `/storage/{bucket}/{path}`            | Upload file                    |
+| `GET`    | `/storage/{bucket}/{path}`            | Download file                  |
+| `DELETE` | `/storage/{bucket}/{path}`            | Delete file                    |
+| `GET`    | `/storage/{bucket}`                   | List files                     |
+| `POST`   | `/storage/{bucket}/move`              | Move file                      |
+| `POST`   | `/storage/{bucket}/copy`              | Copy file                      |
+| `PATCH`  | `/storage/{bucket}/{path}/visibility` | Set public/private             |
+| `GET`    | `/public/{projectId}/{bucket}/{path}` | Download public file (no auth) |
 
 See [Storage API Reference](../api-reference/storage.md) for complete documentation.
 
 ## What's next
 
-| Guide | Description |
-|-------|-------------|
-| [JavaScript SDK](javascript-sdk.md) | Complete SDK reference |
-| [Storage Policies](policies.md) | Access control with RLS-style policies |
-| [Buckets](buckets.md) | Creating and managing buckets |
-| [API Reference](../api-reference/storage.md) | REST API endpoints |
+| Guide                                        | Description                            |
+| -------------------------------------------- | -------------------------------------- |
+| [JavaScript SDK](javascript-sdk.md)          | Complete SDK reference                 |
+| [Storage Policies](policies.md)              | Access control with RLS-style policies |
+| [Buckets](buckets.md)                        | Creating and managing buckets          |
+| [API Reference](../api-reference/storage.md) | REST API endpoints                     |

@@ -1,6 +1,6 @@
 ---
-title: "API reference"
-description: "The Volcano REST API lets you manage projects, deploy functions and frontends, provision databases, and handle user authentication."
+title: 'API reference'
+description: 'The Volcano REST API lets you manage projects, deploy functions and frontends, provision databases, and handle user authentication.'
 ---
 
 The Volcano REST API lets you manage projects, deploy functions and frontends, provision databases, and handle user authentication.
@@ -28,13 +28,13 @@ curl "https://api.volcano.dev/projects" \
 
 Different endpoints require different token types:
 
-| Token type | Use for | Where it comes from |
-|------------|---------|---------------------|
-| Platform token (`pk-`) | Managing every project in your account | `volcano login`, or the dashboard |
-| Project access token (`pt-`) | Managing a single project from CI, a script, or an agent | `POST /projects/{id}/access-tokens` |
-| Anon key | User authentication (signup, signin, refresh) | Created with the project |
-| Auth user access token | Acting as one of *your* end users: their profile, invoking functions as them | Signup/signin response |
-| Service key | Admin operations, invoking functions, bypassing RLS | `POST /projects/{id}/service-keys` |
+| Token type                   | Use for                                                                      | Where it comes from                 |
+| ---------------------------- | ---------------------------------------------------------------------------- | ----------------------------------- |
+| Platform token (`pk-`)       | Managing every project in your account                                       | `volcano login`, or the dashboard   |
+| Project access token (`pt-`) | Managing a single project from CI, a script, or an agent                     | `POST /projects/{id}/access-tokens` |
+| Anon key                     | User authentication (signup, signin, refresh)                                | Created with the project            |
+| Auth user access token       | Acting as one of _your_ end users: their profile, invoking functions as them | Signup/signin response              |
+| Service key                  | Admin operations, invoking functions, bypassing RLS                          | `POST /projects/{id}/service-keys`  |
 
 See [Authentication](authentication.md) for details on each token type, and [Using the API](using-the-api.md) for a worked example from first token to first deploy.
 
@@ -106,19 +106,19 @@ Paginated list:
 
 ## HTTP status codes
 
-| Code | Description |
-|------|-------------|
-| `200` | Success |
-| `201` | Resource created |
-| `204` | Success with no response body |
-| `400` | Bad request — invalid parameters |
-| `401` | Unauthorized — missing or invalid token |
-| `403` | Forbidden — valid token but insufficient permissions |
-| `404` | Not found — resource doesn't exist |
+| Code  | Description                                                  |
+| ----- | ------------------------------------------------------------ |
+| `200` | Success                                                      |
+| `201` | Resource created                                             |
+| `204` | Success with no response body                                |
+| `400` | Bad request — invalid parameters                             |
+| `401` | Unauthorized — missing or invalid token                      |
+| `403` | Forbidden — valid token but insufficient permissions         |
+| `404` | Not found — resource doesn't exist                           |
 | `409` | Conflict — duplicate resource or incompatible resource state |
-| `429` | Too many requests — rate limited |
-| `500` | Internal server error |
-| `503` | Service unavailable — a required backend is unavailable |
+| `429` | Too many requests — rate limited                             |
+| `500` | Internal server error                                        |
+| `503` | Service unavailable — a required backend is unavailable      |
 
 ## Pagination
 
@@ -129,10 +129,10 @@ curl "https://api.volcano.dev/projects?page=2&limit=20" \
   -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
 
-| Parameter | Default | Maximum | Description |
-|-----------|---------|---------|-------------|
-| `page` | 1 | — | Page number (1-indexed) |
-| `limit` | 10 | 100 | Items per page |
+| Parameter | Default | Maximum | Description             |
+| --------- | ------- | ------- | ----------------------- |
+| `page`    | 1       | —       | Page number (1-indexed) |
+| `limit`   | 10      | 100     | Items per page          |
 
 The response includes pagination metadata:
 
@@ -203,14 +203,14 @@ curl "https://api.volcano.dev/capabilities"
 }
 ```
 
-| ID | Covers |
-|----|--------|
-| `sandboxes` | The Sandbox API: presets, templates, sessions, and executions |
-| `sandboxes.sessions` | Starting and resuming sessions, and one-shot executions |
+| ID                           | Covers                                                                                      |
+| ---------------------------- | ------------------------------------------------------------------------------------------- |
+| `sandboxes`                  | The Sandbox API: presets, templates, sessions, and executions                               |
+| `sandboxes.sessions`         | Starting and resuming sessions, and one-shot executions                                     |
 | `sandboxes.custom_templates` | Deploying a custom template; its validation waits while `sandboxes.sessions` is unavailable |
-| `issues` | The Issues API: listing, reading, and updating grouped runtime errors |
-| `autofix` | The Autofix API: a project's AI diagnosis and fix settings |
-| `autofix.managed_models` | Turning autofix on with Volcano-managed models instead of your own API key |
+| `issues`                     | The Issues API: listing, reading, and updating grouped runtime errors                       |
+| `autofix`                    | The Autofix API: a project's AI diagnosis and fix settings                                  |
+| `autofix.managed_models`     | Turning autofix on with Volcano-managed models instead of your own API key                  |
 
 The endpoint needs no token, and every caller in an environment gets the same
 answer. While a capability is `unavailable`, requests that start new work
@@ -246,64 +246,64 @@ without the version header are unaffected. See CLI Version Gating.
 
 ### Projects
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/projects` | Create a project |
-| `GET` | `/projects` | List projects |
-| `GET` | `/projects/{id}` | Get a project |
-| `GET` | `/deployments` | List deployments across every project you own |
-| `GET` | `/projects/{id}/deployments` | List a project's function and frontend deployments; filter with `resource_type` and `function_kind` |
-| `GET` | `/projects/{id}/deployments/summary` | Summarize one deployment pipeline (`resource_type`, optionally `function_kind`) |
-| `PATCH` | `/projects/{id}` | Update project name/region policy |
-| `DELETE` | `/projects/{id}` | Delete a project |
+| Method   | Endpoint                             | Description                                                                                         |
+| -------- | ------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| `POST`   | `/projects`                          | Create a project                                                                                    |
+| `GET`    | `/projects`                          | List projects                                                                                       |
+| `GET`    | `/projects/{id}`                     | Get a project                                                                                       |
+| `GET`    | `/deployments`                       | List deployments across every project you own                                                       |
+| `GET`    | `/projects/{id}/deployments`         | List a project's function and frontend deployments; filter with `resource_type` and `function_kind` |
+| `GET`    | `/projects/{id}/deployments/summary` | Summarize one deployment pipeline (`resource_type`, optionally `function_kind`)                     |
+| `PATCH`  | `/projects/{id}`                     | Update project name/region policy                                                                   |
+| `DELETE` | `/projects/{id}`                     | Delete a project                                                                                    |
 
 See [Projects](projects.md) for details.
 
 ### Functions
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/projects/{id}/functions` | Deploy a function |
-| `GET` | `/projects/{id}/functions` | List functions |
-| `GET` | `/projects/{id}/functions/{functionId}` | Get a function |
-| `PATCH` | `/projects/{id}/functions/{functionId}` | Update function settings (visibility) |
-| `DELETE` | `/projects/{id}/functions/{functionId}` | Delete a function |
-| `POST` | `/functions/{functionId}/invoke` | Invoke a function |
-| `GET` | `/functions/resolve` | Resolve function name to function ID |
-| `GET` | `/functions/runtimes` | List supported runtimes and their display labels |
-| `POST` | `/projects/{id}/logs/search` | Search and filter function runtime logs |
-| `GET` | `/projects/{id}/functions/{functionId}/deployments` | List function deployments |
+| Method   | Endpoint                                            | Description                                      |
+| -------- | --------------------------------------------------- | ------------------------------------------------ |
+| `POST`   | `/projects/{id}/functions`                          | Deploy a function                                |
+| `GET`    | `/projects/{id}/functions`                          | List functions                                   |
+| `GET`    | `/projects/{id}/functions/{functionId}`             | Get a function                                   |
+| `PATCH`  | `/projects/{id}/functions/{functionId}`             | Update function settings (visibility)            |
+| `DELETE` | `/projects/{id}/functions/{functionId}`             | Delete a function                                |
+| `POST`   | `/functions/{functionId}/invoke`                    | Invoke a function                                |
+| `GET`    | `/functions/resolve`                                | Resolve function name to function ID             |
+| `GET`    | `/functions/runtimes`                               | List supported runtimes and their display labels |
+| `POST`   | `/projects/{id}/logs/search`                        | Search and filter function runtime logs          |
+| `GET`    | `/projects/{id}/functions/{functionId}/deployments` | List function deployments                        |
 
 See [Functions](functions.md) for details.
 
 ### Durable functions
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/projects/{id}/durable-functions` | Deploy a durable function |
-| `GET` | `/projects/{id}/durable-functions` | List durable functions |
-| `GET` | `/projects/{id}/durable-functions/{functionId}` | Get a durable function |
-| `DELETE` | `/projects/{id}/durable-functions/{functionId}` | Delete a durable function |
-| `GET` | `/projects/{id}/durable-functions/{functionId}/deployments` | List durable function deployments |
-| `POST` | `/durable-functions/{functionId}/executions` | Start an execution with an application credential |
-| `POST` | `/projects/{id}/durable-functions/{functionId}/executions` | Start an execution as the project owner |
-| `GET` | `/projects/{id}/durable-functions/{functionId}/executions` | List executions |
-| `GET` | `/projects/{id}/durable-functions/{functionId}/executions/{executionId}` | Get an execution |
-| `GET` | `/projects/{id}/durable-functions/{functionId}/executions/{executionId}/operations` | List an execution's operations |
-| `POST` | `/projects/{id}/durable-functions/{functionId}/executions/{executionId}/stop` | Stop an execution |
-| `GET` | `/projects/{id}/durable-functions/{functionId}/schedulers` | List schedules |
-| `POST` | `/projects/{id}/durable-functions/{functionId}/schedulers` | Create a schedule |
-| `GET` | `/projects/{id}/durable-functions/{functionId}/schedulers/{schedulerId}` | Get a schedule |
-| `PATCH` | `/projects/{id}/durable-functions/{functionId}/schedulers/{schedulerId}` | Update a schedule |
-| `DELETE` | `/projects/{id}/durable-functions/{functionId}/schedulers/{schedulerId}` | Delete a schedule |
-| `GET` | `/projects/{id}/schedulers?function_kind=durable` | List every durable function's schedules in the project |
-| `GET` | `/projects/{id}/deployments?function_kind=durable` | List every durable function's deployments in the project |
-| `GET` | `/projects/{id}/durable-approvals` | List approvals workflows requested |
-| `GET` | `/projects/{id}/durable-approvals/stats` | Count approvals by outcome, workflow, and day |
-| `GET` | `/projects/{id}/durable-approvals/{approvalId}` | Get an approval |
-| `POST` | `/projects/{id}/durable-approvals/{approvalId}/approve` | Approve a pending approval; a person only |
-| `POST` | `/projects/{id}/durable-approvals/{approvalId}/deny` | Deny a pending approval; a person only |
-| `POST` | `/durable-approvals` | Register an approval request; called by the SDK from inside a workflow, not by applications |
+| Method   | Endpoint                                                                            | Description                                                                                 |
+| -------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `POST`   | `/projects/{id}/durable-functions`                                                  | Deploy a durable function                                                                   |
+| `GET`    | `/projects/{id}/durable-functions`                                                  | List durable functions                                                                      |
+| `GET`    | `/projects/{id}/durable-functions/{functionId}`                                     | Get a durable function                                                                      |
+| `DELETE` | `/projects/{id}/durable-functions/{functionId}`                                     | Delete a durable function                                                                   |
+| `GET`    | `/projects/{id}/durable-functions/{functionId}/deployments`                         | List durable function deployments                                                           |
+| `POST`   | `/durable-functions/{functionId}/executions`                                        | Start an execution with an application credential                                           |
+| `POST`   | `/projects/{id}/durable-functions/{functionId}/executions`                          | Start an execution as the project owner                                                     |
+| `GET`    | `/projects/{id}/durable-functions/{functionId}/executions`                          | List executions                                                                             |
+| `GET`    | `/projects/{id}/durable-functions/{functionId}/executions/{executionId}`            | Get an execution                                                                            |
+| `GET`    | `/projects/{id}/durable-functions/{functionId}/executions/{executionId}/operations` | List an execution's operations                                                              |
+| `POST`   | `/projects/{id}/durable-functions/{functionId}/executions/{executionId}/stop`       | Stop an execution                                                                           |
+| `GET`    | `/projects/{id}/durable-functions/{functionId}/schedulers`                          | List schedules                                                                              |
+| `POST`   | `/projects/{id}/durable-functions/{functionId}/schedulers`                          | Create a schedule                                                                           |
+| `GET`    | `/projects/{id}/durable-functions/{functionId}/schedulers/{schedulerId}`            | Get a schedule                                                                              |
+| `PATCH`  | `/projects/{id}/durable-functions/{functionId}/schedulers/{schedulerId}`            | Update a schedule                                                                           |
+| `DELETE` | `/projects/{id}/durable-functions/{functionId}/schedulers/{schedulerId}`            | Delete a schedule                                                                           |
+| `GET`    | `/projects/{id}/schedulers?function_kind=durable`                                   | List every durable function's schedules in the project                                      |
+| `GET`    | `/projects/{id}/deployments?function_kind=durable`                                  | List every durable function's deployments in the project                                    |
+| `GET`    | `/projects/{id}/durable-approvals`                                                  | List approvals workflows requested                                                          |
+| `GET`    | `/projects/{id}/durable-approvals/stats`                                            | Count approvals by outcome, workflow, and day                                               |
+| `GET`    | `/projects/{id}/durable-approvals/{approvalId}`                                     | Get an approval                                                                             |
+| `POST`   | `/projects/{id}/durable-approvals/{approvalId}/approve`                             | Approve a pending approval; a person only                                                   |
+| `POST`   | `/projects/{id}/durable-approvals/{approvalId}/deny`                                | Deny a pending approval; a person only                                                      |
+| `POST`   | `/durable-approvals`                                                                | Register an approval request; called by the SDK from inside a workflow, not by applications |
 
 Durable functions are a separate collection: a standard function's id is `404`
 here, and a durable function's id is `404` under `/projects/{id}/functions`. See
@@ -312,131 +312,131 @@ here, and a durable function's id is `404` under `/projects/{id}/functions`. See
 
 ### Issues
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/projects/{id}/issues` | List runtime errors grouped into issues; filter with `status` and `resource_id` |
-| `GET` | `/projects/{id}/issues/{issueId}` | Get an issue |
-| `PATCH` | `/projects/{id}/issues/{issueId}` | Resolve, ignore, or reopen an issue |
+| Method  | Endpoint                          | Description                                                                     |
+| ------- | --------------------------------- | ------------------------------------------------------------------------------- |
+| `GET`   | `/projects/{id}/issues`           | List runtime errors grouped into issues; filter with `status` and `resource_id` |
+| `GET`   | `/projects/{id}/issues/{issueId}` | Get an issue                                                                    |
+| `PATCH` | `/projects/{id}/issues/{issueId}` | Resolve, ignore, or reopen an issue                                             |
 
 Issues are in preview. See [Issues](../guides/issues.md).
 
 ### Autofix
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/projects/{id}/autofix` | Get a project's autofix settings |
-| `PUT` | `/projects/{id}/autofix` | Replace a project's autofix settings |
-| `DELETE` | `/projects/{id}/autofix/api-key` | Delete a project's stored API key |
-| `POST` | `/projects/{id}/issues/{issueId}/autofix-runs` | Diagnose an issue |
-| `GET` | `/projects/{id}/autofix-runs` | List autofix runs |
-| `GET` | `/projects/{id}/autofix-runs/{runId}` | Get an autofix run |
+| Method   | Endpoint                                       | Description                          |
+| -------- | ---------------------------------------------- | ------------------------------------ |
+| `GET`    | `/projects/{id}/autofix`                       | Get a project's autofix settings     |
+| `PUT`    | `/projects/{id}/autofix`                       | Replace a project's autofix settings |
+| `DELETE` | `/projects/{id}/autofix/api-key`               | Delete a project's stored API key    |
+| `POST`   | `/projects/{id}/issues/{issueId}/autofix-runs` | Diagnose an issue                    |
+| `GET`    | `/projects/{id}/autofix-runs`                  | List autofix runs                    |
+| `GET`    | `/projects/{id}/autofix-runs/{runId}`          | Get an autofix run                   |
 
 Autofix is in preview and needs SUPERAGENT. See [Autofix](../guides/autofix.md).
 
 ### Frontends
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/projects/{id}/frontends` | Deploy a frontend archive (subject to plan deployment limits) |
-| `GET` | `/projects/{id}/frontends` | List frontends |
-| `GET` | `/projects/{id}/frontends/{frontendId}` | Get a frontend |
-| `POST` | `/projects/{id}/frontends/{frontendId}/redeploy` | Redeploy latest frontend artifact |
-| `DELETE` | `/projects/{id}/frontends/{frontendId}` | Delete/deprovision a frontend |
-| `GET` | `/projects/{id}/frontends/{frontendId}/deployments` | List frontend deployments |
-| `GET` | `/projects/{id}/frontends/{frontendId}/function-routes` | List a frontend's Function routes |
-| `POST` | `/projects/{id}/frontends/{frontendId}/function-routes` | Route a frontend path to a public HTTP function |
-| `PUT` | `/projects/{id}/frontends/{frontendId}/function-routes/{routeId}` | Replace a Function route |
-| `DELETE` | `/projects/{id}/frontends/{frontendId}/function-routes/{routeId}` | Delete a Function route |
-| `POST` | `/projects/{id}/logs/search` | Search and filter frontend runtime and deployment logs |
+| Method   | Endpoint                                                          | Description                                                   |
+| -------- | ----------------------------------------------------------------- | ------------------------------------------------------------- |
+| `POST`   | `/projects/{id}/frontends`                                        | Deploy a frontend archive (subject to plan deployment limits) |
+| `GET`    | `/projects/{id}/frontends`                                        | List frontends                                                |
+| `GET`    | `/projects/{id}/frontends/{frontendId}`                           | Get a frontend                                                |
+| `POST`   | `/projects/{id}/frontends/{frontendId}/redeploy`                  | Redeploy latest frontend artifact                             |
+| `DELETE` | `/projects/{id}/frontends/{frontendId}`                           | Delete/deprovision a frontend                                 |
+| `GET`    | `/projects/{id}/frontends/{frontendId}/deployments`               | List frontend deployments                                     |
+| `GET`    | `/projects/{id}/frontends/{frontendId}/function-routes`           | List a frontend's Function routes                             |
+| `POST`   | `/projects/{id}/frontends/{frontendId}/function-routes`           | Route a frontend path to a public HTTP function               |
+| `PUT`    | `/projects/{id}/frontends/{frontendId}/function-routes/{routeId}` | Replace a Function route                                      |
+| `DELETE` | `/projects/{id}/frontends/{frontendId}/function-routes/{routeId}` | Delete a Function route                                       |
+| `POST`   | `/projects/{id}/logs/search`                                      | Search and filter frontend runtime and deployment logs        |
 
 See [Frontend Endpoints](frontend-endpoints.md) for details.
 
 ### Databases
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/projects/{id}/databases` | Create a database |
-| `GET` | `/projects/{id}/databases` | List databases |
-| `GET` | `/projects/{id}/databases/{databaseName}` | Get a database |
-| `DELETE` | `/projects/{id}/databases/{databaseName}` | Delete a database |
-| `GET` | `/projects/{id}/databases/{databaseName}/queries` | Get top query performance from `pg_stat_statements` |
-| `GET` | `/databases/regions` | List available regions |
-| `GET` | `/databases/versions` | List PostgreSQL versions |
+| Method   | Endpoint                                          | Description                                         |
+| -------- | ------------------------------------------------- | --------------------------------------------------- |
+| `POST`   | `/projects/{id}/databases`                        | Create a database                                   |
+| `GET`    | `/projects/{id}/databases`                        | List databases                                      |
+| `GET`    | `/projects/{id}/databases/{databaseName}`         | Get a database                                      |
+| `DELETE` | `/projects/{id}/databases/{databaseName}`         | Delete a database                                   |
+| `GET`    | `/projects/{id}/databases/{databaseName}/queries` | Get top query performance from `pg_stat_statements` |
+| `GET`    | `/databases/regions`                              | List available regions                              |
+| `GET`    | `/databases/versions`                             | List PostgreSQL versions                            |
 
 See [Databases](databases.md) for details.
 
 ### Project locks
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/locks/{key}/lease` | Acquire a project lease |
-| `PATCH` | `/locks/{key}/lease` | Renew the owned lease |
+| Method   | Endpoint             | Description             |
+| -------- | -------------------- | ----------------------- |
+| `POST`   | `/locks/{key}/lease` | Acquire a project lease |
+| `PATCH`  | `/locks/{key}/lease` | Renew the owned lease   |
 | `DELETE` | `/locks/{key}/lease` | Release the owned lease |
 
 These endpoints accept service-role keys only. See [Project locks](locks.md).
 
 ### Authentication
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/auth/signup` | Create a new user |
-| `POST` | `/auth/signin` | Sign in a user |
-| `POST` | `/auth/refresh` | Refresh access token |
-| `POST` | `/auth/logout` | Sign out a user |
-| `GET` | `/auth/user` | Get current user |
-| `PUT` | `/auth/user` | Update current user |
-| `POST` | `/auth/forgot-password` | Request password reset |
-| `POST` | `/auth/reset-password` | Reset password with token |
+| Method | Endpoint                | Description               |
+| ------ | ----------------------- | ------------------------- |
+| `POST` | `/auth/signup`          | Create a new user         |
+| `POST` | `/auth/signin`          | Sign in a user            |
+| `POST` | `/auth/refresh`         | Refresh access token      |
+| `POST` | `/auth/logout`          | Sign out a user           |
+| `GET`  | `/auth/user`            | Get current user          |
+| `PUT`  | `/auth/user`            | Update current user       |
+| `POST` | `/auth/forgot-password` | Request password reset    |
+| `POST` | `/auth/reset-password`  | Reset password with token |
 
 See [Auth endpoints](auth-endpoints.md) for details.
 
 ### Service keys
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/projects/{id}/service-keys` | Create a service key |
-| `GET` | `/projects/{id}/service-keys` | List service keys |
+| Method   | Endpoint                              | Description          |
+| -------- | ------------------------------------- | -------------------- |
+| `POST`   | `/projects/{id}/service-keys`         | Create a service key |
+| `GET`    | `/projects/{id}/service-keys`         | List service keys    |
 | `DELETE` | `/projects/{id}/service-keys/{keyId}` | Delete a service key |
 
 ### Anon keys
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/projects/{id}/anon-keys` | Create an anon key |
-| `GET` | `/projects/{id}/anon-keys` | List anon keys |
+| Method   | Endpoint                           | Description        |
+| -------- | ---------------------------------- | ------------------ |
+| `POST`   | `/projects/{id}/anon-keys`         | Create an anon key |
+| `GET`    | `/projects/{id}/anon-keys`         | List anon keys     |
 | `DELETE` | `/projects/{id}/anon-keys/{keyId}` | Delete an anon key |
 
 ### Project access tokens
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/projects/{id}/access-tokens` | Create a token and return its secret, once |
-| `GET` | `/projects/{id}/access-tokens` | List tokens (`page`, `limit`, `search`, `include_revoked`) |
-| `GET` | `/projects/{id}/access-tokens/{tokenId}` | Get one token's metadata |
-| `DELETE` | `/projects/{id}/access-tokens/{tokenId}` | Revoke a token |
-| `GET` | `/projects/{id}/access-tokens/usage` | Daily request counts for every token in the project |
-| `GET` | `/projects/{id}/access-tokens/{tokenId}/usage` | Daily request counts for one token |
+| Method   | Endpoint                                       | Description                                                |
+| -------- | ---------------------------------------------- | ---------------------------------------------------------- |
+| `POST`   | `/projects/{id}/access-tokens`                 | Create a token and return its secret, once                 |
+| `GET`    | `/projects/{id}/access-tokens`                 | List tokens (`page`, `limit`, `search`, `include_revoked`) |
+| `GET`    | `/projects/{id}/access-tokens/{tokenId}`       | Get one token's metadata                                   |
+| `DELETE` | `/projects/{id}/access-tokens/{tokenId}`       | Revoke a token                                             |
+| `GET`    | `/projects/{id}/access-tokens/usage`           | Daily request counts for every token in the project        |
+| `GET`    | `/projects/{id}/access-tokens/{tokenId}/usage` | Daily request counts for one token                         |
 
 Creating, listing, reading, and revoking require a platform token: a project access token cannot manage project access tokens. The usage endpoints are ordinary project reads. See [Project access tokens](../authentication/security/project-access-tokens.md).
 
 ### MCP
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/mcp` | Model Context Protocol endpoint for AI agents |
+| Method | Endpoint | Description                                   |
+| ------ | -------- | --------------------------------------------- |
+| `POST` | `/mcp`   | Model Context Protocol endpoint for AI agents |
 
 This endpoint takes its project from the credential, so it accepts a project access token only. See [MCP server](../interfaces/mcp.md).
 
 ## What's next
 
-| Reference | Description |
-|-----------|-------------|
-| [Using the API](using-the-api.md) | Create a token, deploy, and read logs over HTTP |
-| [Authentication](authentication.md) | Token types and auth headers |
-| [Projects](projects.md) | Project management API |
-| [Functions](functions.md) | Function deployment and invocation |
-| [Databases](databases.md) | Database provisioning |
-| [Auth endpoints](auth-endpoints.md) | User authentication API |
-| [MCP server](../interfaces/mcp.md) | Give an AI agent a scoped tool surface over one project |
-| [Errors](errors.md) | Error codes and handling |
-| [OpenAPI specification](openapi.md) | Generate a client from the machine-readable contract |
+| Reference                           | Description                                             |
+| ----------------------------------- | ------------------------------------------------------- |
+| [Using the API](using-the-api.md)   | Create a token, deploy, and read logs over HTTP         |
+| [Authentication](authentication.md) | Token types and auth headers                            |
+| [Projects](projects.md)             | Project management API                                  |
+| [Functions](functions.md)           | Function deployment and invocation                      |
+| [Databases](databases.md)           | Database provisioning                                   |
+| [Auth endpoints](auth-endpoints.md) | User authentication API                                 |
+| [MCP server](../interfaces/mcp.md)  | Give an AI agent a scoped tool surface over one project |
+| [Errors](errors.md)                 | Error codes and handling                                |
+| [OpenAPI specification](openapi.md) | Generate a client from the machine-readable contract    |

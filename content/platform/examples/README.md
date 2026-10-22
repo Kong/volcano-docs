@@ -1,6 +1,6 @@
 ---
-title: "Volcano Examples"
-description: "This directory contains complete examples demonstrating Volcano features."
+title: 'Volcano Examples'
+description: 'This directory contains complete examples demonstrating Volcano features.'
 ---
 
 # Volcano Examples
@@ -10,9 +10,11 @@ This directory contains complete examples demonstrating Volcano features.
 ## Examples
 
 ### 🎯 frontend-auth-nextjs (Recommended for Frontend)
+
 **Complete Next.js authentication application** with all Volcano auth and storage features.
 
 **Features:**
+
 - ✅ Email/password authentication
 - ✅ Anonymous user signup and conversion
 - ✅ Password recovery flow
@@ -24,6 +26,7 @@ This directory contains complete examples demonstrating Volcano features.
 - ✅ TypeScript + Next.js 16
 
 **Quick Start:**
+
 ```bash
 cd frontend-auth-nextjs
 yarn install
@@ -34,6 +37,7 @@ yarn dev
 ```
 
 **Scripts:**
+
 - `yarn dev` - Development server
 - `yarn build` - Production build
 - `yarn lint` - Run linter
@@ -42,11 +46,13 @@ yarn dev
 ---
 
 ### 🍪 frontend-function-routes (Next.js + Function routes)
+
 **Cookie sessions on your own origin.** A Next.js page signs users in through a
 `public` HTTP function that the frontend serves at `/api/session`, and the
 function keeps the tokens in `HttpOnly` cookies.
 
 **Features:**
+
 - Frontend Function route declared in `volcano-config.yaml`
 - `__Host-` session cookies the page can't read
 - CSRF token on every state change
@@ -57,9 +63,11 @@ See [frontend-function-routes](frontend-function-routes/README.md) and the
 ---
 
 ### 🐍 python-data
+
 **Python function example** showing data processing.
 
 **Features:**
+
 - Python runtime
 - JSON request/response
 - Data transformation example
@@ -67,9 +75,11 @@ See [frontend-function-routes](frontend-function-routes/README.md) and the
 ---
 
 ### 📘 nodejs-hello
+
 **Simple Hello World function** for getting started.
 
 **Features:**
+
 - Basic Node.js function
 - Minimal example
 - Perfect for first deployment
@@ -77,9 +87,11 @@ See [frontend-function-routes](frontend-function-routes/README.md) and the
 ---
 
 ### 💬 realtime-chat (Next.js + Realtime)
-**Minimal chat application** (~250 lines) showing realtime messaging and presence tracking.
+
+**Minimal chat application** showing realtime messaging and presence tracking.
 
 **Features:**
+
 - ✅ Real-time messaging with broadcast channels
 - ✅ Presence tracking - see who's online with display names
 - ✅ Anonymous authentication - no account required
@@ -88,6 +100,7 @@ See [frontend-function-routes](frontend-function-routes/README.md) and the
 - ✅ Built with Next.js 16 and Volcano SDK
 
 **Quick Start:**
+
 ```bash
 cd realtime-chat
 yarn install
@@ -96,13 +109,14 @@ yarn dev
 ```
 
 **What it demonstrates:**
+
 - Anonymous signup with `display_name` metadata
 - Broadcast channels for chat messages
 - Presence channels to track online users
 - User metadata appearing in presence events
 - Symmetric visibility (late joiners see existing users)
 
-**Note:** All code in one file (`app/page.tsx`) - no abstractions, just pure SDK usage.
+**Note:** All SDK calls are in `app/page.tsx`; the other files render the screens.
 
 ---
 
@@ -118,7 +132,7 @@ yarn dev
    - See Volcano Realtime in action
    - Broadcast and presence channels
    - Anonymous auth with metadata
-   - Minimal example (~250 lines total)
+   - Minimal example with every SDK call in one file
 
 ## Prerequisites
 
@@ -146,10 +160,10 @@ example's own README). New to Volcano? Start with the
 ## Getting Help
 
 Each example has its own README with detailed instructions:
+
 - [frontend-auth-nextjs/README.md](./frontend-auth-nextjs/README.md)
 - [realtime-chat/README.md](./realtime-chat/README.md)
 
 ## License
 
 MIT
-

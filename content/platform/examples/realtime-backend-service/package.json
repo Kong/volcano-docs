@@ -2,6 +2,8 @@
   "name": "realtime-backend-service",
   "version": "1.0.0",
   "description": "Backend service using Volcano Realtime with service role key",
+  "license": "MIT",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -14,6 +16,5 @@
   "engines": {
     "node": ">=20.0.0",
     "yarn": ">=1.22.0"
-  },
-  "license": "MIT"
+  }
 }

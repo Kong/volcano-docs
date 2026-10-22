@@ -1,6 +1,6 @@
 ---
-title: "Functions API"
-description: "Deploy and invoke functions."
+title: 'Functions API'
+description: 'Deploy and invoke functions.'
 ---
 
 Deploy and invoke functions.
@@ -15,9 +15,11 @@ Authorization: Bearer <platform_token>
 ```
 
 **Query Parameters:**
+
 - `page`, `limit` - Pagination
 
 **Response:**
+
 ```json
 {
   "data": [
@@ -59,6 +61,7 @@ GET /functions/runtimes
 Lists every runtime a function can deploy on. The endpoint needs no authentication.
 
 **Response:**
+
 ```json
 {
   "runtimes": [
@@ -95,6 +98,7 @@ Content-Type: multipart/form-data
 ```
 
 **Request:**
+
 ```bash
 curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/functions" \
   -H "Authorization: Bearer $PLATFORM_TOKEN" \
@@ -105,6 +109,7 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/functions" \
 ```
 
 **Parameters:**
+
 - `name` (required) - DNS-safe function name (max 63 characters, lowercase letters/numbers/hyphens, cannot start or end with hyphen)
 - `code` (required) - ZIP or `tar.gz` archive containing function source code plus dependency manifests/lockfiles
 - `runtime` (required) - Runtime environment
@@ -133,6 +138,7 @@ After dependencies are installed and the final image is built, the build rejects
 For direct API uploads, Volcano generates `.volcano/function-build.json` automatically. It infers `function_root` from the single runtime entry file (`index.js`/`index.mjs`, `main.py`, or `main.rb`), or from the only top-level directory when the archive has one. It selects `install_root` from the closest dependency manifest directory containing the effective handler module, relative to `function_root`. When no manifest contains the module and `function_root` is `.`, the fallback selects the longest nested manifest directory path. With no containing manifest or applicable fallback, installation uses `function_root`. See [direct-upload layout inference](../functions/upload-api.md#direct-upload-layout-inference) for handler resolution and tie-breaking.
 
 **Runtimes** ([List Runtimes](#list-runtimes) returns the current set):
+
 - `nodejs22.x`, `nodejs24.x`
 - `python3.10`, `python3.11`, `python3.12`, `python3.13`, `python3.14`
 - `ruby3.3`, `ruby3.4`, `ruby4.0`
@@ -218,6 +224,7 @@ Content-Type: application/json
 ```
 
 **Token behavior:**
+
 - Service key: always allowed
 - Auth user access token: allowed when the function is `authenticated` or
   `public`; `404` on a `private` function, the same answer as a missing one
@@ -235,6 +242,7 @@ intended for webhooks that validate provider signatures inside the function.
 The direct `/functions/{functionId}/invoke` RPC endpoint remains authenticated.
 
 **Request:**
+
 ```json
 {
   "payload": {
@@ -245,6 +253,7 @@ The direct `/functions/{functionId}/invoke` RPC endpoint remains authenticated.
 ```
 
 **With service key:**
+
 ```json
 // Function receives
 {
@@ -254,6 +263,7 @@ The direct `/functions/{functionId}/invoke` RPC endpoint remains authenticated.
 ```
 
 **With Auth User Token:**
+
 ```json
 // Function receives
 {
@@ -270,6 +280,7 @@ The direct `/functions/{functionId}/invoke` RPC endpoint remains authenticated.
 ```
 
 **Response:**
+
 ```json
 {
   // Raw function response body
@@ -304,6 +315,7 @@ Authorization: Bearer <service_key_or_access_token_or_anon_key>
 ```
 
 **Token behavior:**
+
 - Service key: allowed
 - Auth user access token: allowed when the function is `authenticated` or
   `public`; `404` on a `private` function, the same answer as a missing one
@@ -311,6 +323,7 @@ Authorization: Bearer <service_key_or_access_token_or_anon_key>
   function must be `public`; any other answers `404`, as if it did not exist.
 
 **Response:**
+
 ```json
 {
   "name": "my-function",
@@ -340,6 +353,7 @@ is sufficient. Project end-user sessions cannot read these logs.
 See the [logs guide](../functions/logs.md) for query syntax and SDK examples.
 
 **Request Body Fields:**
+
 - `resource.type` - Required. Use `function`
 - `resource.ids` - Optional function IDs
 - `q` - Optional free-text query
@@ -350,6 +364,7 @@ See the [logs guide](../functions/logs.md) for query syntax and SDK examples.
 - Filter levels, regions, and invocation IDs through fields in `q`.
 
 **Example:**
+
 ```json
 {
   "resource": {
@@ -362,6 +377,7 @@ See the [logs guide](../functions/logs.md) for query syntax and SDK examples.
 ```
 
 **Response:**
+
 ```json
 {
   "data": [
@@ -434,6 +450,7 @@ Content-Type: application/json
 ```
 
 **Request:**
+
 ```json
 {
   "visibility": "public",
@@ -441,7 +458,7 @@ Content-Type: application/json
   "http_auth_mode": "none",
   "openapi_spec": {
     "openapi": "3.1.0",
-    "info": {"title": "Webhook", "version": "1.0.0"},
+    "info": { "title": "Webhook", "version": "1.0.0" },
     "paths": {}
   }
 }

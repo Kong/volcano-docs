@@ -1,6 +1,6 @@
 ---
-title: "Configuring Authentication Methods Per Project"
-description: "Control which authentication methods each project enables — email/password, OAuth providers, and anonymous — to match your use case."
+title: 'Configuring Authentication Methods Per Project'
+description: 'Control which authentication methods each project enables — email/password, OAuth providers, and anonymous — to match your use case.'
 ---
 
 Control which authentication methods are available in each project. Mix and match email/password, OAuth providers, and anonymous authentication to match your use case.
@@ -110,6 +110,7 @@ curl -X PUT https://api.volcano.dev/projects/{PROJECT_ID}/auth/config \
 ```
 
 **Result:** Users can sign in with:
+
 - Email + password
 - Google
 - GitHub
@@ -144,6 +145,7 @@ curl -X PUT https://api.volcano.dev/projects/{PROJECT_ID}/auth/config \
 ```
 
 **Result:** Users can:
+
 - Play as guest (anonymous)
 - Optionally link Google to save progress
 
@@ -298,14 +300,15 @@ Configure all authentication methods in a single request.
   "enable_email_password": true,
   "enable_anonymous": true,
   "oauth_providers": [
-    {"provider": "google", "enabled": true},
-    {"provider": "apple", "enabled": true},
-    {"provider": "github", "enabled": true}
+    { "provider": "google", "enabled": true },
+    { "provider": "apple", "enabled": true },
+    { "provider": "github", "enabled": true }
   ]
 }
 ```
 
 **Available methods:**
+
 - Email & Password
 - Anonymous (guests)
 - Google
@@ -322,13 +325,12 @@ Configure all authentication methods in a single request.
 {
   "enable_email_password": false,
   "enable_anonymous": false,
-  "oauth_providers": [
-    {"provider": "microsoft", "enabled": true}
-  ]
+  "oauth_providers": [{ "provider": "microsoft", "enabled": true }]
 }
 ```
 
 **Available methods:**
+
 - Microsoft/Azure AD ONLY
 
 **Best for:** Corporate tools, internal apps, B2B SaaS
@@ -342,14 +344,15 @@ Configure all authentication methods in a single request.
   "enable_email_password": true,
   "enable_anonymous": false,
   "oauth_providers": [
-    {"provider": "google", "enabled": true},
-    {"provider": "github", "enabled": true},
-    {"provider": "microsoft", "enabled": true}
+    { "provider": "google", "enabled": true },
+    { "provider": "github", "enabled": true },
+    { "provider": "microsoft", "enabled": true }
   ]
 }
 ```
 
 **Available methods:**
+
 - Email & Password
 - Google
 - GitHub
@@ -366,13 +369,14 @@ Configure all authentication methods in a single request.
   "enable_email_password": false,
   "enable_anonymous": true,
   "oauth_providers": [
-    {"provider": "google", "enabled": true},
-    {"provider": "apple", "enabled": true}
+    { "provider": "google", "enabled": true },
+    { "provider": "apple", "enabled": true }
   ]
 }
 ```
 
 **Available methods:**
+
 - Anonymous (quick start)
 - Google (save progress)
 - Apple (save progress)
@@ -492,12 +496,9 @@ Query available methods and show only enabled options:
 
 ```javascript
 async function loadAuthMethods() {
-  const response = await fetch(
-    `${API_URL}/projects/${PROJECT_ID}/auth/methods`,
-    {
-      headers: { 'Authorization': `Bearer ${PLATFORM_TOKEN}` }
-    }
-  );
+  const response = await fetch(`${API_URL}/projects/${PROJECT_ID}/auth/methods`, {
+    headers: { Authorization: `Bearer ${PLATFORM_TOKEN}` },
+  });
 
   const data = await response.json();
   const methods = data.available_methods;
@@ -537,6 +538,7 @@ async function loadAuthMethods() {
 ```
 
 **Benefits:**
+
 - Fewer endpoints to secure
 - No password-related attacks
 - Simpler security model
@@ -559,6 +561,7 @@ For enterprise apps, you might want ONLY corporate SSO:
 ```
 
 **Benefits:**
+
 - Centralized access control (via Azure AD)
 - Single sign-on across tools
 - Enterprise compliance (MFA, conditional access)
@@ -646,15 +649,18 @@ curl -X PUT .../auth/config -d '{"allowed_email_domains": []}'
 ### 1. Match Your User Base
 
 **Consumer apps:**
+
 - Enable email/password + OAuth (Google, Apple)
 - Consider anonymous for guest access
 
 **Enterprise apps:**
+
 - Disable email/password
 - Enable only corporate SSO (Microsoft)
 - Disable anonymous
 
 **Developer tools:**
+
 - Enable email/password
 - Enable GitHub OAuth
 - Disable anonymous
@@ -767,14 +773,14 @@ POST /auth/user/convert-anonymous
 
 ## Configuration Matrix
 
-| Use Case | Email/Password | Anonymous | Google | GitHub | Microsoft | Apple |
-|----------|----------------|-----------|--------|--------|-----------|-------|
-| Consumer App | Yes | Yes | Yes | Yes | No | Yes |
-| Enterprise App | No | No | No | No | Yes | No |
-| SaaS Product | Yes | No | Yes | Yes | Yes | No |
-| Gaming App | No | Yes | Yes | No | No | Yes |
-| Developer Tool | Yes | No | Yes | Yes | No | No |
-| Content Platform | Yes | Yes | Yes | Yes | No | No |
+| Use Case         | Email/Password | Anonymous | Google | GitHub | Microsoft | Apple |
+| ---------------- | -------------- | --------- | ------ | ------ | --------- | ----- |
+| Consumer App     | Yes            | Yes       | Yes    | Yes    | No        | Yes   |
+| Enterprise App   | No             | No        | No     | No     | Yes       | No    |
+| SaaS Product     | Yes            | No        | Yes    | Yes    | Yes       | No    |
+| Gaming App       | No             | Yes       | Yes    | No     | No        | Yes   |
+| Developer Tool   | Yes            | No        | Yes    | Yes    | No        | No    |
+| Content Platform | Yes            | Yes       | Yes    | Yes    | No        | No    |
 
 ---
 
@@ -790,17 +796,20 @@ curl -H "Authorization: Bearer {TOKEN}" \
 ### 2. Test Each Enabled Method
 
 **Email/Password:**
+
 ```bash
 POST /auth/signup {"email": "test@example.com", "password": "test123"}
 ```
 
 **Google OAuth:**
+
 ```bash
 GET /auth/oauth/google/authorize
 # Should redirect to Google
 ```
 
 **Anonymous:**
+
 ```bash
 POST /auth/signup-anonymous
 # Should return access token
@@ -809,6 +818,7 @@ POST /auth/signup-anonymous
 ### 3. Verify Disabled Methods Are Blocked
 
 If email/password is disabled:
+
 ```bash
 POST /auth/signup
 # Expected: 403 Forbidden - "signups are disabled"
@@ -870,7 +880,7 @@ If a provider is temporarily unavailable:
 ## Support
 
 For issues:
+
 - Review troubleshooting guide
 - Check security audit
 - See [OAuth integration guide](./oauth-integration-guide.md)
-

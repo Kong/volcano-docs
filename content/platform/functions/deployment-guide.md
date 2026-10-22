@@ -1,6 +1,6 @@
 ---
-title: "Function Deployment Guide"
-description: "Upload a focused ZIP or tar.gz archive containing the source files needed to build and run the function."
+title: 'Function Deployment Guide'
+description: 'Upload a focused ZIP or tar.gz archive containing the source files needed to build and run the function.'
 ---
 
 ## Source Bundle Size
@@ -108,19 +108,20 @@ cd dist && zip function.zip index.js
 
 ## Size Recommendations
 
-| Source Bundle Size | Status | Notes |
-|-------------|--------|-------|
-| < 1MB | Excellent | Fast deployments |
-| 1-10MB | Good | Acceptable for most functions |
-| 10-50MB | Large | Consider optimization |
-| Larger bundles | Very Large | Bundle/minimize before upload |
-| Above upload limit | Rejected | Split or reduce the source bundle |
+| Source Bundle Size | Status     | Notes                             |
+| ------------------ | ---------- | --------------------------------- |
+| < 1MB              | Excellent  | Fast deployments                  |
+| 1-10MB             | Good       | Acceptable for most functions     |
+| 10-50MB            | Large      | Consider optimization             |
+| Larger bundles     | Very Large | Bundle/minimize before upload     |
+| Above upload limit | Rejected   | Split or reduce the source bundle |
 
 ## Common Errors
 
 ### "Function code too large"
 
 **Error message**:
+
 ```text
 Error: function code too large (max 256 MB, got 312475648 bytes from file 'function.tar.gz')
 ```
@@ -128,6 +129,7 @@ Error: function code too large (max 256 MB, got 312475648 bytes from file 'funct
 **Solutions**:
 
 1. **Remove installed dependencies**:
+
    ```bash
    zip -r function.zip . -x "node_modules/*" -x "python_deps/*" -x "vendor/*" -x ".git/*" -x "*.md"
    ```
@@ -152,12 +154,13 @@ exports.handler = async (event, context) => {
   // Your logic here
   return {
     statusCode: 200,
-    body: JSON.stringify({ message: 'Success!' })
+    body: JSON.stringify({ message: 'Success!' }),
   };
 };
 ```
 
 Package and deploy:
+
 ```bash
 zip function.zip index.js
 # Upload via Volcano dashboard
@@ -170,6 +173,7 @@ zip function.zip index.js
 If your function is part of a monorepo:
 
 **Don't** zip the entire monorepo:
+
 ```bash
 # Bad - includes everything
 cd mymonorepo/
@@ -177,6 +181,7 @@ zip -r function.zip .  # Not recommended - includes everything
 ```
 
 **Do** zip only what's needed:
+
 ```bash
 # Good - only function code
 cd mymonorepo/functions/api/
@@ -184,6 +189,7 @@ zip -r function.zip index.js lib/ -x "*.test.js"
 ```
 
 Or use a build tool to bundle:
+
 ```bash
 # Bundle with dependencies resolved
 npx esbuild functions/api/index.js \
@@ -212,18 +218,18 @@ const auth = require('./auth');
 exports.handler = async (event) => {
   const user = await auth.verify(event.headers.authorization);
   const data = await db.query('SELECT * FROM users WHERE id = $1', [user.id]);
-  
+
   return {
     statusCode: 200,
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
   };
 };
 ```
 
 **Package**: Just this file (< 1KB)  
 **Dependencies**: Bundled with only the modules the function uses  
-**Total system**: Works perfectly, no size issues  
+**Total system**: Works perfectly, no size issues
 
 ## Summary
 

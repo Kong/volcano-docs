@@ -1,8 +1,8 @@
 {
   "name": "volcano-frontend-auth-nextjs",
   "version": "1.0.0",
-  "description": "Complete Next.js authentication example for Volcano",
   "private": true,
+  "description": "Complete Next.js authentication example for Volcano",
   "scripts": {
     "dev": "next dev -p 3001",
     "build": "next build",

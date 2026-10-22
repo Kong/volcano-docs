@@ -101,11 +101,11 @@ command or retry a write request just to wait for readiness.
 
 Suspending retains the session's state; terminating destroys it.
 
-| Operation | Endpoint |
-| --- | --- |
-| Suspend | `POST /sandbox-sessions/{sessionId}/suspend` |
-| Resume | `POST /sandbox-sessions/{sessionId}/resume` |
-| Terminate | `DELETE /sandbox-sessions/{sessionId}` |
+| Operation | Endpoint                                     |
+| --------- | -------------------------------------------- |
+| Suspend   | `POST /sandbox-sessions/{sessionId}/suspend` |
+| Resume    | `POST /sandbox-sessions/{sessionId}/resume`  |
+| Terminate | `DELETE /sandbox-sessions/{sessionId}`       |
 
 These operations return `202`. Poll `state` for completion. `desired_state`
 records the requested outcome. Once termination is requested, public reads report
@@ -122,10 +122,10 @@ Presets support `1024` and `2048` MB; omitted memory selects `1024` MB. Named
 Sandboxes retain their selected memory for both sessions and one-shot executions
 when `memory_mb` is omitted. A conflicting override is rejected.
 
-| Field | Behavior |
-| --- | --- |
+| Field                  | Behavior                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `max_duration_seconds` | VM lifetime, including startup. Inherits the template TTL when omitted. Cloud defaults to 3600 seconds; HOBBY accepts 30–3600 seconds and SUPERAGENT accepts 30–28800 seconds. Template defaults are clamped to the plan limit; an explicitly requested duration above the plan limit is rejected. Local defaults to 0 (unlimited), also accepts positive lifetimes, and has no cloud eight-hour limit. Explicit 0 overrides a finite local template TTL. |
-| `timeout_seconds` | Command execution time, starting when the process runs. Cloud defaults to 60 seconds and accepts 1–28800 seconds. Local defaults to 0 (unlimited) and also accepts positive limits without the cloud limit. A finite VM expiry always takes precedence. |
+| `timeout_seconds`      | Command execution time, starting when the process runs. Cloud defaults to 60 seconds and accepts 1–28800 seconds. Local defaults to 0 (unlimited) and also accepts positive limits without the cloud limit. A finite VM expiry always takes precedence.                                                                                                                                                                                                   |
 
 Unlimited local sessions return `expires_at: null`. A finite expiry also applies
 while suspended. One-shot execution always requests termination after the command
@@ -253,7 +253,7 @@ active connections; clients must obtain fresh access and reconnect after expiry.
 `POST /projects/{id}/sandboxes` creates a named reference to a published preset:
 
 ```json
-{"name":"analysis","preset":"python3.12","memory_mb":2048}
+{ "name": "analysis", "preset": "python3.12", "memory_mb": 2048 }
 ```
 
 Include the authorization, content type, and idempotency headers shown above.
@@ -320,13 +320,13 @@ you need VM isolation.
 
 ## Pricing and usage
 
-| Limit | HOBBY | SUPERAGENT |
-| --- | --- | --- |
-| Included runtime per monthly account cycle | 5 GBh | 20 GBh |
-| Additional runtime | Unavailable | 25 credits per 5 GBh block |
-| Configured baseline memory | Up to 1 GiB | Up to 2 GiB |
-| Maximum session lifetime | 1 hour | 8 hours |
-| Concurrent sessions | 5 | Unlimited, with a 100-session safety ceiling |
+| Limit                                      | HOBBY       | SUPERAGENT                                   |
+| ------------------------------------------ | ----------- | -------------------------------------------- |
+| Included runtime per monthly account cycle | 5 GBh       | 20 GBh                                       |
+| Additional runtime                         | Unavailable | 25 credits per 5 GBh block                   |
+| Configured baseline memory                 | Up to 1 GiB | Up to 2 GiB                                  |
+| Maximum session lifetime                   | 1 hour      | 8 hours                                      |
+| Concurrent sessions                        | 5           | Unlimited, with a 100-session safety ceiling |
 
 Runtime is configured baseline memory multiplied by confirmed running time.
 One GBh is 1 GiB running for one hour. Metering retains millisecond precision;
@@ -368,10 +368,10 @@ curl "$VOLCANO_API_URL/projects/$PROJECT_ID/usage" \
 The `metrics` array includes these runtime counters. Agents can read the same
 response with the `get_project_usage` [MCP tool](../interfaces/mcp.md):
 
-| Metric | Meaning |
-| --- | --- |
-| `Sandbox Running (MiB-Seconds)` | Configured memory multiplied by observed running time |
-| `Sandbox Suspended (Seconds)` | Observed time with the session suspended |
+| Metric                            | Meaning                                                    |
+| --------------------------------- | ---------------------------------------------------------- |
+| `Sandbox Running (MiB-Seconds)`   | Configured memory multiplied by observed running time      |
+| `Sandbox Suspended (Seconds)`     | Observed time with the session suspended                   |
 | `Sandbox Uncertain (MiB-Seconds)` | Configured memory multiplied by time awaiting verification |
 
 These diagnostic counters are not an invoice. Running includes time between commands

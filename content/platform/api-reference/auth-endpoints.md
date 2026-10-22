@@ -1,6 +1,6 @@
 ---
-title: "Auth Endpoints"
-description: "Complete reference for authentication endpoints."
+title: 'Auth Endpoints'
+description: 'Complete reference for authentication endpoints.'
 ---
 
 Complete reference for authentication endpoints.
@@ -18,6 +18,7 @@ Content-Type: application/json
 ```
 
 **Request:**
+
 ```json
 {
   "email": "user@example.com",
@@ -57,6 +58,7 @@ Authorization: Bearer <anon_key>
 ```
 
 **Request:**
+
 ```json
 {
   "email": "user@example.com",
@@ -128,6 +130,7 @@ Authorization: Bearer <anon_key>
 ```
 
 **Request:**
+
 ```json
 {
   "refresh_token": "f4e3d2c1..."
@@ -185,6 +188,7 @@ Content-Type: application/json
 ```
 
 **Request:**
+
 ```json
 {
   "token": "confirmation-token-from-email"
@@ -192,6 +196,7 @@ Content-Type: application/json
 ```
 
 **Response:** 200 OK
+
 ```json
 {
   "message": "Email confirmed successfully"
@@ -199,6 +204,7 @@ Content-Type: application/json
 ```
 
 **Also possible (200 OK):**
+
 ```json
 {
   "message": "Email already confirmed"
@@ -208,6 +214,7 @@ Content-Type: application/json
 Confirms user's email address using token from confirmation email.
 
 **Errors:**
+
 - `400` - Missing confirmation token in request body
 - `401` - Invalid/expired token or missing anon key
 - `403` - CORS blocked
@@ -223,6 +230,7 @@ Content-Type: application/json
 ```
 
 **Request:**
+
 ```json
 {
   "email": "user@example.com"
@@ -230,6 +238,7 @@ Content-Type: application/json
 ```
 
 **Response:** 200 OK
+
 ```json
 {
   "message": "If the email exists and is unconfirmed, a confirmation link has been sent"
@@ -242,6 +251,7 @@ If the user exists and is unconfirmed, a new token replaces the previous token
 already confirmed, no email is sent.
 
 **Errors:**
+
 - `401` - Missing/invalid anon key
 - `403` - CORS blocked
 
@@ -256,6 +266,7 @@ Content-Type: application/json
 ```
 
 **Request:**
+
 ```json
 {
   "email": "user@example.com"
@@ -263,6 +274,7 @@ Content-Type: application/json
 ```
 
 **Response:** 200 OK
+
 ```json
 {
   "message": "If the email exists, a password reset link has been sent"
@@ -272,6 +284,7 @@ Content-Type: application/json
 **Note:** Response is always the same to prevent email enumeration.
 
 **Errors:**
+
 - `401` - Missing/invalid anon key
 - `403` - Password reset disabled or CORS blocked
 
@@ -286,6 +299,7 @@ Content-Type: application/json
 ```
 
 **Request:**
+
 ```json
 {
   "token": "recovery-token-from-email",
@@ -294,6 +308,7 @@ Content-Type: application/json
 ```
 
 **Response:** 200 OK
+
 ```json
 {
   "message": "Password reset successful. Please sign in with your new password."
@@ -301,11 +316,13 @@ Content-Type: application/json
 ```
 
 **Effects:**
+
 - Password updated
 - Recovery token cleared
 - All sessions revoked
 
 **Errors:**
+
 - `400` - Password doesn't meet requirements or in password history
 - `401` - Invalid/expired token
 - `403` - Password reset disabled
@@ -321,6 +338,7 @@ Content-Type: application/json
 ```
 
 **Response:** 201 Created
+
 ```json
 {
   "access_token": "eyJhbGc...",
@@ -330,7 +348,7 @@ Content-Type: application/json
   "user": {
     "id": "uuid",
     "email": "anon-xyz@anonymous.volcano.internal",
-    "user_metadata": {"anonymous": true},
+    "user_metadata": { "anonymous": true },
     "status": "active"
   }
 }
@@ -339,6 +357,7 @@ Content-Type: application/json
 Creates guest user without email/password.
 
 **Errors:**
+
 - `401` - Missing/invalid anon key
 - `403` - Anonymous signins disabled or CORS blocked
 
@@ -356,6 +375,7 @@ Authorization: Bearer <access_token>
 ```
 
 **Response:** 200 OK
+
 ```json
 {
   "user": {
@@ -380,6 +400,7 @@ Authorization: Bearer <access_token>
 ```
 
 **Request:**
+
 ```json
 {
   "password": "newpassword123",
@@ -396,6 +417,7 @@ request remain unchanged. Set a key to `null` to remove it.
 Merging is shallow: a nested object replaces the stored value for that top-level key.
 
 **Errors:**
+
 - `400` - Password doesn't meet requirements or in password history
 
 ---
@@ -409,6 +431,7 @@ Content-Type: application/json
 ```
 
 **Request:**
+
 ```json
 {
   "email": "user@example.com",
@@ -420,6 +443,7 @@ Content-Type: application/json
 ```
 
 **Response:** 200 OK
+
 ```json
 {
   "user": {
@@ -437,6 +461,7 @@ before email/password signin succeeds. When email sending is enabled, conversion
 triggers a confirmation email.
 
 **Errors:**
+
 - `400` - User is already authenticated (not anonymous)
 - `403` - Email domain not in `allowed_email_domains`
 - `409` - Email already in use
@@ -451,6 +476,7 @@ Authorization: Bearer <access_token>
 ```
 
 **Response:** 200 OK
+
 ```json
 {
   "sessions": [
@@ -509,6 +535,7 @@ Authorization: Bearer <access_token>
 Signs out from a specific device/session.
 
 **Errors:**
+
 - `404` - Session not found or doesn't belong to user
 
 ---
@@ -538,6 +565,7 @@ Authorization: Bearer <platform_token>
 ```
 
 **Response:** 200 OK
+
 ```json
 {
   "data": [...],
@@ -580,6 +608,7 @@ Authorization: Bearer <platform_token>
 ```
 
 **Response:** 200 OK
+
 ```json
 {
   "sessions": [
@@ -602,6 +631,7 @@ Authorization: Bearer <platform_token>
 ```
 
 **Fields:**
+
 - `provider`: Authentication method (`email`, `google`, `github`, `facebook`, `apple`, `anonymous`)
 - `ip_address`: Client IP that created the session
 
@@ -632,6 +662,7 @@ Authorization: Bearer <platform_token>
 **Response:** 204 No Content
 
 **Use cases:**
+
 - User reports compromised account
 - Force password change
 - Security incident response
@@ -659,8 +690,9 @@ Authorization: Bearer <platform_token>
 ```
 
 **Request:**
+
 ```json
-{"name": "production-key"}
+{ "name": "production-key" }
 ```
 
 **Response:** 201 Created (includes key_value JWT)
@@ -710,6 +742,7 @@ Authorization: Bearer <platform_token>
 ```
 
 **Request:** (all fields optional)
+
 ```json
 {
   "access_token_lifetime": 7200,
@@ -726,6 +759,7 @@ Authorization: Bearer <platform_token>
 ```
 
 **Validation rules:**
+
 - `min_password_length` must be between 15 and 128 Unicode characters
 - `require_email_confirmation=true` requires `email_enabled=true`
 - `email_enabled=false` is rejected while `require_email_confirmation=true`
@@ -746,6 +780,7 @@ Authorization: Bearer <platform_token>
   custom page's origin must be in `cors_allowed_origins` to call `/auth/device/verify`).
 
 **Errors:**
+
 - `403` - The update would set or widen `allowed_email_domains` on a project
   that is not on the SUPERAGENT plan. Removing the restriction stays available on
   every plan
@@ -764,6 +799,7 @@ Authorization: Bearer <platform_token>
 ```
 
 **Request:**
+
 ```json
 {
   "to_email": "you@yourdomain.com"
@@ -775,6 +811,7 @@ renders a custom message — used by the template editor's "Send Test" preview.
 Sending `subject` alone (no body) is rejected.
 
 **Responses:**
+
 - `200` — `{"success": true}` on delivery
 - `400` — invalid `to_email`, or `email_enabled=false` / `smtp_host` empty, or the saved `smtp_password` can't be read (set it again), or `subject` without a body
 - `403` — caller is not the project owner
@@ -793,6 +830,7 @@ PUT /projects/{projectId}/auth/hosted-pages/{pageType}
 ```
 
 Supported `pageType` values:
+
 - `login`
 - `reset-password`
 
@@ -821,10 +859,12 @@ Authorization: Bearer <anon_key>
 ```
 
 Rate limiting:
+
 - Both helper endpoints are rate limited per project and client IP.
 - On abuse, they apply exponential backoff and then return `429` with `Retry-After`.
 
 Behavior notes:
+
 - Render requires `Accept: text/html`.
 - Latest saved page content is rendered.
 - Managed pages render only when `managed_auth_enabled=true`.

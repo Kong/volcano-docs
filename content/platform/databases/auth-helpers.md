@@ -1,6 +1,6 @@
 ---
-title: "Auth Helpers"
-description: "PostgreSQL functions for accessing authenticated user information."
+title: 'Auth Helpers'
+description: 'PostgreSQL functions for accessing authenticated user information.'
 ---
 
 PostgreSQL functions for accessing authenticated user information.
@@ -10,8 +10,9 @@ PostgreSQL functions for accessing authenticated user information.
 Auth helpers are automatically installed when you create a database via Volcano.
 
 They're installed in the `auth` schema:
+
 - `auth.uid()` - Get current user's ID
-- `auth.email()` - Get current user's email  
+- `auth.email()` - Get current user's email
 - `auth.role()` - Get current user's role
 - `auth.is_authenticated()` - Check if user is authenticated
 
@@ -25,17 +26,20 @@ SELECT auth.uid();
 ```
 
 **Usage in RLS policies:**
+
 ```sql
 CREATE POLICY "users_own_data" ON my_table
   USING (user_id = auth.uid());
 ```
 
 **Usage in queries:**
+
 ```sql
 SELECT * FROM posts WHERE user_id = auth.uid();
 ```
 
 **Returns NULL when:**
+
 - No user authenticated
 - Function invoked with service key (not auth user token)
 - Session variables not set
@@ -50,9 +54,10 @@ SELECT auth.email();
 ```
 
 **Usage:**
+
 ```sql
 -- Log who updated record
-UPDATE posts 
+UPDATE posts
 SET last_modified_by = auth.email()
 WHERE id = $1;
 ```
@@ -67,6 +72,7 @@ SELECT auth.role();
 ```
 
 **Possible values:**
+
 - `'authenticated'` - Registered user session
 - `'anonymous'` - Anonymous user session (has a user ID)
 - `'anon'` - No user session
@@ -74,6 +80,7 @@ SELECT auth.role();
 `TO authenticated` selects the PostgreSQL role for **both** registered and anonymous user sessions. Use `auth.uid() IS NOT NULL` to allow either session type; use `auth.role() = 'authenticated'` to require a registered user.
 
 **Usage in policies:**
+
 ```sql
 -- Registered users can insert their own posts
 CREATE POLICY "registered_insert" ON posts
@@ -96,14 +103,16 @@ SELECT auth.is_authenticated();
 ```
 
 **Equivalent to:**
+
 ```sql
 auth.uid() IS NOT NULL
 ```
 
 **Usage:**
+
 ```sql
-SELECT 
-  CASE 
+SELECT
+  CASE
     WHEN auth.is_authenticated() THEN 'Welcome back!'
     ELSE 'Please sign in'
   END;
@@ -169,7 +178,3 @@ ROLLBACK;
 - [Row-Level Security](row-level-security.md) - Using helpers in RLS policies
 - [Function Integration](../authentication/backend/function-integration.md) - Setting session variables
 - Examples - Complete SQL file
-
-
-
-

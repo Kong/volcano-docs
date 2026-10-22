@@ -1,6 +1,6 @@
 ---
-title: "Realtime Backend Service Example"
-description: "This example demonstrates using Volcano Realtime with a service role key for backend/server-to-server communication."
+title: 'Realtime Backend Service Example'
+description: 'This example demonstrates using Volcano Realtime with a service role key for backend/server-to-server communication.'
 ---
 
 # Realtime Backend Service Example
@@ -37,15 +37,15 @@ Service role keys contain the project ID, so the anon key is **optional**:
 // Simplest: service key only
 const realtime = new VolcanoRealtime({
   apiUrl: 'https://api.yourapp.com',
-  anonKey: '',                    // Not required
-  accessToken: 'sk-your-key'      // Service role key
+  anonKey: '', // Not required
+  accessToken: 'sk-your-key', // Service role key
 });
 
 // With extra validation
 const realtime = new VolcanoRealtime({
   apiUrl: 'https://api.yourapp.com',
-  anonKey: 'your-anon-key',       // Must match service key project
-  accessToken: 'sk-your-key'
+  anonKey: 'your-anon-key', // Must match service key project
+  accessToken: 'sk-your-key',
 });
 ```
 
@@ -79,6 +79,7 @@ yarn dev
 ## How It Works
 
 The service:
+
 1. Connects to Volcano Realtime using the service key
 2. Subscribes to the `admin-notifications` channel
 3. Sends a welcome message
@@ -101,7 +102,7 @@ Frontend clients can listen to the same channels using user tokens:
 const realtime = new VolcanoRealtime({
   apiUrl: 'https://api.yourapp.com',
   anonKey: anonKey,
-  accessToken: userToken
+  accessToken: userToken,
 });
 
 const channel = realtime.channel('admin-notifications');

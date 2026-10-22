@@ -1,6 +1,6 @@
 ---
-title: "Issues"
-description: "See the runtime errors your functions and frontends raise, grouped into issues you can resolve or ignore."
+title: 'Issues'
+description: 'See the runtime errors your functions and frontends raise, grouped into issues you can resolve or ignore.'
 ---
 
 Volcano groups the errors your functions and frontends log at runtime into
@@ -97,12 +97,12 @@ curl "https://api.volcano.dev/projects/$PROJECT_ID/issues?limit=20" \
   -H "Authorization: Bearer $VOLCANO_TOKEN"
 ```
 
-| Parameter | Description |
-|-----------|-------------|
-| `status` | `open`, `resolved`, or `ignored` |
-| `resource_id` | Only issues from this function or frontend |
-| `limit` | Issues per page, 1 to 100. Default `10` |
-| `cursor` | The previous page's `next_cursor`. Keep the same filters while paging |
+| Parameter     | Description                                                           |
+| ------------- | --------------------------------------------------------------------- |
+| `status`      | `open`, `resolved`, or `ignored`                                      |
+| `resource_id` | Only issues from this function or frontend                            |
+| `limit`       | Issues per page, 1 to 100. Default `10`                               |
+| `cursor`      | The previous page's `next_cursor`. Keep the same filters while paging |
 
 Get one issue:
 
@@ -134,11 +134,11 @@ curl -X PATCH "https://api.volcano.dev/projects/$PROJECT_ID/issues/$ISSUE_ID" \
 
 The response is the whole issue; it is shortened here.
 
-| Status | Meaning |
-|--------|---------|
-| `open` | New, or seen again after it was resolved |
-| `resolved` | Fixed. Reopens if the error happens again |
-| `ignored` | Not worth fixing. Keeps counting, never reopens |
+| Status     | Meaning                                         |
+| ---------- | ----------------------------------------------- |
+| `open`     | New, or seen again after it was resolved        |
+| `resolved` | Fixed. Reopens if the error happens again       |
+| `ignored`  | Not worth fixing. Keeps counting, never reopens |
 
 An issue resolved at `resolved_at` that is seen again after that moment
 reopens as `open`, and `regressed_at` records when. Set `status` back to
@@ -159,8 +159,8 @@ Agents connected through the [MCP server](../interfaces/mcp.md) can call
 
 ## Errors
 
-| Status | Code | When |
-|--------|------|------|
-| `400` | | A filter, the `limit`, the `cursor`, or the `status` is invalid |
-| `404` | `feature_unavailable` | Issues are not available in this environment |
-| `404` | | The project or issue does not exist, or belongs to someone else |
+| Status | Code                  | When                                                            |
+| ------ | --------------------- | --------------------------------------------------------------- |
+| `400`  |                       | A filter, the `limit`, the `cursor`, or the `status` is invalid |
+| `404`  | `feature_unavailable` | Issues are not available in this environment                    |
+| `404`  |                       | The project or issue does not exist, or belongs to someone else |

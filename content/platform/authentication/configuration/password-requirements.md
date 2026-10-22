@@ -1,6 +1,6 @@
 ---
-title: "Password Requirements"
-description: "Volcano enforces a secure password baseline in the backend for sign-up, password reset, anonymous-account conversion, and password changes."
+title: 'Password Requirements'
+description: 'Volcano enforces a secure password baseline in the backend for sign-up, password reset, anonymous-account conversion, and password changes.'
 ---
 
 Volcano enforces a secure password baseline in the backend for sign-up,
@@ -57,7 +57,7 @@ and may reject a password that appears in the compromised-password corpus.
 **Range:** 15-128
 
 ```json
-{"min_password_length": 20}
+{ "min_password_length": 20 }
 ```
 
 Long passphrases are preferred. Volcano accepts spaces and Unicode characters.
@@ -73,7 +73,7 @@ compromised-password screening provide the baseline protection.
 **Default:** false
 
 ```json
-{"require_uppercase": true}
+{ "require_uppercase": true }
 ```
 
 ### Require lowercase
@@ -82,7 +82,7 @@ compromised-password screening provide the baseline protection.
 **Default:** false
 
 ```json
-{"require_lowercase": true}
+{ "require_lowercase": true }
 ```
 
 ### Require numbers
@@ -91,7 +91,7 @@ compromised-password screening provide the baseline protection.
 **Default:** false
 
 ```json
-{"require_numbers": true}
+{ "require_numbers": true }
 ```
 
 ### Require special characters
@@ -100,7 +100,7 @@ compromised-password screening provide the baseline protection.
 **Default:** false
 
 ```json
-{"require_special_chars": true}
+{ "require_special_chars": true }
 ```
 
 ## Configuration example

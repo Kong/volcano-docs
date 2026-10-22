@@ -1,6 +1,6 @@
 ---
-title: "Database Migrations"
-description: "This guide explains how to manage database migrations using the Volcano CLI."
+title: 'Database Migrations'
+description: 'This guide explains how to manage database migrations using the Volcano CLI.'
 ---
 
 This guide explains how to manage database migrations using the Volcano CLI.
@@ -23,6 +23,7 @@ your-project/
 ```
 
 **Best practices:**
+
 - Use numbered prefixes (`001_`, `002_`) to maintain execution order
 - Use descriptive names that indicate what the migration does
 - Put exactly one SQL statement in each file
@@ -91,6 +92,7 @@ file with more than one is [refused](../databases/connection-strings.md#one-stat
 before any of it runs. Split a multi-step change into several numbered files.
 
 When a migration fails:
+
 - Execution stops at that file
 - Subsequent migrations are not executed
 - You should fix the error and re-run
@@ -185,11 +187,13 @@ again on every connection, so nothing needs restarting:
 ## Important Notes
 
 **No migration tracking**: Volcano does not track which migrations have been run. You are responsible for:
+
 - Not re-running migrations that have already been applied
 - Managing your migration history
 - Using idempotent statements (`IF NOT EXISTS`, etc.) when possible
 
 For production applications requiring migration tracking, consider using dedicated tools like:
+
 - [Flyway](https://flywaydb.org/)
 - [Liquibase](https://www.liquibase.org/)
 - [golang-migrate](https://github.com/golang-migrate/migrate)

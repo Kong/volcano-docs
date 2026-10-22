@@ -1,6 +1,6 @@
 ---
-title: "Function Schedulers API"
-description: "Manage scheduled invocations that run a function on a recurring cron schedule."
+title: 'Function Schedulers API'
+description: 'Manage scheduled invocations that run a function on a recurring cron schedule.'
 ---
 
 Function schedulers are managed below a function:

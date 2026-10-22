@@ -1,6 +1,6 @@
 ---
-title: "Error Handling"
-description: "How the Volcano API reports errors, with status codes and JSON error bodies."
+title: 'Error Handling'
+description: 'How the Volcano API reports errors, with status codes and JSON error bodies.'
 ---
 
 ## Error Response Format
@@ -16,11 +16,13 @@ All errors return JSON:
 ## HTTP Status Codes
 
 **2xx Success:**
+
 - `200 OK` - Request succeeded
 - `201 Created` - Resource created
 - `204 No Content` - Success (no response body)
 
 **4xx Client Errors:**
+
 - `400 Bad Request` - Invalid input or validation failed
 - `401 Unauthorized` - Missing, invalid, or expired token
 - `403 Forbidden` - Valid token but no permission
@@ -29,6 +31,7 @@ All errors return JSON:
 - `429 Too Many Requests` - Rate limit exceeded
 
 **5xx Server Errors:**
+
 - `500 Internal Server Error` - Server-side error
 - `503 Service Unavailable` - Function still provisioning
 
@@ -39,9 +42,9 @@ All errors return JSON:
 Some cursor and offset lists return `500` with these fixed messages when a
 read fails, instead of exposing database connection details:
 
-| Operation | `error` |
-| --- | --- |
-| Load a page or its included total | `failed to list resources` |
+| Operation                                 | `error`                     |
+| ----------------------------------------- | --------------------------- |
+| Load a page or its included total         | `failed to list resources`  |
 | Count results after loading a cursor page | `failed to count resources` |
 
 `GET /projects` counts its total while loading the page, so its count failures
@@ -49,20 +52,20 @@ return `failed to list resources`.
 
 The following offset and non-cursor lists return these fixed messages:
 
-| Resource | Read failure | Count failure |
-| --- | --- | --- |
-| Anonymous keys | `failed to list resources` | `failed to list resources` |
-| Frontends | `failed to list resources` | `failed to list resources` |
-| Auth sessions | `failed to list resources` | `failed to list resources` |
-| Projects | `failed to list resources` | `failed to list resources` |
-| Service keys | `failed to list service keys` | `failed to count service keys` |
-| Functions | `failed to list functions` | `failed to count functions` |
-| Variables | `failed to list variables` | `failed to count variables` |
-| Databases | `failed to list databases` | `failed to count databases` |
-| Project custom domains | `failed to list project custom domains` | `failed to count project custom domains` |
-| Project schedulers | `failed to list project schedulers` | `failed to count project schedulers` |
-| Storage buckets | `failed to list buckets` | No separate count |
-| Storage objects (project admin list) | `failed to list storage objects` | `failed to list storage objects` |
+| Resource                             | Read failure                            | Count failure                            |
+| ------------------------------------ | --------------------------------------- | ---------------------------------------- |
+| Anonymous keys                       | `failed to list resources`              | `failed to list resources`               |
+| Frontends                            | `failed to list resources`              | `failed to list resources`               |
+| Auth sessions                        | `failed to list resources`              | `failed to list resources`               |
+| Projects                             | `failed to list resources`              | `failed to list resources`               |
+| Service keys                         | `failed to list service keys`           | `failed to count service keys`           |
+| Functions                            | `failed to list functions`              | `failed to count functions`              |
+| Variables                            | `failed to list variables`              | `failed to count variables`              |
+| Databases                            | `failed to list databases`              | `failed to count databases`              |
+| Project custom domains               | `failed to list project custom domains` | `failed to count project custom domains` |
+| Project schedulers                   | `failed to list project schedulers`     | `failed to count project schedulers`     |
+| Storage buckets                      | `failed to list buckets`                | No separate count                        |
+| Storage objects (project admin list) | `failed to list storage objects`        | `failed to list storage objects`         |
 
 For service keys, `page` or no pagination parameters selects offset pagination.
 A `limit` without `page` selects cursor pagination.
@@ -77,35 +80,41 @@ Keep the response's `X-Request-Id` when reporting a failure.
 ### Authentication Errors
 
 **401 - Missing Token:**
+
 ```json
-{"error": "authorization header required"}
+{ "error": "authorization header required" }
 ```
 
 **401 - Invalid Token:**
+
 ```json
-{"error": "invalid token"}
+{ "error": "invalid token" }
 ```
 
 **401 - Expired Token:**
+
 ```json
-{"error": "invalid or expired token"}
+{ "error": "invalid or expired token" }
 ```
 
 **403 - Wrong Project:**
+
 ```json
-{"error": "token does not have access to this project"}
+{ "error": "token does not have access to this project" }
 ```
 
 **403 - Account Banned:**
+
 ```json
-{"error": "account is banned"}
+{ "error": "account is banned" }
 ```
 
 ### Project Access Token Errors
 
 **401 - Expired, Revoked, or Unrecognized:**
+
 ```json
-{"error": "invalid token"}
+{ "error": "invalid token" }
 ```
 
 All three return the same body. The response does not say which, so a leaked
@@ -114,31 +123,38 @@ with a platform token to see whether `status` is `revoked` or `expires_at` has
 passed.
 
 **403 - Read-only Scope:**
+
 ```json
-{"error": "project access token is read-only"}
+{ "error": "project access token is read-only" }
 ```
 
 Returned for mutations. Reads that happen to be `POST` — log search, log
 activity, log streaming, metrics query — are allowed.
 
 **403 - Wrong Project:**
+
 ```json
-{"error": "project access token is not valid for this project"}
+{ "error": "project access token is not valid for this project" }
 ```
 
 **403 - Account-scoped Endpoint:**
+
 ```json
-{"error": "project access tokens cannot be used on account-scoped endpoints; use a platform token"}
+{ "error": "project access tokens cannot be used on account-scoped endpoints; use a platform token" }
 ```
 
 **403 - Token Management:**
+
 ```json
-{"error": "project access tokens cannot manage project access tokens; use a platform token"}
+{ "error": "project access tokens cannot manage project access tokens; use a platform token" }
 ```
 
 **403 - Durable Approval Decision:**
+
 ```json
-{"error": "project access tokens cannot decide durable approvals; a person decides in the dashboard or with a platform token"}
+{
+  "error": "project access tokens cannot decide durable approvals; a person decides in the dashboard or with a platform token"
+}
 ```
 
 Returned when a `full` token approves or denies a [durable
@@ -146,13 +162,15 @@ approval](../functions/durable-approvals.md#who-can-decide). A `read_only` token
 gets the read-only message instead. Both can still list and read approvals.
 
 **404 - Token Not Found:**
+
 ```json
-{"error": "project access token not found"}
+{ "error": "project access token not found" }
 ```
 
 **409 - Duplicate Name:**
+
 ```json
-{"error": "a project access token with that name already exists"}
+{ "error": "a project access token with that name already exists" }
 ```
 
 Names are unique per project, so a retried create cannot mint a second token.
@@ -161,13 +179,15 @@ means the original create committed: list the tokens, revoke the one holding
 the name, and create it again.
 
 **409 - Token Limit Reached:**
+
 ```json
-{"error": "a project may hold at most 100 active access tokens"}
+{ "error": "a project may hold at most 100 active access tokens" }
 ```
 
 **400 - Invalid Create Request:**
+
 ```json
-{"error": "project access token expiry must be in the future"}
+{ "error": "project access token expiry must be in the future" }
 ```
 
 The same shape covers a missing name, a name over 100 characters, and a scope
@@ -176,45 +196,53 @@ other than `full` or `read_only`.
 ### Anon Key Errors
 
 **401 - Missing Anon Key:**
+
 ```json
-{"error": "anon key required"}
+{ "error": "anon key required" }
 ```
 
 **401 - Invalid Authorization Header:**
+
 ```json
-{"error": "invalid authorization header"}
+{ "error": "invalid authorization header" }
 ```
 
 **401 - Invalid/Tampered Anon Key:**
+
 ```json
-{"error": "invalid anon key"}
+{ "error": "invalid anon key" }
 ```
 
 **401 - Wrong Project:**
+
 ```json
-{"error": "anon key does not match project"}
+{ "error": "anon key does not match project" }
 ```
 
 **401 - Revoked (old key after regeneration):**
+
 ```json
-{"error": "anon key has been revoked"}
+{ "error": "anon key has been revoked" }
 ```
 
 This occurs when using an old anon key JWT after the key has been regenerated. The key ID still exists but the JWT value no longer matches.
 
 **401 - Not Found in Database:**
+
 ```json
-{"error": "anon key not found"}
+{ "error": "anon key not found" }
 ```
 
 **403 - Missing Permission:**
+
 ```json
-{"error": "anon key does not have auth.signup permission"}
+{ "error": "anon key does not have auth.signup permission" }
 ```
 
 **403 - CORS Blocked:**
+
 ```json
-{"error": "origin not allowed by CORS policy"}
+{ "error": "origin not allowed by CORS policy" }
 ```
 
 ### Rate Limiting
@@ -224,11 +252,13 @@ and only they send `X-RateLimit-*` headers. Durable starts, project locks, and
 durable approval requests have limits of their own, described in their sections.
 
 **429 - Rate Limited:**
+
 ```json
-{"error": "rate limit exceeded, try again later"}
+{ "error": "rate limit exceeded, try again later" }
 ```
 
 **Headers:**
+
 ```http
 X-RateLimit-Limit: 100
 X-RateLimit-Remaining: 0
@@ -241,35 +271,41 @@ password reset, and email change send it on a `429`; signin and refresh do not.
 ### Validation Errors
 
 **400 - Invalid Email:**
+
 ```json
-{"error": "invalid email format"}
+{ "error": "invalid email format" }
 ```
 
 **400 - Weak Password:**
+
 ```json
-{"error": "password must be at least 15 characters"}
+{ "error": "password must be at least 15 characters" }
 ```
 
 **400 - Missing Field:**
+
 ```json
-{"error": "name is required"}
+{ "error": "name is required" }
 ```
 
 ### Resource Errors
 
 **404 - Not Found:**
+
 ```json
-{"error": "project not found"}
+{ "error": "project not found" }
 ```
 
 **409 - Duplicate:**
+
 ```json
-{"error": "user with this email already exists"}
+{ "error": "user with this email already exists" }
 ```
 
 **409 - Deletion in progress:**
+
 ```json
-{"error": "frontend deletion already pending"}
+{ "error": "frontend deletion already pending" }
 ```
 
 Deployments are serialized per resource and coalesced using latest-wins
@@ -277,8 +313,9 @@ queueing. A deploy returns `409` only after deletion has been requested; wait
 for deletion to finish before creating the resource again.
 
 **503 - Still Provisioning:**
+
 ```json
-{"error": "function is still provisioning, please try again in a few seconds"}
+{ "error": "function is still provisioning, please try again in a few seconds" }
 ```
 
 ### Unavailable capabilities
@@ -301,18 +338,21 @@ refusals that are worth handling separately, because some of them clear on their
 own and some do not.
 
 **429 - Execution allowance spent:**
+
 ```json
-{"error": "billing-cycle durable invocation allowance exceeded"}
+{ "error": "billing-cycle durable invocation allowance exceeded" }
 ```
 
 **429 - Operation allowance spent:**
+
 ```json
-{"error": "billing-cycle durable operations allowance of 100000 exceeded"}
+{ "error": "billing-cycle durable operations allowance of 100000 exceeded" }
 ```
 
 **429 - Compute allowance spent:**
+
 ```json
-{"error": "billing-cycle durable compute allowance of 10000 GB-seconds exceeded"}
+{ "error": "billing-cycle durable compute allowance of 10000 GB-seconds exceeded" }
 ```
 
 All three messages carry a link to your usage page appended to them. They are the
@@ -326,8 +366,9 @@ Nothing clears these until the billing cycle turns over or the plan changes, so
 retrying is pointless.
 
 **429 - Concurrency cap reached:**
+
 ```json
-{"error": "durable execution concurrency limit reached: 10 of 10 in flight"}
+{ "error": "durable execution concurrency limit reached: 10 of 10 in flight" }
 ```
 
 The message names how many executions were in flight and the plan's cap. This is
@@ -336,8 +377,9 @@ carries no `X-RateLimit-*` headers and no reset time. Retry once an execution
 finishes, or raise the cap by upgrading the plan.
 
 **409 - Not deployed yet:**
+
 ```json
-{"error": "durable function is not deployed yet"}
+{ "error": "durable function is not deployed yet" }
 ```
 
 The function exists but its first deployment has not finished, so there is
@@ -345,16 +387,18 @@ nothing to start. Wait for its `status` to reach `active` and retry. This is the
 most common refusal immediately after a deploy.
 
 **409 - Name contended:**
+
 ```json
-{"error": "durable execution name was released while claiming it: \"order-4417\""}
+{ "error": "durable execution name was released while claiming it: \"order-4417\"" }
 ```
 
 Two starts raced for the same execution name and both released it. Nothing is
 wrong with the request: retry it as-is.
 
 **409 - Name held:**
+
 ```json
-{"error": "durable execution name is held by another caller's start", "code": "execution_name_held"}
+{ "error": "durable execution name is held by another caller's start", "code": "execution_name_held" }
 ```
 
 A start under this name failed before it began, and this caller may not finish
@@ -364,8 +408,9 @@ or finish it with the service key. See [Durable
 messages](../functions/durable-messages.md#client-tokens).
 
 **503 - Durable executions unavailable:**
+
 ```json
-{"error": "durable executions are not available in this environment"}
+{ "error": "durable executions are not available in this environment" }
 ```
 
 Durable execution is not available here. The capability is paused, or this
@@ -378,7 +423,7 @@ Approving or denying a [durable approval](../functions/durable-approvals.md)
 that can no longer take that decision returns `409` with a `code`:
 
 ```json
-{"error": "approval already decided", "code": "approval_decided"}
+{ "error": "approval already decided", "code": "approval_decided" }
 ```
 
 - `approval_decided` — it was already decided the other way. Repeating the
@@ -395,8 +440,9 @@ refusals of its own. The SDK retries `404`, `429`, every `5xx`, and
 `approval_not_ready` for about 30 seconds, and fails the call on the rest:
 
 **409 - Request refused:**
+
 ```json
-{"error": "too many pending approvals for this execution", "code": "too_many_pending_approvals"}
+{ "error": "too many pending approvals for this execution", "code": "too_many_pending_approvals" }
 ```
 
 - `approval_not_ready` — the request reached Volcano before the workflow
@@ -410,16 +456,18 @@ refusals of its own. The SDK retries `404`, `429`, every `5xx`, and
   pending.
 
 **429 - Too many approval requests:**
+
 ```json
-{"error": "too many approval requests, try again later"}
+{ "error": "too many approval requests, try again later" }
 ```
 
 The limit is 600 requests an hour per execution. A sending address is also
 refused for the rest of the hour after 6,000 requests that registered nothing. It carries no `X-RateLimit-*` headers.
 
 **503 - Not confirmed:**
+
 ```json
-{"error": "the approval could not be confirmed with the workflow; retry with backoff"}
+{ "error": "the approval could not be confirmed with the workflow; retry with backoff" }
 ```
 
 ### Durable message errors
@@ -428,7 +476,7 @@ Sending a [durable message](../functions/durable-messages.md) to an execution
 that cannot take it returns `409` with a `code`:
 
 ```json
-{"error": "durable execution is not running", "code": "execution_not_running"}
+{ "error": "durable execution is not running", "code": "execution_not_running" }
 ```
 
 - `execution_not_running` — the execution has ended. Nothing will take the
@@ -472,7 +520,7 @@ never send one.
 Project lock errors include stable codes:
 
 ```json
-{"error":"Lock is held","code":"lock_held"}
+{ "error": "Lock is held", "code": "lock_held" }
 ```
 
 - `lock_held` (`409`) — another live lease owns the key.
@@ -514,7 +562,7 @@ the same status can describe more than one condition:
 ```javascript
 try {
   const response = await fetch('https://api.volcano.dev/projects', {
-    headers: { 'Authorization': `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}` },
   });
 
   if (!response.ok) {
@@ -551,20 +599,20 @@ async function apiCallWithRetry(url, options, maxRetries = 3) {
   for (let i = 0; i < maxRetries; i++) {
     try {
       const response = await fetch(url, options);
-      
+
       if (response.status === 429) {
         // Rate limited. Only some auth endpoints report a reset timestamp.
         const resetTime = response.headers.get('X-RateLimit-Reset');
         await sleep(resetTime ? calculateWaitTime(resetTime) : 60000);
         continue;
       }
-      
+
       if (response.status === 503) {
         // Still provisioning - wait and retry
         await sleep(2000);
         continue;
       }
-      
+
       return response;
     } catch (error) {
       if (i === maxRetries - 1) throw error;

@@ -1,6 +1,6 @@
 ---
-title: "Plans and limits"
-description: "HOBBY vs SUPERAGENT limits for functions, frontends, databases, storage, realtime, and your account on Volcano."
+title: 'Plans and limits'
+description: 'HOBBY vs SUPERAGENT limits for functions, frontends, databases, storage, realtime, and your account on Volcano.'
 ---
 
 Volcano has two plans, **HOBBY** and **SUPERAGENT**. Metered allowances apply to your combined usage across every project you own. Allowances reset each month at your account's anniversary time. HOBBY accounts use their signup time. A new SUPERAGENT subscription uses its subscription billing anchor. Days 29–31 move to the last day of a short month and return to the original day when possible. Annual subscriptions still receive twelve monthly allowance windows. Deleting a project does not remove its usage from the account total. Concurrent function and frontend requests share the same allowance, including requests that are still completing. "Unavailable" means a feature is not offered on that plan.
@@ -26,25 +26,23 @@ compute when it finishes. Those allowances refuse the next build or start.
 
 ## Account
 
-| Limit | HOBBY | SUPERAGENT | Scope |
-|---|---|---|---|
-| Projects | 1 | 1,000 | Per account (creation cap) |
-| Bandwidth allowance | 10 GB / month | 20 GB / month | Aggregate ingress + egress across all your projects |
+| Limit               | HOBBY         | SUPERAGENT    | Scope                                                                                                                                                                                                            |
+| ------------------- | ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Projects            | Unlimited     | Unlimited     | No plan limit; usage allowances apply across all your projects. SUPERAGENT subscriptions that started before project limits were removed keep a 1,000-project cap, and deleted projects stop counting toward it. |
+| Bandwidth allowance | 10 GB / month | 20 GB / month | Aggregate ingress + egress across all your projects                                                                                                                                                              |
 
-Once project deletion is accepted and cleanup is queued, the project stops
-counting toward your project limit. You can create a replacement while its
-resources are removed in the background. Previously recorded usage still
-counts toward your account's monthly allowances.
+Deleting a project does not remove its recorded usage: previously recorded usage
+still counts toward your account's monthly allowances.
 
 ## Sandboxes
 
-| Limit | HOBBY | SUPERAGENT | Scope |
-|---|---|---|---|
-| Included runtime | 5 GBh/month | 20 GBh/month | Account |
-| Additional runtime | Unavailable | 25 credits per 5 GBh | Account |
-| Baseline memory | 1 GiB | 2 GiB | Session |
-| Maximum lifetime | 1 hour | 8 hours | Session |
-| Concurrent sessions | 5 | Unlimited (100 safety ceiling) | Account |
+| Limit               | HOBBY       | SUPERAGENT                     | Scope   |
+| ------------------- | ----------- | ------------------------------ | ------- |
+| Included runtime    | 5 GBh/month | 20 GBh/month                   | Account |
+| Additional runtime  | Unavailable | 25 credits per 5 GBh           | Account |
+| Baseline memory     | 1 GiB       | 2 GiB                          | Session |
+| Maximum lifetime    | 1 hour      | 8 hours                        | Session |
+| Concurrent sessions | 5           | Unlimited (100 safety ceiling) | Account |
 
 Runtime uses configured baseline memory and confirmed running time. Snapshots
 are included, suspended time is free, and automatic expansion has no surcharge.
@@ -54,77 +52,76 @@ local-mode exclusions and the preview-to-billing boundary.
 
 ## Functions
 
-| Limit | HOBBY | SUPERAGENT | Scope |
-|---|---|---|---|
-| Timeout | 30 s | 180 s | Per invocation |
-| Memory | 128 MB | 256 MB | Per runtime |
-| Ephemeral disk | 512 MB | 1 GB | Per runtime |
-| Functions per project | 10,000 | 10,000 | Absolute hard cap |
-| [Schedulers](../functions/scheduled-invocations.md) | Unavailable | 100 | Per project, counted across standard and durable functions together |
-| [Runtimes kept ready](../functions/overview.md#response-time-on-the-first-invocation) | 1 per region, for 2 days after each deploy and 1 day after the most recent invocation | Same | Not counted as invocations or bandwidth |
+| Limit                                                                                 | HOBBY                                                                                 | SUPERAGENT | Scope                                                               |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------- |
+| Timeout                                                                               | 30 s                                                                                  | 180 s      | Per invocation                                                      |
+| Memory                                                                                | 128 MB                                                                                | 256 MB     | Per runtime                                                         |
+| Ephemeral disk                                                                        | 512 MB                                                                                | 1 GB       | Per runtime                                                         |
+| Functions per project                                                                 | 10,000                                                                                | 10,000     | Absolute hard cap                                                   |
+| [Schedulers](../functions/scheduled-invocations.md)                                   | Unavailable                                                                           | 100        | Per project, counted across standard and durable functions together |
+| [Runtimes kept ready](../functions/overview.md#response-time-on-the-first-invocation) | 1 per region, for 2 days after each deploy and 1 day after the most recent invocation | Same       | Not counted as invocations or bandwidth                             |
 
 ## Durable functions
 
 [Durable functions](../functions/durable-functions.md) are available on both plans and metered on their own allowances. Starting one does not spend the shared request allowance below.
 
-| Limit | HOBBY | SUPERAGENT | Scope |
-|---|---|---|---|
-| Execution allowance | 5,000 / month | 10,000 / month | Combined across all your projects; every start, including a retry you start yourself |
-| Operation allowance | 100,000 / month | 200,000 / month | Combined across all your projects; the execution itself plus every step, retry, wait, condition poll, parallel branch and nested invocation it begins. An approval or a message wait is three operations, a publish one |
-| Compute allowance | 10,000 GB-s / month | 100,000 GB-s / month | Combined across all your projects; memory × time your code is actually running, summed over every resume. Time suspended in a wait is not charged |
-| Memory | 128 MB | 1 GB | Per execution, and the size its compute is charged at. Set by your plan, not per function |
-| Step timeout | 300 s | 900 s | One attempt between checkpoints, not the whole execution |
-| Execution timeout | 366 days | 366 days | A whole execution, including time suspended in a wait |
-| Result retention | 30 days | 30 days | After an execution finishes |
-| Concurrent executions | 10 | 100 | In flight at once, per project |
-| Durable functions per project | 10,000 | 10,000 | Absolute hard cap, counted separately from standard functions |
-| Schedulers | Unavailable | 100 | Per project, shared with standard function schedulers |
-| Runtimes kept ready | Not kept ready | Same | Durable functions are started, not called |
-| [Pending approvals](../functions/durable-approvals.md) | 100 | 100 | Per execution, waiting at once |
-| Approval requests | 600 / hour | 600 / hour | Per execution; also 6,000 refused requests / hour per sending address |
-| Approval history | 1 year | 1 year | From the request, independent of result retention; kept after the function is deleted, removed with the project |
-| [Durable message](../functions/durable-messages.md) data | 64 KiB | 64 KiB | Per message, sent or published |
-| Queued messages | 100 | 100 | Per execution, sent and not yet taken by a wait |
-| Published messages | 1,000 | 1,000 | Per execution, over its life |
-| Messages sessions | 1,000 | 1,000 | Per execution, over its life. One per context that publishes, each three operations and a resume; publish from the parent rather than every `ctx.map` item |
-| Open message waits | 100 | 100 | Per execution, waiting at once |
-| Message sends | 3,600 / hour | 3,600 / hour | Per execution for each kind of sender: the service key, signed-in users, anon key callers, and the project-scoped endpoints. See [durable message limits](../functions/durable-messages.md#limits-and-billing) |
-| Message history | Result retention | Result retention | Deleted with the execution |
+| Limit                                                    | HOBBY               | SUPERAGENT           | Scope                                                                                                                                                                                                                   |
+| -------------------------------------------------------- | ------------------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Execution allowance                                      | 5,000 / month       | 10,000 / month       | Combined across all your projects; every start, including a retry you start yourself                                                                                                                                    |
+| Operation allowance                                      | 100,000 / month     | 200,000 / month      | Combined across all your projects; the execution itself plus every step, retry, wait, condition poll, parallel branch and nested invocation it begins. An approval or a message wait is three operations, a publish one |
+| Compute allowance                                        | 10,000 GB-s / month | 100,000 GB-s / month | Combined across all your projects; memory × time your code is actually running, summed over every resume. Time suspended in a wait is not charged                                                                       |
+| Memory                                                   | 128 MB              | 1 GB                 | Per execution, and the size its compute is charged at. Set by your plan, not per function                                                                                                                               |
+| Step timeout                                             | 300 s               | 900 s                | One attempt between checkpoints, not the whole execution                                                                                                                                                                |
+| Execution timeout                                        | 366 days            | 366 days             | A whole execution, including time suspended in a wait                                                                                                                                                                   |
+| Result retention                                         | 30 days             | 30 days              | After an execution finishes                                                                                                                                                                                             |
+| Concurrent executions                                    | 10                  | 100                  | In flight at once, per project                                                                                                                                                                                          |
+| Durable functions per project                            | 10,000              | 10,000               | Absolute hard cap, counted separately from standard functions                                                                                                                                                           |
+| Schedulers                                               | Unavailable         | 100                  | Per project, shared with standard function schedulers                                                                                                                                                                   |
+| Runtimes kept ready                                      | Not kept ready      | Same                 | Durable functions are started, not called                                                                                                                                                                               |
+| [Pending approvals](../functions/durable-approvals.md)   | 100                 | 100                  | Per execution, waiting at once                                                                                                                                                                                          |
+| Approval requests                                        | 600 / hour          | 600 / hour           | Per execution; also 6,000 refused requests / hour per sending address                                                                                                                                                   |
+| Approval history                                         | 1 year              | 1 year               | From the request, independent of result retention; kept after the function is deleted, removed with the project                                                                                                         |
+| [Durable message](../functions/durable-messages.md) data | 64 KiB              | 64 KiB               | Per message, sent or published                                                                                                                                                                                          |
+| Queued messages                                          | 100                 | 100                  | Per execution, sent and not yet taken by a wait                                                                                                                                                                         |
+| Published messages                                       | 1,000               | 1,000                | Per execution, over its life                                                                                                                                                                                            |
+| Messages sessions                                        | 1,000               | 1,000                | Per execution, over its life. One per context that publishes, each three operations and a resume; publish from the parent rather than every `ctx.map` item                                                              |
+| Open message waits                                       | 100                 | 100                  | Per execution, waiting at once                                                                                                                                                                                          |
+| Message sends                                            | 3,600 / hour        | 3,600 / hour         | Per execution for each kind of sender: the service key, signed-in users, anon key callers, and the project-scoped endpoints. See [durable message limits](../functions/durable-messages.md#limits-and-billing)          |
+| Message history                                          | Result retention    | Result retention     | Deleted with the execution                                                                                                                                                                                              |
 
 Execution timeout and retention are the same on both plans on purpose: they are fixed when the function is created, so a plan change never leaves an existing function configured for limits its plan no longer allows. The timeout is set as high as it goes for the same reason — what actually bounds an execution is its 3,000 operations and your concurrent-execution cap, not the clock.
 
 A durable function gets more memory than a standard one on SUPERAGENT because it orchestrates — it holds the state of a workflow across resumes, and on SUPERAGENT that is where agent and fan-out work runs. Memory comes from your plan, and it is applied on a function's next deploy, so a plan change reaches an existing function when you next deploy it. More memory also means proportionally more CPU, and it is the size your compute allowance is charged at: the same work costs 8× more compute on SUPERAGENT's 1 GB than on HOBBY's 128 MB, against an allowance 10× larger.
 
-Operations and compute are both counted from a finished execution, so those allowances are enforced on the next start rather than by stopping an execution already running: whatever is in flight finishes and is billed. On HOBBY that means a project can end a cycle slightly over them, bounded by how many executions it may run at once.
+Operations and compute are both counted from a finished execution, so those allowances are enforced on the next start rather than by stopping an execution already running: whatever is in flight finishes and is billed. On HOBBY that means an account can end a cycle over them, bounded by how many executions each of its projects may run at once.
 
 ## Functions and frontends (shared)
 
 Functions and frontends share these counters.
 
-| Limit | HOBBY | SUPERAGENT | Scope |
-|---|---|---|---|
-| Request allowance | 100,000 / month | 1,000,000 / month | Combined across all your projects: every function invocation **and** proxied frontend request, including static assets and `/_next/image`. A request a frontend routes to a function counts once. Durable executions have their own allowances above. HOBBY enforcement is eventual |
-| Rate limit (per resource) | 100 requests / 10s | Unlimited | Each function or frontend |
-| Rate limit (per project) | 600 requests / 10s | Unlimited | Across all functions and frontends; a request a frontend routes to a function counts once |
-| Build timeout | 30 min | 60 min | Per build |
-| Build-minute allowance | 240 / month (4 hours) | 240 / month (4 hours) | Combined across all your projects; HOBBY blocks new builds once finished builds reach the allowance, SUPERAGENT bills overage |
+| Limit                     | HOBBY                 | SUPERAGENT            | Scope                                                                                                                                                                                                                                                                               |
+| ------------------------- | --------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Request allowance         | 100,000 / month       | 1,000,000 / month     | Combined across all your projects: every function invocation **and** proxied frontend request, including static assets and `/_next/image`. A request a frontend routes to a function counts once. Durable executions have their own allowances above. HOBBY enforcement is eventual |
+| Rate limit (per resource) | 100 requests / 10s    | Unlimited             | Each function or frontend                                                                                                                                                                                                                                                           |
+| Rate limit (per project)  | 600 requests / 10s    | Unlimited             | Across all functions and frontends; a request a frontend routes to a function counts once                                                                                                                                                                                           |
+| Build timeout             | 30 min                | 60 min                | Per build                                                                                                                                                                                                                                                                           |
+| Build-minute allowance    | 240 / month (4 hours) | 240 / month (4 hours) | Combined across all your projects; HOBBY blocks new builds once finished builds reach the allowance, SUPERAGENT bills overage                                                                                                                                                       |
 
 All accounts receive at least 240 included build minutes for monthly cycles that end after October 1, 2026, including accounts on older pricing revisions. Existing usage counts toward this allowance. Other subscription terms stay unchanged. Previously purchased overage blocks stay purchased; their unused capacity remains available. Cycles that ended on or before October 1 keep their recorded allowance.
 
 Installing dependencies and running your build command must finish at least five minutes before the build timeout, which leaves time to package the result. Each step can also run for at most 30 minutes. A step that runs out of time fails the build, and the build log names the step.
 
-
 ## Databases
 
-| Limit | HOBBY | SUPERAGENT | Scope |
-|---|---|---|---|
-| Request allowance | 100,000 / month | 200,000 / month | Combined across all your projects; each completed statement counts once, and transaction control and an empty query such as a driver's connection ping do not count. See [how requests are counted](../databases/overview.md#how-requests-are-counted). HOBBY enforcement is eventual |
-| Databases per project | 1 | 10,000 | Creation cap |
-| Database-storage allowance | 1 GB / month | 10 GB / month | Peak combined storage across every database you own; HOBBY makes all owned databases read-only at the allowance |
-| [Branches](../databases/branching.md) per database | 10 | 25 | Counts branches in every state |
-| [Backups](../databases/backups.md) per database | Not included | 50 | Backups you take; scheduled ones do not count |
-| Backup retention | Not included | 30 days | Applied when the backup is taken |
-| Point-in-time restore window | Not included | 7 days | How far back a restore can reach without a backup |
+| Limit                                              | HOBBY           | SUPERAGENT      | Scope                                                                                                                                                                                                                                                                                 |
+| -------------------------------------------------- | --------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Request allowance                                  | 100,000 / month | 200,000 / month | Combined across all your projects; each completed statement counts once, and transaction control and an empty query such as a driver's connection ping do not count. See [how requests are counted](../databases/overview.md#how-requests-are-counted). HOBBY enforcement is eventual |
+| Databases per project                              | 1               | 10,000          | Creation cap                                                                                                                                                                                                                                                                          |
+| Database-storage allowance                         | 1 GB / month    | 10 GB / month   | Peak combined storage across every database you own; HOBBY makes all owned databases read-only at the allowance                                                                                                                                                                       |
+| [Branches](../databases/branching.md) per database | 10              | 25              | Counts branches in every state                                                                                                                                                                                                                                                        |
+| [Backups](../databases/backups.md) per database    | Not included    | 50              | Backups you take; scheduled ones do not count                                                                                                                                                                                                                                         |
+| Backup retention                                   | Not included    | 30 days         | Applied when the backup is taken                                                                                                                                                                                                                                                      |
+| Point-in-time restore window                       | Not included    | 7 days          | How far back a restore can reach without a backup                                                                                                                                                                                                                                     |
 
 Backup storage counts against the storage allowance — a backup you take is
 charged as a full copy of the database — and the point-in-time history window
@@ -134,35 +131,35 @@ never leaves a database paying for backups it can no longer reach. See
 
 ## Object storage
 
-| Limit | HOBBY | SUPERAGENT | Scope |
-|---|---|---|---|
+| Limit                  | HOBBY          | SUPERAGENT    | Scope                                                                                                                                                 |
+| ---------------------- | -------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | File-storage allowance | 512 MB / month | 10 GB / month | Peak combined object bytes across all your projects; HOBBY blocks new uploads once the account holds the allowance. Deleting objects makes room again |
-| Max object size | 100 MB | 10 GB | Per uploaded file |
-| Buckets per project | 20 | Unlimited | Creation cap |
+| Max object size        | 100 MB         | 10 GB         | Per uploaded file                                                                                                                                     |
+| Buckets per project    | 20             | Unlimited     | Creation cap                                                                                                                                          |
 
 ## Realtime
 
-| Limit | HOBBY | SUPERAGENT | Scope |
-|---|---|---|---|
-| Concurrent connections | 200 | 100,000 | Per project |
-| Message allowance | 100,000 / month | 1,000,000 / month | Across all your projects; each direct message costs one publish plus one unit for each subscriber delivery |
-| Max message size | 256 KB | 1 MB | Per message |
-| Channels per connection | 100 | 500 | Per WebSocket connection |
+| Limit                   | HOBBY           | SUPERAGENT        | Scope                                                                                                      |
+| ----------------------- | --------------- | ----------------- | ---------------------------------------------------------------------------------------------------------- |
+| Concurrent connections  | 200             | 100,000           | Per project                                                                                                |
+| Message allowance       | 100,000 / month | 1,000,000 / month | Across all your projects; each direct message costs one publish plus one unit for each subscriber delivery |
+| Max message size        | 256 KB          | 1 MB              | Per message                                                                                                |
+| Channels per connection | 100             | 500               | Per WebSocket connection                                                                                   |
 
 Postgres change notifications generated by Volcano do not count toward the message allowance. When a HOBBY account reaches its message allowance, Volcano closes its Realtime connections across all owned projects and rejects new connections, subscriptions, and publishes until the next allowance window.
 
 ## Frontends
 
-| Limit | HOBBY | SUPERAGENT | Scope |
-|---|---|---|---|
-| Frontend sites per project | 1 | Unlimited | Plan quota |
-| Absolute frontend hard cap | 10,000 | 10,000 | Safety hard cap |
-| Custom domains | 1 per frontend | 1 per frontend | Plan quota |
-| Managed TLS certificates | 1 | 100 | Across all projects owned by the account |
-| [Function routes](../frontends/function-routes.md) | 64 per frontend | 64 per frontend | Safety hard cap |
-| [Runtimes kept ready](../frontends/overview.md#response-time-on-the-first-request) | 1 per region, for 2 days after each deploy and 1 day after the most recent request | 2 per region, same windows | Not counted as requests or bandwidth |
-| [Time to start a response](../frontends/overview.md#time-limits-for-server-rendered-routes) | 60 s | 60 s | Per server-rendered request; a route that has not started answering gets a `504` |
-| [Runtime timeout](../frontends/overview.md#time-limits-for-server-rendered-routes) | 30 s | 180 s | Per server-rendered request; a streamed response can run this long if it sends something at least every 60 s |
+| Limit                                                                                       | HOBBY                                                                              | SUPERAGENT                 | Scope                                                                                                        |
+| ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Frontend sites per project                                                                  | Unlimited                                                                          | Unlimited                  | Plan quota                                                                                                   |
+| Absolute frontend hard cap                                                                  | 10,000                                                                             | 10,000                     | Safety hard cap                                                                                              |
+| Custom domains                                                                              | 1 per frontend                                                                     | 1 per frontend             | Plan quota                                                                                                   |
+| Managed TLS certificates                                                                    | 1                                                                                  | 100                        | Across all projects owned by the account                                                                     |
+| [Function routes](../frontends/function-routes.md)                                          | 64 per frontend                                                                    | 64 per frontend            | Safety hard cap                                                                                              |
+| [Runtimes kept ready](../frontends/overview.md#response-time-on-the-first-request)          | 1 per region, for 2 days after each deploy and 1 day after the most recent request | 2 per region, same windows | Not counted as requests or bandwidth                                                                         |
+| [Time to start a response](../frontends/overview.md#time-limits-for-server-rendered-routes) | 60 s                                                                               | 60 s                       | Per server-rendered request; a route that has not started answering gets a `504`                             |
+| [Runtime timeout](../frontends/overview.md#time-limits-for-server-rendered-routes)          | 30 s                                                                               | 180 s                      | Per server-rendered request; a streamed response can run this long if it sends something at least every 60 s |
 
 Managed domains count toward the certificate limit until deletion finishes,
 including failed setups and domains awaiting cleanup. At the limit, creating
@@ -171,38 +168,38 @@ deletion to complete before creating its replacement.
 
 ## API access tokens
 
-| Limit | HOBBY | SUPERAGENT | Scope |
-|---|---|---|---|
-| [Project access tokens](../api-reference/using-the-api.md) per project | 100 | 100 | Safety hard cap, counts only tokens that can still authenticate |
+| Limit                                                                  | HOBBY | SUPERAGENT | Scope                                                           |
+| ---------------------------------------------------------------------- | ----- | ---------- | --------------------------------------------------------------- |
+| [Project access tokens](../api-reference/using-the-api.md) per project | 100   | 100        | Safety hard cap, counts only tokens that can still authenticate |
 
 Revoked and expired tokens do not count against it, so cycling short-lived tokens never fills the allowance.
 
 ## Variables
 
-| Limit | HOBBY | SUPERAGENT | Scope |
-|---|---|---|---|
-| Custom variable Environments per project | 100 | 100 | Safety hard cap; Global is not counted |
+| Limit                                    | HOBBY | SUPERAGENT | Scope                                  |
+| ---------------------------------------- | ----- | ---------- | -------------------------------------- |
+| Custom variable Environments per project | 100   | 100        | Safety hard cap; Global is not counted |
 
 ## Authentication
 
-| Limit | HOBBY | SUPERAGENT | Scope |
-|---|---|---|---|
-| [Email domain allowlist](../authentication/configuration/email-domain-allowlist.md) | Unavailable | Available | Per project; a downgrade parks the list — the domains are kept and stop being enforced — and an upgrade puts it back in force |
-| Custom email templates | Unavailable | Available | Per project; HOBBY projects send the default templates |
-| Custom managed auth pages | Unavailable | Available | Per project |
+| Limit                                                                               | HOBBY       | SUPERAGENT | Scope                                                                                                                         |
+| ----------------------------------------------------------------------------------- | ----------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| [Email domain allowlist](../authentication/configuration/email-domain-allowlist.md) | Unavailable | Available  | Per project; a downgrade parks the list — the domains are kept and stop being enforced — and an upgrade puts it back in force |
+| Custom email templates                                                              | Unavailable | Available  | Per project; HOBBY projects send the default templates                                                                        |
+| Custom managed auth pages                                                           | Unavailable | Available  | Per project                                                                                                                   |
 
 ## Autofix
 
-| Limit | HOBBY | SUPERAGENT | Scope |
-|---|---|---|---|
-| [Autofix](autofix.md) | Unavailable | Available | Per project; a downgrade parks the settings and no run starts. Runs have [the same limits on every plan](autofix.md#run-limits) |
+| Limit                 | HOBBY       | SUPERAGENT | Scope                                                                                                                           |
+| --------------------- | ----------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| [Autofix](autofix.md) | Unavailable | Available  | Per project; a downgrade parks the settings and no run starts. Runs have [the same limits on every plan](autofix.md#run-limits) |
 
 ## Scheduling and logs
 
-| Limit | HOBBY | SUPERAGENT | Scope |
-|---|---|---|---|
-| Scheduled functions | Unavailable | 100 | Per project |
-| Runtime log retention | 1 day | 30 days | Search / retention window |
+| Limit                 | HOBBY       | SUPERAGENT | Scope                     |
+| --------------------- | ----------- | ---------- | ------------------------- |
+| Scheduled functions   | Unavailable | 100        | Per project               |
+| Runtime log retention | 1 day       | 30 days    | Search / retention window |
 
 ## Enforcement
 
@@ -225,15 +222,15 @@ exhausted; upgrading or a new cycle requires an explicit resume.
 These stay in the database, stop taking effect on HOBBY, and take effect again the
 moment you upgrade. You do not have to set them up twice.
 
-| Setting | On HOBBY |
-|---|---|
-| [Email domain allowlist](../authentication/configuration/email-domain-allowlist.md) | Kept, not enforced: anyone can sign up and sign in again |
-| Custom email templates | Kept; the default templates are sent |
-| Custom managed auth pages | Kept; the built-in pages are served, with Volcano branding |
-| Scheduled functions | Kept; they stop running, and their next run time keeps advancing |
-| Database query logs | Kept; new queries stop being recorded, and query insights stop being readable |
-| Database compute size | Shrunk to the HOBBY size, and restored when you upgrade. No downtime, no data loss |
-| [Autofix](autofix.md) settings | Kept, including a stored API key; no run starts |
+| Setting                                                                             | On HOBBY                                                                           |
+| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| [Email domain allowlist](../authentication/configuration/email-domain-allowlist.md) | Kept, not enforced: anyone can sign up and sign in again                           |
+| Custom email templates                                                              | Kept; the default templates are sent                                               |
+| Custom managed auth pages                                                           | Kept; the built-in pages are served, with Volcano branding                         |
+| Scheduled functions                                                                 | Kept; they stop running, and their next run time keeps advancing                   |
+| Database query logs                                                                 | Kept; new queries stop being recorded, and query insights stop being readable      |
+| Database compute size                                                               | Shrunk to the HOBBY size, and restored when you upgrade. No downtime, no data loss |
+| [Autofix](autofix.md) settings                                                      | Kept, including a stored API key; no run starts                                    |
 
 Five things are not parked:
 
@@ -288,13 +285,11 @@ or touches your data.
 Nothing can park a project, a database, a frontend, a bucket, or the bytes inside
 them, so bring the account under HOBBY's limits before you downgrade:
 
-1. Delete projects down to 1.
-2. Delete databases down to 1 per project, and reclaim space until each one is
-   under 1 GB on disk.
-3. Delete frontends down to 1 per project.
-4. Delete buckets down to 20 per project, and files until each project stores
-   under 512 MB.
-5. Select all regions for every project.
+1. Delete databases down to 1 per project, and reclaim space until all your
+   databases together are under 1 GB on disk.
+2. Delete buckets down to 20 per project, and files until your projects together
+   store under 512 MB.
+3. Select all regions for every project.
 
 Database size is measured as on-disk size, so use `DROP`, `TRUNCATE`, or
 `VACUUM FULL` to reclaim it:

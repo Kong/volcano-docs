@@ -1,6 +1,6 @@
 ---
-title: "Deployment performance"
-description: "Understand deployment timing and platform latency objectives."
+title: 'Deployment performance'
+description: 'Understand deployment timing and platform latency objectives.'
 ---
 
 Volcano reports total deployment time from acceptance until the resource is
@@ -11,9 +11,9 @@ rollout, and verification still count.
 Successful, non-delete deployments use these platform-overhead objectives:
 
 | Resource | Platform p95 target |
-|----------|---------------------|
-| Function | 150 seconds |
-| Frontend | 180 seconds |
+| -------- | ------------------- |
+| Function | 150 seconds         |
+| Frontend | 180 seconds         |
 
 Total deployment time and application build time remain available separately.
 A longer application build does not consume the platform-overhead budget.
@@ -30,15 +30,15 @@ last-known-good function or frontend continues serving during a failed update.
 
 Each deployment records the same ordered phases:
 
-| Phase | Starts | Completes |
-|-------|--------|-----------|
-| Queue | The request is accepted | A build worker starts processing it |
-| Checkout | Source processing starts | Source and build inputs are ready |
-| Build | The application build starts | The deployable artifact is ready |
-| Image | Image publication starts | Runtime images are published |
-| Provisioning | Platform provisioning starts | Regional work is dispatched |
-| Rollout | Regional deployment starts | Every target region is ready |
-| Verification | Final checks start | The deployment reaches a terminal state |
+| Phase        | Starts                       | Completes                               |
+| ------------ | ---------------------------- | --------------------------------------- |
+| Queue        | The request is accepted      | A build worker starts processing it     |
+| Checkout     | Source processing starts     | Source and build inputs are ready       |
+| Build        | The application build starts | The deployable artifact is ready        |
+| Image        | Image publication starts     | Runtime images are published            |
+| Provisioning | Platform provisioning starts | Regional work is dispatched             |
+| Rollout      | Regional deployment starts   | Every target region is ready            |
+| Verification | Final checks start           | The deployment reaches a terminal state |
 
 Telemetry reports total, platform, and per-phase durations by resource type,
 operation, and deployment scope (`direct` or `project`). Alerts select successful

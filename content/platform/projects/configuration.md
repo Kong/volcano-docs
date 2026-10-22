@@ -1,5 +1,5 @@
 ---
-title: "Project configuration manifest"
+title: 'Project configuration manifest'
 description: "volcano-config.yaml is the declarative manifest for a project's user-facing configuration."
 ---
 
@@ -31,34 +31,33 @@ cloud config deploy`.
 version: 1
 
 project:
-  name: my-app                              # optional rename
+  name: my-app # optional rename
   all_regions: false
-  selected_regions: [us-east-1, us-west-2]  # bare region names; subset requires SUPERAGENT
+  selected_regions: [us-east-1, us-west-2] # bare region names; subset requires SUPERAGENT
 
-databases:                                  # must already exist; assertion-only
-  - name: appdb                             # required, matches deployed database
-    region: us-east-1                   # required; mismatch => error
-    pg_version: "18"                        # required; mismatch => error
-    database_type: volcano-db-xs            # asserted; tier changes are NOT
-                                            #   allowed via config
+databases: # must already exist; assertion-only
+  - name: appdb # required, matches deployed database
+    region: us-east-1 # required; mismatch => error
+    pg_version: '18' # required; mismatch => error
+    database_type: volcano-db-xs # asserted; tier changes are NOT allowed via config
 
-frontend_shared_variables:                 # complete list for shared frontends
+frontend_shared_variables: # complete list for shared frontends
   - NEXT_PUBLIC_API_URL
 
-variables:                                  # ALWAYS fully synced when declared
+variables: # ALWAYS fully synced when declared
   - name: STRIPE_SECRET_KEY
-    value: ${STRIPE_SECRET_KEY}             # ${ENV} interpolated by the CLI
+    value: ${STRIPE_SECRET_KEY} # ${ENV} interpolated by the CLI
   - name: NEXT_PUBLIC_API_URL
     value: https://api.myapp.com
 
-buckets:                                    # must already exist (never created here)
+buckets: # must already exist (never created here)
   - name: avatars
-    file_size_limit: 5242880                # bytes, optional
+    file_size_limit: 5242880 # bytes, optional
     allowed_mime_types: [image/png, image/jpeg]
-    policies:                               # fully synced when declared;
-      - name: public-read                   #   omit the key => policies untouched
-        operation: SELECT                   # SELECT|INSERT|UPDATE|DELETE
-        definition: "true"
+    policies: # fully synced when declared; omit the key => policies untouched
+      - name: public-read
+        operation: SELECT # SELECT|INSERT|UPDATE|DELETE
+        definition: 'true'
 
 realtime:
   enabled: true
@@ -66,12 +65,12 @@ realtime:
   presence_enabled: true
   postgres_changes_enabled: true
 
-autofix:                                    # SUPERAGENT to turn on; omitted fields keep their value
+autofix: # SUPERAGENT to turn on; omitted fields keep their value
   enabled: true
-  max_stage: pull_request                   # diagnose | pull_request
+  max_stage: pull_request # diagnose | pull_request
   auto_trigger: false
-  provider: anthropic                       # volcano | anthropic
-  model: claude-opus-5-5                    # the API key is never part of the manifest
+  provider: anthropic # volcano | anthropic
+  model: claude-opus-5-5 # the API key is never part of the manifest
 
 auth:
   tokens:
@@ -85,15 +84,15 @@ auth:
   signup:
     enable_signup: true
     enable_anonymous_signins: false
-    allowed_email_domains: []                 # empty = any domain may sign up
-    allowed_email_domains_mode: signup        # signup | signup_and_signin | disabled
-  rate_limits:                              # per hour
+    allowed_email_domains: [] # empty = any domain may sign up
+    allowed_email_domains_mode: signup # signup | signup_and_signin | disabled
+  rate_limits: # per hour
     signup: 100
     signin: 100
     token_refresh: 1000
     password_reset: 10
   password:
-    min_length: 15                          # 15-128
+    min_length: 15 # 15-128
     require_uppercase: true
     require_lowercase: true
     require_numbers: true
@@ -113,14 +112,14 @@ auth:
   providers:
     email_password:
       enabled: true
-    oauth:                                  # fully synced when declared
-      - provider: google                    # google|github|microsoft|apple|device
+    oauth: # fully synced when declared
+      - provider: google # google|github|microsoft|apple|device
         enabled: true
         client_id: ${GOOGLE_CLIENT_ID}
-        client_secret: ${GOOGLE_CLIENT_SECRET}   # write-only
+        client_secret: ${GOOGLE_CLIENT_SECRET} # write-only
         redirect_url: https://api.myapp.com/auth/oauth/google/callback
         scopes: [openid, email, profile]
-      - provider: device                    # client_id/secret server-generated
+      - provider: device # client_id/secret server-generated
         enabled: true
   email:
     enabled: true
@@ -131,21 +130,21 @@ auth:
       host: smtp.sendgrid.net
       port: 587
       username: ${SMTP_USERNAME}
-      password: ${SMTP_PASSWORD}            # write-only
+      password: ${SMTP_PASSWORD} # write-only
       use_tls: true
-    templates:                              # fully synced when declared
+    templates: # fully synced when declared
       confirmation:
-        subject: "Confirm your email"
-        html_body: "<p>Confirm: {{.Token}}</p>"   # bodies require SUPERAGENT
-        text_body: "Confirm: {{.Token}}"
+        subject: 'Confirm your email'
+        html_body: '<p>Confirm: {{.Token}}</p>' # bodies require SUPERAGENT
+        text_body: 'Confirm: {{.Token}}'
       password_reset:
-        subject: "Reset your password"      # subject-only works on HOBBY
+        subject: 'Reset your password' # subject-only works on HOBBY
       password_changed:
-        subject: "Your password was changed"
+        subject: 'Your password was changed'
       welcome:
-        subject: "Welcome"
-        html_body: "<p>Welcome {{.Email}}</p>"
-        text_body: "Welcome"
+        subject: 'Welcome'
+        html_body: '<p>Welcome {{.Email}}</p>'
+        text_body: 'Welcome'
   managed_pages:
     enabled: true
     redirects:
@@ -153,28 +152,28 @@ auth:
       post_auth: https://myapp.com/welcome
       post_logout: https://myapp.com/goodbye
       device_verification: https://myapp.com/device
-    pages:                                  # SUPERAGENT; upsert-only (omission => untouched)
+    pages: # SUPERAGENT; upsert-only (omission => untouched)
       login:
-        html: "<html>...</html>"            # required, <=256 KiB
-        css: "body{}"                       # optional, <=256 KiB
-      reset_password:                       # maps to page type "reset-password"
-        html: "<html>...</html>"
-      signup:                               # also: forgot_password, device, verify_email
-        html: "<html>...</html>"
-    appearance:                             # SUPERAGENT; built-in renderer configuration
-      theme:                                # shared by every managed auth page
+        html: '<html>...</html>' # required, <=256 KiB
+        css: 'body{}' # optional, <=256 KiB
+      reset_password: # maps to page type "reset-password"
+        html: '<html>...</html>'
+      signup: # also: forgot_password, device, verify_email
+        html: '<html>...</html>'
+    appearance: # SUPERAGENT; built-in renderer configuration
+      theme: # shared by every managed auth page
         version: 1
         colors:
-          background: "#f7f5f2"
-          surface: "#ffffff"
-          text: "#1a1a1a"
-          accent: "#1d4ed8"
-          accent_text: "#ffffff"
-        font: humanist                      # system|humanist|geometric|slab|mono
-        scale: large                        # small|default|large
-        density: spacious                   # compact|comfortable|spacious
-        radius: large                       # none|small|medium|large
-      layouts:                              # centered|split-left|split-right
+          background: '#f7f5f2'
+          surface: '#ffffff'
+          text: '#1a1a1a'
+          accent: '#1d4ed8'
+          accent_text: '#ffffff'
+        font: humanist # system|humanist|geometric|slab|mono
+        scale: large # small|default|large
+        density: spacious # compact|comfortable|spacious
+        radius: large # none|small|medium|large
+      layouts: # centered|split-left|split-right
         login: split-left
         signup: split-right
         forgot_password: centered
@@ -182,36 +181,40 @@ auth:
         verify_email: centered
         reset_password: split-right
 
-functions:                                  # must already be deployed
+functions: # must already be deployed
   - name: hello
-    kind: standard                          # standard (default) or durable; fixed at creation
-    visibility: public                      # private, authenticated, or public; omit to keep the current level
-    invocation_mode: http                  # rpc (default) or http
-    http_auth_mode: none                   # volcano (default) or none; none requires public
-    openapi_spec:                          # optional OpenAPI 3.0/3.1 metadata; HTTP mode only
+    kind: standard # standard (default) or durable; fixed at creation
+    visibility: public # private, authenticated, or public; omit to keep the current level
+    invocation_mode: http # rpc (default) or http
+    http_auth_mode: none # volcano (default) or none; none requires public
+    openapi_spec: # optional OpenAPI 3.0/3.1 metadata; HTTP mode only
       openapi: 3.1.0
       info: { title: Hello webhook, version: 1.0.0 }
       paths: {}
-    variable_scope: scoped                  # all (default) or scoped
-    variables:                              # replaces the declared list when present
+    variable_scope: scoped # all (default) or scoped
+    variables: # replaces the declared list when present
       - STRIPE_SECRET_KEY
-    schedulers:                             # fully synced when declared
+    schedulers: # fully synced when declared
       - name: nightly
-        cron: "0 3 * * *"                   # 5-field UTC cron
+        cron: '0 3 * * *' # 5-field UTC cron
         enabled: true
         payload: { source: cron }
 
-frontends:                                  # must already be deployed
+frontends: # must already be deployed
   - name: web
-    variable_scope: shared                  # all (default), shared, or scoped
-    function_routes:                        # fully synced when declared
-      - function: hello                     # public standard HTTP-mode function
-        path_prefix: /api                   # exact segment prefix; /api or /api/...
-        strip_prefix: true                  # function receives / for /api
-    custom_domain:
+    variable_scope: shared # all (default), shared, or scoped
+    function_routes: # fully synced when declared
+      - function: hello # public standard HTTP-mode function
+        path_prefix: /api # exact segment prefix; /api or /api/...
+        strip_prefix: true # function receives / for /api
+    custom_domain: # omitted: kept; null or bare key: deleted
       domain: app.myapp.com
-      tls:                                  # optional for an existing domain
+      tls: # optional for an existing domain
         mode: managed
+  - name: marketing
+    custom_domains: # list form of custom_domain; fully synced when declared
+      - domain: www.myapp.com # one domain per frontend for now
+        tls: { mode: managed }
 ```
 
 Not in the manifest: project logo, anon/service keys, project access tokens,
@@ -305,7 +308,8 @@ response that created it. Manage them through
   variable. `scoped` uses only the frontend entry's `variables` list.
 - **Fully synced when declared (destructive by design):** `variables`,
   `buckets[].policies`, `auth.providers.oauth`, `auth.email.templates`,
-  `functions[].variables`, and `functions[].schedulers`. The declared list is the source of truth: entries
+  `functions[].variables`, `functions[].schedulers`, and
+  `frontends[].custom_domains`. The declared list is the source of truth: entries
   absent from the manifest are deleted; an explicit empty list deletes
   everything. Run `volcano cloud config pull` before your first deploy and check the
   `--dry-run` report to see what a partial list would remove.
@@ -342,10 +346,15 @@ response that created it. Manage them through
   the hostname is the apex of your DNS zone, including a separately delegated
   subdomain. At an apex, use your provider's ALIAS, ANAME, or CNAME-flattening
   feature.
-  Omitting `custom_domain` on a
-  declared frontend deletes an existing domain. Moving a hostname to another
-  of the project's frontends takes two applies: omit it from its current
-  frontend, wait for that removal to finish, then declare it on the new one.
+  Omitting `custom_domain` on a declared frontend leaves its domain alone, so a
+  domain attached with `volcano cloud frontends domain create` survives a
+  manifest that does not mention it. The report lists it as unchanged with a
+  notice naming the hostname. To delete the domain, set `custom_domain: null`;
+  the report names the hostname it deletes. Manifests that relied on omission
+  to delete a domain need the explicit `null`. Moving a hostname to another of
+  the project's frontends takes two applies: set `custom_domain: null` on its
+  current frontend, wait for that removal to finish, then declare it on the
+  new one.
   After a served domain is removed, proxies can keep serving its hostname for
   about a minute. An apply that declares that hostname within the minute fails
   validation; apply again once it has passed.
@@ -360,6 +369,16 @@ response that created it. Manage them through
   Managed domains retain their certificate quota until
   deletion finishes. At the account limit, apply the deletion, wait for cleanup,
   then apply the replacement; planning a deletion does not grant capacity early.
+- **Custom domain sets.** `frontends[].custom_domains` is the list form of
+  `custom_domain` and holds one domain per frontend for now. Its entry has
+  `domain` and `tls`, which follow the `custom_domain` rules above. Declaring
+  the list fully syncs it: an unlisted domain is deleted and the report names
+  the hostname, and `custom_domains: []` deletes it. Omitting the key leaves the
+  domain alone. A frontend entry sets `custom_domain` or `custom_domains`, not
+  both. Export writes `custom_domain`. For now, the list cannot swap one
+  hostname for another in a single apply: replace the domain through
+  `custom_domain`, or delete it with `custom_domains: []` and declare the new
+  hostname in a later apply.
 - **BYOC certificates** use `tls.mode: byoc` with `certificate_pem` and
   `private_key_pem` together, plus optional `certificate_chain_pem`. A `tls`
   block without `mode` is BYOC. New
@@ -437,8 +456,8 @@ env file sets. See the [CLI deploy reference](/cli/deploy).
 - SUPERAGENT-gated surfaces: region subsets, email template bodies, hosted pages,
   `autofix.enabled`, and the `auth.signup.allowed_email_domains` allowlist. A HOBBY project can
   still declare the allowlist it already has, or clear it to remove the
-  restriction. Scheduler counts, storage policy counts, and managed TLS
-  certificates respect plan caps.
+  restriction. Scheduler counts, storage policy counts, custom domains per
+  frontend, and managed TLS certificates respect plan caps.
 - Apply-phase failures (a provider call failing mid-apply) return `200` with
   per-entry `action: error`; already-applied changes are not rolled back.
   Re-running the deploy is safe — unchanged entries are no-ops.
@@ -474,11 +493,11 @@ has to exist:
   optional (`process.env.DEBUG`, `process.env.NODE_ENV`) and code written to
   run without it should still deploy. Volcano reads direct references only:
 
-  | Runtime | Detected forms |
-  | --- | --- |
+  | Runtime | Detected forms                            |
+  | ------- | ----------------------------------------- |
   | Node.js | `process.env.NAME`, `process.env["NAME"]` |
-  | Python | `os.environ["NAME"]`, `os.getenv("NAME")` |
-  | Ruby | `ENV["NAME"]`, `ENV.fetch("NAME")` |
+  | Python  | `os.environ["NAME"]`, `os.getenv("NAME")` |
+  | Ruby    | `ENV["NAME"]`, `ENV.fetch("NAME")`        |
 
   Detection runs on every deploy and reads the whole source you uploaded, so it
   follows your code without a manifest change. It reads code only: a name that
@@ -561,9 +580,7 @@ variable references. Missing declared variables reject deployment or apply.
 `NEXT_PUBLIC_*` names remain build-only and do not enter the runtime environment.
 
 Omitting either field preserves its stored value; `variables: []` selects no
-project variables in scoped mode. Config export includes both fields. Keep any
-existing `custom_domain` declaration when applying the frontend entry, since
-omitting it removes the domain under the existing reconciliation rules.
+project variables in scoped mode. Config export includes both fields.
 
 A scope change synchronizes the running cloud frontend's environment. Rebuild
 and redeploy to apply changes to values embedded in browser assets. Local mode

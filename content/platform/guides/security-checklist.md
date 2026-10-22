@@ -1,6 +1,6 @@
 ---
-title: "Security checklist"
-description: "Use this checklist before deploying your Volcano application to production."
+title: 'Security checklist'
+description: 'Use this checklist before deploying your Volcano application to production.'
 ---
 
 Use this checklist before deploying your Volcano application to production.
@@ -137,15 +137,15 @@ Use this checklist before deploying your Volcano application to production.
 
 Have documented plans for:
 
-| Scenario | Response |
-|----------|----------|
-| Compromised anon key | Revoke and regenerate, no data exposed |
-| Compromised service key | Revoke immediately, audit database for changes |
+| Scenario                         | Response                                                                                                                                     |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Compromised anon key             | Revoke and regenerate, no data exposed                                                                                                       |
+| Compromised service key          | Revoke immediately, audit database for changes                                                                                               |
 | Compromised project access token | Revoke it, then rotate the project's other credentials and review its usage and deployments — revoking stops future calls but undoes nothing |
-| Compromised platform token | Rotate it, then check every project on the account; move automation to project access tokens |
-| Brute force attack | Lower rate limits, review authentication logs |
-| Data breach | Notify affected users, investigate scope |
-| DDoS attack | Enable additional rate limiting, contact support |
+| Compromised platform token       | Rotate it, then check every project on the account; move automation to project access tokens                                                 |
+| Brute force attack               | Lower rate limits, review authentication logs                                                                                                |
+| Data breach                      | Notify affected users, investigate scope                                                                                                     |
+| DDoS attack                      | Enable additional rate limiting, contact support                                                                                             |
 
 ## Post-launch monitoring
 
@@ -157,8 +157,8 @@ Have documented plans for:
 
 ## What's next
 
-| Guide | Description |
-|-------|-------------|
-| [Service keys](../authentication/security/service-keys.md) | Secure your service keys |
+| Guide                                                                        | Description                                 |
+| ---------------------------------------------------------------------------- | ------------------------------------------- |
+| [Service keys](../authentication/security/service-keys.md)                   | Secure your service keys                    |
 | [Project access tokens](../authentication/security/project-access-tokens.md) | Scope automation credentials to one project |
-| [Row-level security](../databases/row-level-security.md) | Protect data with RLS |
+| [Row-level security](../databases/row-level-security.md)                     | Protect data with RLS                       |

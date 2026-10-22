@@ -1,6 +1,6 @@
 ---
-title: "Auth user insights"
-description: "Query authentication insights and metrics for a project over a time range."
+title: 'Auth user insights'
+description: 'Query authentication insights and metrics for a project over a time range.'
 ---
 
 Use:

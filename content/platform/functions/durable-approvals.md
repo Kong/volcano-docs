@@ -1,6 +1,6 @@
 ---
-title: "Durable approvals"
-description: "Pause a durable function until a person approves or denies it, then resume with their decision. Decide in the dashboard, the CLI, the API, or an SDK."
+title: 'Durable approvals'
+description: 'Pause a durable function until a person approves or denies it, then resume with their decision. Decide in the dashboard, the CLI, the API, or an SDK.'
 ---
 
 A durable function can stop and wait for a person to sign off. `ctx.waitForApproval` records an approval request, suspends the execution, and resumes it with the decision once someone approves or denies it. The execution runs no code and costs no compute while it waits, whether that takes a minute or a month.
@@ -63,13 +63,13 @@ An approval is for a person's decision, which is why only a person can give one.
 
 ## Request an approval
 
-| Argument | Description |
-|---|---|
-| `name` | Required. Names the operation in the execution's history, like a step's name. Up to 237 printable ASCII characters; the SDKs refuse anything else before recording the request. |
-| `title` | Required. What the person deciding sees first. Up to 200 characters. |
-| `description` | Longer context. Up to 4,000 characters. |
-| `details` | Any JSON value shown with the request, such as the record under review. |
-| `timeout` | How long people have to decide, in the format `ctx.wait` takes (`'30m'`, `'3d'`, a number of seconds), from 1 second to 366 days. Without it, the approval stays open as long as the execution runs. |
+| Argument      | Description                                                                                                                                                                                          |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`        | Required. Names the operation in the execution's history, like a step's name. Up to 237 printable ASCII characters; the SDKs refuse anything else before recording the request.                      |
+| `title`       | Required. What the person deciding sees first. Up to 200 characters.                                                                                                                                 |
+| `description` | Longer context. Up to 4,000 characters.                                                                                                                                                              |
+| `details`     | Any JSON value shown with the request, such as the record under review.                                                                                                                              |
+| `timeout`     | How long people have to decide, in the format `ctx.wait` takes (`'30m'`, `'3d'`, a number of seconds), from 1 second to 366 days. Without it, the approval stays open as long as the execution runs. |
 
 The request, with its details, is limited to 64 KiB.
 
@@ -81,25 +81,25 @@ The approval is checkpointed like any other operation. A resumed execution repla
 
 A denial and an expiry are outcomes to branch on, not errors, so `waitForApproval` resolves with a decision in every case:
 
-| JavaScript | Python | Approved | Denied | Expired |
-|---|---|---|---|---|
-| `approved` | `approved` | `true` | `false` | `false` |
-| `status` | `status` | `'approved'` | `'denied'` | `'expired'` |
-| `comment` | `comment` | The comment, or `''` | The comment, or `''` | `''` |
-| `decidedBy` | `decided_by` | `{ id, email }` | `{ id, email }` | `null` / `None` |
-| `decidedAt` | `decided_at` | ISO 8601 timestamp | ISO 8601 timestamp | `null` / `None` |
+| JavaScript  | Python       | Approved             | Denied               | Expired         |
+| ----------- | ------------ | -------------------- | -------------------- | --------------- |
+| `approved`  | `approved`   | `true`               | `false`              | `false`         |
+| `status`    | `status`     | `'approved'`         | `'denied'`           | `'expired'`     |
+| `comment`   | `comment`    | The comment, or `''` | The comment, or `''` | `''`            |
+| `decidedBy` | `decided_by` | `{ id, email }`      | `{ id, email }`      | `null` / `None` |
+| `decidedAt` | `decided_at` | ISO 8601 timestamp   | ISO 8601 timestamp   | `null` / `None` |
 
 `decidedBy` is also `null` when the account that decided was deleted before the decision reached the workflow.
 
 An approval can end a fourth way, as `cancelled`, when its execution ends before anyone decides — it was stopped, timed out, failed, or its function was deleted. The workflow never sees that status, because it is no longer running. It shows in the approval list and the statistics.
 
-| Status | What happened | What the workflow gets |
-|---|---|---|
-| `pending` | Waiting for a decision | Nothing yet; it is suspended |
-| `approved` | A person approved it | `approved: true` and the comment |
-| `denied` | A person denied it | `approved: false` and the comment |
-| `expired` | The timeout passed with nobody deciding | `status: 'expired'` |
-| `cancelled` | The execution ended first | Nothing; the execution is over |
+| Status      | What happened                           | What the workflow gets            |
+| ----------- | --------------------------------------- | --------------------------------- |
+| `pending`   | Waiting for a decision                  | Nothing yet; it is suspended      |
+| `approved`  | A person approved it                    | `approved: true` and the comment  |
+| `denied`    | A person denied it                      | `approved: false` and the comment |
+| `expired`   | The timeout passed with nobody deciding | `status: 'expired'`               |
+| `cancelled` | The execution ended first               | Nothing; the execution is over    |
 
 ## Timeouts
 
@@ -125,12 +125,12 @@ volcano cloud durable approvals deny 0b6f3c1e-8a4d-4f7e-9c2b-5d1a7e3f9b20 --comm
 volcano cloud durable approvals stats --since 7d
 ```
 
-| Command | Flags |
-|---|---|
-| `list` | `--function` (name or id), `--status` (`pending` by default, any status, or `all`), `--execution`, `--since` (such as `7d` or `24h`), `--page`, `--limit` |
-| `get <approval-id>` | |
-| `approve <approval-id>`, `deny <approval-id>` | `--comment`, `--yes` to skip the confirmation prompt |
-| `stats` | `--function`, `--since` (`30d` by default) |
+| Command                                       | Flags                                                                                                                                                     |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list`                                        | `--function` (name or id), `--status` (`pending` by default, any status, or `all`), `--execution`, `--since` (such as `7d` or `24h`), `--page`, `--limit` |
+| `get <approval-id>`                           |                                                                                                                                                           |
+| `approve <approval-id>`, `deny <approval-id>` | `--comment`, `--yes` to skip the confirmation prompt                                                                                                      |
+| `stats`                                       | `--function`, `--since` (`30d` by default)                                                                                                                |
 
 Every command takes `--json`. Repeating the decision an approval already has succeeds without changing anything, so a retried command is safe. A different decision, or any decision on an expired or cancelled approval, exits non-zero and says what happened.
 
@@ -246,8 +246,14 @@ curl "https://api.volcano.dev/projects/$PROJECT_ID/durable-approvals/stats?from=
   ],
   "other_functions": { "requested": 0, "pending": 0, "approved": 0, "denied": 0, "expired": 0, "cancelled": 0 },
   "daily": [
-    { "date": "2026-10-05", "counts": { "requested": 4, "pending": 0, "approved": 3, "denied": 1, "expired": 0, "cancelled": 0 } },
-    { "date": "2026-10-06", "counts": { "requested": 2, "pending": 2, "approved": 0, "denied": 0, "expired": 0, "cancelled": 0 } }
+    {
+      "date": "2026-10-05",
+      "counts": { "requested": 4, "pending": 0, "approved": 3, "denied": 1, "expired": 0, "cancelled": 0 }
+    },
+    {
+      "date": "2026-10-06",
+      "counts": { "requested": 2, "pending": 2, "approved": 0, "denied": 0, "expired": 0, "cancelled": 0 }
+    }
   ]
 }
 ```
@@ -288,18 +294,20 @@ All three have `list`, `get`, `stats`, `approve`, and `deny`. JavaScript returns
 
 Only a person decides an approval: someone signed in to the dashboard, or a platform token (`pk-`) from `volcano login`. A workflow can hold a project access token, and an approval it could answer itself would approve nothing.
 
-| Credential | List, get, stats | Approve, deny |
-|---|---|---|
-| Dashboard session | Yes | Yes |
-| Platform token (`pk-`) | Yes | Yes |
-| Project access token (`pt-`), `full` | Yes | No, `403` |
-| Project access token (`pt-`), `read_only` | Yes | No, `403` |
-| [MCP server](../interfaces/mcp.md) | List and stats | No tool to decide |
+| Credential                                | List, get, stats | Approve, deny     |
+| ----------------------------------------- | ---------------- | ----------------- |
+| Dashboard session                         | Yes              | Yes               |
+| Platform token (`pk-`)                    | Yes              | Yes               |
+| Project access token (`pt-`), `full`      | Yes              | No, `403`         |
+| Project access token (`pt-`), `read_only` | Yes              | No, `403`         |
+| [MCP server](../interfaces/mcp.md)        | List and stats   | No tool to decide |
 
 A `full` project access token is refused with:
 
 ```json
-{ "error": "project access tokens cannot decide durable approvals; a person decides in the dashboard or with a platform token" }
+{
+  "error": "project access tokens cannot decide durable approvals; a person decides in the dashboard or with a platform token"
+}
 ```
 
 A `read_only` token is refused one step earlier with `project access token is read-only`.
@@ -318,17 +326,17 @@ Deleting the project deletes its approvals.
 
 ## Limits and billing
 
-| Limit | Value |
-|---|---|
-| Pending approvals per execution | 100 |
-| Approval requests | 600 per hour per execution, and 6,000 refused requests per hour per sending address |
-| `title` / `description` / `name` | 200 / 4,000 / 237 characters, `name` in printable ASCII |
-| Request size, details included | 64 KiB |
-| Exponents of numbers in `details` | -324 to 324 each, with absolute values totaling at most 65,536 |
-| Comment | 2,000 characters |
-| Timeout | 1 second to 366 days |
-| History | 1 year |
-| Statistics window | 366 days |
+| Limit                             | Value                                                                               |
+| --------------------------------- | ----------------------------------------------------------------------------------- |
+| Pending approvals per execution   | 100                                                                                 |
+| Approval requests                 | 600 per hour per execution, and 6,000 refused requests per hour per sending address |
+| `title` / `description` / `name`  | 200 / 4,000 / 237 characters, `name` in printable ASCII                             |
+| Request size, details included    | 64 KiB                                                                              |
+| Exponents of numbers in `details` | -324 to 324 each, with absolute values totaling at most 65,536                      |
+| Comment                           | 2,000 characters                                                                    |
+| Timeout                           | 1 second to 366 days                                                                |
+| History                           | 1 year                                                                              |
+| Statistics window                 | 366 days                                                                            |
 
 These are the same on both plans. Approvals are not a separate allowance: each one is three durable operations — the approval itself, the wait for the decision, and the step that registers the request — counted against your [operation allowance](durable-functions.md#limits-and-billing). Waiting costs no compute.
 
@@ -338,28 +346,28 @@ In an execution's [operations trace](durable-functions.md#inspect-an-executions-
 
 Errors on the approval endpoints:
 
-| Status | `code` | When |
-|---|---|---|
-| `400` | | A filter or the request body is invalid, the comment contains a NUL character, `from` is after `to`, or a statistics window is empty or longer than 366 days |
-| `403` | | A project access token tried to approve or deny |
-| `404` | | No approval with that id in this project |
-| `413` | | A decision body larger than 16 KiB |
-| `409` | `approval_decided` | The approval was already decided the other way |
-| `409` | `approval_expired` | Its timeout passed before the decision |
-| `409` | `approval_cancelled` | Its execution ended before the decision |
+| Status | `code`               | When                                                                                                                                                         |
+| ------ | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `400`  |                      | A filter or the request body is invalid, the comment contains a NUL character, `from` is after `to`, or a statistics window is empty or longer than 366 days |
+| `403`  |                      | A project access token tried to approve or deny                                                                                                              |
+| `404`  |                      | No approval with that id in this project                                                                                                                     |
+| `413`  |                      | A decision body larger than 16 KiB                                                                                                                           |
+| `409`  | `approval_decided`   | The approval was already decided the other way                                                                                                               |
+| `409`  | `approval_expired`   | Its timeout passed before the decision                                                                                                                       |
+| `409`  | `approval_cancelled` | Its execution ended before the decision                                                                                                                      |
 
 Errors `waitForApproval` can raise inside the workflow, when Volcano refuses the request. Those marked retried are retried for about 30 seconds and raised only if they persist:
 
-| Status | `code` | When |
-|---|---|---|
-| `400` | | The request is invalid, such as text containing a NUL character, a number in `details` too large or too precise to store, or exponents in `details` totaling more than 65,536 |
-| `404` | | No running durable execution Volcano started matches the request. Retried, because a new execution can take a moment to appear |
-| `409` | `approval_not_ready` | Volcano cannot see the execution waiting yet. Retried |
-| `409` | `callback_taken` | The callback is already registered as a [message](durable-messages.md) wait or session. Only a modified SDK sends this |
-| `409` | `execution_ended` | The execution has finished |
-| `409` | `too_many_pending_approvals` | The execution already has 100 approvals pending |
-| `429` | | Too many approval requests from this execution or its address. Retried |
-| `5xx` | | The request could not be confirmed right now. Retried |
+| Status | `code`                       | When                                                                                                                                                                          |
+| ------ | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `400`  |                              | The request is invalid, such as text containing a NUL character, a number in `details` too large or too precise to store, or exponents in `details` totaling more than 65,536 |
+| `404`  |                              | No running durable execution Volcano started matches the request. Retried, because a new execution can take a moment to appear                                                |
+| `409`  | `approval_not_ready`         | Volcano cannot see the execution waiting yet. Retried                                                                                                                         |
+| `409`  | `callback_taken`             | The callback is already registered as a [message](durable-messages.md) wait or session. Only a modified SDK sends this                                                        |
+| `409`  | `execution_ended`            | The execution has finished                                                                                                                                                    |
+| `409`  | `too_many_pending_approvals` | The execution already has 100 approvals pending                                                                                                                               |
+| `429`  |                              | Too many approval requests from this execution or its address. Retried                                                                                                        |
+| `5xx`  |                              | The request could not be confirmed right now. Retried                                                                                                                         |
 
 The SDK checks the request's size and that `details` is JSON before sending it, so an oversized or unserializable request throws without a round trip. A `409` with `approval_closed` is not raised: the approval's deadline already passed, so `waitForApproval` resolves with an `expired` decision.
 
@@ -367,9 +375,9 @@ The SDK checks the request's size and that `details` is JSON before sending it, 
 
 ## What's next
 
-| Guide | Description |
-|-------|-------------|
-| [Durable functions](durable-functions.md) | Operations, executions, and billing |
-| [Durable messages](durable-messages.md) | Wait for something other than a person |
-| [Developing durable functions locally](../guides/durable-functions-locally.md) | Run and approve on your machine |
-| [Errors](../api-reference/errors.md) | Every API error body |
+| Guide                                                                          | Description                            |
+| ------------------------------------------------------------------------------ | -------------------------------------- |
+| [Durable functions](durable-functions.md)                                      | Operations, executions, and billing    |
+| [Durable messages](durable-messages.md)                                        | Wait for something other than a person |
+| [Developing durable functions locally](../guides/durable-functions-locally.md) | Run and approve on your machine        |
+| [Errors](../api-reference/errors.md)                                           | Every API error body                   |

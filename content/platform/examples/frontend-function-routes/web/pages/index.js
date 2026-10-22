@@ -1,11 +1,11 @@
 // web/pages/index.js
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
 async function post(path, body) {
-  const { csrf_token } = await fetch("/api/session/csrf").then((response) => response.json());
+  const { csrf_token } = await fetch('/api/session/csrf').then((response) => response.json());
   const response = await fetch(`/api/session${path}`, {
-    method: "POST",
-    headers: { "content-type": "application/json", "x-csrf-token": csrf_token },
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-csrf-token': csrf_token },
     body: JSON.stringify(body ?? {}),
   });
   return { ok: response.ok, body: await response.json() };
@@ -13,10 +13,10 @@ async function post(path, body) {
 
 export default function Home() {
   const [user, setUser] = useState(null);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    fetch("/api/session/me")
+    fetch('/api/session/me')
       .then((response) => (response.ok ? response.json() : { user: null }))
       .then((body) => setUser(body.user));
   }, []);
@@ -24,13 +24,13 @@ export default function Home() {
   async function signIn(event) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const result = await post("/login", { email: form.get("email"), password: form.get("password") });
-    setError(result.ok ? "" : result.body.error);
+    const result = await post('/login', { email: form.get('email'), password: form.get('password') });
+    setError(result.ok ? '' : result.body.error);
     setUser(result.ok ? result.body.user : null);
   }
 
   async function signOut() {
-    await post("/logout");
+    await post('/logout');
     setUser(null);
   }
 

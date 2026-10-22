@@ -1,6 +1,6 @@
 ---
-title: "Scheduled Function Invocations"
-description: "Scheduled invocations let a function run automatically on a cron schedule without creating per-function infrastructure."
+title: 'Scheduled Function Invocations'
+description: 'Scheduled invocations let a function run automatically on a cron schedule without creating per-function infrastructure.'
 ---
 
 Scheduled invocations let a function run automatically on a cron schedule without creating per-function infrastructure. Volcano stores schedules centrally and regional workers invoke the deployed function in each allowed region.

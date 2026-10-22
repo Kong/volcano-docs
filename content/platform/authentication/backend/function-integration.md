@@ -1,6 +1,6 @@
 ---
-title: "Function Integration"
-description: "Access authenticated user context in your functions."
+title: 'Function Integration'
+description: 'Access authenticated user context in your functions.'
 ---
 
 Access authenticated user context in your functions.
@@ -15,17 +15,17 @@ exports.handler = async (event) => {
   if (!event.__volcano_auth) {
     return {
       statusCode: 401,
-      body: JSON.stringify({ error: 'Unauthorized' })
+      body: JSON.stringify({ error: 'Unauthorized' }),
     };
   }
 
   // Access user information
   const { user_id, email, project_id, role } = event.__volcano_auth;
-  
+
   console.log('User ID:', user_id);
   console.log('Email:', email);
   console.log('Project:', project_id);
-  console.log('Role:', role);  // "authenticated" or "anonymous"
+  console.log('Role:', role); // "authenticated" or "anonymous"
 };
 ```
 
@@ -33,15 +33,16 @@ exports.handler = async (event) => {
 
 ```javascript
 event.__volcano_auth = {
-  user_id: 'uuid',           // Auth user's unique ID
+  user_id: 'uuid', // Auth user's unique ID
   email: 'user@example.com', // User's email
-  project_id: 'uuid',        // Project the user belongs to
-  role: 'authenticated',     // "authenticated" or "anonymous"
-  access_token: 'eyJhbGci...' // The caller's access token
-}
+  project_id: 'uuid', // Project the user belongs to
+  role: 'authenticated', // "authenticated" or "anonymous"
+  access_token: 'eyJhbGci...', // The caller's access token
+};
 ```
 
 **Role values:**
+
 - `"authenticated"` - User signed up with email/password or OAuth
 - `"anonymous"` - Guest user (created via `signUpAnonymous()`)
 
@@ -63,7 +64,7 @@ if (!event.__volcano_auth) {
 ```javascript
 exports.handler = async (event) => {
   const auth = event.__volcano_auth;
-  
+
   if (!auth) {
     return { statusCode: 401, body: 'Unauthorized' };
   }
@@ -75,15 +76,15 @@ exports.handler = async (event) => {
       statusCode: 200,
       body: JSON.stringify({
         data: limitedData,
-        suggestion: 'Create an account to unlock all features'
-      })
+        suggestion: 'Create an account to unlock all features',
+      }),
     };
   }
 
   // Full authenticated user
   return {
     statusCode: 200,
-    body: JSON.stringify({ data: fullData })
+    body: JSON.stringify({ data: fullData }),
   };
 };
 ```
@@ -122,10 +123,10 @@ exports.handler = async (event) => {
   try {
     // RLS policies work automatically — works for both authenticated and anonymous users
     const result = await client.query('SELECT * FROM posts');
-    
+
     return {
       statusCode: 200,
-      body: JSON.stringify(result.rows)
+      body: JSON.stringify(result.rows),
     };
   } finally {
     client.release();
@@ -171,7 +172,7 @@ exports.handler = async (event) => {
       case 'create_post':
         await client.query(
           'INSERT INTO posts (title, content) VALUES ($1, $2)',
-          [event.title, event.content]
+          [event.title, event.content],
           // user_id automatically set by trigger
         );
         return { statusCode: 201, body: 'Post created' };
@@ -182,7 +183,7 @@ exports.handler = async (event) => {
         const result = await client.query('SELECT * FROM posts');
         return {
           statusCode: 200,
-          body: JSON.stringify(result.rows)
+          body: JSON.stringify(result.rows),
         };
 
       default:
@@ -199,7 +200,7 @@ exports.handler = async (event) => {
 Volcano automatically injects these into your functions:
 
 ```javascript
-process.env.DATABASE_URL  // Your database connection string
+process.env.DATABASE_URL; // Your database connection string
 // Plus any variables you configure
 ```
 
@@ -208,4 +209,3 @@ process.env.DATABASE_URL  // Your database connection string
 - [Row-Level Security](../../databases/row-level-security.md) - Secure data at database level
 - [Auth Helpers](../../databases/auth-helpers.md) - Using auth.uid(), auth.email()
 - [Examples](../../examples/function-sdk-example/README.md) - Complete working examples
-

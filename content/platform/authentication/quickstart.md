@@ -1,6 +1,6 @@
 ---
-title: "Authentication quickstart"
-description: "Add user authentication to your application in 5 minutes."
+title: 'Authentication quickstart'
+description: 'Add user authentication to your application in 5 minutes.'
 ---
 
 Add user authentication to your application in 5 minutes.
@@ -19,7 +19,7 @@ import { VolcanoAuth } from '@volcano.dev/sdk';
 
 const volcano = new VolcanoAuth({
   apiUrl: 'https://api.volcano.dev',
-  anonKey: 'your-anon-key'
+  anonKey: 'your-anon-key',
 });
 ```
 
@@ -37,7 +37,7 @@ Create a new user with email and password:
 ```javascript
 const { user, session, error } = await volcano.auth.signUp({
   email: 'user@example.com',
-  password: 'securepassword123'
+  password: 'securepassword123',
 });
 
 if (error) {
@@ -76,7 +76,7 @@ Authenticate a returning user:
 ```javascript
 const { user, session, error } = await volcano.auth.signIn({
   email: 'user@example.com',
-  password: 'securepassword123'
+  password: 'securepassword123',
 });
 
 if (error) {
@@ -140,7 +140,7 @@ Apply it with `volcano cloud config deploy`. See [who can invoke a function](../
 ```javascript
 // User's identity is sent automatically
 const result = await volcano.functions.invoke('my-function', {
-  payload: { action: 'get_profile' }
+  payload: { action: 'get_profile' },
 });
 ```
 
@@ -153,7 +153,7 @@ exports.handler = async (event) => {
   if (!event.__volcano_auth) {
     return {
       statusCode: 401,
-      body: JSON.stringify({ error: 'Unauthorized' })
+      body: JSON.stringify({ error: 'Unauthorized' }),
     };
   }
 
@@ -163,8 +163,8 @@ exports.handler = async (event) => {
     statusCode: 200,
     body: JSON.stringify({
       message: `Hello, ${email}!`,
-      userId: user_id
-    })
+      userId: user_id,
+    }),
   };
 };
 ```
@@ -214,7 +214,7 @@ exports.handler = async (event) => {
 
   return {
     statusCode: 200,
-    body: JSON.stringify(rows)
+    body: JSON.stringify(rows),
   };
 };
 ```
@@ -231,7 +231,7 @@ import { VolcanoAuth } from '@volcano.dev/sdk';
 
 const volcano = new VolcanoAuth({
   apiUrl: process.env.REACT_APP_VOLCANO_API_URL,
-  anonKey: process.env.REACT_APP_VOLCANO_ANON_KEY
+  anonKey: process.env.REACT_APP_VOLCANO_ANON_KEY,
 });
 
 function App() {
@@ -289,11 +289,11 @@ function App() {
 
 ## What's next
 
-| Guide | Description |
-|-------|-------------|
-| [OAuth providers](oauth-providers.md) | Add Google, GitHub, and other social logins |
-| [Anonymous users](anonymous-users.md) | Let users try your app without signing up |
-| [Password reset](password-reset.md) | Implement forgot password flow |
-| [User context](../functions/user-context.md) | Access user data in functions |
-| [Row-level security](../databases/row-level-security.md) | Secure database access per user |
-| [Configuration](configuration/overview.md) | Customize password rules and token lifetimes |
+| Guide                                                    | Description                                  |
+| -------------------------------------------------------- | -------------------------------------------- |
+| [OAuth providers](oauth-providers.md)                    | Add Google, GitHub, and other social logins  |
+| [Anonymous users](anonymous-users.md)                    | Let users try your app without signing up    |
+| [Password reset](password-reset.md)                      | Implement forgot password flow               |
+| [User context](../functions/user-context.md)             | Access user data in functions                |
+| [Row-level security](../databases/row-level-security.md) | Secure database access per user              |
+| [Configuration](configuration/overview.md)               | Customize password rules and token lifetimes |

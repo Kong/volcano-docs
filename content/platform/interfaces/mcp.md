@@ -1,6 +1,6 @@
 ---
-title: "MCP server"
-description: "Connect an AI agent to one Volcano project over the Model Context Protocol, using the same project access token as the REST API."
+title: 'MCP server'
+description: 'Connect an AI agent to one Volcano project over the Model Context Protocol, using the same project access token as the REST API.'
 ---
 
 Volcano hosts a Model Context Protocol (MCP) server, so an agent in your editor
@@ -94,7 +94,7 @@ variable exported in `.zshrc` will not reach it.
 
 ### Codex
 
-Codex uses TOML, and takes the *name* of the environment variable rather than
+Codex uses TOML, and takes the _name_ of the environment variable rather than
 the token:
 
 ```bash
@@ -156,28 +156,29 @@ A **platform token (`pk-`) is refused with `403`.** The endpoint takes its proje
 
 ## Tools
 
-| Tool | Scope | What it does | Endpoint |
-|------|-------|--------------|----------|
-| `get_project` | `read_only` | Returns the project's name, status, plan, and region | `GET /projects/{id}` |
-| `get_project_usage` | `read_only` | Reads project totals and time series, including Sandbox runtime, suspended time, and uncertain usage | `GET /projects/{id}/usage` |
-| `list_functions` | `read_only` | Lists the project's standard functions, with runtime, status, and visibility | `GET /projects/{id}/functions` |
-| `list_frontends` | `read_only` | Lists the project's frontends, with status, live URLs, and function routes | `GET /projects/{id}/frontends` |
-| `list_deployments` | `read_only` | Lists recent deployments, newest first | `GET /projects/{id}/deployments` |
-| `search_logs` | `read_only` | Searches the project's logs | `POST /projects/{id}/logs/search` |
-| `list_durable_approvals` | `read_only` | Lists the approvals durable workflows are waiting on or have had decided, newest first | `GET /projects/{id}/durable-approvals` |
-| `get_durable_approval_stats` | `read_only` | Counts durable approvals by outcome, workflow, and day, with the approval rate and time to decision | `GET /projects/{id}/durable-approvals/stats` |
-| `list_durable_functions` | `read_only` | Lists the project's durable functions, which `list_functions` leaves out | `GET /projects/{id}/durable-functions` |
-| `list_durable_executions` | `read_only` | Lists a durable function's executions, newest first | `GET /projects/{id}/durable-functions/{functionId}/executions` |
-| `get_durable_execution` | `read_only` | Returns one execution's status, result or error, and timing | `GET /projects/{id}/durable-functions/{functionId}/executions/{executionId}` |
-| `list_durable_messages` | `read_only` | Lists the messages sent to an execution and published by it, oldest first | `GET /projects/{id}/durable-functions/{functionId}/executions/{executionId}/messages` |
-| `list_durable_message_waits` | `read_only` | Lists the message names an execution is waiting on | `GET /projects/{id}/durable-functions/{functionId}/executions/{executionId}/message-waits` |
-| `list_issues` | `read_only` | Lists runtime errors grouped into issues, most recently seen first | `GET /projects/{id}/issues` |
-| `list_capabilities` | `read_only` | Lists which capabilities, such as Sandboxes, accept new work in this environment | `GET /capabilities` |
-| `list_variable_environments` | `read_only` | Lists the project's variable Environments | `GET /projects/{id}/variable-environments` |
-| `list_databases` | `full` | Lists the project's databases. Returns connection strings | `GET /projects/{id}/databases` |
-| `set_variable` | `full` | Creates or updates an environment variable | `POST /projects/{id}/variables` |
-| `create_variable_environment` | `full` | Creates a custom variable Environment | `POST /projects/{id}/variable-environments` |
-| `send_durable_message` | `full` | Sends a named message to a running durable execution | `POST /projects/{id}/durable-functions/{functionId}/executions/{executionId}/messages` |
+| Tool                          | Scope       | What it does                                                                                         | Endpoint                                                                                   |
+| ----------------------------- | ----------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `get_project`                 | `read_only` | Returns the project's name, status, plan, and region                                                 | `GET /projects/{id}`                                                                       |
+| `get_project_usage`           | `read_only` | Reads project totals and time series, including Sandbox runtime, suspended time, and uncertain usage | `GET /projects/{id}/usage`                                                                 |
+| `list_functions`              | `read_only` | Lists the project's standard functions, with runtime, status, and visibility                         | `GET /projects/{id}/functions`                                                             |
+| `list_frontends`              | `read_only` | Lists the project's frontends, with status, live URLs, and function routes                           | `GET /projects/{id}/frontends`                                                             |
+| `list_frontend_domains`       | `read_only` | Lists a frontend's custom domains, with status, pending DNS records, and redirect                    | `GET /projects/{id}/frontends/{frontendId}/domains`                                        |
+| `list_deployments`            | `read_only` | Lists recent deployments, newest first                                                               | `GET /projects/{id}/deployments`                                                           |
+| `search_logs`                 | `read_only` | Searches the project's logs                                                                          | `POST /projects/{id}/logs/search`                                                          |
+| `list_durable_approvals`      | `read_only` | Lists the approvals durable workflows are waiting on or have had decided, newest first               | `GET /projects/{id}/durable-approvals`                                                     |
+| `get_durable_approval_stats`  | `read_only` | Counts durable approvals by outcome, workflow, and day, with the approval rate and time to decision  | `GET /projects/{id}/durable-approvals/stats`                                               |
+| `list_durable_functions`      | `read_only` | Lists the project's durable functions, which `list_functions` leaves out                             | `GET /projects/{id}/durable-functions`                                                     |
+| `list_durable_executions`     | `read_only` | Lists a durable function's executions, newest first                                                  | `GET /projects/{id}/durable-functions/{functionId}/executions`                             |
+| `get_durable_execution`       | `read_only` | Returns one execution's status, result or error, and timing                                          | `GET /projects/{id}/durable-functions/{functionId}/executions/{executionId}`               |
+| `list_durable_messages`       | `read_only` | Lists the messages sent to an execution and published by it, oldest first                            | `GET /projects/{id}/durable-functions/{functionId}/executions/{executionId}/messages`      |
+| `list_durable_message_waits`  | `read_only` | Lists the message names an execution is waiting on                                                   | `GET /projects/{id}/durable-functions/{functionId}/executions/{executionId}/message-waits` |
+| `list_issues`                 | `read_only` | Lists runtime errors grouped into issues, most recently seen first                                   | `GET /projects/{id}/issues`                                                                |
+| `list_capabilities`           | `read_only` | Lists which capabilities, such as Sandboxes, accept new work in this environment                     | `GET /capabilities`                                                                        |
+| `list_variable_environments`  | `read_only` | Lists the project's variable Environments                                                            | `GET /projects/{id}/variable-environments`                                                 |
+| `list_databases`              | `full`      | Lists the project's databases. Returns connection strings                                            | `GET /projects/{id}/databases`                                                             |
+| `set_variable`                | `full`      | Creates or updates an environment variable                                                           | `POST /projects/{id}/variables`                                                            |
+| `create_variable_environment` | `full`      | Creates a custom variable Environment                                                                | `POST /projects/{id}/variable-environments`                                                |
+| `send_durable_message`        | `full`      | Sends a named message to a running durable execution                                                 | `POST /projects/{id}/durable-functions/{functionId}/executions/{executionId}/messages`     |
 
 Arguments are not listed here, because they are not defined here. Each tool's
 input schema is generated from the API's OpenAPI specification for the endpoint
@@ -204,20 +205,20 @@ also the Sandbox mutation tools below.
 Sandbox tools use the same API authorization and billing rules. A session ID
 must belong to the token's project, including on routes without a project ID.
 
-| Tool | Scope | Purpose |
-|------|-------|---------|
-| `list_sandbox_presets` | `read_only` | Discover verified presets and memory sizes |
-| `list_sandboxes`, `get_sandbox` | `read_only` | Inspect project templates |
+| Tool                                                                                | Scope       | Purpose                                            |
+| ----------------------------------------------------------------------------------- | ----------- | -------------------------------------------------- |
+| `list_sandbox_presets`                                                              | `read_only` | Discover verified presets and memory sizes         |
+| `list_sandboxes`, `get_sandbox`                                                     | `read_only` | Inspect project templates                          |
 | `list_sandbox_deployments`, `get_sandbox_deployment`, `get_sandbox_deployment_logs` | `read_only` | Inspect deployment history, status, and build logs |
-| `list_sandbox_sessions`, `get_sandbox_session` | `read_only` | Inspect session state |
-| `read_sandbox_file` | `read_only` | Read session files |
-| `create_sandbox`, `update_sandbox` | `full` | Create or rename a template |
-| `create_sandbox_session` | `full` | Start a session from a preset or template |
-| `execute_sandbox` | `full` | Execute once with automatic cleanup |
-| `execute_sandbox_session` | `full` | Execute in an existing session |
-| `write_sandbox_file` | `full` | Write a session file |
-| `suspend_sandbox_session`, `resume_sandbox_session` | `full` | Pause and resume a session |
-| `terminate_sandbox_session` | `full` | Permanently stop a session and release compute |
+| `list_sandbox_sessions`, `get_sandbox_session`                                      | `read_only` | Inspect session state                              |
+| `read_sandbox_file`                                                                 | `read_only` | Read session files                                 |
+| `create_sandbox`, `update_sandbox`                                                  | `full`      | Create or rename a template                        |
+| `create_sandbox_session`                                                            | `full`      | Start a session from a preset or template          |
+| `execute_sandbox`                                                                   | `full`      | Execute once with automatic cleanup                |
+| `execute_sandbox_session`                                                           | `full`      | Execute in an existing session                     |
+| `write_sandbox_file`                                                                | `full`      | Write a session file                               |
+| `suspend_sandbox_session`, `resume_sandbox_session`                                 | `full`      | Pause and resume a session                         |
+| `terminate_sandbox_session`                                                         | `full`      | Permanently stop a session and release compute     |
 
 Check `list_capabilities` before starting work. Confirmed cloud running time
 consumes account allowance and paid overage credits. Suspended and uncertain
@@ -347,21 +348,21 @@ Streamable HTTP: one JSON-RPC 2.0 object per request, one response per request. 
 
 Every request needs an `id`. Only the `notifications/*` methods may omit one, and only those are answered with `202` and no body; a `tools/call` without an `id` is refused with `-32600` and the tool does not run. A frame larger than 1 MiB is refused with `413`.
 
-| Method | Purpose |
-|--------|---------|
-| `initialize` | Handshake; returns the protocol revision and server info |
+| Method                      | Purpose                                                                                      |
+| --------------------------- | -------------------------------------------------------------------------------------------- |
+| `initialize`                | Handshake; returns the protocol revision and server info                                     |
 | `notifications/initialized` | Client acknowledgement. The one method sent without an `id`; answered with `202` and no body |
-| `ping` | Liveness check |
-| `tools/list` | The tools this credential may call |
-| `tools/call` | Run one tool |
+| `ping`                      | Liveness check                                                                               |
+| `tools/list`                | The tools this credential may call                                                           |
+| `tools/call`                | Run one tool                                                                                 |
 
 Any other method returns `-32601`.
 
 ## What's next
 
-| Reference | Description |
-|-----------|-------------|
+| Reference                                                                    | Description                                        |
+| ---------------------------------------------------------------------------- | -------------------------------------------------- |
 | [Project access tokens](../authentication/security/project-access-tokens.md) | Scopes, expiry, revocation, and the security model |
-| [Using the API](../api-reference/using-the-api.md) | The same project API over plain HTTP |
-| [Overview](../api-reference/overview.md) | Base URL, status codes, pagination |
-| [Errors](../api-reference/errors.md) | Error codes and handling |
+| [Using the API](../api-reference/using-the-api.md)                           | The same project API over plain HTTP               |
+| [Overview](../api-reference/overview.md)                                     | Base URL, status codes, pagination                 |
+| [Errors](../api-reference/errors.md)                                         | Error codes and handling                           |

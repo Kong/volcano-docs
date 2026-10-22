@@ -1,5 +1,5 @@
 ---
-title: "Volcano Frontend Auth - Next.js"
+title: 'Volcano Frontend Auth - Next.js'
 description: "A production-ready Next.js application demonstrating all Volcano authentication features including email/password, anonymous users, OAuth, password r\u2026"
 ---
 
@@ -10,44 +10,52 @@ A production-ready Next.js application demonstrating all Volcano authentication 
 ## Features
 
 ✅ **Dynamic Configuration**
+
 - No .env setup required for testing
 - In-browser credential entry
 - Saved to localStorage
 - Clear and reconfigure anytime
 
 ✅ **Email/Password Authentication**
+
 - User signup with validation
 - User signin with session management
 - Protected routes
 
 ✅ **Anonymous User Flow**
+
 - Instant access without signup
 - Full app functionality as anonymous
 - Convert to permanent account
 - All data preserved during conversion
 
 ✅ **Password Recovery**
+
 - Forgot password flow
 - Token-based reset
 - Email integration
 
 ✅ **Email Management**
+
 - Change email address
 - Confirmation flow
 - Cancel pending changes
 
 ✅ **OAuth Provider Linking**
+
 - Link Google, GitHub, Microsoft, Apple
 - Unlink providers
 - Manage multiple auth methods
 
 ✅ **User Dashboard**
+
 - Profile management
 - Password updates
 - Session information
 - Sign out functionality
 
 ✅ **Modern Next.js Patterns**
+
 - App Router (Next.js 16)
 - TypeScript
 - Client-side auth state
@@ -93,12 +101,14 @@ Navigate to: `http://localhost:3001`
 **The app will automatically prompt for credentials** if not configured!
 
 #### Option A: Dynamic Configuration (Recommended for Testing)
+
 1. Open the app in browser
 2. Enter your credentials in the configuration form
 3. Credentials are saved to localStorage
 4. Start using the examples immediately
 
 #### Option B: Environment Variables (Recommended for Development)
+
 ```bash
 # Copy example env file
 cp .env.example .env.local
@@ -131,61 +141,77 @@ yarn reinstall    # Clean install (removes node_modules first)
 ```
 frontend-auth-nextjs/
 ├── app/
-│   ├── layout.tsx          # Root layout
-│   ├── page.tsx            # Home page (example index)
-│   ├── globals.css         # Global styles
-│   ├── auth/
-│   │   └── page.tsx        # Email/password auth
-│   ├── anonymous/
-│   │   └── page.tsx        # Anonymous user conversion
-│   └── dashboard/
-│       └── page.tsx        # Protected user dashboard
+│   ├── layout.tsx            # Root layout
+│   ├── page.tsx              # Home page (example index)
+│   ├── ConfigSummary.tsx     # Current configuration on the home page
+│   ├── ExampleCard.tsx       # Link card for each example
+│   ├── globals.css           # Global styles
+│   ├── auth/                 # Email/password auth
+│   ├── anonymous/            # Anonymous user conversion
+│   ├── dashboard/            # Protected user dashboard
+│   ├── files/                # File storage
+│   ├── email-change/         # Email change
+│   ├── oauth-linking/        # OAuth provider linking
+│   └── password-reset/       # Password recovery
+├── components/               # Shared UI, including ConfigPrompt
 ├── lib/
-│   └── volcano.ts          # Volcano SDK wrapper
+│   ├── config.ts             # Credentials from env or localStorage
+│   ├── useVolcano.ts         # SDK client and password policy
+│   ├── useStatusMessage.ts   # Success and error message state
+│   └── anonKey.ts            # Anon key validation
 ├── package.json
 ├── tsconfig.json
 ├── next.config.js
 └── .env.example
 ```
 
+Each route folder holds its `page.tsx`, the `use*.ts` hooks that keep the page's state and call the Volcano SDK, and the components the page renders. `files/fileActions.ts` holds the upload, download, delete, and visibility actions.
+
 ## Pages
 
 ### Home (/)
+
 - Overview of all 7 examples
 - Quick start instructions
 - Links to each flow
 
 ### 1. Email/Password Auth (/auth)
+
 - Signup/Signin toggle
 - Form validation
 - Error handling
 - Redirects to dashboard on success
 
 ### 2. Anonymous Flow (/anonymous)
+
 - **Step 1:** Create anonymous user
 - **Step 2:** Dashboard (with conversion prompt)
 - **Step 3:** Conversion form
 - **Step 4:** Success confirmation
 
 ### 3. Password Recovery (/password-reset)
+
 - **Request Reset:** Send recovery token to email
 - **Reset Password:** Enter token and new password
 - Token validation
 - Automatic redirect to signin after success
 
 ### 4. Email Change (/email-change)
+
 - Request email change (sends confirmation to new email)
 - Confirm with token
 - Cancel pending change
 - Shows current and pending email
 
 ### 5. OAuth Provider Linking (/oauth-linking)
+
 - View linked OAuth providers
 - Link Google, GitHub, Microsoft, Apple
 - Unlink providers
 - Visual status indicators
 
 ### 6. Dashboard (/dashboard)
+
 - Protected route (redirects if not authenticated)
 - User profile display
 - Profile update form
@@ -264,6 +290,7 @@ NEXT_PUBLIC_VOLCANO_ANON_KEY=your-anon-key
 ### Styling
 
 Edit `app/globals.css` to customize:
+
 - Colors and branding
 - Layout and spacing
 - Component styles
@@ -289,7 +316,7 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/profile/:path*']
+  matcher: ['/dashboard/:path*', '/profile/:path*'],
 };
 ```
 

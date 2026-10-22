@@ -1,6 +1,6 @@
 ---
-title: "Environment Variables"
-description: "Share configuration across all functions and frontends in a project."
+title: 'Environment Variables'
+description: 'Share configuration across all functions and frontends in a project.'
 ---
 
 Share configuration across all functions and frontends in a project.
@@ -14,6 +14,7 @@ Project variables are also made available during cloud build/compile jobs so dep
 For private npm registry access, prefer `NODE_AUTH_TOKEN` together with `NPM_CONFIG_REGISTRY` when needed. `NPM_TOKEN` is accepted, but npm does not use it by itself unless your project includes an `.npmrc` that maps it into an auth token entry.
 
 **Use for:**
+
 - API keys
 - Database connections
 - Service URLs
@@ -68,11 +69,11 @@ The variable is still stored and still delivered to your deployed function and
 frontend server runtimes; only the build does not see it. Function runtime names
 listed above are rejected before storage.
 
-| Reserved | Examples |
-| --- | --- |
-| Build inputs | `SOURCE_URL`, `SOURCE_BUCKET`, `SOURCE_KEY`, `SOURCE_VERSION`, `SOURCE_SHA256`, `OUTPUT_BUNDLE_URL`, `PROJECT_ID`, `FUNCTION_ID`, `FRONTEND_ID`, `DEPLOYMENT_ID`, `RUNTIME`, `HANDLER`, `TARGET_ARCH` |
-| Interpreter and loader hooks | `PATH`, `HOME`, `SHELL`, `NODE_OPTIONS`, `NODE_PATH`, `NODE_ENV`, `PYTHONPATH`, `LD_PRELOAD`, `LD_LIBRARY_PATH` |
-| Whole prefixes | `AWS_`, `CODEBUILD_`, `GITHUB_`, `DOCKER_`, `VOLCANO_`, `NPM_CONFIG_`, `YARN_`, `PIP_`, `BUNDLE_`, `COREPACK_` |
+| Reserved                     | Examples                                                                                                                                                                                              |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Build inputs                 | `SOURCE_URL`, `SOURCE_BUCKET`, `SOURCE_KEY`, `SOURCE_VERSION`, `SOURCE_SHA256`, `OUTPUT_BUNDLE_URL`, `PROJECT_ID`, `FUNCTION_ID`, `FRONTEND_ID`, `DEPLOYMENT_ID`, `RUNTIME`, `HANDLER`, `TARGET_ARCH` |
+| Interpreter and loader hooks | `PATH`, `HOME`, `SHELL`, `NODE_OPTIONS`, `NODE_PATH`, `NODE_ENV`, `PYTHONPATH`, `LD_PRELOAD`, `LD_LIBRARY_PATH`                                                                                       |
+| Whole prefixes               | `AWS_`, `CODEBUILD_`, `GITHUB_`, `DOCKER_`, `VOLCANO_`, `NPM_CONFIG_`, `YARN_`, `PIP_`, `BUNDLE_`, `COREPACK_`                                                                                        |
 
 Registry credentials are the exception. They match a reserved prefix but are passed
 through so private registries keep working:
@@ -98,7 +99,7 @@ you want it.
 exports.handler = async (event) => {
   const apiKey = process.env.API_KEY;
   const dbUrl = process.env.DATABASE_URL;
-  
+
   // Variables available as environment variables
 };
 ```
@@ -135,7 +136,7 @@ to start reconciliation.
 Dashboard clients can replace the list with `PUT /projects/{id}/shared-variables`:
 
 ```json
-{"shared_variables": ["LOG_LEVEL"]}
+{ "shared_variables": ["LOG_LEVEL"] }
 ```
 
 The operation returns `204` after saving membership and starting synchronization.
@@ -195,11 +196,11 @@ binding:
 
   Volcano reads direct references only:
 
-  | Runtime | Detected forms |
-  | --- | --- |
+  | Runtime | Detected forms                            |
+  | ------- | ----------------------------------------- |
   | Node.js | `process.env.NAME`, `process.env["NAME"]` |
-  | Python | `os.environ["NAME"]`, `os.getenv("NAME")` |
-  | Ruby | `ENV["NAME"]`, `ENV.fetch("NAME")` |
+  | Python  | `os.environ["NAME"]`, `os.getenv("NAME")` |
+  | Ruby    | `ENV["NAME"]`, `ENV.fetch("NAME")`        |
 
   Detection re-runs on every deploy and reads the whole source you uploaded, so
   adding a `process.env.NEW_KEY` to your code is enough — no manifest change
@@ -226,7 +227,7 @@ const secret = process.env[key];
 
 // Not detected: neither of these is a read.
 // process.env.OLD_KEY
-const help = "set process.env.OLD_KEY before running";
+const help = 'set process.env.OLD_KEY before running';
 ```
 
 Two problems are rejected with `400` before anything deploys, so a bad scope
@@ -266,6 +267,7 @@ curl https://api.volcano.dev/projects/PROJECT_ID/variables/API_KEY \
 ```
 
 **Response:**
+
 ```json
 {
   "id": "uuid",
@@ -323,10 +325,12 @@ MAINTENANCE_MODE=false
 Private registry credentials such as `NODE_AUTH_TOKEN`, `NPM_TOKEN`, `PIP_INDEX_URL`, `PIP_EXTRA_INDEX_URL`, or Bundler `BUNDLE_GEMS__...` values can be used during dependency installation, but they are also runtime variables. Only use credentials that are scoped narrowly and can be rotated.
 
 Don't store:
+
 - Passwords you can't rotate
 - Extremely sensitive data
 
 Do store:
+
 - API keys (rotatable)
 - Service URLs
 - Configuration
@@ -339,5 +343,3 @@ For maximum security, fetch secrets from a dedicated secrets manager inside your
 - [Creating Functions](creating-functions.md)
 - [Project configuration](../projects/configuration.md) - declare function variable scope
 - [Databases](../databases/creating-databases.md) - set DATABASE_URL as a project variable
-
-

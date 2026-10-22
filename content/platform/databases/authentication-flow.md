@@ -1,6 +1,6 @@
 ---
-title: "Database Authentication Flow - Complete Guide"
-description: "How authentication works in client-side (browser) vs server-side (function) scenarios."
+title: 'Database Authentication Flow - Complete Guide'
+description: 'How authentication works in client-side (browser) vs server-side (function) scenarios.'
 ---
 
 How authentication works in client-side (browser) vs server-side (function) scenarios.
@@ -24,13 +24,13 @@ import { VolcanoAuth } from '@volcano.dev/sdk';
 
 const volcano = new VolcanoAuth({
   apiUrl: 'https://api.yourapp.com',
-  anonKey: 'your-anon-key'
+  anonKey: 'your-anon-key',
 });
 
 // User signs in
 await volcano.auth.signIn({
   email: 'user@example.com',
-  password: 'password123'
+  password: 'password123',
 });
 
 // SDK automatically saves to localStorage:
@@ -51,7 +51,7 @@ import { VolcanoAuth } from '@volcano.dev/sdk';
 // Initialize SDK again (new page)
 const volcano = new VolcanoAuth({
   apiUrl: 'https://api.yourapp.com',
-  anonKey: 'your-anon-key'
+  anonKey: 'your-anon-key',
 });
 
 // Restore session from localStorage
@@ -62,7 +62,7 @@ const { user } = await volcano.auth.getUser();
 
 if (user) {
   console.log('Still logged in as:', user.email);
-  
+
   // Query database - works immediately!
   volcano.database('notes_db');
   const { data } = await volcano.from('posts').select('*');
@@ -137,45 +137,46 @@ const { Client } = require('pg');
 
 exports.handler = async (event) => {
   const auth = event.__volcano_auth;
-  
+
   if (!auth) {
     return { statusCode: 401, body: 'Unauthorized' };
   }
-  
+
   console.log('Querying as user:', auth.user_id);
-  
+
   // Replace application_name in the connection string. DATABASE_URL already
   // carries application_name=volcano_full_access, so set (don't append) it to
   // reliably switch this connection to user access.
   const url = new URL(process.env.DATABASE_URL);
   url.searchParams.set('application_name', `volcano_user_access:${auth.user_id}`);
-  
+
   const client = new Client({ connectionString: url.toString() });
   await client.connect();
-  
+
   // Query - auth.uid() = auth.user_id from event
   const { rows } = await client.query('SELECT * FROM posts');
-  
+
   await client.end();
-  
+
   return { statusCode: 200, body: JSON.stringify({ posts: rows }) };
 };
 ```
 
 **How it works:**
+
 ```javascript
 // 1. User calls function with their access token
 fetch('/functions/func-id/invoke', {
-  headers: { 'Authorization': 'Bearer {user_access_token}' }
+  headers: { Authorization: 'Bearer {user_access_token}' },
 });
 
 // 2. Volcano validates token and injects into event
 event.__volcano_auth = {
-  user_id: 'abc-123...',      // ← From user's JWT!
-  email: 'user@example.com',  // ← From user's JWT!
-  role: 'authenticated',      // ← From user's JWT!
+  user_id: 'abc-123...', // ← From user's JWT!
+  email: 'user@example.com', // ← From user's JWT!
+  role: 'authenticated', // ← From user's JWT!
   project_id: 'project-uuid',
-  access_token: 'eyJhbGci...'  // The caller's access token
+  access_token: 'eyJhbGci...', // The caller's access token
 };
 
 // 3. Build application_name with auth from event (simplified format)
@@ -205,7 +206,7 @@ import { VolcanoAuth } from '@volcano.dev/sdk';
 // Initialize SDK once
 const volcano = new VolcanoAuth({
   apiUrl: 'https://api.yourapp.com',
-  anonKey: 'your-anon-key'
+  anonKey: 'your-anon-key',
 });
 
 volcano.database('your_notes_db');
@@ -219,16 +220,16 @@ function App() {
     async function initAuth() {
       const { user } = await volcano.initialize();
       setUser(user);
-      
+
       if (user) {
         console.log('Session restored for:', user.email);
         // Load user's data
         loadPosts();
       }
     }
-    
+
     initAuth();
-    
+
     // Listen for auth changes
     volcano.auth.onAuthStateChange((user) => {
       setUser(user);
@@ -249,19 +250,15 @@ function App() {
 
   async function loadPosts() {
     // Query database - tokens automatically used
-    const { data } = await volcano
-      .from('posts')
-      .select('*')
-      .order('created_at', { ascending: false });
-      
+    const { data } = await volcano.from('posts').select('*').order('created_at', { ascending: false });
+
     setPosts(data);
   }
 
   async function createPost(title, content) {
     // Insert - access token automatically sent
-    const { data, error } = await volcano
-      .insert('posts', { title, content });
-      
+    const { data, error } = await volcano.insert('posts', { title, content });
+
     if (!error) {
       // Reload posts
       loadPosts();
@@ -282,7 +279,7 @@ function App() {
       <h1>Welcome {user.email}</h1>
       <button onClick={handleSignOut}>Sign Out</button>
       {/* Tokens automatically cleared from localStorage on signOut */}
-      
+
       <PostsList posts={posts} />
       <CreatePostForm onSubmit={createPost} />
     </div>
@@ -291,6 +288,7 @@ function App() {
 ```
 
 **Key Points:**
+
 - Tokens saved to localStorage on sign in
 - Tokens restored from localStorage on page reload
 - `volcano.initialize()` restores session automatically
@@ -307,7 +305,7 @@ const { VolcanoAuth } = require('@volcano.dev/sdk');
 const volcano = new VolcanoAuth({
   projectId: process.env.VOLCANO_PROJECT_ID,
   anonKey: process.env.VOLCANO_ANON_KEY,
-  apiUrl: process.env.VOLCANO_API_URL
+  apiUrl: process.env.VOLCANO_API_URL,
 });
 
 // Connection pool outside handler (reused)
@@ -315,30 +313,30 @@ const pool = volcano.database.createPool({ max: 20 });
 
 exports.handler = async (event) => {
   console.log('Event auth context:', event.__volcano_auth);
-  
+
   // Auth context comes from the user's access token
   // When user invokes function:
   //   fetch('/invoke', { headers: { 'Authorization': 'Bearer {user_token}' } })
   // Volcano validates token and injects:
   //   event.__volcano_auth = { user_id, email, role, project_id }
-  
+
   const auth = event.__volcano_auth;
-  
+
   if (!auth) {
-    return { 
-      statusCode: 401, 
-      body: JSON.stringify({ error: 'Unauthorized - no auth context' })
+    return {
+      statusCode: 401,
+      body: JSON.stringify({ error: 'Unauthorized - no auth context' }),
     };
   }
-  
+
   console.log('Querying as user:', auth.user_id, '(' + auth.email + ')');
-  
+
   const client = await pool.connect();
-  
+
   try {
     // Pass event.__volcano_auth to database
     await volcano.database.setAuthContext(client, auth);
-    
+
     // Now query - auth.uid() = auth.user_id
     const { rows } = await client.query(`
       SELECT id, title, content, created_at 
@@ -346,7 +344,7 @@ exports.handler = async (event) => {
       ORDER BY created_at DESC 
       LIMIT 10
     `);
-    
+
     return {
       statusCode: 200,
       body: JSON.stringify({
@@ -355,9 +353,9 @@ exports.handler = async (event) => {
         queried_as: {
           user_id: auth.user_id,
           email: auth.email,
-          role: auth.role
-        }
-      })
+          role: auth.role,
+        },
+      }),
     };
   } finally {
     client.release();
@@ -373,22 +371,22 @@ Browser                    Volcano                    Function
 
 User signs in         →    Validates credentials →    N/A
 Gets access token          Creates JWT with user_id
-                          
+
 User calls function   →    Validates token        →   event.__volcano_auth = {
 with token                 Extracts user_id              user_id, email, role
                                                       }
 
                                                    →   Build application_name with
                                                        event.__volcano_auth
-                                                       
+
                                                    →   application_name=
                                                        volcano_user_access:user_id
-                                                       
+
                                                    →   pgproxy parses auth context
-                                                       
+
                                                    →   SET LOCAL request.jwt_sub
                                                        = user_id
-                                                       
+
                                                    →   auth.uid() returns user_id
 ```
 
@@ -401,18 +399,20 @@ with token                 Extracts user_id              user_id, email, role
 **Session Storage:** localStorage (automatic)
 
 **Code:**
+
 ```javascript
 // Page 1: Sign in
 await volcano.auth.signIn({ email, password });
 // Tokens saved to localStorage automatically
 
 // Page 2: Query (after reload/navigation)
-await volcano.initialize();  // Restores from localStorage
+await volcano.initialize(); // Restores from localStorage
 const { data } = await volcano.from('posts').select('*');
 // Tokens automatically used
 ```
 
 **How auth is passed:**
+
 ```http
 POST /databases/DB_ID/query/select
 Authorization: Bearer {access_token_from_localStorage}
@@ -424,6 +424,7 @@ Authorization: Bearer {access_token_from_localStorage}
 **Session Storage:** event.__volcano_auth (per-request)
 
 **Code:**
+
 ```javascript
 // The function receives auth in the event
 const { Client } = require('pg');
@@ -441,6 +442,7 @@ await client.end();
 ```
 
 **How auth is passed:**
+
 ```text
 event.__volcano_auth { user_id, project_id }
          ↓
@@ -466,7 +468,7 @@ const volcano = new VolcanoAuth({ ... });
 async function initApp() {
   // Try to restore session
   const { user, error } = await volcano.initialize();
-  
+
   if (user) {
     // User is logged in
     console.log('Logged in as:', user.email);
@@ -505,27 +507,27 @@ const { Client } = require('pg');
 
 exports.handler = async (event) => {
   const auth = event.__volcano_auth;
-  
+
   if (!auth) {
     return { statusCode: 401, body: 'Unauthorized' };
   }
-  
+
   // auth contains the user's identity (from their JWT):
   console.log('User ID:', auth.user_id);
   console.log('Email:', auth.email);
   console.log('Role:', auth.role);
-  
+
   // Replace application_name (DATABASE_URL already has volcano_full_access)
   const url = new URL(process.env.DATABASE_URL);
   url.searchParams.set('application_name', `volcano_user_access:${auth.user_id}`);
-  
+
   const client = new Client({ connectionString: url.toString() });
   await client.connect();
-  
+
   const { rows } = await client.query('SELECT * FROM posts WHERE user_id = auth.uid()');
-  
+
   await client.end();
-  
+
   return { statusCode: 200, body: JSON.stringify({ posts: rows }) };
 };
 ```
@@ -555,18 +557,18 @@ function poolForUser(userId) {
 
 exports.handler = async (event) => {
   const auth = event.__volcano_auth;
-  
+
   if (!auth) {
     return { statusCode: 401, body: 'Unauthorized' };
   }
-  
+
   // Every connection in this pool started as volcano_user_access:{userId}
   const client = await poolForUser(auth.user_id).connect();
-  
+
   try {
     // Query - auth.uid() = auth.user_id from event
     const { rows } = await client.query('SELECT * FROM posts');
-    
+
     return { statusCode: 200, body: JSON.stringify({ posts: rows }) };
   } finally {
     client.release();
@@ -631,7 +633,7 @@ invoke(functionName, payload)
 ```javascript
 exports.handler = async (event) => {
   console.log('Received event:', event);
-  
+
   // Event contains:
   // {
   //   action: 'get_posts',
@@ -643,7 +645,7 @@ exports.handler = async (event) => {
   //     access_token: 'eyJhbGci...'
   //   }
   // }
-  
+
   const auth = event.__volcano_auth;
   // This is the user's identity from their JWT token
 };
@@ -718,26 +720,32 @@ SDK passes to database
 Volcano uses the `application_name` parameter to control access levels:
 
 ### Full Admin Access
+
 ```text
 volcano_full_access
 ```
+
 - For DDL operations: CREATE TABLE, ALTER TABLE, migrations
 - Bypasses Row Level Security
 - Use for admin/maintenance scripts only
 
 ### User Impersonation (RLS Enforced)
+
 ```text
 volcano_user_access:{user_id}
 ```
+
 - Queries run as the specified user
 - Row Level Security is enforced
 - `auth.uid()` returns the user_id
 - Use for authenticated user operations
 
 ### Anonymous Access (RLS Enforced)
+
 ```text
 volcano_user_access
 ```
+
 - Queries run with `anon` role
 - Row Level Security is enforced
 - `auth.uid()` returns NULL

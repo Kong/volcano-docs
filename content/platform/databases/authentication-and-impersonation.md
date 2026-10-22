@@ -1,6 +1,6 @@
 ---
-title: "Database Authentication & User Impersonation"
-description: "Understanding how your identity is passed to the database for Row-Level Security."
+title: 'Database Authentication & User Impersonation'
+description: 'Understanding how your identity is passed to the database for Row-Level Security.'
 ---
 
 Understanding how your identity is passed to the database for Row-Level Security.
@@ -90,21 +90,19 @@ import { VolcanoAuth } from '@volcano.dev/sdk';
 
 const volcano = new VolcanoAuth({
   apiUrl: 'https://api.yourapp.com',
-  anonKey: 'your-anon-key'
+  anonKey: 'your-anon-key',
 });
 
 volcano.database('your_database_name');
 
 // Step 1: Sign in (required!)
-await volcano.auth.signIn({ 
-  email: 'alice@example.com', 
-  password: 'alice-password' 
+await volcano.auth.signIn({
+  email: 'alice@example.com',
+  password: 'alice-password',
 });
 
 // Step 2: Query
-const { data } = await volcano
-  .from('posts')
-  .select('*');
+const { data } = await volcano.from('posts').select('*');
 
 // Access token automatically sent
 // Your user_id extracted from token
@@ -135,13 +133,13 @@ Body:
 ```sql
 -- When you query, the database session has these values set:
 
-SELECT 
+SELECT
   current_setting('request.jwt_sub'),      -- Returns: YOUR user_id
   current_setting('request.jwt_email'),    -- Returns: YOUR email
   current_setting('request.jwt_role');     -- Returns: YOUR role
 
 -- Auth helper functions read these:
-SELECT 
+SELECT
   auth.uid(),      -- Returns: YOUR user_id (from token!)
   auth.email(),    -- Returns: YOUR email (from token!)
   auth.role();     -- Returns: YOUR role (from token!)
@@ -163,9 +161,9 @@ In Volcano, you **always** query as the signed-in user. You **cannot** query as 
 
 ```javascript
 // Alice signs in
-await volcano.auth.signIn({ 
-  email: 'alice@example.com', 
-  password: 'pass' 
+await volcano.auth.signIn({
+  email: 'alice@example.com',
+  password: 'pass',
 });
 
 // All queries execute as Alice
@@ -184,9 +182,9 @@ const orders = await volcano.from('orders').select('*');
 
 ```javascript
 // Sign in as Alice
-await volcano.auth.signIn({ 
-  email: 'alice@example.com', 
-  password: 'alice-pass' 
+await volcano.auth.signIn({
+  email: 'alice@example.com',
+  password: 'alice-pass',
 });
 
 const { data: alicePosts } = await volcano.from('posts').select('*');
@@ -198,9 +196,9 @@ const { error: signOutError } = await volcano.auth.signOut();
 if (signOutError) throw signOutError;
 
 // Sign in as Bob
-await volcano.auth.signIn({ 
-  email: 'bob@example.com', 
-  password: 'bob-pass' 
+await volcano.auth.signIn({
+  email: 'bob@example.com',
+  password: 'bob-pass',
 });
 
 const { data: bobPosts } = await volcano.from('posts').select('*');
@@ -288,9 +286,7 @@ const { data } = await volcano.from('posts').select('*');
 
 ```javascript
 // This won't work
-const { data } = await volcano
-  .from('posts')
-  .eq('user_id', 'someone-elses-id');
+const { data } = await volcano.from('posts').eq('user_id', 'someone-elses-id');
 
 // What actually happens:
 // 1. Your filter: WHERE user_id = 'someone-elses-id'
@@ -337,14 +333,14 @@ If you need to access ALL data (bypassing RLS), use **platform tokens** with dir
 exports.handler = async (event) => {
   // Connect with service_role (bypasses RLS)
   const db = new Client({
-    connectionString: process.env.SERVICE_ROLE_CONNECTION_STRING
+    connectionString: process.env.SERVICE_ROLE_CONNECTION_STRING,
   });
-  
+
   await db.connect();
-  
+
   // See ALL data (not filtered by RLS)
   const { rows } = await db.query('SELECT * FROM posts');
-  
+
   await db.end();
   return { statusCode: 200, body: JSON.stringify({ posts: rows }) };
 };
@@ -364,9 +360,9 @@ const { user } = await volcano.auth.getUser();
 
 if (user) {
   console.log('Querying as:');
-  console.log('  ID:', user.id);           // ← auth.uid() returns this
-  console.log('  Email:', user.email);     // ← auth.email() returns this
-  console.log('  Role:', user.role);       // ← auth.role() returns this
+  console.log('  ID:', user.id); // ← auth.uid() returns this
+  console.log('  Email:', user.email); // ← auth.email() returns this
+  console.log('  Role:', user.role); // ← auth.role() returns this
 } else {
   console.log('Not signed in - queries will fail');
 }
@@ -402,23 +398,20 @@ const { data } = await volcano.from('posts').select('*');
 async function getMyPosts() {
   // Check if user is signed in
   const { user } = await volcano.auth.getUser();
-  
+
   if (!user) {
     console.error('Please sign in first');
     return [];
   }
-  
+
   // Query - auth is automatic
-  const { data, error } = await volcano
-    .from('posts')
-    .select('*')
-    .order('created_at', { ascending: false });
-    
+  const { data, error } = await volcano.from('posts').select('*').order('created_at', { ascending: false });
+
   if (error) {
     console.error('Query failed:', error);
     return [];
   }
-  
+
   return data;
 }
 ```
@@ -449,11 +442,11 @@ if (error) {
 async function initApp() {
   // Try to restore session
   const { user } = await volcano.initialize();
-  
+
   if (user) {
     console.log('Signed in as:', user.email);
     console.log('Your user ID:', user.id);
-    
+
     // Load user's data
     const { data: posts } = await volcano.from('posts').select('*');
     console.log(`You have ${posts.length} posts`);
@@ -475,16 +468,13 @@ async function initApp() {
 
 ```javascript
 const userId = getCurrentUserId();
-const { data } = await volcano
-  .from('posts')
-  .eq('user_id', userId);  // Not needed
+const { data } = await volcano.from('posts').eq('user_id', userId); // Not needed
 ```
 
 **Just do this:**
+
 ```javascript
-const { data } = await volcano
-  .from('posts')
-  .select('*');  // ← RLS filters automatically!
+const { data } = await volcano.from('posts').select('*'); // ← RLS filters automatically!
 ```
 
 ### Q: How does the database know my user_id?
@@ -492,6 +482,7 @@ const { data } = await volcano
 **A: From your JWT access token.**
 
 When you sign in, you get a JWT that contains:
+
 ```json
 {
   "user_id": "abc-123-...",
@@ -508,6 +499,7 @@ This token is sent with every query, and Volcano extracts your `user_id` and pas
 **A: No. You can only query as yourself.**
 
 This is by design for security. To access different data:
+
 1. Sign out current user
 2. Sign in as different user
 3. Query again
@@ -525,6 +517,7 @@ For admin operations that need to see all data, use functions with direct databa
 **A: Through JWT tokens and Row-Level Security.**
 
 When you query:
+
 1. User signs in → Gets JWT token with user_id
 2. JWT sent with every query
 3. Volcano validates and extracts user identity

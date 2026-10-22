@@ -1,6 +1,6 @@
 ---
-title: "Project access tokens"
-description: "Project access tokens are control-plane credentials bound to a single project, for CI, scripts, and agents that should never hold account-wide access."
+title: 'Project access tokens'
+description: 'Project access tokens are control-plane credentials bound to a single project, for CI, scripts, and agents that should never hold account-wide access.'
 ---
 
 A project access token authenticates Volcano API calls for **one project**. It starts with `pt-`, and it is what you give a CI job, a deploy script, or an AI agent instead of a platform token, whose leak would expose every project you own.
@@ -59,9 +59,9 @@ A project access token can read its own request counts, which is enough to monit
 
 Choose the scope at creation time. It cannot be changed afterwards; create a new token instead.
 
-| Scope | Allows |
-|-------|--------|
-| `full` | Read and mutate project resources, subject to the restrictions above |
+| Scope       | Allows                                                                                                                                                                                   |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `full`      | Read and mutate project resources, subject to the restrictions above                                                                                                                     |
 | `read_only` | Reads only, and not the reads that return a credential. Any mutation, and any request for a service key, an anon key, a variable's value, or a database connection string, returns `403` |
 
 Read-only is enforced by what an endpoint does, not by its HTTP method. Log search, log activity, log streaming, and metrics queries are `POST` requests because they carry filters in the body, and a `read_only` token can still call all of them — which is what makes the scope usable for monitoring and for agents that should look but not touch.
@@ -115,7 +115,7 @@ Deleting a project revokes its tokens at the moment the deletion is requested, n
 
 A project may hold at most **100 active tokens**. Creating the 101st returns `409`; revoke something you no longer use. Neither revoked nor expired tokens count.
 
-A valid token is never refused for its rate. Presenting credentials that are *not* recognized is rationed, because each one has to be checked: a client working through many unrecognized values gets `429`. Well above any real use — a token you hold is answered without a check at all — and low enough that guessing is not free.
+A valid token is never refused for its rate. Presenting credentials that are _not_ recognized is rationed, because each one has to be checked: a client working through many unrecognized values gets `429`. Well above any real use — a token you hold is answered without a check at all — and low enough that guessing is not free.
 
 ## Auditing what a token did
 
@@ -152,20 +152,20 @@ Every day in the window is present, so a gap reads as `0` rather than going miss
 
 ## Choosing a credential
 
-| | Platform token (`pk-`) | Project access token (`pt-`) | Anon key | Service key |
-|---|---|---|---|---|
-| Reaches | Every project you own | One project | One project | One project |
-| Used for | Account and project management | Project management from CI, scripts, agents | User signup and signin from a browser | Backend data access as an admin |
-| Deploy and configure | Yes | Yes (`full`), reads only with `read_only` | No | No |
-| Query data, invoke functions | No | No | Limited by permissions | Yes, bypasses RLS |
-| Create or delete projects | Yes | No | No | No |
-| Manage project access tokens | Yes | No | No | No |
-| Decide durable approvals | Yes | No, reads only | No | No |
-| Send durable messages | Yes | Yes (`full`), reads only with `read_only` | With the execution's client token, as the function's visibility allows | Yes |
-| Safe in frontend code | Never | Never | Yes | Never |
-| Comes from | `volcano login` or the dashboard | `POST /projects/{id}/access-tokens` | Created with the project | `POST /projects/{id}/service-keys` |
-| Readable after creation | — | No, shown once | Yes | Yes |
-| If it leaks | Every project you own | One project, within its scope | Little — RLS still applies | All of that project's data |
+|                              | Platform token (`pk-`)           | Project access token (`pt-`)                | Anon key                                                               | Service key                        |
+| ---------------------------- | -------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------- | ---------------------------------- |
+| Reaches                      | Every project you own            | One project                                 | One project                                                            | One project                        |
+| Used for                     | Account and project management   | Project management from CI, scripts, agents | User signup and signin from a browser                                  | Backend data access as an admin    |
+| Deploy and configure         | Yes                              | Yes (`full`), reads only with `read_only`   | No                                                                     | No                                 |
+| Query data, invoke functions | No                               | No                                          | Limited by permissions                                                 | Yes, bypasses RLS                  |
+| Create or delete projects    | Yes                              | No                                          | No                                                                     | No                                 |
+| Manage project access tokens | Yes                              | No                                          | No                                                                     | No                                 |
+| Decide durable approvals     | Yes                              | No, reads only                              | No                                                                     | No                                 |
+| Send durable messages        | Yes                              | Yes (`full`), reads only with `read_only`   | With the execution's client token, as the function's visibility allows | Yes                                |
+| Safe in frontend code        | Never                            | Never                                       | Yes                                                                    | Never                              |
+| Comes from                   | `volcano login` or the dashboard | `POST /projects/{id}/access-tokens`         | Created with the project                                               | `POST /projects/{id}/service-keys` |
+| Readable after creation      | —                                | No, shown once                              | Yes                                                                    | Yes                                |
+| If it leaks                  | Every project you own            | One project, within its scope               | Little — RLS still applies                                             | All of that project's data         |
 
 Rules of thumb:
 
@@ -186,11 +186,11 @@ Do not reuse the leaked token's name until you no longer need its record.
 
 ## What's next
 
-| Guide | Description |
-|-------|-------------|
-| [Using the API](../../api-reference/using-the-api.md) | Create a token and run a full workflow with it |
-| [MCP server](../../interfaces/mcp.md) | Give an AI agent a scoped tool surface over one project |
-| [Token types](token-types.md) | Every credential Volcano issues |
-| [Service keys](service-keys.md) | Admin keys for backend data access |
-| [Anon keys](anon-keys.md) | Public keys safe for frontend use |
-| [Security checklist](../../guides/security-checklist.md) | Production security review |
+| Guide                                                    | Description                                             |
+| -------------------------------------------------------- | ------------------------------------------------------- |
+| [Using the API](../../api-reference/using-the-api.md)    | Create a token and run a full workflow with it          |
+| [MCP server](../../interfaces/mcp.md)                    | Give an AI agent a scoped tool surface over one project |
+| [Token types](token-types.md)                            | Every credential Volcano issues                         |
+| [Service keys](service-keys.md)                          | Admin keys for backend data access                      |
+| [Anon keys](anon-keys.md)                                | Public keys safe for frontend use                       |
+| [Security checklist](../../guides/security-checklist.md) | Production security review                              |

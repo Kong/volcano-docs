@@ -1,6 +1,6 @@
 ---
-title: "Deploy to production"
-description: "Take a Volcano project to production: deploy functions and frontends, set secrets, add a custom domain, and watch logs."
+title: 'Deploy to production'
+description: 'Take a Volcano project to production: deploy functions and frontends, set secrets, add a custom domain, and watch logs.'
 ---
 
 Once your project works locally (see the [Quickstart](../getting-started/quickstart.md)),
@@ -80,15 +80,19 @@ going live.
 ## Custom domain
 
 ```bash
-volcano cloud frontends domain create my-site \
-  --domain app.example.com --cert ./fullchain-leaf.pem --key ./privkey.pem
+volcano cloud frontends domain create my-site --domain app.example.com --tls managed
+volcano cloud frontends domain get my-site
 ```
 
-Each frontend has one custom domain. See
-[Add a custom domain](../frontends/deploy.md#4-add-a-custom-domain). If
-`volcano-config.yaml` declares this frontend, add `custom_domain` to its entry;
-otherwise the next `volcano cloud deploy` or `volcano cloud config deploy`
-removes the domain.
+Publish the DNS records these print. Without a verified domain, `create` names
+a `_volcano` TXT record first, and `domain get` shows the certificate
+validation CNAME once Volcano sees it. Volcano then issues and renews the
+certificate. `--tls` needs the Volcano CLI 0.50 or later. To use your own
+certificate, pass `--cert` and `--key` instead of `--tls managed`. Each
+frontend has one custom domain. See
+[Add a custom domain](../frontends/deploy.md#4-add-a-custom-domain). A
+`volcano-config.yaml` entry for this frontend that omits `custom_domain` leaves
+the domain attached; `custom_domain: null` removes it.
 
 ## Observe
 

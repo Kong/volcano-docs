@@ -1,7 +1,7 @@
 // Custom hook for Volcano SDK with dynamic configuration
 import { useState, useEffect } from 'react';
 import type { User, VolcanoAuth } from '@volcano.dev/sdk';
-import { getConfig, isConfigured } from './config';
+import { getConfig, isConfigured, type VolcanoCredentials } from './config';
 
 export type VolcanoUser = User;
 
@@ -26,13 +26,57 @@ export function validatePasswordAgainstPolicy(password: string, policy: Password
   if (passwordLength < policy.effective_min_length || passwordLength > policy.max_length) {
     return `Password must be between ${policy.effective_min_length} and ${policy.max_length} characters`;
   }
-  if (policy.require_uppercase && !/[A-Z]/.test(normalized)) return 'Password must include an uppercase letter';
-  if (policy.require_lowercase && !/[a-z]/.test(normalized)) return 'Password must include a lowercase letter';
-  if (policy.require_numbers && !/[0-9]/.test(normalized)) return 'Password must include a number';
-  if (policy.require_special_chars && !'!@#$%^&*()_+-=[]{}|;:,.<>?'.split('').some((char) => normalized.includes(char))) {
+  if (policy.require_uppercase && !/[A-Z]/u.test(normalized)) return 'Password must include an uppercase letter';
+  if (policy.require_lowercase && !/[a-z]/u.test(normalized)) return 'Password must include a lowercase letter';
+  if (policy.require_numbers && !/[0-9]/u.test(normalized)) return 'Password must include a number';
+  if (
+    policy.require_special_chars &&
+    !'!@#$%^&*()_+-=[]{}|;:,.<>?'.split('').some((char) => normalized.includes(char))
+  ) {
     return 'Password must include a special character';
   }
   return null;
+}
+
+// Returns why a new password can't be used, or null when it meets the policy
+export function newPasswordError(
+  password: string,
+  policy: PasswordPolicy | null,
+  policyError: string | null,
+): string | null {
+  if (!policy) return policyError || 'Password policy is temporarily unavailable';
+  return validatePasswordAgainstPolicy(password, policy);
+}
+
+// Placeholder for a new-password input: the allowed length, once the policy has loaded
+export function passwordPlaceholder(policy: PasswordPolicy | null): string {
+  return policy ? `${policy.effective_min_length}-${policy.max_length} characters` : 'Password policy unavailable';
+}
+
+interface PasswordPolicySetters {
+  setPasswordPolicy: (policy: PasswordPolicy | null) => void;
+  setPasswordPolicyError: (error: string | null) => void;
+}
+
+// Fetches the project's password policy, or records why it's unavailable
+async function loadPasswordPolicy(
+  config: VolcanoCredentials,
+  { setPasswordPolicy, setPasswordPolicyError }: PasswordPolicySetters,
+) {
+  setPasswordPolicy(null);
+  setPasswordPolicyError(null);
+  try {
+    const response = await fetch(`${config.apiUrl.replace(/\/+$/u, '')}/auth/password-policy`, {
+      headers: { Authorization: `Bearer ${config.anonKey}` },
+      cache: 'no-store',
+    });
+    if (!response.ok) throw new Error('Password policy is temporarily unavailable');
+    setPasswordPolicy((await response.json()) as PasswordPolicy);
+  } catch (policyError) {
+    setPasswordPolicyError(
+      policyError instanceof Error ? policyError.message : 'Password policy is temporarily unavailable',
+    );
+  }
 }
 
 export function useVolcano() {
@@ -59,20 +103,7 @@ export function useVolcano() {
       const volcanoClient = new VolcanoAuthClass(config);
       setVolcano(volcanoClient);
       setConfigured(true);
-      setPasswordPolicy(null);
-      setPasswordPolicyError(null);
-      try {
-        const response = await fetch(`${config.apiUrl.replace(/\/+$/, '')}/auth/password-policy`, {
-          headers: { Authorization: `Bearer ${config.anonKey}` },
-          cache: 'no-store',
-        });
-        if (!response.ok) throw new Error('Password policy is temporarily unavailable');
-        setPasswordPolicy(await response.json() as PasswordPolicy);
-      } catch (policyError) {
-        setPasswordPolicyError(
-          policyError instanceof Error ? policyError.message : 'Password policy is temporarily unavailable',
-        );
-      }
+      await loadPasswordPolicy(config, { setPasswordPolicy, setPasswordPolicyError });
     } catch (error) {
       console.error('Failed to load Volcano SDK:', error);
       setConfigured(false);
@@ -89,12 +120,5 @@ export function useVolcano() {
     loadSDK();
   };
 
-  return {
-    volcano,
-    configured,
-    loading,
-    passwordPolicy,
-    passwordPolicyError,
-    reload,
-  };
+  return { volcano, configured, loading, passwordPolicy, passwordPolicyError, reload };
 }

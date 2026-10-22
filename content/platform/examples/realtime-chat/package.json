@@ -1,8 +1,8 @@
 {
   "name": "volcano-realtime-chat",
   "version": "1.0.0",
-  "description": "Real-time chat example using Volcano Realtime SDK with Next.js",
   "private": true,
+  "description": "Real-time chat example using Volcano Realtime SDK with Next.js",
   "scripts": {
     "dev": "next dev -p 3005",
     "build": "next build",

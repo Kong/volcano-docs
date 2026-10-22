@@ -1,5 +1,5 @@
 ---
-title: "Autofix"
+title: 'Autofix'
 description: "Have AI diagnose your project's issues and open draft pull requests that fix them, on Volcano's models or your own API key."
 ---
 
@@ -45,10 +45,10 @@ curl -X PUT "https://api.volcano.dev/projects/$PROJECT_ID/autofix" \
 Autofix is in preview and is not available in every environment. Check
 `GET /capabilities`:
 
-| Capability | Means |
-|------------|-------|
-| `autofix` | You can turn autofix on and start runs. Without it, both answer `404` with code `feature_unavailable` |
-| `autofix.managed_models` | You can turn autofix on with provider `volcano`. Without it, use your own API key |
+| Capability               | Means                                                                                                 |
+| ------------------------ | ----------------------------------------------------------------------------------------------------- |
+| `autofix`                | You can turn autofix on and start runs. Without it, both answer `404` with code `feature_unavailable` |
+| `autofix.managed_models` | You can turn autofix on with provider `volcano`. Without it, use your own API key                     |
 
 Where autofix is not available, settings a project already saved and its runs
 stay readable, and you can still turn autofix off or delete the key. A project that
@@ -59,14 +59,14 @@ endpoints answer `501`.
 
 ## Settings
 
-| Field | Values | Default |
-|-------|--------|---------|
-| `enabled` | Whether Volcano diagnoses the project's issues | `false` |
-| `max_stage` | `diagnose` stops at a root-cause diagnosis. `pull_request` may also open a draft pull request | `diagnose` |
-| `auto_trigger` | Whether a new or reopened issue starts a run on its own. Otherwise runs start only when you ask | `false` |
-| `provider` | `volcano` runs on Volcano's models. `anthropic` runs on your own Anthropic API key | The saved provider, else `volcano` |
-| `model` | `claude-fable-5-1`, `claude-opus-5-5`, `claude-sonnet-5-5`, `claude-haiku-5-5`, `claude-opus-5`, `claude-sonnet-5`, or `claude-haiku-4-5` | The saved model, else `claude-opus-5-5` |
-| `api_key` | Your own API key for `provider`, such as an Anthropic key for `anthropic`. Write-only | |
+| Field          | Values                                                                                                                                    | Default                                 |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| `enabled`      | Whether Volcano diagnoses the project's issues                                                                                            | `false`                                 |
+| `max_stage`    | `diagnose` stops at a root-cause diagnosis. `pull_request` may also open a draft pull request                                             | `diagnose`                              |
+| `auto_trigger` | Whether a new or reopened issue starts a run on its own. Otherwise runs start only when you ask                                           | `false`                                 |
+| `provider`     | `volcano` runs on Volcano's models. `anthropic` runs on your own Anthropic API key                                                        | The saved provider, else `volcano`      |
+| `model`        | `claude-fable-5-1`, `claude-opus-5-5`, `claude-sonnet-5-5`, `claude-haiku-5-5`, `claude-opus-5`, `claude-sonnet-5`, or `claude-haiku-4-5` | The saved model, else `claude-opus-5-5` |
+| `api_key`      | Your own API key for `provider`, such as an Anthropic key for `anthropic`. Write-only                                                     |                                         |
 
 `PUT` replaces the settings: a field you omit takes its default. Three fields
 are the exception: an omitted `provider`, `model`, or `api_key` keeps
@@ -152,7 +152,11 @@ curl "https://api.volcano.dev/projects/$PROJECT_ID/autofix-runs/$RUN_ID" \
     "summary": "Checkout reads the cart total before the cart loads.",
     "root_cause": "getCart in src/cart.js returns undefined for an expired session, and handler in src/checkout.js reads cart.total without a check.",
     "evidence": [
-      { "kind": "log", "detail": "TypeError: Cannot read properties of undefined (reading 'total')", "location": "2026-10-13T12:29:14Z" },
+      {
+        "kind": "log",
+        "detail": "TypeError: Cannot read properties of undefined (reading 'total')",
+        "location": "2026-10-13T12:29:14Z"
+      },
       { "kind": "code", "detail": "cart.total read without a check", "location": "src/checkout.js:12" }
     ],
     "suggested_fix": "Return 404 from handler when getCart returns undefined.",
@@ -187,26 +191,29 @@ time. A project starts at most 25 runs in any 24 hours, manual and automatic
 together. An automatic run that would pass the limit is skipped.
 
 A run gets three attempts. It retries when the model is unavailable or the run
-times out, and records why in `failure_code` meanwhile.
+times out, and records why in `failure_code` meanwhile. If a fix was saved
+before an interruption, its retry uses the same repository and commit, even
+when a newer version has since deployed.
 
 ### Why a run did not finish
 
-| `status` | `failure_code` | Means |
-|----------|----------------|-------|
-| `failed` | `api_key_rejected` | The provider refused your API key. Save a new one |
-| `failed` | `model_request_rejected` | The model provider refused the request |
-| `failed` | `model_unavailable` | The model was unavailable on every attempt |
-| `failed` | `timed_out` | The run did not finish in time on its last attempt |
-| `failed` | `model_refused` | The model declined to diagnose the issue |
-| `failed` | `no_diagnosis` | The model finished without a diagnosis |
-| `failed` | `budget_exhausted` | The run used its token budget before reaching a diagnosis |
-| `failed` | `attempts_exhausted` | The run did not finish within its attempts |
-| `failed` | `internal_error` | Volcano could not run the diagnosis |
-| `canceled` | `autofix_disabled` | Autofix was turned off before the run started |
-| `canceled` | `plan_required` | The plan no longer includes autofix |
-| `canceled` | `settings_changed` | The provider changed after the run was queued |
-| `canceled` | `managed_models_unavailable` | Volcano-managed models are not available |
-| `canceled` | `issue_not_found` | The issue no longer exists |
+| `status`   | `failure_code`               | Means                                                                                                   |
+| ---------- | ---------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `queued`   | `feature_unavailable`        | Autofix is temporarily unavailable. The run resumes automatically without using an attempt while paused |
+| `failed`   | `api_key_rejected`           | The provider refused your API key. Save a new one                                                       |
+| `failed`   | `model_request_rejected`     | The model provider refused the request                                                                  |
+| `failed`   | `model_unavailable`          | The model was unavailable on every attempt                                                              |
+| `failed`   | `timed_out`                  | The run did not finish in time on its last attempt                                                      |
+| `failed`   | `model_refused`              | The model declined to diagnose the issue                                                                |
+| `failed`   | `no_diagnosis`               | The model finished without a diagnosis                                                                  |
+| `failed`   | `budget_exhausted`           | The run used its token budget before reaching a diagnosis                                               |
+| `failed`   | `attempts_exhausted`         | The run did not finish within its attempts                                                              |
+| `failed`   | `internal_error`             | Volcano could not run the diagnosis                                                                     |
+| `canceled` | `autofix_disabled`           | Autofix was turned off before the run started                                                           |
+| `canceled` | `plan_required`              | The plan no longer includes autofix                                                                     |
+| `canceled` | `settings_changed`           | The provider changed after the run was queued                                                           |
+| `canceled` | `managed_models_unavailable` | Volcano-managed models are not available                                                                |
+| `canceled` | `issue_not_found`            | The issue no longer exists                                                                              |
 
 A run reports the model tokens it used in `usage`, across every attempt. With
 provider `anthropic`, Anthropic bills you for them.
@@ -306,16 +313,16 @@ repository. The App opens pull requests only where the owner could.
 A run whose `max_stage` is `pull_request` still succeeds with its diagnosis when
 it opens no pull request, and says why in `pull_request_skipped`:
 
-| `pull_request_skipped` | Means |
-|------------------------|-------|
-| `source_unavailable` | The resource was not deployed from the connected repository, or the source could not be read |
-| `pull_request_open` | A fix pull request for this issue is still open, or merged and not yet deployed |
-| `not_fixable` | The cause is not a code change in this repository |
-| `low_confidence` | The diagnosis is not confident enough to propose a fix |
-| `no_patch` | The model gave no fix that passed Volcano's checks |
-| `permission_missing` | The GitHub App installation lacks the permissions above or access to the repository, or the project owner cannot push to it |
-| `repository_changed` | The project's connected repository changed during the run |
-| `publish_failed` | GitHub refused the pull request, or was unavailable |
+| `pull_request_skipped` | Means                                                                                                                       |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `source_unavailable`   | The resource was not deployed from the connected repository, or the source could not be read                                |
+| `pull_request_open`    | A fix pull request for this issue is still open, or merged and not yet deployed                                             |
+| `not_fixable`          | The cause is not a code change in this repository                                                                           |
+| `low_confidence`       | The diagnosis is not confident enough to propose a fix                                                                      |
+| `no_patch`             | The model gave no fix that passed Volcano's checks                                                                          |
+| `permission_missing`   | The GitHub App installation lacks the permissions above or access to the repository, or the project owner cannot push to it |
+| `repository_changed`   | The project's connected repository changed during the run                                                                   |
+| `publish_failed`       | GitHub refused the pull request, or was unavailable                                                                         |
 
 When a valid fix could not be published, the run keeps it in `patch` so you can
 apply it yourself.
@@ -357,15 +364,15 @@ wrong one.
 
 ## Errors
 
-| Status | Code | When |
-|--------|------|------|
-| `400` | | A field is invalid, the key does not fit the provider, turning autofix on with provider `anthropic` has no key for it, or a key is sent with provider `volcano` |
-| `400` | `feature_unavailable` | Turning autofix on with provider `volcano` where `autofix.managed_models` is unavailable |
-| `400` | `feature_unavailable` | Starting a run with provider `volcano` where `autofix.managed_models` is unavailable |
-| `403` | | The plan does not include autofix, or a project access token tried to change the settings, delete the key, or start a run |
-| `404` | `feature_unavailable` | Autofix is not available in this environment, and the request turns it on, starts a run, or reads a project that never saved settings |
-| `404` | | The project, issue, or run does not exist, or belongs to someone else |
-| `409` | | Starting a run while autofix is off, or while the issue already has a queued or running run |
-| `429` | | The project started 25 runs in the last 24 hours |
-| `501` | | Local mode |
-| `503` | | Your plan could not be resolved while reading the settings, turning autofix on, or starting a run. Nothing was saved. Retry later |
+| Status | Code                  | When                                                                                                                                                            |
+| ------ | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `400`  |                       | A field is invalid, the key does not fit the provider, turning autofix on with provider `anthropic` has no key for it, or a key is sent with provider `volcano` |
+| `400`  | `feature_unavailable` | Turning autofix on with provider `volcano` where `autofix.managed_models` is unavailable                                                                        |
+| `400`  | `feature_unavailable` | Starting a run with provider `volcano` where `autofix.managed_models` is unavailable                                                                            |
+| `403`  |                       | The plan does not include autofix, or a project access token tried to change the settings, delete the key, or start a run                                       |
+| `404`  | `feature_unavailable` | Autofix is not available in this environment, and the request turns it on, starts a run, or reads a project that never saved settings                           |
+| `404`  |                       | The project, issue, or run does not exist, or belongs to someone else                                                                                           |
+| `409`  |                       | Starting a run while autofix is off, or while the issue already has a queued or running run                                                                     |
+| `429`  |                       | The project started 25 runs in the last 24 hours                                                                                                                |
+| `501`  |                       | Local mode                                                                                                                                                      |
+| `503`  |                       | Your plan could not be resolved while reading the settings, turning autofix on, or starting a run. Nothing was saved. Retry later                               |

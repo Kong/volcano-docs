@@ -1,6 +1,6 @@
 ---
-title: "Deploy a frontend"
-description: "Build and deploy a Next.js site to Volcano with the CLI, set variables, attach a custom domain, and view logs."
+title: 'Deploy a frontend'
+description: 'Build and deploy a Next.js site to Volcano with the CLI, set variables, attach a custom domain, and view logs.'
 ---
 
 Deploy a Next.js site to Volcano and serve it at a Volcano URL or your own
@@ -98,9 +98,7 @@ exists, so the two steps above happen in the right order:
 ```json
 {
   "version": 1,
-  "frontends": [
-    { "name": "my-site", "workspace": "", "app_root": "" }
-  ]
+  "frontends": [{ "name": "my-site", "workspace": "", "app_root": "" }]
 }
 ```
 
@@ -159,11 +157,11 @@ Next.js reads them during the build; keep secrets in project variables instead.
 
 ### Build environment
 
-| Tool | Version |
-| --- | --- |
-| Node.js | 22, or 24 when `package.json` `engines.node` asks for it |
-| npm | The version bundled with that Node.js (npm 10 on Node.js 22), unless `packageManager` pins another; see [Dependencies](#dependencies) |
-| Next.js | 15 or 16 |
+| Tool    | Version                                                                                                                               |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Node.js | 22, or 24 when `package.json` `engines.node` asks for it                                                                              |
+| npm     | The version bundled with that Node.js (npm 10 on Node.js 22), unless `packageManager` pins another; see [Dependencies](#dependencies) |
+| Next.js | 15 or 16                                                                                                                              |
 
 Volcano runs your `build` script, or `next build` when there is none. On
 Next.js 16, where Turbopack is the default, it adds `--webpack` to `next build`.
@@ -194,13 +192,13 @@ runtime environment.
 Volcano installs your dependencies before running the build, and picks the
 package manager in this order:
 
-| Your project | Volcano installs with |
-| --- | --- |
+| Your project                                                                      | Volcano installs with                                          |
+| --------------------------------------------------------------------------------- | -------------------------------------------------------------- |
 | declares `"packageManager": "pnpm@9.15.0"` (or `yarn@`, `npm@`) in `package.json` | the manager you declared, at that version (for npm, see below) |
-| declares `"packageManager"` as anything else (`bun@…`, a bare `pnpm`) | the build fails |
-| declares nothing and ships one lockfile | the manager that lockfile belongs to |
-| declares nothing and ships several lockfiles | `pnpm`, then `yarn`, then `npm` |
-| declares nothing and ships no lockfile | `npm` |
+| declares `"packageManager"` as anything else (`bun@…`, a bare `pnpm`)             | the build fails                                                |
+| declares nothing and ships one lockfile                                           | the manager that lockfile belongs to                           |
+| declares nothing and ships several lockfiles                                      | `pnpm`, then `yarn`, then `npm`                                |
+| declares nothing and ships no lockfile                                            | `npm`                                                          |
 
 npm installs with the version bundled with your Node.js runtime unless
 `packageManager` names a different npm major, so `npm@11.2.0` on a runtime that
@@ -257,8 +255,17 @@ generated files from the frontend bundle to reduce its size.
 ## 4. Add a custom domain
 
 Custom domains are available on every plan and support Volcano-managed TLS or
-bring-your-own-certificate (BYOC) TLS. For managed TLS, add the domain to
-`volcano-config.yaml` and deploy it:
+bring-your-own-certificate (BYOC) TLS. For managed TLS, attach the domain with
+`--tls managed` (Volcano CLI 0.50 or later):
+
+```bash
+volcano cloud frontends domain create my-site --domain app.example.com --tls managed
+volcano cloud frontends domain get my-site
+```
+
+A `volcano-config.yaml` entry for this frontend that omits `custom_domain`
+leaves the domain attached; `custom_domain: null` removes it. The manifest can
+also attach it on its own:
 
 ```yaml
 version: 1
@@ -268,11 +275,6 @@ frontends:
       domain: app.example.com
       tls:
         mode: managed
-```
-
-```bash
-volcano cloud config deploy
-volcano cloud frontends domain get my-site
 ```
 
 If your account already owns the domain, Volcano returns the certificate
@@ -288,9 +290,10 @@ delete the failed domain, wait for deletion to finish, and submit it again.
 Volcano does not repeatedly request certificates for an abandoned setup.
 An `ownership` failure means another account has already claimed the hostname;
 retrying under the same account will not resolve that conflict.
-If another account has only reserved the hostname, deploying the domain to a
+If another account has only reserved the hostname, attaching the domain to a
 frontend without one reports the `_volcano` TXT record your account must
-publish. Add it and deploy again to take over the reservation. A verified
+publish. Add it and attach the domain again, with the CLI or a deploy, to take
+over the reservation. A verified
 domain moves only as described in
 [Move a domain to another account](domain-verification.md#move-a-domain-to-another-account).
 
@@ -355,6 +358,57 @@ operator logs.
 - [Environment variables](../functions/environment-variables.md) — build vs runtime.
 - [Frontend API reference](../api-reference/frontend-endpoints.md) — deploy over HTTP.
 - [Deploy from GitHub](../projects/git-deploy.md) — redeploy on every push instead of running the CLI.
+
+## Next.js configuration support
+
+Volcano applies the routing in your `next.config` file the way `next start` does:
+
+- `redirects()`
+- `rewrites()`, including `beforeFiles`, `afterFiles`, and `fallback`
+- `headers()`
+- `has` and `missing` conditions on `host`, `header`, `cookie`, and `query`
+- Middleware, in `proxy.js` (Next.js 16) or `middleware.js`
+
+For example, send visitors from your apex domain to `www`:
+
+```js
+// next.config.mjs
+export default {
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'example.com' }],
+        destination: 'https://www.example.com/:path*',
+        permanent: true,
+      },
+    ];
+  },
+};
+```
+
+```bash
+curl -sI 'https://example.com/pricing?plan=pro' | grep -iE '^(HTTP|location)'
+# HTTP/2 308
+# location: https://www.example.com/pricing?plan=pro
+```
+
+Requests to `www.example.com` and to your frontend's default URL are not redirected. Conditions match the way Next.js matches them:
+
+- A `host` condition sees the hostname the visitor requested, lowercased and without its port, so write its `value` in lowercase.
+- A `value` is a regular expression that must match the whole value, so `example.com` does not match `www.example.com`.
+- A condition without a `value` requires only that the header, cookie, or query parameter is present with a value; `?draft` and `?draft=` do not satisfy it. Its value becomes a parameter named after the key's letters, lowercased for a header, so `X-Tenant` gives `:xtenant`.
+- Named groups in a `value`, such as `(?<tenant>[^.]+)\\.example\\.com`, become parameters you can use in `destination` and in the keys and values of `headers`.
+- In a `destination` path or host, a parameter from a condition is percent-encoded, so a `/`, `?`, or `#` in the request's value stays inside its segment and cannot send the visitor to another host. Next.js inserts it as sent, so `/docs/:path*` with `?path=guides/setup` reaches `/docs/guides%2Fsetup` here rather than `/docs/guides/setup`; capture the segments from `source` instead.
+
+Redeploy existing frontends to apply this matching. A rule that relied on a partial match stops matching after the redeploy: a `user-agent` value of `Googlebot` needs `.*Googlebot.*`. Next.js matches conditions the same way, so apart from the encoding above, configuration written for Next.js is unaffected.
+
+Known limits:
+
+- A request for a file in `public/` is answered with the file. `redirects`, `headers`, and middleware do not run for it.
+- The CDN caches a page by its URL, host, and a few request headers such as `Authorization`, but not by cookies or other headers. When a `cookie` or `header` condition sends visitors to different content at the same URL, keep that route out of the shared cache, for example by reading the cookie in the page. See [Caching](overview.md#caching).
+- Middleware `matcher` entries match on `source` only. Their `has` and `missing` conditions are not evaluated, so check the condition inside the middleware.
+- Rewrites to files in `public/` do not resolve when `basePath` and i18n are combined. See [Rewrite routes to public files](#rewrite-routes-to-public-files).
 
 ## Rewrite routes to public files
 

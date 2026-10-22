@@ -1,6 +1,6 @@
 ---
-title: "Query Builder API"
-description: "Query your PostgreSQL database from the browser using a simple, chainable query API!"
+title: 'Query Builder API'
+description: 'Query your PostgreSQL database from the browser using a simple, chainable query API!'
 ---
 
 Query your PostgreSQL database from the browser using a simple, chainable query API!
@@ -17,23 +17,21 @@ import { VolcanoAuth } from '@volcano.dev/sdk';
 
 const volcano = new VolcanoAuth({
   apiUrl: 'https://api.yourapp.com',
-  anonKey: 'your-anon-key'
+  anonKey: 'your-anon-key',
 });
 
 // STEP 1: Sign in (REQUIRED!)
 // This proves who you are and gets you an access token
-await volcano.auth.signIn({ 
-  email: 'user@example.com', 
-  password: 'password' 
+await volcano.auth.signIn({
+  email: 'user@example.com',
+  password: 'password',
 });
 
 // STEP 2: Set your database name (do this once)
 volcano.database('notes_db');
 
 // STEP 3: Query data with simple, chainable methods
-const { data, error } = await volcano
-  .from('posts')
-  .select('*');
+const { data, error } = await volcano.from('posts').select('*');
 
 console.log('Posts:', data);
 // Your access token was automatically sent
@@ -55,15 +53,15 @@ console.log('Posts:', data);
 
 ```javascript
 // Sign in user (creates session with access token)
-await volcano.auth.signIn({ 
-  email: 'user@example.com', 
-  password: 'password' 
+await volcano.auth.signIn({
+  email: 'user@example.com',
+  password: 'password',
 });
 
 // OR sign up new user
-await volcano.auth.signUp({ 
-  email: 'newuser@example.com', 
-  password: 'password123' 
+await volcano.auth.signUp({
+  email: 'newuser@example.com',
+  password: 'password123',
 });
 
 // OR use anonymous
@@ -128,9 +126,9 @@ volcano.from('posts')    →  4. Builds query request
 const { user } = await volcano.auth.getUser();
 
 console.log('Querying as:');
-console.log('  User ID:', user.id);        // ← This is what auth.uid() returns
-console.log('  Email:', user.email);       // ← This is what auth.email() returns
-console.log('  Role:', user.role);         // ← This is what auth.role() returns
+console.log('  User ID:', user.id); // ← This is what auth.uid() returns
+console.log('  Email:', user.email); // ← This is what auth.email() returns
+console.log('  Role:', user.role); // ← This is what auth.role() returns
 
 // All queries execute as THIS user
 const { data } = await volcano.from('posts').select('*');
@@ -164,7 +162,7 @@ const { data: bobData } = await volcano.from('posts').select('*');
 await volcano.auth.signUpAnonymous();
 
 const { user } = await volcano.auth.getUser();
-console.log('Anonymous user ID:', user.id);  // Has a real user_id!
+console.log('Anonymous user ID:', user.id); // Has a real user_id!
 
 // Query as anonymous user
 const { data } = await volcano.from('posts').select('*');
@@ -178,21 +176,22 @@ const { data } = await volcano.from('posts').select('*');
 ### Security Guarantees
 
 **You can ONLY query as yourself**
+
 - Your access token proves your identity
 - Cannot forge or modify tokens
 - Cannot access other users' data
 
 **RLS is always enforced**
+
 - Every query uses your user_id from the JWT
 - Policies use `auth.uid()` which comes from YOUR token
 - Impossible to bypass
 
 **No way to "trick" the system**
+
 ```javascript
 // This won't work - you can't pass a different user_id
-const { data } = await volcano
-  .from('posts')
-  .eq('user_id', 'someone-elses-id');  // RLS still filters to YOUR data!
+const { data } = await volcano.from('posts').eq('user_id', 'someone-elses-id'); // RLS still filters to YOUR data!
 
 // The RLS policy WHERE user_id = auth.uid() is added AFTER your filters
 // Final query: WHERE user_id = 'someone-elses-id' AND user_id = YOUR_ID
@@ -208,98 +207,61 @@ const { data } = await volcano
 #### Get All Rows
 
 ```javascript
-const { data, error } = await volcano
-  .from('posts')
-  .select('*');
+const { data, error } = await volcano.from('posts').select('*');
 ```
 
 #### Select Specific Columns
 
 ```javascript
-const { data } = await volcano
-  .from('posts')
-  .select('id, title, content, created_at');
+const { data } = await volcano.from('posts').select('id, title, content, created_at');
 ```
 
 #### With Filters
 
 ```javascript
 // Equal
-const { data } = await volcano
-  .from('posts')
-  .select('*')
-  .eq('status', 'published');
+const { data } = await volcano.from('posts').select('*').eq('status', 'published');
 
 // Not equal
-const { data } = await volcano
-  .from('posts')
-  .select('*')
-  .neq('status', 'draft');
+const { data } = await volcano.from('posts').select('*').neq('status', 'draft');
 
 // Greater than
-const { data } = await volcano
-  .from('posts')
-  .select('*')
-  .gt('views', 1000);
+const { data } = await volcano.from('posts').select('*').gt('views', 1000);
 
 // Greater than or equal
-const { data } = await volcano
-  .from('products')
-  .select('*')
-  .gte('price', 50);
+const { data } = await volcano.from('products').select('*').gte('price', 50);
 
 // Less than
-const { data } = await volcano
-  .from('products')
-  .select('*')
-  .lt('price', 100);
+const { data } = await volcano.from('products').select('*').lt('price', 100);
 
 // Less than or equal
-const { data } = await volcano
-  .from('products')
-  .select('*')
-  .lte('stock', 10);
+const { data } = await volcano.from('products').select('*').lte('stock', 10);
 ```
 
 #### Pattern Matching
 
 ```javascript
 // Case-sensitive pattern match
-const { data } = await volcano
-  .from('posts')
-  .select('*')
-  .like('title', '%Tutorial%');
+const { data } = await volcano.from('posts').select('*').like('title', '%Tutorial%');
 
 // Case-insensitive pattern match (recommended)
-const { data } = await volcano
-  .from('users')
-  .select('*')
-  .ilike('name', '%john%');  // Matches "John", "JOHN", "johnny"
+const { data } = await volcano.from('users').select('*').ilike('name', '%john%'); // Matches "John", "JOHN", "johnny"
 ```
 
 #### NULL Values
 
 ```javascript
 // Get rows where column is NULL
-const { data } = await volcano
-  .from('posts')
-  .select('*')
-  .is('deleted_at', null);
+const { data } = await volcano.from('posts').select('*').is('deleted_at', null);
 
 // Get rows where column is NOT NULL
-const { data } = await volcano
-  .from('posts')
-  .select('*')
-  .neq('deleted_at', null);
+const { data } = await volcano.from('posts').select('*').neq('deleted_at', null);
 ```
 
 #### IN Operator
 
 ```javascript
-const { data } = await volcano
-  .from('posts')
-  .select('*')
-  .in('status', ['draft', 'published', 'archived']);
+const { data } = await volcano.from('posts').select('*').in('status', ['draft', 'published', 'archived']);
 ```
 
 #### Multiple Filters (AND)
@@ -313,9 +275,9 @@ const { data } = await volcano
   .lte('price', 500)
   .eq('in_stock', true);
 
-// SQL equivalent: WHERE category = 'electronics' 
-//                  AND price >= 100 
-//                  AND price <= 500 
+// SQL equivalent: WHERE category = 'electronics'
+//                  AND price >= 100
+//                  AND price <= 500
 //                  AND in_stock = true
 ```
 
@@ -323,10 +285,7 @@ const { data } = await volcano
 
 ```javascript
 // Order by single column (descending)
-const { data } = await volcano
-  .from('posts')
-  .select('*')
-  .order('created_at', { ascending: false });
+const { data } = await volcano.from('posts').select('*').order('created_at', { ascending: false });
 
 // Multiple order columns
 const { data } = await volcano
@@ -336,10 +295,7 @@ const { data } = await volcano
   .order('created_at', { ascending: false });
 
 // Default is ascending
-const { data } = await volcano
-  .from('users')
-  .select('*')
-  .order('name');  // Ascending by default
+const { data } = await volcano.from('users').select('*').order('name'); // Ascending by default
 ```
 
 ### Pagination
@@ -374,12 +330,11 @@ const { data: page3 } = await volcano
 
 ```javascript
 // Insert single row
-const { data, error } = await volcano
-  .insert('posts', {
-    title: 'My New Post',
-    content: 'Hello World!',
-    status: 'published'
-  });
+const { data, error } = await volcano.insert('posts', {
+  title: 'My New Post',
+  content: 'Hello World!',
+  status: 'published',
+});
 
 const newPost = data[0];
 console.log('Created:', newPost.id);
@@ -394,12 +349,11 @@ must be `json` or `jsonb`. For a Postgres array column such as `text[]`, pass an
 array literal string.
 
 ```javascript
-const { data, error } = await volcano
-  .insert('messages', {
-    metadata: { source: 'chat', pinned: false }, // jsonb
-    attachments: [{ name: 'notes.txt' }],        // jsonb
-    tags: '{support,urgent}'                     // text[]
-  });
+const { data, error } = await volcano.insert('messages', {
+  metadata: { source: 'chat', pinned: false }, // jsonb
+  attachments: [{ name: 'notes.txt' }], // jsonb
+  tags: '{support,urgent}', // text[]
+});
 ```
 
 The same applies to `update` values.
@@ -411,7 +365,7 @@ The same applies to `update` values.
 const { data, error } = await volcano
   .update('posts', {
     title: 'Updated Title',
-    status: 'published'
+    status: 'published',
   })
   .eq('id', postId);
 
@@ -424,9 +378,7 @@ const updatedPost = data[0];
 
 ```javascript
 // Delete by ID
-const { data, error } = await volcano
-  .delete('posts')
-  .eq('id', postId);
+const { data, error } = await volcano.delete('posts').eq('id', postId);
 
 const deletedPost = data[0];
 
@@ -444,15 +396,15 @@ import { VolcanoAuth } from '@volcano.dev/sdk';
 
 const volcano = new VolcanoAuth({
   apiUrl: 'https://api.yourapp.com',
-  anonKey: 'your-anon-key'
+  anonKey: 'your-anon-key',
 });
 
 volcano.database('notes_db');
 
 // Sign in
-await volcano.auth.signIn({ 
-  email: 'user@example.com', 
-  password: 'password' 
+await volcano.auth.signIn({
+  email: 'user@example.com',
+  password: 'password',
 });
 
 // Get all todos
@@ -461,12 +413,12 @@ async function getTodos() {
     .from('todos')
     .select('id, title, completed, created_at')
     .order('created_at', { ascending: false });
-    
+
   if (error) {
     console.error('Error:', error);
     return [];
   }
-  
+
   return data;
 }
 
@@ -477,46 +429,41 @@ async function getIncompleteTodos() {
     .select('*')
     .eq('completed', false)
     .order('created_at', { ascending: false });
-    
+
   return data;
 }
 
 // Create todo
 async function createTodo(title) {
-  const { data, error } = await volcano
-    .insert('todos', {
-      title: title,
-      completed: false
-    });
-    
+  const { data, error } = await volcano.insert('todos', {
+    title: title,
+    completed: false,
+  });
+
   if (error) {
     console.error('Error creating todo:', error);
     return null;
   }
-  
+
   return data[0];
 }
 
 // Toggle todo
 async function toggleTodo(id, completed) {
-  const { data, error } = await volcano
-    .update('todos', { completed })
-    .eq('id', id);
-    
+  const { data, error } = await volcano.update('todos', { completed }).eq('id', id);
+
   if (error) {
     console.error('Error updating todo:', error);
     return null;
   }
-  
+
   return data[0];
 }
 
 // Delete todo
 async function deleteTodo(id) {
-  const { data, error } = await volcano
-    .delete('todos')
-    .eq('id', id);
-    
+  const { data, error } = await volcano.delete('todos').eq('id', id);
+
   return data[0];
 }
 ```
@@ -533,7 +480,7 @@ async function getPublishedPosts(page = 1, perPage = 10) {
     .order('created_at', { ascending: false })
     .limit(perPage)
     .offset((page - 1) * perPage);
-    
+
   return { posts: data, total: count };
 }
 
@@ -546,7 +493,7 @@ async function searchPosts(query) {
     .ilike('title', `%${query}%`)
     .order('created_at', { ascending: false })
     .limit(20);
-    
+
   return data;
 }
 
@@ -557,7 +504,7 @@ async function getMyDrafts() {
     .select('*')
     .eq('status', 'draft')
     .order('updated_at', { ascending: false });
-    
+
   // RLS automatically filters to current user's posts
   return data;
 }
@@ -565,16 +512,16 @@ async function getMyDrafts() {
 // Publish a draft
 async function publishPost(postId) {
   const { data, error } = await volcano
-    .update('posts', { 
+    .update('posts', {
       status: 'published',
-      published_at: new Date().toISOString()
+      published_at: new Date().toISOString(),
     })
     .eq('id', postId);
-    
+
   if (error) {
     throw error;
   }
-  
+
   return data[0];
 }
 ```
@@ -593,7 +540,7 @@ async function getProductsByCategory(category, minPrice, maxPrice) {
     .eq('in_stock', true)
     .order('rating', { ascending: false })
     .limit(50);
-    
+
   return data;
 }
 
@@ -606,7 +553,7 @@ async function searchProducts(searchTerm) {
     .eq('in_stock', true)
     .order('popularity', { ascending: false })
     .limit(20);
-    
+
   return data;
 }
 
@@ -617,30 +564,28 @@ async function getMyOrders() {
     .select('id, order_number, total, status, created_at')
     .neq('status', 'cancelled')
     .order('created_at', { ascending: false });
-    
+
   // RLS automatically filters to current user's orders
   return data;
 }
 
 // Create order
 async function createOrder(items, total) {
-  const { data, error } = await volcano
-    .insert('orders', {
-      items,
-      total: total,
-      status: 'pending'
-    });
-    
+  const { data, error } = await volcano.insert('orders', {
+    items,
+    total: total,
+    status: 'pending',
+  });
+
   if (error) {
     throw error;
   }
-  
+
   return data[0];
 }
 ```
 
 ---
-
 
 ## Row-Level Security
 
@@ -651,9 +596,7 @@ async function createOrder(items, total) {
 await volcano.auth.signIn({ email: 'alice@example.com', password: 'pass' });
 
 // Query posts
-const { data } = await volcano
-  .from('posts')
-  .select('*');
+const { data } = await volcano.from('posts').select('*');
 
 // Returns ONLY Alice's posts (RLS filters automatically)
 // Even though query says SELECT *, RLS adds WHERE user_id = auth.uid()
@@ -662,12 +605,14 @@ const { data } = await volcano
 **No Manual Filtering Needed:**
 
 **You DON'T need to:**
+
 ```javascript
 // Don't do this (not needed!)
 .eq('user_id', currentUserId)
 ```
 
 **Just query:**
+
 ```javascript
 // RLS filters automatically!
 .from('posts').select('*')
@@ -681,27 +626,22 @@ const { data } = await volcano
 
 ```javascript
 async function searchPosts(searchTerm, category, minViews) {
-  let query = volcano
-    .from('posts')
-    .select('id, title, excerpt, category, views')
-    .eq('status', 'published');
-    
+  let query = volcano.from('posts').select('id, title, excerpt, category, views').eq('status', 'published');
+
   if (searchTerm) {
     query = query.ilike('title', `%${searchTerm}%`);
   }
-  
+
   if (category) {
     query = query.eq('category', category);
   }
-  
+
   if (minViews) {
     query = query.gte('views', minViews);
   }
-  
-  const { data, error } = await query
-    .order('views', { ascending: false })
-    .limit(50);
-    
+
+  const { data, error } = await query.order('views', { ascending: false }).limit(50);
+
   return data;
 }
 ```
@@ -717,12 +657,12 @@ async function getPostsPage(page = 1, perPage = 10) {
     .order('created_at', { ascending: false })
     .limit(perPage)
     .offset((page - 1) * perPage);
-    
+
   return {
     posts: data,
     currentPage: page,
     totalPages: Math.ceil(count / perPage),
-    total: count
+    total: count,
   };
 }
 ```
@@ -731,35 +671,31 @@ async function getPostsPage(page = 1, perPage = 10) {
 
 ```javascript
 async function getProducts(filters = {}) {
-  let query = volcano
-    .from('products')
-    .select('*');
-    
+  let query = volcano.from('products').select('*');
+
   // Add filters dynamically
   if (filters.category) {
     query = query.eq('category', filters.category);
   }
-  
+
   if (filters.minPrice !== undefined) {
     query = query.gte('price', filters.minPrice);
   }
-  
+
   if (filters.maxPrice !== undefined) {
     query = query.lte('price', filters.maxPrice);
   }
-  
+
   if (filters.inStock) {
     query = query.eq('in_stock', true);
   }
-  
+
   if (filters.searchTerm) {
     query = query.ilike('name', `%${filters.searchTerm}%`);
   }
-  
-  const { data } = await query
-    .order('created_at', { ascending: false })
-    .limit(50);
-    
+
+  const { data } = await query.order('created_at', { ascending: false }).limit(50);
+
   return data;
 }
 
@@ -769,7 +705,7 @@ const products = await getProducts({
   minPrice: 100,
   maxPrice: 500,
   inStock: true,
-  searchTerm: 'laptop'
+  searchTerm: 'laptop',
 });
 ```
 
@@ -782,22 +718,26 @@ const products = await getProducts({
 ### Use Query Builder (Browser)
 
 **Frontend applications**
+
 ```javascript
 const { data } = await volcano.from('posts').select('*');
 ```
 
 **Pros:**
+
 - No backend needed
 - Simple, readable code
 - Query builder syntax
 
 **Cons:**
+
 - Limited to simple queries
 - No JOINs or subqueries
 
 ### Use Direct SQL (functions)
 
 **Complex queries (in a function)**
+
 ```javascript
 // Use the standard pg library inside your function
 const { Client } = require('pg');
@@ -807,41 +747,42 @@ exports.handler = async (event) => {
   // Replace application_name (DATABASE_URL already has volcano_full_access)
   const url = new URL(process.env.DATABASE_URL);
   url.searchParams.set('application_name', `volcano_user_access:${auth.user_id}`);
-  
+
   const client = new Client({ connectionString: url.toString() });
   await client.connect();
-  
-  const { rows } = await client.query(`
+
+  const { rows } = await client.query(
+    `
     SELECT p.*, u.name as author_name
     FROM posts p
     JOIN users u ON p.user_id = u.id
     WHERE p.status = $1
-  `, ['published']);
-  
+  `,
+    ['published'],
+  );
+
   await client.end();
   return { statusCode: 200, body: JSON.stringify({ posts: rows }) };
 };
 ```
 
 **Pros:**
+
 - Full PostgreSQL power
 - JOINs, CTEs, window functions
 - Better performance
 
 **Cons:**
+
 - Requires a function
 - Need to know SQL
 
 ---
 
-
 ## Error Handling
 
 ```javascript
-const { data, error } = await volcano
-  .from('posts')
-  .select('*')
-  .eq('status', 'published');
+const { data, error } = await volcano.from('posts').select('*').eq('status', 'published');
 
 if (error) {
   // Handle error
@@ -908,6 +849,7 @@ if (error) {
 Volcano REST API currently has:
 
 **Not Yet Supported:**
+
 - JOINs (use direct SQL in a function instead)
 - OR filters (only AND supported)
 - Nested selects
@@ -915,6 +857,7 @@ Volcano REST API currently has:
 - `.range()` method (use `.limit()` and `.offset()`)
 
 **Supported:**
+
 - All basic CRUD operations
 - All comparison operators
 - Pattern matching (LIKE, ILIKE)
@@ -932,15 +875,16 @@ const { Client } = require('pg');
 
 exports.handler = async (event) => {
   const auth = event.__volcano_auth;
-  
+
   // Replace application_name (DATABASE_URL already has volcano_full_access)
   const url = new URL(process.env.DATABASE_URL);
   url.searchParams.set('application_name', `volcano_user_access:${auth.user_id}`);
-  
+
   const client = new Client({ connectionString: url.toString() });
   await client.connect();
-  
-  const { rows } = await client.query(`
+
+  const { rows } = await client.query(
+    `
     SELECT p.*, COUNT(c.id) as comment_count
     FROM posts p
     LEFT JOIN comments c ON p.id = c.post_id
@@ -948,8 +892,10 @@ exports.handler = async (event) => {
     GROUP BY p.id
     ORDER BY comment_count DESC
     LIMIT $2
-  `, ['published', 10]);
-  
+  `,
+    ['published', 10],
+  );
+
   await client.end();
   return { statusCode: 200, body: JSON.stringify({ posts: rows }) };
 };

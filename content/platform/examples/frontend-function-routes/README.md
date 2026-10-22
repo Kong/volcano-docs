@@ -1,6 +1,6 @@
 ---
-title: "Frontend Function routes example"
-description: "A Next.js frontend that signs users in through a public session function served on its own origin."
+title: 'Frontend Function routes example'
+description: 'A Next.js frontend that signs users in through a public session function served on its own origin.'
 ---
 
 A Next.js frontend whose `/api/session` path is served by a public `session`
@@ -28,8 +28,8 @@ frontend URL and sign in with a user of your project.
 
 ## Files
 
-| File | Purpose |
-| --- | --- |
-| `volcano/functions/session.js` | Signs in, reports the session, and signs out |
-| `web/pages/index.js` | The sign-in page |
-| `volcano-config.yaml` | Function visibility, variables, and the route |
+| File                           | Purpose                                       |
+| ------------------------------ | --------------------------------------------- |
+| `volcano/functions/session.js` | Signs in, reports the session, and signs out  |
+| `web/pages/index.js`           | The sign-in page                              |
+| `volcano-config.yaml`          | Function visibility, variables, and the route |
