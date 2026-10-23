@@ -34,6 +34,8 @@ function PostHogProvider({ children }: PostHogProviderProps) {
       capture_exceptions: false,
       disable_session_recording: true,
       disable_surveys: true,
+      disable_conversations: true,
+      disable_product_tours: true,
       person_profiles: "identified_only",
       persistence: "memory",
     });

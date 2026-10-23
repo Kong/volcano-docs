@@ -24,4 +24,4 @@ node_modules/
 .DS_Store
 
 # Local env (PostHog keys etc.)
-.env.local
+.env*.local
