@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useActiveFeatureFlags } from "posthog-js/react";
+import { useFeatureFlagEnabled } from "posthog-js/react";
 import type { ReactNode } from "react";
 import { getSearchSection } from "@/lib/search-section.mjs";
 import { Logo } from "@/components/logo";
@@ -11,23 +11,20 @@ import "./site-header.css";
 
 type SiteHeaderProps = { children?: ReactNode };
 
-type HeaderLinkItem = { label: string; href: string; section: string; flag?: string };
-
-// A link with `flag` shows only while that PostHog flag is on.
-const LINKS: HeaderLinkItem[] = [
+const LINKS = [
   { label: "Docs", href: "/", section: "docs" },
   { label: "Cookbooks", href: "/cookbooks", section: "cookbooks" },
-  { label: "Blog", href: "/blog", section: "blog", flag: "sandbox-ff-blog" },
+  { label: "Blog", href: "/blog", section: "blog" },
 ];
 
 export function SiteHeader({ children }: SiteHeaderProps) {
   const pathname = usePathname();
   const section = getSearchSection(pathname);
-  // Flags that are on for this visitor. Empty until PostHog loads, so a flagged
-  // link stays hidden if PostHog never starts.
-  const activeFlags = useActiveFeatureFlags() ?? [];
+  // `=== true` so the link stays hidden while the flag is loading (undefined),
+  // off (false), or PostHog never starts.
+  const blogEnabled = useFeatureFlagEnabled("sandbox-ff-blog") === true;
   const links = LINKS.filter(function isShown(link) {
-    return !link.flag || activeFlags.includes(link.flag);
+    return link.section !== "blog" || blogEnabled;
   });
 
   return (

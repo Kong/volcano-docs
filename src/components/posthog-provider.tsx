@@ -12,7 +12,7 @@ type PostHogProviderProps = {
 // Initializes posthog-js once in the browser. With no key configured (local dev
 // without .env.local) PostHog stays off and every flag check reads as disabled.
 function PostHogProvider({ children }: PostHogProviderProps) {
-  useEffect(() => {
+  useEffect(function initPostHog() {
     const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
     if (!key || posthog.__loaded) return;
     posthog.init(key, {
