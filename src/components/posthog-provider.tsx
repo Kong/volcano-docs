@@ -18,6 +18,19 @@ function PostHogProvider({ children }: PostHogProviderProps) {
     posthog.init(key, {
       api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
       defaults: "2026-01-30",
+      // Flags only: no analytics capture, replay, surveys or browser storage.
+      // Flag evaluation still emits $feature_flag_called when a flag is read.
+      autocapture: false,
+      capture_pageview: false,
+      capture_pageleave: false,
+      capture_performance: false,
+      capture_heatmaps: false,
+      capture_dead_clicks: false,
+      capture_exceptions: false,
+      disable_session_recording: true,
+      disable_surveys: true,
+      person_profiles: "identified_only",
+      persistence: "memory",
     });
   }, []);
 
