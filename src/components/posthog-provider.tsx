@@ -20,6 +20,11 @@ function PostHogProvider({ children }: PostHogProviderProps) {
       defaults: "2026-01-30",
       // Flags only: no analytics capture, replay, surveys or browser storage.
       // Flag evaluation still emits $feature_flag_called when a flag is read.
+      // With no storage there is no stable visitor id, so each page load is a
+      // new anonymous visitor. Use flags here as all-or-nothing switches (0% or
+      // 100%, or property targeting); a partial percentage rollout would show
+      // or hide a feature at random on each load. Switch persistence to
+      // "localStorage" if stable percentage rollouts are needed.
       autocapture: false,
       capture_pageview: false,
       capture_pageleave: false,
