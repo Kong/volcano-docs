@@ -1,7 +1,7 @@
 "use client";
 
 import posthog from "posthog-js";
-import { PostHogProvider as PostHogReactProvider } from "posthog-js/react";
+import { PostHogProvider as PostHogReactProvider, useFeatureFlagEnabled } from "posthog-js/react";
 import { useEffect } from "react";
 import type { ReactNode } from "react";
 
@@ -42,4 +42,11 @@ function PostHogProvider({ children }: PostHogProviderProps) {
   return <PostHogReactProvider client={posthog}>{children}</PostHogReactProvider>;
 }
 
-export { PostHogProvider };
+// Facade over posthog-js's flag hook so the rest of the app never imports the
+// library directly. Returns a plain boolean and fails closed: false while flags
+// load, when the flag is off, and when PostHog never starts.
+function useFeatureFlag(flag: string): boolean {
+  return useFeatureFlagEnabled(flag) === true;
+}
+
+export { PostHogProvider, useFeatureFlag };

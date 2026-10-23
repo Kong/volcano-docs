@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useFeatureFlagEnabled } from "posthog-js/react";
 import type { ReactNode } from "react";
 import { getSearchSection } from "@/lib/search-section.mjs";
 import { Logo } from "@/components/logo";
+import { useFeatureFlag } from "@/components/posthog-provider";
 import { ThemeSwitcher } from "@/components/sidebar/theme-switcher";
 import "./site-header.css";
 
@@ -20,9 +20,7 @@ const LINKS = [
 export function SiteHeader({ children }: SiteHeaderProps) {
   const pathname = usePathname();
   const section = getSearchSection(pathname);
-  // `=== true` so the link stays hidden while the flag is loading (undefined),
-  // off (false), or PostHog never starts.
-  const blogEnabled = useFeatureFlagEnabled("sandbox-ff-blog") === true;
+  const blogEnabled = useFeatureFlag("sandbox-ff-blog");
   const links = LINKS.filter(function isShown(link) {
     return link.section !== "blog" || blogEnabled;
   });
