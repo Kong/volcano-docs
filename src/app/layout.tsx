@@ -3,6 +3,7 @@ import { RootProvider } from "fumadocs-ui/provider/next";
 import { Inter, Space_Mono } from "next/font/google";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { PostHogProvider } from "@/components/posthog-provider";
 import { SearchDialog } from "@/components/search-dialog";
 import { siteUrl } from "@/lib/site-url";
 import { BlogFiltersProvider } from "@/components/blog-filters";
@@ -34,9 +35,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       suppressHydrationWarning
     >
       <body>
-        <BlogFiltersProvider>
-          <RootProvider search={{ SearchDialog }}>{children}</RootProvider>
-        </BlogFiltersProvider>
+        <PostHogProvider>
+          <BlogFiltersProvider>
+            <RootProvider search={{ SearchDialog }}>{children}</RootProvider>
+          </BlogFiltersProvider>
+        </PostHogProvider>
       </body>
     </html>
   );

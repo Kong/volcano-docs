@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { getSearchSection } from "@/lib/search-section.mjs";
 import { Logo } from "@/components/logo";
+import { useFeatureFlag } from "@/components/posthog-provider";
 import { ThemeSwitcher } from "@/components/sidebar/theme-switcher";
 import "./site-header.css";
 
@@ -19,6 +20,10 @@ const LINKS = [
 export function SiteHeader({ children }: SiteHeaderProps) {
   const pathname = usePathname();
   const section = getSearchSection(pathname);
+  const blogEnabled = useFeatureFlag("sandbox-ff-blog");
+  const links = LINKS.filter(function isShown(link) {
+    return link.section !== "blog" || blogEnabled;
+  });
 
   return (
     <header data-slot="site-header" className="site-header">
@@ -29,7 +34,7 @@ export function SiteHeader({ children }: SiteHeaderProps) {
         </a>
       </div>
       <nav aria-label="Main navigation" className="site-header-nav">
-        {LINKS.map(function renderLink(link) {
+        {links.map(function renderLink(link) {
           let current: "page" | undefined;
           if (section === link.section) current = "page";
           return (
