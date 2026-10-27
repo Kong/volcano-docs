@@ -1,8 +1,12 @@
 import type { ContentPage } from "@/components/markdown-content";
+import { BlogCategory } from "@/components/blog-category";
+import { formatViewCount } from "@/lib/blog-views.mjs";
 import "./blog-metadata.css";
-import { topicLabel } from "@/lib/blog-topics.mjs";
 
-type BlogMetadataProps = { data: Pick<ContentPage["data"], "author" | "published" | "tags"> };
+type BlogMetadataProps = {
+  data: Pick<ContentPage["data"], "author" | "published" | "category">;
+  views?: number;
+};
 
 function formatPublishedDate(published: string) {
   return new Intl.DateTimeFormat("en-US", {
@@ -13,15 +17,17 @@ function formatPublishedDate(published: string) {
   }).format(new Date(`${published}T00:00:00Z`));
 }
 
-export function BlogMetadata({ data }: BlogMetadataProps) {
-  if (!data.author && !data.published && !data.tags?.length) return null;
+// The byline row: category, author, date, and — once PostHog has counts for the
+// post — how many times it has been read. A post with no count yet (a new one,
+// or a build with no analytics key) simply shows the rest.
+export function BlogMetadata({ data, views }: BlogMetadataProps) {
+  if (!data.author && !data.published && !data.category && !views) return null;
   return (
     <div data-slot="blog-metadata" className="blog-metadata">
+      {data.category && <BlogCategory category={data.category} />}
       {data.author && <span>By {data.author}</span>}
       {data.published && <time dateTime={data.published}>{formatPublishedDate(data.published)}</time>}
-      {data.tags?.map(function renderTag(tag) {
-        return <span className="blog-metadata-tag" key={tag}>{topicLabel(tag)}</span>;
-      })}
+      {views !== undefined && views > 0 && <span>{formatViewCount(views)}</span>}
     </div>
   );
 }

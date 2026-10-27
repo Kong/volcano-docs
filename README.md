@@ -114,11 +114,28 @@ Blog posts can also include optional metadata:
 ```yaml
 author: Your name
 published: "2026-10-19"
+category: product
 tags: [storage, authentication]
 ```
 
 The blog displays these fields when provided and includes them in article metadata.
 Follow [`spec/markdown-format.md`](spec/markdown-format.md) for the full content contract.
+
+#### Categories, sharing, and view counts
+
+- **`category`** is a post's single category, from the fixed set in
+  [`src/lib/blog-categories.mjs`](src/lib/blog-categories.mjs) (`product`,
+  `engineering`, `research`, `company`). It shows on the post and on its card,
+  and links to that category's own page at `/blog/category/<slug>`; the listing
+  carries a row of the categories that have posts. `tags` stay free-form and
+  keep driving the sidebar's topic filter and search scoping.
+- **Share** links on a post open X or LinkedIn with the post's canonical URL,
+  or copy that URL. No third-party script is loaded to draw them.
+- **View counts** come from PostHog. The browser records one `blog_pageview`
+  event per post view with the public key; the server reads the totals back
+  hourly with `POSTHOG_API_KEY` (a personal API key with `query:read`). With no
+  key set — local development, and any build without the variable — posts
+  render without a count. See [`.env.example`](.env.example).
 
 **Version note:** Fumadocs 16 hard-requires Next 16, so the site is on Next 16 +
 React 19.2 rather than `volcano-web`'s Next 15.5. Every other convention matches.

@@ -36,6 +36,11 @@
       "type": "string",
       "minLength": 1
     },
+    "category": {
+      "type": "string",
+      "enum": ["product", "engineering", "research", "company"],
+      "description": "Blog category. Exactly one per post; each has a page at /blog/category/<slug>."
+    },
     "tags": {
       "type": "array",
       "items": { "type": "string" },

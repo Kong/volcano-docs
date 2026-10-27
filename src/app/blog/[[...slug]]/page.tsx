@@ -7,6 +7,10 @@ import { CollectionHome } from "@/components/collection-home";
 import { MarkdownContent } from "@/components/markdown-content";
 import "@/components/collection.css";
 import { BlogMetadata } from "@/components/blog-metadata";
+import { BlogShare } from "@/components/blog-share";
+import { BlogViewTracker } from "@/components/blog-view-tracker";
+import { getBlogViews } from "@/lib/posthog-views";
+import { siteUrl } from "@/lib/site-url";
 import { Footer } from "@/components/home/footer";
 
 type BlogPageProps = { params: Promise<{ slug?: string[] }> };
@@ -18,14 +22,17 @@ export default async function BlogPage({ params }: BlogPageProps) {
   if (slug.length === 0) {
     return <CollectionHome section="blog" page={page} />;
   }
+  const views = await getBlogViews([page.url]);
   return (
     <div className="home-page">
+      <BlogViewTracker post={page.url} />
       <div data-slot="blog-content" data-variant="article" className="blog-content">
         <article data-slot="collection-article" className="collection-article">
           <BlogTopicLink href="/blog" className="collection-back">← Back to posts</BlogTopicLink>
           <DocsTitle>{page.data.title}</DocsTitle>
-          <BlogMetadata data={page.data} />
+          <BlogMetadata data={page.data} views={views[page.url]} />
           <DocsDescription>{page.data.description}</DocsDescription>
+          <BlogShare url={new URL(page.url, siteUrl).toString()} title={page.data.title} />
           <MarkdownContent page={page} />
         </article>
       </div>

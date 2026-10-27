@@ -23,7 +23,10 @@ export function Hero({
   actionLabel = "Get started",
   children,
 }: HeroProps) {
-  const details = children ?? (
+  // `undefined` means "no children were passed", so the landing blurb below is
+  // the default. An explicit `null` means the caller wants the hero without it.
+  let details = children;
+  if (details === undefined) details = (
     <DocsBody>
       <p>
       Functions, frontends, databases, and the rest of the platform are
