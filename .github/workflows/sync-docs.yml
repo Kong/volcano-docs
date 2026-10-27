@@ -110,16 +110,22 @@ jobs:
           set -euo pipefail
 
           # A full sync copies every section, so it supersedes every open sync
-          # PR. A single-section dispatch leaves the others alone.
+          # PR. A single-section dispatch leaves the others alone. Cleanup is
+          # best effort: a PR it fails to close stays for the next sync.
           close_superseded() {
             local keep="$1" note="$2"
+            local prs pr
             [ -z "$ONLY" ] || return 0
-            gh pr list --base main --state open --author "app/${APP_SLUG}" \
+            prs="$(gh pr list --base main --state open --author "app/${APP_SLUG}" --limit 1000 \
               --json number,headRefName,isCrossRepository \
-              --jq ".[] | select((.isCrossRepository | not) and (.headRefName | startswith(\"docs-sync/\")) and .number != ${keep}) | .number" |
-              while read -r pr; do
-                gh pr close "$pr" --delete-branch --comment "$note"
-              done
+              --jq ".[] | select((.isCrossRepository | not) and (.headRefName | startswith(\"docs-sync/\")) and .number != ${keep}) | .number")" || {
+              echo "::warning::Could not list superseded sync PRs."
+              return 0
+            }
+            for pr in $prs; do
+              gh pr close "$pr" --delete-branch --comment "$note" ||
+                echo "::warning::Could not close superseded sync PR #${pr}."
+            done
           }
 
           # Commit the synced pages with the hosting revision used to copy them.
@@ -143,10 +149,11 @@ jobs:
             --title "$title" \
             --body "Automated docs sync. Sources: docs.config.yaml."
           new_pr="$(gh pr view "$branch" --json number --jq .number)"
-          close_superseded "$new_pr" "Superseded by #${new_pr}."
           # Arm auto-merge so it lands once any required checks pass; if the repo
           # has no auto-merge / no required checks, GitHub rejects --auto, so
           # fall back to an immediate squash. gh refuses --delete-branch with a
           # merge queue; the repo deletes merged branches instead.
           gh pr merge "$branch" --auto --squash \
             || gh pr merge "$branch" --squash
+
+          close_superseded "$new_pr" "Superseded by #${new_pr}."
