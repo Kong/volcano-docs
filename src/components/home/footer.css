@@ -54,10 +54,17 @@
   color: var(--text-neutral);
 }
 
-.home-footer-lede-accent {
+/* "Created by Kong …" — the attribution links to Kong, as it does on
+   volcano.dev's own footer. */
+.home-footer-kong-link {
   font-weight: var(--font-weight-bold);
   color: var(--color-primary-text);
   text-decoration: underline;
+  transition: color var(--system-transition);
+}
+
+.home-footer-kong-link:hover {
+  color: var(--text-primary);
 }
 
 .home-footer-column {
