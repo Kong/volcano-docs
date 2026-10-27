@@ -3,31 +3,46 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import type { PostHog } from "posthog-js";
+import { flagsAllowed, onConsentChange } from "@/lib/consent";
 
 type PostHogProviderProps = {
   children: ReactNode;
 };
 
 // `version` changes whenever flags (re)load so consumers re-render.
-type FlagsState = { client: PostHog | null; version: number };
+type LoadedState = { client: PostHog | null; version: number };
+type FlagsState = { client: PostHog | null; version: number; allowed: boolean };
 
-const FlagsContext = createContext<FlagsState>({ client: null, version: 0 });
+const FlagsContext = createContext<FlagsState>({ client: null, version: 0, allowed: false });
 
 // Loads posthog-js on demand: builds with no key never download the SDK, and
 // builds with one load it after the page is interactive. With no key configured
 // (local dev without .env.local) PostHog stays off and every flag check reads
-// as disabled.
+// as disabled. Flags follow volcano-web's analytics consent rule (see
+// src/lib/consent.ts): without an accepted choice, no Global Privacy Control, the
+// SDK is never loaded and PostHog is never contacted.
 function PostHogProvider({ children }: PostHogProviderProps) {
-  const [state, setState] = useState<FlagsState>({ client: null, version: 0 });
+  const [loaded, setLoaded] = useState<LoadedState>({ client: null, version: 0 });
+  const [allowed, setAllowed] = useState(false);
+
+  useEffect(function watchConsent() {
+    function sync() {
+      setAllowed(flagsAllowed());
+    }
+    sync();
+    return onConsentChange(sync);
+  }, []);
 
   useEffect(function initPostHog() {
     const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
     if (!key) return;
+    if (!allowed) return;
     let cancelled = false;
+    let started: PostHog | undefined;
     let unsubscribe: (() => void) | undefined;
 
     function bump(client: PostHog) {
-      setState(function next(previous) {
+      setLoaded(function next(previous) {
         return { client, version: previous.version + 1 };
       });
     }
@@ -35,6 +50,7 @@ function PostHogProvider({ children }: PostHogProviderProps) {
     function start(loaded: { default: PostHog }) {
       if (cancelled) return;
       const posthog = loaded.default;
+      started = posthog;
       if (!posthog.__loaded) {
         posthog.init(key as string, {
           api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
@@ -75,18 +91,20 @@ function PostHogProvider({ children }: PostHogProviderProps) {
     return function cleanup() {
       cancelled = true;
       if (unsubscribe) unsubscribe();
+      // Consent withdrawn: forget the flag identity. Reads are off via `allowed`.
+      if (started) started.reset();
     };
-  }, []);
+  }, [allowed]);
 
-  return <FlagsContext.Provider value={state}>{children}</FlagsContext.Provider>;
+  return <FlagsContext.Provider value={{ ...loaded, allowed }}>{children}</FlagsContext.Provider>;
 }
 
 // Facade so the rest of the app never imports posthog-js directly. Returns a
 // plain boolean and fails closed: false until the SDK has loaded and the flags
 // are back, when the flag is off, and when PostHog never starts.
 function useFeatureFlag(flag: string): boolean {
-  const { client } = useContext(FlagsContext);
-  if (!client) return false;
+  const { client, allowed } = useContext(FlagsContext);
+  if (!client || !allowed) return false;
   return client.isFeatureEnabled(flag) === true;
 }
 
