@@ -3,25 +3,29 @@ import "./footer.css";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 
-// Footer link columns from the design. Hrefs point at real docs/marketing
-// destinations where one exists; external marketing links use absolute URLs.
+const MARKETING_URL = "https://volcano.dev";
+const KONG_URL = "https://konghq.com/";
+
+// The same four columns volcano.dev's footer lists, so the docs and the
+// marketing site end on the same links. Product, Features and Legal point back
+// at volcano.dev; Resources resolves to the docs routes those entries mean.
 const LINK_COLUMNS = [
   {
     heading: "Product",
     links: [
-      { label: "Home", href: "/" },
-      { label: "Pricing", href: "https://volcano.dev/pricing" },
+      { label: "Home", href: MARKETING_URL },
+      { label: "Pricing", href: `${MARKETING_URL}/pricing` },
     ],
   },
   {
     heading: "Features",
     links: [
-      { label: "Agent skills", href: "/cli/setup" },
-      { label: "Edge functions", href: "/platform" },
-      { label: "Postgres database", href: "/platform" },
-      { label: "User authentication", href: "/platform" },
-      { label: "File storage", href: "/platform" },
-      { label: "MCP server", href: "/platform/interfaces/mcp" },
+      { label: "Functions & Agents", href: `${MARKETING_URL}/features/edge-functions` },
+      { label: "Next.js Frontends", href: `${MARKETING_URL}/features/nextjs-hosting` },
+      { label: "Databases & Vector", href: `${MARKETING_URL}/features/postgres` },
+      { label: "File Storage", href: `${MARKETING_URL}/features/file-storage` },
+      { label: "Authentication", href: `${MARKETING_URL}/features/authentication` },
+      { label: "Realtime", href: `${MARKETING_URL}/features/realtime` },
     ],
   },
   {
@@ -29,16 +33,16 @@ const LINK_COLUMNS = [
     links: [
       { label: "Getting started", href: "/get-started" },
       { label: "Documentation", href: "/" },
-      { label: "Cookbooks", href: "/cookbooks" },
-      { label: "Blog", href: "/blog" },
-      { label: "Tutorials", href: "/get-started" },
     ],
   },
   {
-    heading: "Company",
+    heading: "Legal",
     links: [
-      { label: "Terms of service", href: "https://volcano.dev/terms" },
-      { label: "Privacy policy", href: "https://volcano.dev/privacy" },
+      { label: "Customer Agreement", href: `${MARKETING_URL}/legal/customer-agreement` },
+      { label: "Privacy Policy", href: `${MARKETING_URL}/legal/privacy` },
+      { label: "Cookie Policy", href: `${MARKETING_URL}/legal/cookies` },
+      { label: "Subprocessors", href: `${MARKETING_URL}/legal/subprocessors` },
+      { label: "All legal documents", href: `${MARKETING_URL}/legal` },
     ],
   },
 ];
@@ -53,8 +57,15 @@ export function Footer() {
           <Logo height={18} />
           <p className="home-footer-lede">
             Created by{" "}
-            <span className="home-footer-lede-accent">Kong</span> to bring
-            production readiness to the AI world
+            <a
+              href={KONG_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="home-footer-kong-link"
+            >
+              Kong
+            </a>{" "}
+            to bring production readiness to the AI world
           </p>
         </div>
       </div>

@@ -1,6 +1,6 @@
 /* ══════════════════════════════════════════
-   IDE platforms row (Figma): Claude Code, Codex, Cursor. Equal-width cells with
-   dividers between them.
+   IDE platforms row: the five coding agents volcano.dev lists (Claude Code,
+   Codex, Cursor, OpenCode, Pi). Equal-width cells with dividers between them.
    ══════════════════════════════════════════ */
 
 .ide-platforms {
@@ -12,6 +12,9 @@
 }
 
 .ide-platform {
+  --cmp-mark-size: var(--size-8);
+  --cmp-mark-fg: var(--text-primary);
+
   display: flex;
   min-width: var(--layout-ide-card-min-width);
   flex: 1 1 var(--layout-ide-card-min-width);
@@ -44,26 +47,33 @@
   background: var(--surface-raised);
 }
 
-.ide-platform-icon {
-  display: flex;
-  width: var(--size-8);
-  height: var(--size-8);
-  align-items: center;
-  justify-content: center;
+/* Every mark is painted through a CSS mask, so a brand's own colors never
+   reach the page and each logo follows the theme text color instead. */
+.ide-platform-mark {
+  width: var(--cmp-mark-size);
+  height: var(--cmp-mark-size);
+  background: var(--cmp-mark-fg);
+  mask: var(--cmp-mark-src) center / contain no-repeat;
 }
 
-.ide-platform-icon img {
-  width: var(--size-8);
-  height: var(--size-8);
-  object-fit: contain;
+.ide-platform-mark[data-logo="claude-code"] {
+  --cmp-mark-src: url("/design/agent-logos/claude-code.svg");
 }
 
-/* Cursor is an inline monochrome mark: size it like the image marks and drive
-   its fill from a theme token so `currentColor` flips between light and dark. */
-.ide-platform-icon svg {
-  width: var(--size-8);
-  height: var(--size-8);
-  color: var(--text-primary);
+.ide-platform-mark[data-logo="codex"] {
+  --cmp-mark-src: url("/design/agent-logos/codex.svg");
+}
+
+.ide-platform-mark[data-logo="cursor"] {
+  --cmp-mark-src: url("/design/agent-logos/cursor.svg");
+}
+
+.ide-platform-mark[data-logo="opencode"] {
+  --cmp-mark-src: url("/design/agent-logos/opencode.svg");
+}
+
+.ide-platform-mark[data-logo="pi"] {
+  --cmp-mark-src: url("/design/agent-logos/pi.svg");
 }
 
 .ide-platform-label {
@@ -74,12 +84,12 @@
 
 /* Same hover bounce as the feature-card icons (keyframes live in
    feature-card.css; both stylesheets load together on the home page). */
-.ide-platform:hover .ide-platform-icon {
+.ide-platform:hover .ide-platform-mark {
   animation: feature-card-icon-bounce 500ms ease-out;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ide-platform:hover .ide-platform-icon {
+  .ide-platform:hover .ide-platform-mark {
     animation: none;
   }
 }
