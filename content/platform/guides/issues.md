@@ -72,7 +72,55 @@ Volcano groups errors by:
   every occurrence, such as quoted values, IDs, numbers, timestamps, emails,
   IP addresses, and URLs, are replaced with placeholders like `<str>`,
   `<id>`, and `<n>`, so `user 'alice' not found` and `user 'bob' not found`
-  are one issue.
+  are one issue. Short IDs such as `u20001` and `user_42` count as values,
+  while numbered names such as `sha256`, `utf8`, and `http2` stay as written.
+- **Structured logs.** A JSON object logged at `error` level, such as
+  `console.error(JSON.stringify(entry))`, is read for its error. An `err` or
+  `error` object with a stack groups by it and is named by its type and
+  message, whether pino and bunyan serialized the `Error` (`stack`) or
+  `console.error({ err })` did (`stackTrace`). Otherwise the `message`,
+  `msg`, `error`, or `err` string, or that object's `message`, is the message,
+  and a top-level `stack` groups it. Other fields are ignored. An object with
+  none of these groups by its JSON text, with its quoted strings, keys
+  included, and its numbers replaced, so objects of the same shape are one
+  issue. A line whose own `level` is below error, such as pino's `40`,
+  `"warn"`, or winston's `"verbose"`, is not an issue. An error you log this
+  way is a separate issue from the same error thrown, and never starts a
+  [LavaFlow](lavaflow.md) run on its own.
+- **Printed tracebacks.** A Python traceback you log as text, such as
+  `traceback.format_exc()`, groups by its type and frames. Like a structured
+  log, it is a separate issue from the same error raised and never starts a
+  LavaFlow run on its own.
+
+In local mode, output a function writes to stderr without a level of its own is
+at `error` level, so only an exception becomes an issue: one your code threw or
+passed to the logger. A message, a structured log, or a printed traceback does
+not.
+
+A frontend's server code runs from the build Next.js generates, where every
+build renames functions and moves code between files. Volcano groups its errors
+by type and the outermost route or page file of the build in their stack, such
+as `.next/server/app/checkout/route.js`, so a redeploy does not split an issue.
+The `culprit` names that file. A message can carry a request's values, so it
+counts only in a shape JavaScript itself writes, with those values removed:
+`x.map is not a function` (and `is not a constructor` or `is not iterable`),
+`Cannot read properties of undefined`, and `Class constructor X cannot be
+invoked without 'new'`. Without source maps, Volcano can't tell more errors in
+one file apart, so these merge into one issue:
+
+- in one route, the same error on different properties, such as
+  `(reading 'id')` and `(reading 'total')`;
+- in one route, every other message of one type, such as every `Error` your
+  code throws; custom classes the build renames count as one type;
+- in a chunk the build shares between routes, such as a server action's
+  `.next/server/chunks/918.js` or any Turbopack chunk, the same errors across
+  every route that runs it.
+
+Code your routes share, such as an auth wrapper, can build into one route's
+file; when it wraps other routes' handlers, their errors group under that file.
+A stack whose route lies past the 10 frames Node.js records groups by its
+outermost chunk. An edit that changes which modules a chunk holds renames it,
+so its errors start a new issue.
 
 Issues are kept per function or frontend: the same error in two functions is
 two issues.
@@ -144,7 +192,7 @@ An issue resolved at `resolved_at` that is seen again after that moment
 reopens as `open`, and `regressed_at` records when. Set `status` back to
 `open` yourself to reopen it.
 
-When you merge an [autofix](autofix.md) pull request, the issue resolves once a
+When you merge a [LavaFlow](lavaflow.md) pull request, the issue resolves once a
 deployment that includes the fix goes live, with `resolved_at` set to that
 moment. Errors from the previous deployment while the fix rolls out do not
 reopen it.
@@ -155,7 +203,7 @@ Platform tokens and project access tokens can list and read issues, including
 read-only project tokens. Changing a status needs a token that can write.
 
 Agents connected through the [MCP server](../interfaces/mcp.md) can call
-`list_issues`.
+`list_issues` and `get_issue`.
 
 ## Errors
 

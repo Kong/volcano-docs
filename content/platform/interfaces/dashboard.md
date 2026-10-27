@@ -63,7 +63,8 @@ see what the project is consuming against your plan. See
 keys, service keys, and project access tokens. See
 [Token types](../authentication/security/token-types.md).
 
-**Domains.** Attach a custom domain to a frontend.
+**Domains.** Attach custom domains to a frontend, and make one redirect to
+another. See [Custom domains](../frontends/overview.md#custom-domains).
 
 ## When to use something else
 

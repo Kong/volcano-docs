@@ -78,6 +78,18 @@ curl -X POST "https://api.volcano.dev/projects/PROJECT_ID/logs/search" \
 Internal platform runtime logs are filtered out; only application logs emitted
 by deployed functions are returned.
 
+A Python or Ruby function's uncaught error, or one raised while it starts, is
+one `error` row whose `body` is the runtime's report, with the error's
+`errorType`, `errorMessage`, and `stackTrace`. Ruby logs a line before it, such
+as `Error raised from handler method`, as its own row.
+
+A Python exception you log with `logger.exception()`, or with `exc_info=True`,
+keeps the whole log record as its row's `body`: your message, and the
+exception's `errorType`, `errorMessage`, and `stackTrace`. Node.js's
+`console.error("...", error)` already writes the stack into the message, so its
+`body` is the message. In local mode, an uncaught error's `body` is its record
+in every runtime.
+
 Historical log rows identify the owning function or frontend with a required
 `resource` object. Deployment log rows include a `deployment` object when
 available.
@@ -337,6 +349,47 @@ message identifying the operation, for example:
 
 The message omits internal connection details. Retry the request; include its
 `X-Request-Id` if you contact support.
+
+## Log levels
+
+Every runtime log line has one of the levels `trace`, `debug`, `info`, `warn`,
+`error`, or `fatal`:
+
+- **Console and logging calls.** `console.error`, `console.warn`, and the other
+  `console` methods set the level, as do Python's `logging` calls. In local
+  mode, Python's `print` and Ruby's `puts` set it too: `info`, or `error` on
+  standard error, whatever the line contains, including a JSON line such as
+  structlog prints.
+- **JSON lines with a level.** A JSON object written straight to standard
+  output, as pino, bunyan, and structlog do, keeps the level in its top-level
+  `level` field, read with the table below. Names match in any case. The whole
+  line must be that one well-formed object, nested at most 31 levels deep.
+- **Other lines.** A line written straight to standard output otherwise takes
+  the level of its first level word: `fatal`; `error`, `errored`, `fail`,
+  `failed`, `failing`, or `failure` for `error`; `warn`, `warned`, or `warning`
+  for `warn`; `debug`; or `trace`. So `warning: request failed` is `warn`. A
+  line with none of these is `info`, or `error` when it was written to
+  standard error in local mode.
+
+A JSON line's `level` maps to a stored level, with the same names the `level`
+search field accepts:
+
+| Stored level | `level` number | `level` names                |
+| ------------ | -------------- | ---------------------------- |
+| `trace`      | `10`           | `trace`                      |
+| `debug`      | `20`           | `debug`                      |
+| `info`       | `30`           | `info`, `information`, `log` |
+| `warn`       | `40`           | `warn`, `warning`            |
+| `error`      | `50`           | `error`, `err`               |
+| `fatal`      | `60`           | `fatal`, `critical`          |
+
+```javascript
+import pino from 'pino';
+
+const logger = pino();
+logger.error({ orderId: 'ord_123' }, 'card declined'); // {"level":50,...} is stored at error
+logger.warn('retrying payment'); // {"level":40,...} is stored at warn
+```
 
 ## Logging Best Practices
 

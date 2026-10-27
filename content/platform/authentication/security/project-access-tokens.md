@@ -50,6 +50,7 @@ It cannot:
 - **Manage project access tokens.** Creating, listing, reading, and revoking tokens all require a platform token.
 - **Manage Sandbox end-user grants or issue Sandbox port credentials.** Both token scopes are refused, including `full`.
 - **Decide durable approvals.** A token of either scope can list approvals and read their statistics, but approving or denying one returns `403`. A workflow can hold a project access token, so letting one decide would let a workflow approve itself; a person decides in the dashboard or with a platform token. See [Durable approvals](../../functions/durable-approvals.md#who-can-decide). Sending a durable message is allowed, because a message never decides an approval.
+- **Choose the project's repository.** Connecting a repository or changing it with `PUT /projects/{id}/git-connection` returns `403`; a person makes that choice in the dashboard or with a platform token. A `full` token can still change the [root directory](../../projects/git-deploy.md#change-the-root-directory) and [production branch](../../projects/git-deploy.md#deploy-from-a-different-branch), including returning it to the repository's default branch, which stay within the repository a person chose.
 
 The token-management rule is the point of the credential. A token that can mint its replacement or delete the record of its own use is not meaningfully scoped, so a leaked CI secret or a prompt-injected agent cannot clone itself or erase its tracks.
 
@@ -59,10 +60,10 @@ A project access token can read its own request counts, which is enough to monit
 
 Choose the scope at creation time. It cannot be changed afterwards; create a new token instead.
 
-| Scope       | Allows                                                                                                                                                                                   |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `full`      | Read and mutate project resources, subject to the restrictions above                                                                                                                     |
-| `read_only` | Reads only, and not the reads that return a credential. Any mutation, and any request for a service key, an anon key, a variable's value, or a database connection string, returns `403` |
+| Scope       | Allows                                                                                                                                                                                                                                                                                                                                       |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `full`      | Read and mutate project resources, subject to the restrictions above                                                                                                                                                                                                                                                                         |
+| `read_only` | Reads only, and not the reads that return a credential. Any mutation, and any request for a service key, an anon key, a variable's value, a database connection string, or the notification settings with their webhook (`GET /projects/{id}/notifications`), returns `403`. The config export, which leaves the webhook out, stays readable |
 
 Read-only is enforced by what an endpoint does, not by its HTTP method. Log search, log activity, log streaming, and metrics queries are `POST` requests because they carry filters in the body, and a `read_only` token can still call all of them — which is what makes the scope usable for monitoring and for agents that should look but not touch.
 

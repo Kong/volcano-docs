@@ -10,7 +10,7 @@ Connect to your PostgreSQL databases.
 Get your database connection string from the API:
 
 ```bash
-curl https://api.volcano.dev/projects/PROJECT_ID/databases/DB_ID \
+curl https://api.volcano.dev/projects/PROJECT_ID/databases/DATABASE_NAME \
   -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
 
@@ -19,7 +19,7 @@ curl https://api.volcano.dev/projects/PROJECT_ID/databases/DB_ID \
 ```json
 {
   "id": "abc-123-456-789",
-  "database_name": "my_app_db",
+  "name": "my_app_db",
   "status": "active",
   "connection_string": "postgresql://volcano_client_11111111-1111-1111-1111-111111111111:vpg_abc123@database.volcano.dev:5432/mydb?sslmode=require&application_name=volcano_full_access",
   "region": "us-east-1",
@@ -55,7 +55,7 @@ These are the only credentials the API returns; the internal owner credentials a
 
 ## Using in Functions
 
-Volcano doesn't set `DATABASE_URL` (or any variable) automatically. Set it yourself as a project variable using the connection string from `GET /databases/{id}`:
+Volcano doesn't set `DATABASE_URL` (or any variable) automatically. Set it yourself as a project variable using the connection string from `GET /projects/{id}/databases/{databaseName}`:
 
 ```bash
 curl -X POST https://api.volcano.dev/projects/PROJECT_ID/variables \
@@ -177,11 +177,17 @@ For functions, use:
 If connection string is compromised:
 
 ```bash
-curl -X POST https://api.volcano.dev/projects/PROJECT_ID/databases/DB_ID/reset-password \
+curl -X POST https://api.volcano.dev/projects/PROJECT_ID/databases/DATABASE_NAME/reset-password \
   -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
 
 Rotates the Volcano-managed client password and returns a new connection string. Within a few seconds the old password stops authenticating through pgproxy. Connections already open keep working until they close, so anything still holding the old string has to be pointed at the new one to reconnect. Internal credentials are not reset or exposed.
+
+### Local mode
+
+Call the same path at `http://localhost:8000` with your local platform token. Database connections default to `localhost:8002`.
+
+The printed `app` URL contains its initial password. After resetting `app`, use `connection_string` from the reset response.
 
 ## See Also
 
