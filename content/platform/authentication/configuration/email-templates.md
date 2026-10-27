@@ -15,11 +15,26 @@ including the message body and footer. Emails for your Volcano account use
 
 ## Default Templates
 
+Read all built-in templates without authentication:
+
+```bash
+curl https://api.volcano.dev/email-templates/defaults
+```
+
+The response contains a `data` array. Each template has `type`, `subject`,
+`html_body`, and `text_body`. Read one template with
+`GET /email-templates/defaults/confirmation`; its response is the template object
+without the `data` envelope. Built-in templates have no project or template ID.
+
 ### Confirmation Email
 
 **When sent:** User signs up with email verification enabled
 
 **Default subject:** "Confirm your email address"
+
+The built-in template returned by `/email-templates/defaults/confirmation` uses
+"Verify your email address". Signup and resend use the configured confirmation
+subject, which defaults to "Confirm your email address".
 
 **Contains:**
 
@@ -106,6 +121,22 @@ Content-Type: application/json
 }
 ```
 
+Updating or deleting a template that does not exist returns `404` with
+`{"error":"template not found"}`, including updates that change only a body.
+
+Unexpected template failures return `500` with a fixed operation message, such as
+`{"error":"failed to get email template"}`. Responses exclude internal diagnostics.
+
+Responses for custom templates omit `subject`, `html_body`, and `text_body` when
+the saved value is empty. Read each field as optional. Built-in template responses
+always include all three fields.
+
+If canceling an authentication request (for example, by disconnecting) prevents
+Volcano from loading the project's saved template, Volcano does not send that
+email. Signup confirmation and password reset emails can be requested again;
+welcome and password-change notices cannot. Other lookup failures keep the
+built-in fallback.
+
 **Template types:**
 
 - `confirmation` - Email confirmation
@@ -133,6 +164,22 @@ All templates have access to:
 <p>Hi {{.Email}},</p>
 <p>Click here to confirm: <a href="{{.ConfirmationURL}}">Confirm Email</a></p>
 ```
+
+Subject templates can use variables such as `{{.Name}}`, `{{.Email}}`, and
+`{{.ProjectName}}`. Welcome emails use the saved welcome subject, or the built-in
+welcome subject if it is unset or cannot render. Signup confirmation, password
+reset, and password change emails use their auth-configuration subject, or the
+send flow's built-in subject when unset. If a configured subject cannot render,
+Volcano tries the saved subject, then the email type's built-in subject.
+Email-change confirmation uses its built-in subject.
+
+### Subject Headers
+
+Keep rendered subject text on one line. Saving a new or changed email-template or auth-configuration subject with a literal interior line break after Go template whitespace trimming returns `400`; manifest apply reports `422`. Multiline template control flow with `{{-` and `-}}` trim markers, outer whitespace, and trailing newlines from YAML block scalars are allowed. Unicode is supported, and long subjects are folded to meet email header line limits without changing the text.
+
+For previews and transactional emails, Volcano trims outer whitespace after rendering a subject that contains a line break. A remaining interior line break, including one introduced by a template variable, returns `400` for a test email or triggers the default transactional subject so confirmation and recovery links still arrive. Message bodies can contain line breaks.
+
+Legacy subjects remain readable and export unchanged. Resubmitting the exact stored subject, including a full configuration save or export reapply, preserves it. Unrelated settings and template bodies remain editable. Changing the subject to another unsafe value is refused; replace it with one safe line using [auth configuration](#custom-subject-lines) or [template updates](#update-template). Delivery still uses the default subject when the rendered legacy value is unsafe.
 
 ## Deliverability Best Practices
 

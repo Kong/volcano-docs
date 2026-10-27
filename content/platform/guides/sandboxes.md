@@ -53,6 +53,12 @@ Discover published presets and regions with `GET /sandboxes/presets`.
 Use the returned preset IDs when creating templates, sessions, or one-shot executions.
 An empty catalog means no verified preset has been published yet.
 
+Use a region returned for the selected preset and memory size; region availability
+can differ between presets. Sandbox availability is independent of where the API
+request is served. For a custom template, use a region in its verified deployment.
+New regions appear after their deployment is ready and the corresponding images
+have passed verification.
+
 ## Keep a session alive
 
 Create a session, then poll its returned ID until `state` is `running`:
@@ -244,6 +250,16 @@ client-sent `X-Volcano-*`, `Forwarded`, and `X-Forwarded-*` headers, and
 lookalikes that put `_` or `.` in place of `-`, such as `X_Forwarded_For`.
 Application authorization headers, other headers such as `X_Api_Key`, and
 cookies remain available to the application.
+
+Responses keep the application's own headers, such as
+`Content-Security-Policy` and `X-Frame-Options`, so a page loads its styles and
+images as it would when served directly. Browsers don't run scripts on these
+pages or frame other origins in them: Volcano adds
+`Content-Security-Policy: script-src 'none'; object-src 'none'; frame-src 'self'`
+to every response. Browsers don't store responses either: Volcano replaces the
+application's `Cache-Control` with `private, no-store`. Volcano also sets
+`Strict-Transport-Security`, makes application cookies host-only and secure,
+and removes `Clear-Site-Data` and any attempt to set the reserved cookie.
 
 HTTP, WebSocket, SSE, and gRPC use the same authenticated URL. Revocation closes
 active connections; clients must obtain fresh access and reconnect after expiry.

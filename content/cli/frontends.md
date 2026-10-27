@@ -18,8 +18,10 @@ optionally reachable at your own custom domain.
   to another of its domains.
 - Can forward paths to public [functions](functions.md) through
   **function routes**.
-- Frontend custom domains and function routes can also be declared in the
-  [declarative config](project-configuration.md).
+- Can serve another frontend of the same project under a path, such as
+  `/docs`, through **Frontend routes**, so one hostname runs several apps.
+- Frontend custom domains, function routes, and Frontend routes can also be
+  declared in the [declarative config](project-configuration.md).
 
 `volcano frontends …` targets local development and `volcano cloud frontends …`
 targets the cloud project. The local server builds and serves each frontend at
@@ -33,12 +35,13 @@ Custom domains are a cloud command.
 |---|---|---|
 | Deploy | `volcano frontends deploy …` | `volcano cloud frontends deploy …` |
 | Redeploy | `volcano frontends redeploy …` | `volcano cloud frontends redeploy …` |
+| Deploy another frontend's build | — | `volcano cloud frontends deploy <name> --from <frontend>[@<deployment-id>]` |
 | List | `volcano frontends list` | `volcano cloud frontends list` |
 | Get | `volcano frontends get <name>` | `volcano cloud frontends get <name>` |
 | Delete | `volcano frontends delete <name>` | `volcano cloud frontends delete <name>` |
 | Logs | `volcano frontends logs <name>` | `volcano cloud frontends logs <name>` |
 | Custom domains | — | `volcano cloud frontends domains list\|get\|add\|update\|remove …` |
-| Function routes | `volcano frontends routes list\|create\|update\|delete …` | `volcano cloud frontends routes list\|create\|update\|delete …` |
+| Function and Frontend routes | `volcano frontends routes list\|create\|update\|delete …` | `volcano cloud frontends routes list\|create\|update\|delete …` |
 
 Cloud frontend deploys and redeploys use latest-wins queueing. A new request replaces
 older queued work while the current deployment finishes. Delete supersedes
@@ -207,6 +210,43 @@ with `404`. The `volcano cloud frontends domain
 create|list|get|delete` commands work on every server and act on the
 frontend's oldest domain that serves it.
 
+## Deploy one build to several frontends
+
+`--from` deploys the build another frontend of the project already serves,
+without uploading or compiling again. Both frontends must exist:
+
+```bash
+# Deploy the build web serves to web-eu
+volcano cloud frontends deploy web-eu --from web
+
+# Deploy one particular deployment of web
+volcano cloud frontends deploy web-eu --from web@3f6c2a1e-9b0d-4c51-8a39-0c6f2f1e8d42
+```
+
+```text
+✓ Frontend 'web-eu' deployment started with the build of 'web'
+Source deployment: 3f6c2a1e-9b0d-4c51-8a39-0c6f2f1e8d42
+Deployment: 8d0e4b7a-1c2f-4e6d-9a3b-5f1e0c2b7a64
+```
+
+Without `@`, the CLI picks the newest `active` or `degraded` deployment of the
+source frontend. `--from` takes no `--path`, `--name`, `--framework`,
+`--app-root`, or variable flags: the target keeps its own settings, and the
+build must match them. The deploy is refused when a build-time variable would have a different
+value on the target, naming the variables:
+
+```text
+build variables differ from the source build: NEXT_PUBLIC_API_URL
+```
+
+Redeploy the source if those variables changed since its build, or give the
+target the same variable selection. A deployment from before Volcano kept
+builds is refused until the source is redeployed once. Local development
+builds each frontend from its own source, so `volcano frontends deploy --from`
+fails and names the command to run instead. See
+[Deploy one build to several frontends](/platform/frontends/deploy#deploy-one-build-to-several-frontends)
+for what the target serves and what it costs.
+
 ## Function routes
 
 A function route sends every request under a path of the frontend, such as
@@ -229,7 +269,9 @@ volcano cloud frontends routes delete web /api/session
 ```
 
 `update` and `delete` take the route's path prefix or its ID. `update` keeps
-whatever you leave out. `frontends get` lists the routes too:
+whatever you leave out. `routes list` shows function and
+[Frontend routes](#frontend-routes) together, longest path first, with each
+route's kind. `frontends get` lists the routes too:
 
 ```text
 Function routes:
@@ -241,8 +283,8 @@ A route reaches it with no Volcano credential, so anyone who can load the
 frontend can call it, and the function must authenticate its callers itself.
 Volcano refuses a route to a `private` or `authenticated` function, and refuses
 to make a routed function non-public until its routes are deleted; the CLI
-prints the command that fixes each. A frontend can have up to 64 routes, and
-the longest matching prefix wins.
+prints the command that fixes each. A frontend can have up to 64 routes,
+function and Frontend routes together, and the longest matching prefix wins.
 
 A path prefix starts with `/`, does not end with `/`, has no `?`, `#`, or `\`,
 and is 2 to 512 characters long. The CLI checks this before calling Volcano.
@@ -252,3 +294,53 @@ The same commands without `cloud` manage routes on a local frontend. Declare
 the whole set at once. See
 [Frontend Function routes](/platform/frontends/function-routes) for how
 requests are matched and how to keep a session in cookies.
+
+## Frontend routes
+
+A Frontend route mounts another frontend of the same project at a path of the
+frontend. With `docs` mounted at `/docs` on `web`, `web`'s hostnames, custom
+domains included, keep serving `web`, while every request under `/docs` is
+served by `docs`.
+
+```bash
+# Serve /docs and everything under it from the docs frontend
+volcano cloud frontends routes create web --path /docs --frontend docs
+
+# List function and Frontend routes together
+volcano cloud frontends routes list web
+
+# Mount another frontend at the same path, or move the route
+volcano cloud frontends routes update web /docs --frontend docs-v2
+volcano cloud frontends routes update web /docs --path /guides
+
+# Stop serving the path from docs
+volcano cloud frontends routes delete web /docs
+```
+
+`frontends get` lists them after the function routes:
+
+```text
+Frontend routes:
+  /docs -> frontend docs
+```
+
+The path reaches the mounted frontend unchanged: `/docs/intro` arrives as
+`/docs/intro`, so build that frontend with its pages under the prefix, in
+matching page directories or with a matching `basePath`. `--strip-prefix` is
+for function routes only. A frontend can be mounted at several prefixes but
+can't mount itself. Function and Frontend routes share one set of paths: two
+routes can't use the same prefix, and the longest matching prefix wins whatever
+its kind. A route keeps its kind, so `update` refuses `--function` on a
+Frontend route and `--frontend` on a function route; delete the route and
+create the other kind instead.
+
+A frontend that another frontend mounts can't be deleted. `frontends delete`
+reports the refusal with the frontends that mount it and prints the
+`routes delete` command for each route to remove first.
+
+The same commands without `cloud` manage Frontend routes on a local frontend.
+Declare `frontend_routes` in [`volcano-config.yaml`](project-configuration.md#frontend-routes)
+to manage the whole set at once. See
+[Frontend routes](/platform/frontends/frontend-routes) for how a mounted
+frontend's build files and images are served and how to link between
+frontends.

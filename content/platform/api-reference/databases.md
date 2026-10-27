@@ -113,6 +113,34 @@ Returns `409` while a restore is running on the database; wait for it to finish.
 If Volcano cannot tell whether one is running it returns `503` rather than delete
 a database that might be mid-restore — retry.
 
+## Update Database Size
+
+```http
+PATCH /projects/{projectId}/databases/{databaseName}/type
+Authorization: Bearer <platform_token>
+Content-Type: application/json
+```
+
+```json
+{
+  "database_type": "volcano-db-s"
+}
+```
+
+Returns the updated database. A size change may briefly interrupt active connections.
+
+| Status | Meaning                                                                                           |
+| ------ | ------------------------------------------------------------------------------------------------- |
+| `400`  | Invalid request or database type.                                                                 |
+| `401`  | Authentication required.                                                                          |
+| `403`  | Access denied, or the requested size exceeds the plan allowance (code `plan_required`).           |
+| `404`  | Project or database not found.                                                                    |
+| `409`  | Database is not active or a restore is running. Wait until it is active and any restore finishes. |
+| `500`  | Internal server error.                                                                            |
+| `503`  | Volcano cannot check whether a restore is running. Retry.                                         |
+
+Errors use the shared [error response](errors.md) format.
+
 ## Reset Password
 
 ```http
@@ -199,7 +227,8 @@ connection string. Poll [Get Branch](#get-branch) until it reports `active`.
 
 `ttl_seconds` is between `3600` and `2592000` (one hour to 30 days) and defaults
 to seven days. Names are lowercase letters, numbers, and underscores, up to 64
-characters, unique within the parent database.
+characters, unique within the parent database. Names beginning with
+`migration_rehearsal_` are reserved for the branches migration runs rehearse on.
 
 | Status | Meaning                                                           |
 | ------ | ----------------------------------------------------------------- |
@@ -545,13 +574,13 @@ restored point is discarded, and the connection string is unchanged throughout.
 `restore_to` must fall inside the `restore_window` from [List
 Backups](#list-backups).
 
-| Status | Meaning                                                                                                                                                 |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `400`  | Both targets or neither, or a time outside the window                                                                                                   |
-| `403`  | Backups and point-in-time restore are SUPERAGENT-only                                                                                                   |
-| `404`  | Project, database, or backup not found                                                                                                                  |
-| `409`  | A restore is already in progress, the database is not active, another database operation is running, or too many pre-restore states are still held open |
-| `503`  | Restores are temporarily unavailable                                                                                                                    |
+| Status | Meaning                                                                                                                                                        |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `400`  | Both targets or neither, or a time outside the window                                                                                                          |
+| `403`  | Backups and point-in-time restore are SUPERAGENT-only (code `plan_required`), or the plan includes restore history the database has not built up yet (no code) |
+| `404`  | Project, database, or backup not found                                                                                                                         |
+| `409`  | A restore is already in progress, the database is not active, another database operation is running, or too many pre-restore states are still held open        |
+| `503`  | Restores are temporarily unavailable                                                                                                                           |
 
 ### Get Restore
 

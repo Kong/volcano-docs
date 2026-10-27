@@ -22,7 +22,7 @@ Service keys are designed for backend operations that need to access data across
 curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/service-keys" \
   -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"name": "Admin Key"}'
+  -d '{"name": "Admin-Key"}'
 ```
 
 Response:
@@ -31,7 +31,7 @@ Response:
 {
   "id": "sk_abc123",
   "project_id": "proj_xyz789",
-  "name": "Admin Key",
+  "name": "Admin-Key",
   "key_value": "sk-eyJhbGci...",
   "key_prefix": "sk-eyJhbGciO",
   "permissions": ["*"],
@@ -149,6 +149,11 @@ Even with full data access, service keys are still protected by:
 - **Table validation** — Only valid table names are accepted
 
 ## Managing service keys
+
+Invalid names return HTTP `400` with a validation message. Names can contain
+letters, numbers, underscores, and hyphens.
+A duplicate key name returns HTTP `409`. Unexpected failures return HTTP `500`
+with an operation-specific message, such as `failed to get service key`.
 
 ### List service keys
 

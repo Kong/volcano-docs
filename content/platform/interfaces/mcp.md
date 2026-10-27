@@ -173,6 +173,11 @@ A **platform token (`pk-`) is refused with `403`.** The endpoint takes its proje
 | `list_durable_messages`       | `read_only` | Lists the messages sent to an execution and published by it, oldest first                            | `GET /projects/{id}/durable-functions/{functionId}/executions/{executionId}/messages`      |
 | `list_durable_message_waits`  | `read_only` | Lists the message names an execution is waiting on                                                   | `GET /projects/{id}/durable-functions/{functionId}/executions/{executionId}/message-waits` |
 | `list_issues`                 | `read_only` | Lists runtime errors grouped into issues, most recently seen first                                   | `GET /projects/{id}/issues`                                                                |
+| `get_issue`                   | `read_only` | Returns one issue with its resource, error, counts, and status                                       | `GET /projects/{id}/issues/{issueId}`                                                      |
+| `get_lavaflow_settings`       | `read_only` | Returns whether LavaFlow is on, how far a run may go, and whether runs start on their own            | `GET /projects/{id}/lavaflow`                                                              |
+| `list_lavaflow_runs`          | `read_only` | Lists LavaFlow runs, newest first                                                                    | `GET /projects/{id}/lavaflow-runs`                                                         |
+| `get_lavaflow_run`            | `read_only` | Returns one LavaFlow run with its diagnosis, patch, pull request, or failure                         | `GET /projects/{id}/lavaflow-runs/{runId}`                                                 |
+| `list_schedulers`             | `read_only` | Lists the project's function schedulers with their schedule, next run, and health                    | `GET /projects/{id}/schedulers`                                                            |
 | `list_capabilities`           | `read_only` | Lists which capabilities, such as Sandboxes, accept new work in this environment                     | `GET /capabilities`                                                                        |
 | `list_variable_environments`  | `read_only` | Lists the project's variable Environments                                                            | `GET /projects/{id}/variable-environments`                                                 |
 | `list_databases`              | `full`      | Lists the project's databases. Returns connection strings                                            | `GET /projects/{id}/databases`                                                             |
@@ -315,6 +320,8 @@ Results are capped at 64 KiB. Past that the text ends with a note saying it was 
 
 `list_durable_messages` stays valid JSON instead: it leaves out the data of the largest messages until the page fits, sets `data_omitted: true` on each and its `data` to `null`, and says how many in the note. Every `seq` and `has_more` survive, so a message too large to show never blocks the next page. A page still over the cap without its data is truncated like any other result; lower `limit`.
 
+`list_lavaflow_runs` and `get_lavaflow_run` do the same with a run's `patch`, then its `diagnosis`: each one left out is `null` with `patch_omitted` or `diagnosis_omitted` set, and the run's status, trigger, pull request, and the page's cursor survive. When the run opened a pull request, it has the full change.
+
 `send_durable_message` echoes the message it sent. When that echo is over the cap, it leaves out the message's data the same way, so its `id`, `seq` and `status` still say how the send went.
 
 ## What it cannot do
@@ -325,7 +332,7 @@ It still reads what the project records about its work, and that can include you
 
 The rest of the boundary comes from the credential itself, and is the same over MCP as over HTTP: no other project, no account-level action, and no managing project access tokens — an agent cannot mint its replacement or erase the record of what it did. See [Project access tokens](../authentication/security/project-access-tokens.md).
 
-Nor can it approve or deny a durable approval. An agent can list what workflows are waiting on, but a decision takes a person, in the dashboard or with a platform token, and the approve and deny endpoints refuse a project access token. See [Durable approvals](../functions/durable-approvals.md#who-can-decide). `send_durable_message` does not get around this: a message only resumes a workflow waiting for a message, never one waiting for an approval. See [Durable messages](../functions/durable-messages.md#messages-or-approvals).
+Nor can it approve or deny a durable approval. An agent can list what workflows are waiting on, but a decision takes a person, in the dashboard or with a platform token, and the approve and deny endpoints refuse a project access token. See [Durable approvals](../functions/durable-approvals.md#who-can-decide). `send_durable_message` does not get around this: a message only resumes a workflow waiting for a message, never one waiting for an approval. See [Durable messages](../functions/durable-messages.md#messages-approvals-or-callbacks).
 
 ## Revoke access
 

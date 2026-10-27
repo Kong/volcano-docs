@@ -70,14 +70,15 @@ def handler(event, ctx):
 
 `waitForMessage` and `publish` need `@volcano.dev/sdk` 2.1 or later in JavaScript, or `volcano-sdk-python` 0.15 or later in Python. Ruby has no durable authoring API, so a Ruby application can [send, list, and subscribe](#from-an-sdk) but not wait or publish.
 
-## Messages or approvals
+## Messages, approvals, or callbacks
 
-Both suspend an execution until something outside it answers. They differ in who may answer.
+All three suspend an execution until something outside it answers. They differ in who may answer.
 
-| Use                                           | When                                                                                                                                                                                         |
-| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`ctx.waitForApproval`](durable-approvals.md) | A person has to decide. Only a signed-in person can approve or deny; a project access token, a service key, or the workflow itself cannot.                                                   |
-| `ctx.waitForMessage`                          | Anything else: a webhook, a payment provider, a user clicking a button in your app, another function finishing. Whoever the function's [visibility](#who-can-send-and-read) admits can send. |
+| Use                                           | When                                                                                                                                                                                           |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`ctx.waitForApproval`](durable-approvals.md) | A person has to decide. Only a signed-in person can approve or deny; a project access token, a service key, or the workflow itself cannot.                                                     |
+| `ctx.waitForMessage`                          | Your own code answers: a webhook receiver, a user clicking a button in your app, another function finishing. Whoever the function's [visibility](#who-can-send-and-read) admits can send.      |
+| [`ctx.waitForCallback`](durable-callbacks.md) | A system without a Volcano credential answers, such as a payment provider or a job queue. The function hands it a token, and it succeeds, fails, or heartbeats the wait with that token alone. |
 
 A message never decides an approval, whatever it carries, so moving a step from an approval to a message changes who may answer it. Keep an approval wherever an answer from code would defeat the point.
 

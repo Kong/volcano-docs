@@ -311,11 +311,20 @@ The allowance is per database, not per project, and counts branches in every
 state — a branch that is still provisioning holds a slot. Creating a branch over
 the allowance returns `403`.
 
+If Volcano cannot read your subscription pricing, branch creation returns `503`
+with `"subscription pricing temporarily unavailable"`. Retry later; no branch is
+created.
+
 ## Naming
 
 Branch names are lowercase letters, numbers, and underscores, up to 64
 characters, and unique within their parent database. Two different databases can
 each have a branch called `staging`.
+
+Names beginning with `migration_rehearsal_` are reserved, and creating one returns
+`400`. A migration run rehearses its files on a short-lived branch with such a
+name. It is listed with your branches and holds a slot of the allowance until the
+run deletes it.
 
 Creating a branch with a name that already exists returns `409` rather than a
 second branch, so retrying a create that timed out cannot silently consume two

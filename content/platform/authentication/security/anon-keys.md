@@ -140,7 +140,7 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/anon-keys" \
   -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Frontend App",
+    "name": "Frontend-App",
     "permissions": [
       "auth.signup",
       "auth.signin",
@@ -156,7 +156,7 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/anon-keys" \
   -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Chat App",
+    "name": "Chat-App",
     "permissions": [
       "auth.signup",
       "auth.signin",
@@ -242,6 +242,11 @@ Anon keys are safe to expose because:
 
 ## Managing anon keys
 
+Invalid names return HTTP `400` with a validation message. Names can contain
+letters, numbers, underscores, and hyphens. Duplicate names and attempts to delete
+the default key return HTTP `409`. Unexpected failures return HTTP `500` with an
+operation-specific message, such as `failed to create anon key`.
+
 ### List keys
 
 ```bash
@@ -264,6 +269,9 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/anon-keys/$KEY_ID/reg
 ```
 
 This generates a new key and immediately invalidates the old one. Update your frontend code with the new value.
+
+Regeneration and default-key promotion return HTTP `404` if the key is deleted
+before the updated key can be returned.
 
 ## What's next
 

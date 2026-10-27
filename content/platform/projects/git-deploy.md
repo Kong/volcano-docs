@@ -251,6 +251,7 @@ curl -X PUT "https://api.volcano.dev/projects/$PROJECT_ID/git-connection" \
   "repo_full_name": "acme/storefront",
   "root_directory": "apps/api",
   "production_branch": "main",
+  "production_branch_follows_default": true,
   "updated_at": "2026-08-11T17:04:22Z"
 }
 ```
@@ -278,8 +279,66 @@ curl -X PUT "https://api.volcano.dev/projects/$PROJECT_ID/git-connection" \
   default in the same request returns `400`: the branch is almost always the old
   repository's, sent back unchanged. Reconnect first, then set the branch.
 
+- `production_branch_follows_default` is `true` while the branch tracks the
+  repository's default and `false` once you pin one. Before you re-run the
+  connect call for the same repository, read the connection; if this is
+  `false`, send `production_branch` back, or omitting it discards the pin.
+
 Several projects may bind the same repository. Binding never creates or deletes
 anything on GitHub; `DELETE` on the same path only unbinds the project.
+
+**A person chooses the repository.** Binding or changing it needs a platform
+token or the dashboard. A [project access
+token](../api-reference/using-the-api.md) gets `403`:
+
+```json
+{
+  "error": "project access tokens cannot change a project's repository; a person changes it in the dashboard or with a platform token"
+}
+```
+
+CI and agents holding a project access token can still [change the root
+directory](#change-the-root-directory) and [the production
+branch](#deploy-from-a-different-branch), which stay within the repository a
+person chose.
+
+Binding a different repository, unbinding it, or connecting one after LavaFlow
+was turned on without one pauses LavaFlow until a person turns it on again. See [When the
+project's repository changes](../guides/lavaflow.md#when-the-projects-repository-changes).
+
+### Change the root directory
+
+Move a project to another directory of the same repository without touching the
+binding:
+
+```bash
+curl -X PUT "https://api.volcano.dev/projects/$PROJECT_ID/git-connection/root-directory" \
+  -H "Authorization: Bearer $VOLCANO_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "root_directory": "apps/storefront" }'
+```
+
+```json
+{
+  "repo_installation_id": 52001234,
+  "repo_id": 812345678,
+  "repo_full_name": "acme/storefront",
+  "root_directory": "apps/storefront",
+  "production_branch": "main",
+  "production_branch_follows_default": true,
+  "updated_at": "2026-08-11T17:12:40Z"
+}
+```
+
+- The path is relative to the repository root. `""`, `.` and `/` mean the root
+  itself.
+- The response shows the path the way a deploy reads it, so `./apps/storefront/`
+  comes back as `apps/storefront`.
+- An absolute path, or one that climbs out of the repository with `..`, returns
+  `400`.
+- A project with no repository connected returns `404`.
+- Once the project's source is [exported to Git](export-to-git.md), the root
+  directory is fixed and this returns `409`.
 
 ### Deploy from a different branch
 
@@ -299,6 +358,7 @@ curl -X PUT "https://api.volcano.dev/projects/$PROJECT_ID/git-connection/product
   "repo_full_name": "acme/storefront",
   "root_directory": "apps/api",
   "production_branch": "release",
+  "production_branch_follows_default": false,
   "updated_at": "2026-08-11T17:09:03Z"
 }
 ```
@@ -309,13 +369,36 @@ which is what makes this work for a repository you created empty and are
 about to push into.
 
 Once you set the branch here, it is yours: renaming the repository's default
-branch on GitHub no longer moves it. This holds even when the branch you set is
+branch on GitHub no longer moves it, and `production_branch_follows_default`
+reads `false`. This holds even when the branch you set is
 the current default — use this endpoint, not the connect call, when you want to
 pin a project to the default branch it already deploys from.
 
 Projects that never set a branch keep following the default. To return one to
-following it, reconnect with `PUT /projects/{id}/git-connection` omitting
-`production_branch`.
+following it, send an empty branch:
+
+```bash
+curl -X PUT "https://api.volcano.dev/projects/$PROJECT_ID/git-connection/production-branch" \
+  -H "Authorization: Bearer $VOLCANO_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "production_branch": "" }'
+```
+
+The response carries the repository's current default branch with
+`production_branch_follows_default: true`, and later default-branch renames on
+GitHub move the project again. Volcano reads the default through the project
+owner's GitHub connection:
+
+| Status | When                                                                                   |
+| ------ | -------------------------------------------------------------------------------------- |
+| `400`  | The repository has no commits yet. Push one first; until then a pin stays as it was.   |
+| `400`  | Code `feature_unavailable`: GitHub is not configured for this Volcano deployment.      |
+| `409`  | The owner's GitHub connection needs reconnecting or has lost access to the repository. |
+| `429`  | GitHub rate limited the read. Try again shortly.                                       |
+
+Volcano reads the default once more after switching the project over, to catch
+a rename that landed in between. If that read fails, the switch has already
+happened. Send the same request again to confirm the branch.
 
 Pushes to any other branch are ignored — there is one deployment branch per
 project, and nothing else deploys.

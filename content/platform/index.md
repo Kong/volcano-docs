@@ -52,6 +52,7 @@ JavaScript or Python workflows that checkpoint each step and resume for up to a 
 | [Durable functions](functions/durable-functions.md)                         | Long-running work that checkpoints and resumes                 |
 | [Durable approvals](functions/durable-approvals.md)                         | Pause a workflow until a person approves or denies it          |
 | [Durable messages](functions/durable-messages.md)                           | Send messages to a running workflow and read what it publishes |
+| [Durable callbacks](functions/durable-callbacks.md)                         | Let another system complete a waiting step with a token        |
 | [Developing durable functions locally](guides/durable-functions-locally.md) | Run one on your machine, then deploy it unchanged              |
 
 ### Databases
@@ -145,6 +146,7 @@ Next.js, static or server-rendered, served from the edge. A failed build never r
 | [Configuration manifest](projects/configuration.md)        | Declarative `volcano-config.yaml` reference (config deploy/pull)                     |
 | [Variable Environments](projects/variable-environments.md) | Create and manage Project variable Environments                                      |
 | [Project health](projects/health.md)                       | Check project health and review operation failures and blocked storage use           |
+| [Notifications](projects/notifications.md)                 | Get an email or a signed webhook when a scheduled function keeps failing             |
 
 ## API reference
 
@@ -162,6 +164,7 @@ Complete REST API documentation for all Volcano endpoints.
 | [Databases](api-reference/databases.md)           | Database provisioning endpoints                           |
 | [Storage](api-reference/storage.md)               | Storage bucket and object endpoints                       |
 | [Project locks](api-reference/locks.md)           | Backend lease endpoints                                   |
+| [Notifications](api-reference/notifications.md)   | Alert settings, webhook secret rotation, and test sends   |
 | [Errors](api-reference/errors.md)                 | Error codes and handling                                  |
 
 ## Guides
@@ -176,7 +179,7 @@ Step-by-step guides for common tasks.
 | [Deployment performance](guides/deployment-performance.md) | Deployment latency objectives, phases, and telemetry                                |
 | [Sandboxes](guides/sandboxes.md)                           | Run commands and HTTP services in isolated sessions with plan-based runtime pricing |
 | [Issues](guides/issues.md)                                 | See runtime errors grouped into issues, and resolve or ignore them                  |
-| [Autofix](guides/autofix.md)                               | Have AI diagnose your issues and open draft pull requests that fix them             |
+| [LavaFlow](guides/lavaflow.md)                             | Have AI diagnose your issues and open draft pull requests that fix them             |
 
 ## Examples
 

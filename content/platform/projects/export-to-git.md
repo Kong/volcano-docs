@@ -141,6 +141,9 @@ newer push supersedes it.
 
 The pinned branch does not follow later GitHub default-branch changes. This
 keeps a repository rename from moving production during or after handover.
+After handover you can
+[return it to the default](git-deploy.md#deploy-from-a-different-branch) with an
+empty `production_branch`.
 
 To stop an incomplete transition and restore direct platform deploys:
 
@@ -152,9 +155,9 @@ curl -X DELETE "https://api.volcano.dev/projects/$PROJECT_ID/source-export" \
 Cancellation does not delete the repository or a commit that already reached
 it. If Volcano reserved the initial commit before cancellation, the one-time
 export remains consumed and cannot be run again. The confirmed production
-branch remains pinned. If the repository now has a default branch, reconnect it
-without choosing a branch to make a platform-managed project follow that
-default again.
+branch remains pinned. Once the repository has its first commit, send an empty
+`production_branch` to
+[follow it again](git-deploy.md#deploy-from-a-different-branch).
 
 Check the state at any time:
 

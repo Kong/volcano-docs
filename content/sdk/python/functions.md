@@ -209,6 +209,58 @@ def handler(event, ctx):
 
 Names follow the approval rules: up to 237 printable ASCII characters, checked before anything is recorded, as is the timeout. Both need `VOLCANO_PLATFORM_API_URL`. A wait Volcano does not answer, cannot see yet, throttles, or fails on is retried for the same 30 seconds an approval gets, then raises `CallbackSubmitterError`. A wait Volcano refuses, for example with `too_many_message_waits` when 100 are already open, raises it at once. A refused publish fails its step without a retry, which fails the execution unless the handler catches it.
 
+## Wait for another system with a callback token
+
+> **Coming soon.** `ctx.wait_for_callback()` is not in a published SDK release
+> yet, and Volcano does not serve the `/durable-callbacks` requests below yet.
+
+`ctx.wait_for_callback()` hands a token to another system and pauses the execution until that system answers with it. Use it when the work happens somewhere you do not run code, such as a payment provider, a job queue, or a partner's API, and that system can call back once it is done:
+
+```python
+from volcano_sdk.durable_authoring import CallbackFailedError, durable
+
+
+@durable
+def handler(event, ctx):
+    try:
+        payment = ctx.wait_for_callback(
+            "payment",
+            lambda token: payments.start(
+                order_id=event["order_id"], callback_token=token
+            ),
+            timeout="1h",
+            heartbeat_timeout="10m",
+        )
+    except CallbackFailedError as error:
+        return {"status": "declined", "reason": error.type, "message": error.message}
+
+    if payment is None:
+        return {"status": "abandoned"}
+    return ctx.step(
+        "fulfil", lambda scope: fulfil(event["order_id"], payment["charge_id"])
+    )
+```
+
+The submitter receives a `vcb_` token. The system holding it answers with the token alone and needs no Volcano credential:
+
+```bash
+curl -X POST "https://api.volcano.dev/durable-callbacks/succeed" \
+  -H 'Content-Type: application/json' \
+  -d '{"token":"vcb_...","result":{"charge_id":"ch_1"}}'
+
+curl -X POST "https://api.volcano.dev/durable-callbacks/fail" \
+  -H 'Content-Type: application/json' \
+  -d '{"token":"vcb_...","error":{"type":"CardDeclined","message":"Insufficient funds"}}'
+
+curl -X POST "https://api.volcano.dev/durable-callbacks/heartbeat" \
+  -H 'Content-Type: application/json' \
+  -d '{"token":"vcb_..."}'
+```
+
+`wait_for_callback(name, submitter, timeout=None, heartbeat_timeout=None)` returns the JSON value the token was succeeded with, or `None` once `timeout` passes, or `heartbeat_timeout` passes without a heartbeat. A result is never `None`, so the two cannot be confused. A failure raises `CallbackFailedError` with the `type` and `message` it was failed with. A token takes one answer: a second gets `409 callback_completed`, and one after the wait timed out or the execution ended gets `410`. It works only for this wait, so treat it as a secret.
+
+The submitter runs inside a checkpointed step that is not retried, so a replay does not run it again. An attempt interrupted before the step is recorded can run it twice, with the same token both times, so make the hand-off idempotent; if the token was answered or the wait timed out in between, it is not run again. When it raises, `wait_for_callback()` raises the runtime's `CallbackSubmitterError`. It must be synchronous: an `async def` submitter raises `TypeError` before the callback opens, and one that returns an awaitable fails the wait instead of handing off. Getting the token needs `VOLCANO_PLATFORM_API_URL` and is retried for the same 30 seconds an approval gets. See [Durable callbacks](/platform/functions/durable-callbacks) for every request, response, and limit.
+
 ## Decide approvals from a backend
 
 `client.durable.approvals` lists, reads, and decides a project's approvals:
@@ -321,5 +373,7 @@ Local waits resolve immediately by default while preserving checkpoint and repla
 Approvals work the same locally. Decide one with `volcano durable approvals approve` or `volcano durable approvals deny`, or point the owner client at the local server. Approval timeouts run in real time.
 
 Messages work the same locally too. Send one with `volcano durable messages send`, or point the client at the local server. Message wait timeouts run in real time.
+
+Callback tokens work locally as well: send the same requests to the local server. A callback's timeout and heartbeat timeout run in real time.
 
 Running a decorated handler directly in a Python process still needs the optional test runtime: `python -m pip install 'volcano-sdk-python[durable]'`.

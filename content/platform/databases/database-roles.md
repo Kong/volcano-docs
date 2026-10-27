@@ -46,18 +46,19 @@ const result = await client.query('SELECT * FROM posts');
 
 ### Volcano Platform (`volcano_platform`)
 
-**Used when:** Volcano reads your database's size and query statistics, and when realtime looks up a table's primary key
+**Used when:** Volcano reads your database's size and query statistics, when realtime looks up a table's primary key, and when a migration run takes its lock and keeps its history
 
 **Permissions:**
 
 - Cannot log in
 - Reads query statistics for every role (`pg_monitor`)
+- Reads and writes the migration history in the `_volcano_migrations` schema, once a migration run creates it
 - No access to your tables beyond what you grant to `PUBLIC`
 
 Statements run as `volcano_platform` never appear in [database queries](../api-reference/databases.md#get-database-queries), including your own after `SET ROLE volcano_platform`. Don't drop, alter, or grant the role:
 
 - If you drop it, Volcano recreates it the next time it needs it. Statements recorded before the drop appear under `unknown` until statistics reset.
-- Volcano checks the role when it creates or repairs it. If the role can log in or other roles are members of it at that point, Volcano refuses to use it: database queries return an error, and Volcano runs its size reads and primary-key lookups as the database owner, where they appear in database queries.
+- Volcano checks the role when it creates or repairs it. If the role can log in or other roles are members of it at that point, Volcano refuses to use it: database queries return an error, and Volcano runs its size reads, primary-key lookups, and migration bookkeeping as the database owner, where they appear in database queries.
 
 ```sql
 SELECT rolname, rolcanlogin

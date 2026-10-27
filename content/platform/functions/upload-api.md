@@ -213,6 +213,7 @@ After upload, the cloud compile build installs dependencies from manifests such 
 4. **No symlink entries** - Uploaded source archives cannot contain symlinks. Safe symlinks created during the cloud build, such as package-manager workspace links, are materialized before publish.
 5. **No top-level `.volcano-dependencies` path** - Volcano reserves it for dependency staging. An upload containing it is accepted asynchronously, then fails during the compile build.
 6. **Valid archive structure** - The archive must be readable by Volcano
+7. **No parent-directory entries** - Archive paths such as `..`, `../`, and `src/../..` are rejected.
 
 ## Direct Upload Layout Inference
 

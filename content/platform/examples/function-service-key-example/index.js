@@ -294,6 +294,6 @@ function getTopUsers(posts, limit = 10) {
 
   return Object.entries(userCounts)
     .map(([user_id, count]) => ({ user_id, post_count: count }))
-    .sort((a, b) => b.post_count - a.post_count)
+    .toSorted((a, b) => b.post_count - a.post_count)
     .slice(0, limit);
 }
