@@ -50,7 +50,9 @@ override them. Use another name.
 
 `VOLCANO_PLATFORM_API_URL` is reserved too. Volcano sets it on every durable
 function when it deploys the function or syncs its variables, and the function
-uses it to [request approvals](durable-approvals.md). It counts toward the
+uses it to [request approvals](durable-approvals.md), wait for
+[messages](durable-messages.md), and get
+[callback tokens](durable-callbacks.md). It counts toward the
 function's 4096-byte environment limit, so a durable function's own variables
 have a little less room than a standard function's.
 

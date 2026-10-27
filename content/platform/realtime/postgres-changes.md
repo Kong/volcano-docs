@@ -191,6 +191,12 @@ Create the table first, grant the subscriber role SELECT access, and configure
 its RLS policies before subscribing. Subscribers without SELECT permission receive
 a permission-denied error before change tracking starts.
 
+Tables in Postgres system schemas (`pg_catalog`, `information_schema`,
+`pg_toast`, and temporary schemas) and Volcano's internal schemas
+(`_volcano_template`, `_volcano_migrations`) cannot be subscribed to with any
+key, including the service key. These subscriptions receive the same
+permission-denied error.
+
 ## Example: Live notifications
 
 Pass your authenticated Volcano client and database name to enable row fetching.

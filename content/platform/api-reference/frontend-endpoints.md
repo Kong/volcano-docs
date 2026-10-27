@@ -103,6 +103,7 @@ Response includes:
 - `current_deployment_id` (latest deployment operation ID for logs/status)
 - `last_deployed_at` (recorded completion time of the most recent deploy or redeploy with status `active`; also returned in list responses). Omitted when no such deployment has a recorded completion time. Site traffic, pending deployments, degraded deployments, failed deployments, and deletion do not change it.
 - `function_routes` (the frontend's [Function routes](#function-routes), most specific first; also in each item of the list response)
+- `frontend_routes` (the frontend's [Frontend routes](#frontend-routes), most specific first; also in each item of the list response)
 
 Frontend status values:
 
@@ -123,18 +124,49 @@ Frontend deployment history also uses:
 
 Triggers a new deployment using the latest uploaded artifact. If `app_root` is configured on the frontend, redeploy uses the stored value. A deployment that starts immediately returns `status: "provisioning"`, then transitions to `active`, `degraded`, or `failed`. If another deployment is running, the frontend keeps its current status, sets `pending_deployment_id`, and supersedes any older queued redeploy. The previous runtime and its published static assets remain available while provisioning, and a failed redeploy keeps them serving.
 
+## Deploy an Existing Build
+
+`POST /projects/{project_id}/frontends/{frontend_id}/deployments`
+
+Deploys the build of another frontend's deployment in the same project to this frontend without compiling it again. See [Deploy one build to several frontends](../frontends/deploy.md#deploy-one-build-to-several-frontends).
+
+```bash
+curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/frontends/$FRONTEND_ID/deployments" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"source_deployment_id":"3f6c2a1e-9b0d-4c51-8a39-0c6f2f1e8d42"}'
+```
+
+JSON body:
+
+- `source_deployment_id` (required): an `active` or `degraded` deployment of another frontend in the project.
+
+Returns `200` with the frontend. Admission and queueing are the redeploy's. The deployment's `source_deployment_id` names the build it published.
+
+Errors:
+
+- `400`: `code: source_deployment_same_frontend`, the deployment is this frontend's own; redeploy instead.
+- `404`: the frontend isn't in the project, or `code: source_deployment_not_found`.
+- `409`: `code: build_variables_differ` names the build-time variables whose values differ; `source_deployment_not_active`; `source_build_unavailable` when Volcano no longer keeps the build or the deployment predates kept builds, so redeploy the source and deploy from its new deployment; `frontend_incompatible` for a different framework or app root. Without a code, the frontend's deletion is queued or running, or the project's source is managed by Git, where deploys come from a push to the production branch.
+- `429`: the monthly build-minutes allowance is used up.
+- `501`: `code: build_reuse_unavailable` in local development.
+- `503`: the build-minutes check is temporarily unavailable; retry later.
+
 ## Delete Frontend
 
 `DELETE /projects/{project_id}/frontends/{frontend_id}`
 
 Returns `202 Accepted` and schedules asynchronous deprovisioning. If another deployment is running, list/get responses keep the frontend's current status and expose the queued deletion as `pending_deployment_id`. The status changes to `deleting` when cleanup starts. When cleanup finishes, the frontend no longer appears in lists and `GET /projects/{project_id}/frontends/{frontend_id}` returns `404`.
 
+Returns `409` when another frontend's [Frontend route](#frontend-routes) mounts this one. The error names those frontends; delete their routes first.
+
 ## Frontend Custom Domains
 
-These routes manage a frontend's custom domains as a list. A frontend holds one
-custom domain for now, on every plan. Each domain response carries a
-`redirect` field, which is `null` while a frontend has no second domain to
-redirect to.
+A frontend has up to the plan's custom domains per frontend: 1 on HOBBY, 10 on
+SUPERAGENT. Each domain serves the frontend, or, with `redirect` set, answers
+every request with a redirect to another active domain of the frontend that
+serves it. While the target is not active, the redirect domain serves the
+frontend instead.
 
 ### List domains
 
@@ -157,6 +189,18 @@ Returns the frontend's domains, oldest first, each in the
       "redirect": null,
       "created_at": "2026-09-02T12:00:00Z",
       "updated_at": "2026-09-02T12:05:00Z"
+    },
+    {
+      "domain": "example.com",
+      "tls_mode": "managed",
+      "domain_status": "active",
+      "verification_status": "verified",
+      "serving_certificate": "managed",
+      "routing_target_hostname": "my-frontend.frontends.volcano.run",
+      "effective_urls": ["https://my-frontend.frontends.volcano.run/", "https://example.com/"],
+      "redirect": { "to": "www.example.com", "status": 308 },
+      "created_at": "2026-09-02T12:01:00Z",
+      "updated_at": "2026-09-02T12:06:00Z"
     }
   ]
 }
@@ -166,21 +210,25 @@ Returns the frontend's domains, oldest first, each in the
 
 `POST /projects/{project_id}/frontends/{frontend_id}/domains`
 
-Takes the [create request](#create-frontend-custom-domain) body:
+Takes the [create request](#create-frontend-custom-domain) body, plus an
+optional `redirect`:
 
 ```bash
 curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/frontends/$FRONTEND_ID/domains" \
   -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "domain": "www.example.com",
-    "tls": {"mode": "managed"}
+    "domain": "example.com",
+    "tls": {"mode": "managed"},
+    "redirect": {"to": "www.example.com", "status": 308}
   }'
 ```
 
-- Returns `201` for a new domain. For a hostname the frontend already has, returns `200`, or switches its TLS mode in place as described below.
-- Returns `403` with an error like `custom domain limit exceeded for your plan (1 per frontend)` when the frontend already has a domain.
-- While the frontend's previous domain is detaching, returns `409` with `code: custom_domain_releasing` and a `Retry-After` header; send the same request again after it.
+- `redirect.to` must name another `active` domain of the frontend that serves it, not one that redirects or one still waiting for DNS or its certificate. `status` is `301`, `302`, `307`, or `308`, and defaults to `308`.
+- The redirect keeps the request's path and query string and never reaches your app.
+- A redirect domain still needs ownership, TLS, and DNS pointing at the frontend.
+- Returns `201` for a new domain. For a hostname the frontend already has, returns `200`, or switches its TLS mode in place as described below; a different `redirect` returns `409`, so change it with `PATCH`.
+- Returns `400` for an invalid redirect, and `403` with an error like `custom domain limit exceeded for your plan (10 per frontend)` once the frontend has as many domains as its plan allows. A domain that is detaching no longer counts.
 - Ownership, managed TLS, BYOC, and the other `409` responses work as in [Create Frontend Custom Domain](#create-frontend-custom-domain).
 
 ### Get a domain
@@ -189,26 +237,42 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/frontends/$FRONTEND_I
 
 Returns one domain by hostname, case-insensitively, or `404`.
 
-### Update a domain
+### Set or clear a redirect
 
 `PATCH /projects/{project_id}/frontends/{frontend_id}/domains/{domain}`
 
-Sets the domain's `redirect`. A redirect points at another domain of the same
-frontend, so until a frontend can hold a second domain, `{"redirect": null}` is
-the only value that succeeds; any other returns `400`.
+```bash
+curl -X PATCH "https://api.volcano.dev/projects/$PROJECT_ID/frontends/$FRONTEND_ID/domains/example.com" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"redirect": {"to": "www.example.com", "status": 302}}'
+```
+
+Send `{"redirect": null}` to make the domain serve the frontend again. Proxies
+apply the change within seconds. Returns the updated domain, `400` for an
+invalid redirect, and `409` when other domains redirect to this one; the
+message names them.
 
 ### Remove a domain
 
 `DELETE /projects/{project_id}/frontends/{frontend_id}/domains/{domain}`
 
-Returns `204` once the detach is queued.
+Returns `204` once the detach is queued. A domain other domains redirect to
+returns `409` naming them; remove or retarget those redirects first:
+
+```json
+{
+  "error": "www.example.com is the redirect target of example.com; remove or retarget those redirects first"
+}
+```
 
 ## Create Frontend Custom Domain
 
 `POST /projects/{project_id}/frontends/{frontend_id}/domain`
 
-Deprecated: use [Add a domain](#add-a-domain). This route returns `409` when
-the frontend already has a different domain.
+Deprecated: use [Add a domain](#add-a-domain). This route manages one domain
+per frontend: it returns `409` when the frontend already has a different
+domain, so it cannot add a second one or a redirect.
 
 Ask Volcano to issue and renew the certificate:
 
@@ -348,7 +412,7 @@ Keep the `_volcano` TXT record too. Point your hostname at
 
 Behavior:
 
-- Configures one custom domain per frontend on every plan.
+- Configures the frontend's first custom domain, on every plan.
 - Managed TLS issues and renews the certificate without accepting or returning certificate material.
 - Managed TLS accepts hostnames up to 219 characters; BYOC accepts up to 253.
 - Route traffic with a `CNAME` to `routing_target_hostname` only if your DNS provider confirms the hostname is not a zone apex. At any zone apex, including a delegated subdomain apex, use a provider-supported ALIAS, ANAME, or CNAME-flattening record.
@@ -371,7 +435,7 @@ Provisioning lifecycle:
 - An ownership reservation expires after 72 hours and the domain moves to `detaching`. Once it is removed, submit the domain again to receive a new TXT challenge.
 - `provisioning`: validation succeeded and activation is in progress.
 - `active`: Volcano has the certificate and serves the domain everywhere within a minute, usually within seconds. Until then an HTTPS request to it fails the TLS handshake. Your DNS change propagates separately, so visitors may reach your previous host until the old record's TTL runs out. See [Wait out the switchover](../frontends/overview.md#wait-out-the-switchover).
-- `detaching`: domain removal has been requested and is being processed. Removal takes about a minute for BYOC and a few minutes for managed TLS. Until Volcano releases the domain, adding its hostname to any frontend, or any domain to its frontend, returns `409` with `code: custom_domain_releasing` and a `Retry-After` header in seconds; send the same request again after it. A removal that Volcano cannot finish within a few minutes returns a plain `409` without `code` instead; contact support if it persists.
+- `detaching`: domain removal has been requested and is being processed. Removal takes about a minute for BYOC and a few minutes for managed TLS. Until Volcano releases the domain, adding its hostname to any frontend, or another domain through the deprecated single-domain route, returns `409` with `code: custom_domain_releasing` and a `Retry-After` header in seconds; send the same request again after it. A removal that Volcano cannot finish within a few minutes returns a plain `409` without `code` instead; contact support if it persists.
 - `failed`: setup or removal failed. For managed TLS, check `failure_reason`, correct the problem, then delete and recreate the domain.
 
 To use your own certificate instead, set `tls.mode` to `byoc` and provide
@@ -383,7 +447,8 @@ Volcano validates the key pair and hostname before accepting it.
 
 `GET /projects/{project_id}/frontends/{frontend_id}/domain`
 
-Deprecated: use [List domains](#list-domains).
+Deprecated: use [List domains](#list-domains). Returns the frontend's oldest
+domain that serves it rather than redirecting.
 
 Response fields:
 
@@ -400,7 +465,7 @@ Response fields:
 - `required_routing_record` (deprecated; no longer returned)
 - `routing_target_hostname`
 - `effective_urls[]`
-- `redirect`: `null` for now; see [Frontend Custom Domains](#frontend-custom-domains)
+- `redirect`: `{"to", "status"}` for a domain that redirects, or `null` when it serves the frontend
 - `created_at`
 - `updated_at`
 
@@ -418,7 +483,10 @@ Notes:
 
 `DELETE /projects/{project_id}/frontends/{frontend_id}/domain`
 
-Deprecated: use [Remove a domain](#remove-a-domain).
+Deprecated: use [Remove a domain](#remove-a-domain). Removes the frontend's
+custom domain, and returns `409` while other domains redirect to it. A
+frontend with several domains returns `409` too, since a retry could remove
+the next one; name the domain to remove on the collection route.
 
 Removes custom-domain configuration from the frontend and frees shard capacity.
 Returns `204` when the detach request is queued successfully, or `409` when the
@@ -466,7 +534,7 @@ Errors:
 
 - `400`: the path prefix is invalid, or the function is durable or not in HTTP mode.
 - `404`: the frontend or function isn't in the project.
-- `409`: the path is already routed, the frontend has 64 routes, or the function isn't `public`.
+- `409`: the path is already routed by a Function or Frontend route, the frontend has 64 routes, or the function isn't `public`.
 
 ### List routes
 
@@ -487,11 +555,84 @@ handling. The new target must meet the same rules. Returns `200` with the route.
 
 Returns `204`.
 
+## Frontend routes
+
+Serve every request under a path of the frontend from another frontend of the
+project. See [Frontend routes](../frontends/frontend-routes.md) for how
+matching works and how to build the mounted frontend.
+
+### Create a Frontend route
+
+`POST /projects/{project_id}/frontends/{frontend_id}/frontend-routes`
+
+```bash
+curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/frontends/$FRONTEND_ID/frontend-routes" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"target_frontend_id":"7f0a2c9d-5e3b-4b18-8d6f-1c4e9a2b3d50","path_prefix":"/docs"}'
+```
+
+JSON body:
+
+- `target_frontend_id` (required): another frontend in the same project.
+- `path_prefix` (required): starts with `/`, isn't `/` alone, doesn't end with `/`, and is at most 512 bytes.
+
+Returns `201` with the route:
+
+```json
+{
+  "id": "3b8e6d2a-1c4f-4e7a-9b05-6a2d8f1c0e47",
+  "project_id": "c4e8a1f2-7d3b-4e9a-b6c0-1f2e3d4c5b6a",
+  "frontend_id": "2d6b1c0e-8f4a-4b7e-9d3a-5e1f0c2b7a64",
+  "target_frontend_id": "7f0a2c9d-5e3b-4b18-8d6f-1c4e9a2b3d50",
+  "path_prefix": "/docs",
+  "created_at": "2026-10-23T12:00:00Z",
+  "updated_at": "2026-10-23T12:00:00Z"
+}
+```
+
+Errors:
+
+- `400`: the path prefix is invalid, or the frontend would mount itself.
+- `404`: the frontend or the mounted frontend isn't in the project, or, with
+  code `feature_unavailable`, Frontend routes aren't available in this
+  environment yet. Check `frontend_routes` in
+  [`GET /capabilities`](./overview.md).
+- `409`: the path is already routed by a Function or Frontend route, the frontend has 64 routes, or the frontend or the mounted frontend is being deleted.
+
+### List Frontend routes
+
+`GET /projects/{project_id}/frontends/{frontend_id}/frontend-routes`
+
+Returns `{"data": [...]}` with the routes ordered from most to least specific.
+
+### Replace a Frontend route
+
+`PUT /projects/{project_id}/frontends/{frontend_id}/frontend-routes/{route_id}`
+
+Takes the same body as create and replaces the route's mounted frontend and
+path. Returns `200` with the route.
+
+Errors:
+
+- `400`: the path prefix is invalid, or the frontend would mount itself.
+- `404`: the route, the frontend, or the mounted frontend isn't in the
+  project, or, with code `feature_unavailable`, Frontend routes aren't
+  available in this environment yet.
+- `409`: the path is already routed by a Function or Frontend route, or the
+  frontend or the mounted frontend is being deleted.
+
+### Delete a Frontend route
+
+`DELETE /projects/{project_id}/frontends/{frontend_id}/frontend-routes/{route_id}`
+
+Returns `204`.
+
 ## List Frontend Deployments
 
 `GET /projects/{project_id}/frontends/{frontend_id}/deployments?page=1&limit=10`
 
-Response: paginated `FrontendDeployment` records for deploy/redeploy/delete operations.
+Response: paginated `FrontendDeployment` records for deploy/redeploy/delete operations. A deployment that published another deployment's build carries its ID in `source_deployment_id`.
 
 ## Deployment Build Logs
 

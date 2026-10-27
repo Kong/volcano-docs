@@ -160,7 +160,7 @@ Response:
 }
 ```
 
-The invocation HTTP status code and headers come directly from your function response, and Volcano adds `X-Volcano-Version` (`production`: `VERSION`, non-production: `ENV-VERSION`), `X-Volcano-Region`, `X-Volcano-Proxy-Ms` (milliseconds spent preparing the call, from your request arriving until your function ran), `X-Volcano-Proxy-Handler-Ms` (the part of that spent in the invoke endpoint itself), and `X-Volcano-Compute-Ms` (milliseconds spent running your function). See [Invoking functions](invoking-functions.md#response-format) for the headers Volcano owns and does not forward.
+The invocation HTTP status code and headers come directly from your function response, and Volcano adds `X-Volcano-Version` (`production`: `VERSION`, non-production: `ENV-VERSION`), `X-Volcano-Region`, `X-Volcano-Proxy-Ms` (milliseconds spent preparing the call, from your request arriving until your function ran), `X-Volcano-Proxy-Handler-Ms` (the part of that spent in the invoke endpoint itself), and `X-Volcano-Compute-Ms` (milliseconds spent running your function, or until a streamed response started). See [Invoking functions](invoking-functions.md#response-format) for the headers Volcano owns and does not forward.
 
 ## Environment variables
 

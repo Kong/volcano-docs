@@ -317,6 +317,9 @@ Returns `206 Partial Content` with `Content-Range` header.
 - Valid format: `bytes=start-end` or `bytes=start-`
 - Examples: `bytes=0-1023`, `bytes=1000-`, `bytes=500-1500`
 - Invalid formats return `400 Bad Request`
+- A range starting at or beyond the end of the file returns `416 Range Not Satisfiable`
+  with `{"error":"requested range not satisfiable"}`. `Content-Range: bytes */size`
+  reports the current file size when available.
 
 ### Delete file
 

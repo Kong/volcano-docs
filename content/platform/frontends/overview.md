@@ -35,7 +35,8 @@ the app directory does not change the packaged application's root.
 Sites on `volcano.run` and its subdomains use the Volcano browser-tab icon when
 the app returns `404` for `/favicon.ico`. Existing app icons take precedence.
 To use your own icon in Next.js, add `app/favicon.ico` or configure an icon in
-your page metadata. Domains outside `volcano.run` keep the app's original response.
+your page metadata. Custom domains outside `volcano.run` keep the app's original
+response.
 
 ## Compression
 
@@ -125,8 +126,9 @@ export async function POST() {
 ```
 
 Queued cache regeneration from an older deployment is retired after a redeploy.
-The redeploy clears that frontend's old edge pages. If that edge update did not
-complete, Volcano clears each affected page before retiring its queued work.
+The redeploy moves that frontend to a fresh set of edge pages, so the old ones
+are no longer served. If that edge update did not complete, Volcano clears each
+affected page before retiring its queued work.
 Only the current build can regenerate its cache. Revalidation for other
 frontends is unaffected.
 
@@ -232,11 +234,16 @@ middleware only to rewrite or add headers, moving that logic into
 [`next.config.js` rewrites](https://nextjs.org/docs/app/api-reference/config/next-config-js/rewrites)
 or into the page itself keeps the route at the edge.
 
-Redeploying clears everything your frontend has at the edge — pages and
-optimized images alike — and the deploy waits for that to finish before
-reporting the new build active. Once it does, nothing from the old build is
-served. Redeploying cannot clear a browser's copy, which is why Next.js puts a
-build hash in the filename of every asset it expects to change.
+Redeploying retires everything your frontend has at the edge — pages and
+optimized images alike. Each deployment is cached under its own key, so the new
+build starts with an empty edge cache and nothing has to be cleared before it
+goes live; the old build's copies are cleared in the background. Once the
+deploy reports the new build active, requests move to it, usually within ten
+seconds and at most about a minute. Until they do, and while the deploy is
+still rolling out, a request can get either build; after that, no page or
+optimized image comes from the old build. Redeploying cannot clear a browser's
+copy, which is why Next.js puts a build hash in the filename of every asset it
+expects to change.
 
 **Files under `public/` are served as files.** They keep their browser cache
 metadata, and they do not run middleware or authentication, so do not put
@@ -405,13 +412,18 @@ can outlast the runtime limit.
 When Volcano cannot route or serve a frontend request, browsers receive a
 self-contained HTML error page. The status code identifies the failure:
 
-| Status | Meaning                                                                                                                  |
-| ------ | ------------------------------------------------------------------------------------------------------------------------ |
-| `403`  | Project traffic is disabled.                                                                                             |
-| `404`  | No deployed frontend serves the address, or the requested `/_next/static` file is in no build the frontend still serves. |
-| `429`  | The project reached a rate or monthly request limit.                                                                     |
-| `502`  | The deployed frontend is temporarily unreachable.                                                                        |
-| `503`  | A platform dependency is temporarily unavailable.                                                                        |
+| Status | Meaning                                                                                                                       |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `403`  | Project traffic is disabled.                                                                                                  |
+| `404`  | No deployed frontend serves the address, or the requested `/_next/static` file is in no build the frontend still serves.      |
+| `429`  | The project reached a rate or monthly request limit, or one visitor sent too many server-rendered or function-route requests. |
+| `502`  | The deployed frontend is temporarily unreachable.                                                                             |
+| `503`  | A platform dependency is temporarily unavailable.                                                                             |
+
+A `429` sent because one visitor exceeded the
+[per-visitor limit](../guides/plans-and-limits.md#frontends) has the code
+`viewer_rate_limited` and a `Retry-After` header with the seconds until that
+visitor can send again. Visitors at other addresses are not affected.
 
 The page may include a reference ID for support. `502` and `503` pages link to
 the platform status page. Clients that prefer `application/json` receive a JSON
@@ -516,6 +528,12 @@ A frontend can send a path such as `/api/session` to a `public` HTTP-mode
 function, so your pages call it on the same origin and can keep a session in
 `HttpOnly` cookies. See [Frontend Function routes](function-routes.md).
 
+## Frontend routes
+
+A frontend can serve another frontend of the project under a path, such as
+`/docs`, so one hostname runs several apps. See
+[Frontend routes](frontend-routes.md).
+
 ## Custom domains
 
 Custom domains are available on every plan and support Volcano-managed TLS or
@@ -527,24 +545,25 @@ with a `_volcano` TXT record, and every hostname below it attaches to any of you
 frontends, in either TLS mode, without another record. See
 [Verify domain ownership](domain-verification.md).
 
-Each frontend has one custom domain for now, on every plan. Attaching a
-second, different domain returns `409 Conflict`, or `403` through the
-[domains routes](../api-reference/frontend-endpoints.md#frontend-custom-domains);
-to serve the same site on several hostnames, deploy the same source as one
-frontend per hostname.
-
-Every frontend can have a custom domain, but managed TLS certificates are
-limited per account: HOBBY includes one and SUPERAGENT includes 100. See
+A frontend can have several custom domains. Each one either serves the
+frontend or [redirects](#redirect-one-domain-to-another) to another of its
+domains, so one deployment can answer on `www.example.com` and
+`app.example.com` and send `example.com` to `www`. HOBBY allows one custom
+domain per frontend and SUPERAGENT allows 10. Adding one past the limit
+returns `403`. Managed TLS certificates are limited per account: HOBBY includes
+one and SUPERAGENT includes 100. A removed managed domain holds its certificate
+until Volcano finishes removing it, which takes a few minutes; adding a managed
+domain past the limit before then also returns `403`. See
 [Plans and limits](../guides/plans-and-limits.md#frontends).
 
-For managed TLS, attach the domain with `--tls managed`:
+Without a certificate, Volcano manages TLS for the domain:
 
 ```bash
-volcano cloud frontends domain create my-site --domain app.example.com --tls managed
-volcano cloud frontends domain get my-site
+volcano cloud frontends domains add my-site app.example.com
+volcano cloud frontends domains get my-site app.example.com
 ```
 
-`--tls` needs the Volcano CLI 0.50 or later. A `volcano-config.yaml` entry for
+A `volcano-config.yaml` entry for
 this frontend that omits `custom_domain` leaves the domain attached;
 `custom_domain: null` removes it. The manifest can also attach it on its own:
 
@@ -576,14 +595,13 @@ verified domain; until then the attach fails with `409` and the
 ```bash
 # 1. Attach the domain with your PEM certificate + unencrypted private key
 #    (--chain is optional; include it if your CA requires the issuing chain).
-volcano cloud frontends domain create my-site \
-  --domain app.example.com \
+volcano cloud frontends domains add my-site app.example.com \
   --cert  ./fullchain-leaf.pem \
   --key   ./privkey.pem \
   --chain ./chain.pem
 
-# 2. Check status and the frontend's default URL.
-volcano cloud frontends domain get my-site
+# 2. Check its status.
+volcano cloud frontends domains get my-site app.example.com
 ```
 
 You can also attach custom domains declaratively — see
@@ -591,11 +609,86 @@ You can also attach custom domains declaratively — see
 
 Removing a domain takes about a minute for BYOC and a few minutes for managed
 TLS, while Volcano detaches it and releases the hostname. Until then, attaching
-the hostname again, to this or any other frontend, or attaching another domain
-to this frontend, returns `409 Conflict` with `code: custom_domain_releasing`
-and a `Retry-After` header. Send the same request again after that many
-seconds. If Volcano cannot finish the removal within a few minutes, the `409`
+the hostname again, to this or any other frontend, returns `409 Conflict` with
+`code: custom_domain_releasing` and a `Retry-After` header, and so does
+attaching another domain to this frontend with
+`volcano cloud frontends domain create`. Send the same request again after that
+many seconds. If Volcano cannot finish the removal within a few minutes, the `409`
 has no `code`; contact support if it persists.
+
+### Redirect one domain to another
+
+Give a domain a `redirect` and Volcano answers every request for it with a
+redirect to another domain of the same frontend, keeping the path and query
+string. The redirect never reaches your app. The usual case sends the apex to
+`www`. A redirect can only point at an `active` domain, so attach both first:
+
+```yaml
+version: 1
+frontends:
+  - name: my-site
+    custom_domains:
+      - domain: www.example.com
+        tls:
+          mode: managed
+      - domain: example.com
+        tls:
+          mode: managed
+```
+
+Once `www.example.com` is `active`, add the redirect and deploy again:
+
+```yaml
+version: 1
+frontends:
+  - name: my-site
+    custom_domains:
+      - domain: www.example.com
+        tls:
+          mode: managed
+      - domain: example.com
+        tls:
+          mode: managed
+        redirect:
+          to: www.example.com # an active domain of this frontend that serves it
+          status: 308 # 301, 302, 307, or 308; default 308
+```
+
+```bash
+volcano cloud config deploy
+curl -sI 'https://example.com/pricing?plan=pro'
+```
+
+```text
+HTTP/2 308
+location: https://www.example.com/pricing?plan=pro
+```
+
+Or with the CLI:
+
+```bash
+volcano cloud frontends domains add my-site www.example.com
+volcano cloud frontends domains list my-site   # wait until www.example.com is active
+volcano cloud frontends domains add my-site example.com --redirect-to www.example.com
+```
+
+301 and 308 are permanent, and browsers cache them; 302 and 307 are temporary.
+307 and 308 keep the request method and body, so a form posted to the apex
+still arrives as a `POST`. Use 302 while you test, then switch to 308.
+
+A redirect domain needs everything a serving domain needs: ownership, a
+certificate, and DNS pointing at the frontend, because the browser connects to
+it over HTTPS before it can read the redirect. A redirect must point at an
+`active` domain that serves the frontend, not at another redirect or a domain
+still waiting for DNS or its certificate; Volcano refuses with `400`. If the
+target stops serving later, the redirect domain serves the frontend until the
+target is active again. If Volcano removes the target instead, it clears the
+redirects that pointed at it, and they do not come back when the hostname
+returns; set them again. A domain that others redirect to cannot be removed or
+made a redirect itself until they point elsewhere; Volcano refuses with `409`
+and names them. To swap which domain serves, change both in one
+`volcano cloud config deploy`, which orders the steps so a redirect never
+points at a domain that isn't serving.
 
 ### Point DNS at your frontend
 
@@ -613,6 +706,14 @@ For a provider-confirmed non-apex:
 app.example.com.  CNAME  <frontend-id>.frontends.volcano.run.
 ```
 
+Every custom domain of the frontend points at the same host, including the
+ones that redirect. For an apex redirecting to `www`:
+
+```text
+www.example.com.  CNAME  <frontend-id>.frontends.volcano.run.
+example.com.      ALIAS  <frontend-id>.frontends.volcano.run.
+```
+
 The domain becomes `active` once Volcano finishes attaching the certificate.
 That status does not confirm your DNS is live. For a confirmed non-apex,
 inspect the CNAME with `dig CNAME app.example.com`; for an apex, check the
@@ -620,7 +721,7 @@ ALIAS, ANAME, or flattening record with your DNS provider.
 
 To rotate the certificate later, update it through the declarative
 [`custom_domain` config](../projects/configuration.md) and re-apply; the
-rotation is zero-downtime. Re-running `domain create` for a BYOC domain that's
+rotation is zero-downtime. Re-running `domains add` for a BYOC domain that's
 already attached is a no-op and won't replace the certificate.
 
 ### Wait out the switchover
@@ -691,5 +792,6 @@ until it is active, or remove it and attach it again with the other mode.
 
 - [Deploy a frontend](deploy.md) — step-by-step with the CLI.
 - [Frontend Function routes](function-routes.md) — serve a function under a frontend path.
+- [Frontend routes](frontend-routes.md) — serve another frontend under a frontend path.
 - [Frontend API reference](../api-reference/frontend-endpoints.md) — the HTTP surface.
 - [CLI reference](/cli) — every `volcano cloud frontends` command.
