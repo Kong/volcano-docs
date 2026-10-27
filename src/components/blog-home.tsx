@@ -17,11 +17,10 @@ type BlogHomeProps = {
   description?: string;
   posts: BlogPost[];
   categories: Category[];
-  views: Record<string, number>;
   children: ReactNode;
 };
 
-export function BlogHome({ title, description, posts, categories, views, children }: BlogHomeProps) {
+export function BlogHome({ title, description, posts, categories, children }: BlogHomeProps) {
   const { topic, setTopic } = useBlogFilters();
   const filtered = posts.filter(function matchesTopic(post) { return !topic || post.tags?.includes(topic); });
   let heading = `All posts (${filtered.length})`;
@@ -32,7 +31,7 @@ export function BlogHome({ title, description, posts, categories, views, childre
       <Hero title={title} description={description} actionHref={blogTopicHref(topic, filtered[0]?.url ?? "/blog")} actionLabel="Start reading">{children}</Hero>
       <SectionHeading>{heading}</SectionHeading>
       <BlogCategoryTabs categories={categories} />
-      <BlogPostCards posts={filtered} views={views} topic={topic} />
+      <BlogPostCards posts={filtered} topic={topic} />
       {filtered.length === 0 && (
         <div data-slot="blog-empty" className="blog-empty">
           <p>No posts match this topic.</p>

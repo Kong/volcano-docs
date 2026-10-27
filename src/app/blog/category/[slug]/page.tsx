@@ -11,7 +11,6 @@ import {
   isBlogCategory,
   postsInCategory,
 } from "@/lib/blog-categories.mjs";
-import { getBlogViews } from "@/lib/posthog-views";
 import { getSectionPages } from "@/lib/sections";
 import "@/components/collection-home.css";
 import "@/components/home/index.css";
@@ -39,7 +38,6 @@ export default async function BlogCategoryPage({ params }: CategoryPageProps) {
   const inCategory = postsInCategory(posts, slug);
   if (inCategory.length === 0) notFound();
   const label = categoryLabel(slug);
-  const views = await getBlogViews(inCategory.map(function toUrl(post) { return post.url; }));
   return (
     <div data-slot="collection-home" className="home-page collection-home blog-home">
       <Hero
@@ -53,7 +51,7 @@ export default async function BlogCategoryPage({ params }: CategoryPageProps) {
       </Hero>
       <SectionHeading>{`${label} (${inCategory.length})`}</SectionHeading>
       <BlogCategoryTabs categories={collectCategories(posts)} active={slug} />
-      <BlogPostCards posts={inCategory} views={views} />
+      <BlogPostCards posts={inCategory} />
       <Footer />
     </div>
   );

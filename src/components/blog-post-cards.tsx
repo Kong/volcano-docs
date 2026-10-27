@@ -19,14 +19,13 @@ export type BlogPost = {
 
 type BlogPostCardsProps = {
   posts: BlogPost[];
-  views: Record<string, number>;
   /** Keeps an active sidebar topic filter on the links out of the listing. */
   topic?: string | null;
 };
 
 // The post grid, shared by the blog listing and each category page so both
 // show a post the same way: cover or icon, category, title, then the byline.
-export function BlogPostCards({ posts, views, topic = null }: BlogPostCardsProps) {
+export function BlogPostCards({ posts, topic = null }: BlogPostCardsProps) {
   return (
     <div data-slot="blog-post-cards" className="collection-home-cards" aria-live="polite">
       {posts.map(function renderPost(post) {
@@ -52,7 +51,7 @@ export function BlogPostCards({ posts, views, topic = null }: BlogPostCardsProps
             href={blogTopicHref(topic, post.url)}
           >
             <div className="blog-post-footer">
-              <BlogMetadata data={{ author: post.author, published: post.published }} views={views[post.url]} />
+              <BlogMetadata data={{ author: post.author, published: post.published }} />
               <span className="blog-post-action">Read post <span aria-hidden="true">→</span></span>
             </div>
           </FeatureCard>

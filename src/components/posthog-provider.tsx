@@ -39,14 +39,10 @@ function PostHogProvider({ children }: PostHogProviderProps) {
         posthog.init(key as string, {
           api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
           defaults: "2026-01-30",
-          // Flags, plus the explicit events this app sends itself: no
-          // autocapture, no pageview capture, no replay, no surveys, no browser
-          // storage. The only event captured by hand today is the blog view
-          // (blog-view-tracker.tsx).
+          // Flags only: no analytics capture, replay, surveys or browser storage.
           // Flag evaluation still emits $feature_flag_called when a flag is read.
           // With no storage there is no stable visitor id, so each page load is a
-          // new anonymous visitor — a blog view count is therefore views, not
-          // unique visitors. Use flags here as all-or-nothing switches (0% or
+          // new anonymous visitor. Use flags here as all-or-nothing switches (0% or
           // 100%, or property targeting); a partial percentage rollout would show
           // or hide a feature at random on each load. Switch persistence to
           // "localStorage" if stable percentage rollouts are needed.
@@ -65,10 +61,6 @@ function PostHogProvider({ children }: PostHogProviderProps) {
           persistence: "memory",
         });
       }
-      // Publish the client as soon as it exists. Flags still fail closed until
-      // they load (below), but anything that only captures an event — the blog
-      // view tracker — must not wait on a flag response that may never arrive.
-      bump(posthog);
       unsubscribe = posthog.onFeatureFlags(function flagsLoaded() {
         bump(posthog);
       });
@@ -98,11 +90,4 @@ function useFeatureFlag(flag: string): boolean {
   return client.isFeatureEnabled(flag) === true;
 }
 
-// The loaded client, or null while PostHog is off or still loading. Callers
-// capture explicit events with it; autocapture, replay and pageview capture
-// stay disabled in the init above.
-function useAnalytics(): PostHog | null {
-  return useContext(FlagsContext).client;
-}
-
-export { PostHogProvider, useAnalytics, useFeatureFlag };
+export { PostHogProvider, useFeatureFlag };
