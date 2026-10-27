@@ -1,4 +1,5 @@
 import { BLOG_VIEW_EVENT, BLOG_VIEW_PROPERTY } from "@/lib/blog-views.mjs";
+import { siteUrl } from "@/lib/site-url";
 
 // Blog view counts, read from PostHog at render time. The browser records one
 // `blog_pageview` event per post view (see blog-view-tracker.tsx); this reads
@@ -12,6 +13,9 @@ import { BLOG_VIEW_EVENT, BLOG_VIEW_PROPERTY } from "@/lib/blog-views.mjs";
 const REVALIDATE_SECONDS = 3600;
 const LOOKBACK_DAYS = 365;
 const DEFAULT_API_HOST = "https://us.posthog.com";
+// A stalled analytics call must not hold up a page render, and must never eat
+// a prerender's time budget: give up and render without counts instead.
+const REQUEST_TIMEOUT_MS = 4000;
 
 type BlogViewCounts = ReadonlyMap<string, number>;
 
@@ -19,14 +23,26 @@ const NO_COUNTS: BlogViewCounts = new Map();
 
 type QueryResponse = { results?: unknown };
 
-function viewsQuery() {
-  // The event name and property are constants in this repo, not user input, so
-  // the query carries no interpolated values from the request.
+/** A HogQL (ClickHouse) string literal. */
+function literal(value: string) {
+  return `'${value.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}'`;
+}
+
+// The query asks only about the posts this site serves, on this site's own
+// host. The project token is public, so anyone can send a `blog_pageview` with
+// any post value; an unfiltered GROUP BY would let those rows push real posts
+// past PostHog's row cap. Filtering on `$host` also keeps local development
+// and preview deploys out of production's numbers.
+function viewsQuery(urls: string[]) {
   return [
     `SELECT properties.${BLOG_VIEW_PROPERTY} AS post, count() AS views`,
     "FROM events",
-    `WHERE event = '${BLOG_VIEW_EVENT}' AND timestamp >= now() - INTERVAL ${LOOKBACK_DAYS} DAY`,
+    `WHERE event = ${literal(BLOG_VIEW_EVENT)}`,
+    `AND properties.$host = ${literal(siteUrl.host)}`,
+    `AND properties.${BLOG_VIEW_PROPERTY} IN (${urls.map(literal).join(", ")})`,
+    `AND timestamp >= now() - INTERVAL ${LOOKBACK_DAYS} DAY`,
     "GROUP BY post",
+    `ORDER BY views DESC LIMIT ${urls.length}`,
   ].join(" ");
 }
 
@@ -42,11 +58,14 @@ function toCounts(payload: QueryResponse): BlogViewCounts {
   return counts;
 }
 
-async function fetchViewCounts(): Promise<BlogViewCounts> {
+async function fetchViewCounts(urls: string[]): Promise<BlogViewCounts> {
   const apiKey = process.env.POSTHOG_API_KEY;
-  if (!apiKey) return NO_COUNTS;
+  // The project is named explicitly rather than defaulting to `@current`,
+  // which PostHog resolves from the key owner's currently selected project —
+  // one UI click away from querying a project with no blog events in it.
+  const project = process.env.POSTHOG_PROJECT_ID;
+  if (!apiKey || !project || urls.length === 0) return NO_COUNTS;
   const host = process.env.POSTHOG_API_HOST ?? DEFAULT_API_HOST;
-  const project = process.env.POSTHOG_PROJECT_ID ?? "@current";
   try {
     const response = await fetch(`${host}/api/projects/${project}/query/`, {
       method: "POST",
@@ -54,14 +73,15 @@ async function fetchViewCounts(): Promise<BlogViewCounts> {
         authorization: `Bearer ${apiKey}`,
         "content-type": "application/json",
       },
-      body: JSON.stringify({ query: { kind: "HogQLQuery", query: viewsQuery() } }),
+      body: JSON.stringify({ query: { kind: "HogQLQuery", query: viewsQuery(urls) } }),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       next: { revalidate: REVALIDATE_SECONDS },
     });
     if (!response.ok) return NO_COUNTS;
     return toCounts((await response.json()) as QueryResponse);
   } catch {
-    // PostHog being unreachable is never a reason to fail a docs page: the
-    // post renders without its count.
+    // PostHog being slow or unreachable is never a reason to fail a docs page
+    // or a build: the post renders without its count.
     return NO_COUNTS;
   }
 }
@@ -72,7 +92,7 @@ async function fetchViewCounts(): Promise<BlogViewCounts> {
  * render it.
  */
 export async function getBlogViews(urls: string[]): Promise<Record<string, number>> {
-  const counts = await fetchViewCounts();
+  const counts = await fetchViewCounts(urls);
   const views: Record<string, number> = {};
   for (const url of urls) {
     const count = counts.get(url);

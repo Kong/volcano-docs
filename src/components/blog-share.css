@@ -1,7 +1,7 @@
 /* Share row on a blog post: X, LinkedIn, and copy link. */
 
 .blog-share {
-  --cmp-gap: var(--space-30);
+  --cmp-gap: var(--spacing-control-gap);
   --cmp-label-fg: var(--text-neutral);
 
   display: flex;

@@ -1,17 +1,21 @@
 /* Category row above the post cards: one link per category that has posts. */
 
 .blog-category-tabs {
+  --cmp-gap: var(--spacing-control-gap);
+  --cmp-padding-block-end: var(--spacing-inline);
+  --cmp-padding-inline: var(--spacing-page);
+
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-30);
-  padding: var(--space-0) var(--spacing-page) var(--space-60);
+  gap: var(--cmp-gap);
+  padding: var(--spacing-none) var(--cmp-padding-inline) var(--cmp-padding-block-end);
 }
 
 .blog-category-tab {
   --cmp-fg: var(--text-neutral);
   --cmp-bg: var(--surface-raised);
-  --cmp-padding-inline: var(--space-50);
-  --cmp-padding-block: var(--space-20);
+  --cmp-padding-block: var(--spacing-action-block);
+  --cmp-padding-inline: var(--spacing-action-inline);
 
   padding: var(--cmp-padding-block) var(--cmp-padding-inline);
   background: var(--cmp-bg);

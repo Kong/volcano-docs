@@ -133,9 +133,13 @@ Follow [`spec/markdown-format.md`](spec/markdown-format.md) for the full content
   or copy that URL. No third-party script is loaded to draw them.
 - **View counts** come from PostHog. The browser records one `blog_pageview`
   event per post view with the public key; the server reads the totals back
-  hourly with `POSTHOG_API_KEY` (a personal API key with `query:read`). With no
-  key set — local development, and any build without the variable — posts
-  render without a count. See [`.env.example`](.env.example).
+  hourly with `POSTHOG_API_KEY` (a personal API key with `query:read`) and
+  `POSTHOG_PROJECT_ID`. With either unset — local development, and any build
+  without the variables — posts render without a count. The query asks only
+  about this site's own post URLs on its own host, so local and preview views
+  never reach production's numbers. The event carries posthog-js's default
+  properties (URL, referrer, host, browser, OS, device) and PostHog records the
+  client IP unless the project discards it. See [`.env.example`](.env.example).
 
 **Version note:** Fumadocs 16 hard-requires Next 16, so the site is on Next 16 +
 React 19.2 rather than `volcano-web`'s Next 15.5. Every other convention matches.

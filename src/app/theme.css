@@ -199,6 +199,9 @@
   --spacing-action-block: var(--space-30);
   --spacing-action-inline: var(--space-50);
   --spacing-control-gap: var(--space-40);
+  /* Inline labels that sit inside running text or a card (blog categories). */
+  --spacing-label-block: var(--space-10);
+  --spacing-label-inline: var(--space-30);
 
   /* ── System defaults all components inherit from. ── */
   --system-font: var(--font-family-sans);

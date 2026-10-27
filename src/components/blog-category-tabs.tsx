@@ -12,7 +12,7 @@ export function BlogCategoryTabs({ categories, active }: BlogCategoryTabsProps) 
   if (categories.length === 0) return null;
   const allActive = !active;
   return (
-    <nav aria-label="Blog categories" className="blog-category-tabs">
+    <nav data-slot="blog-category-tabs" aria-label="Blog categories" className="blog-category-tabs">
       <Link
         href="/blog"
         aria-current={allActive}
