@@ -9,9 +9,9 @@ export interface MetadataField {
 
 // The user's metadata, except the fields the dashboard shows on their own
 export function customMetadataFields(user: VolcanoUser): MetadataField[] {
-  const reservedKeys = ['name', 'anonymous', 'avatar_url'];
+  const reservedKeys = new Set(['name', 'anonymous', 'avatar_url']);
   return Object.entries(user.user_metadata || {})
-    .filter(([key]) => !reservedKeys.includes(key))
+    .filter(([key]) => !reservedKeys.has(key))
     .map(([key, value]) => ({ key, value: String(value) }));
 }
 

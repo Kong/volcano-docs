@@ -122,7 +122,7 @@ Connection details and internal diagnostic messages are omitted from the respons
 ```json
 {
   "id": "db-uuid",
-  "database_name": "main_db",
+  "name": "main_db",
   "database_type": "volcano-db-xs",
   "status": "provisioning",
   "region": "us-east-1",
@@ -159,7 +159,7 @@ Choose a size based on your workload:
 Change the compute size of an existing database:
 
 ```bash
-curl -X PATCH https://api.volcano.dev/projects/PROJECT_ID/databases/DB_ID/type \
+curl -X PATCH https://api.volcano.dev/projects/PROJECT_ID/databases/DATABASE_NAME/type \
   -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -175,7 +175,7 @@ with `{"error":"failed to update database type"}`. Internal diagnostics are omit
 ## Get Database Details
 
 ```bash
-curl https://api.volcano.dev/projects/PROJECT_ID/databases/DB_ID \
+curl https://api.volcano.dev/projects/PROJECT_ID/databases/DATABASE_NAME \
   -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
 
@@ -184,7 +184,7 @@ When status is `active`, includes `connection_string`:
 ```json
 {
   "id": "abc-123-456-789",
-  "database_name": "main_db",
+  "name": "main_db",
   "status": "active",
   "connection_string": "postgresql://volcano_client_11111111-1111-1111-1111-111111111111:vpg_abc123@database.volcano.dev:5432/myapp_main?sslmode=require&application_name=volcano_full_access",
   "region": "us-east-1",
@@ -262,7 +262,7 @@ curl https://api.volcano.dev/projects/PROJECT_ID/databases \
 ## Delete a Database
 
 ```bash
-curl -X DELETE https://api.volcano.dev/projects/PROJECT_ID/databases/DB_ID \
+curl -X DELETE https://api.volcano.dev/projects/PROJECT_ID/databases/DATABASE_NAME \
   -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
 
@@ -274,7 +274,7 @@ with `{"error":"failed to schedule database deletion"}`. Internal diagnostics ar
 ## Reset Password
 
 ```bash
-curl -X POST https://api.volcano.dev/projects/PROJECT_ID/databases/DB_ID/reset-password \
+curl -X POST https://api.volcano.dev/projects/PROJECT_ID/databases/DATABASE_NAME/reset-password \
   -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
 
@@ -282,7 +282,7 @@ curl -X POST https://api.volcano.dev/projects/PROJECT_ID/databases/DB_ID/reset-p
 
 ```json
 {
-  "message": "Password reset successful",
+  "message": "Password reset successfully",
   "role_name": "volcano_client_11111111-1111-1111-1111-111111111111",
   "new_password": "vpg_new_secure_password",
   "connection_string": "postgresql://volcano_client_11111111-1111-1111-1111-111111111111:vpg_new_secure_password@database.volcano.dev:5432/main_db?sslmode=require&application_name=volcano_full_access"
