@@ -97,6 +97,8 @@ includes its routes as `function_routes`. See the
   `request_context.host` is the hostname the visitor used, and
   `request_context.source_ip` is the visitor's address.
 - Every routed response carries `Cache-Control: private, no-store`.
+- A function that [streams its response](../functions/invoking-functions.md#stream-a-response)
+  streams through the route too.
 - A route applies to every hostname of the frontend: its generated hostname,
   preview hostnames, a custom domain, and `*.frontends.localhost` in local mode.
 - A route change can take a few seconds to reach every request.
@@ -389,8 +391,14 @@ to the local frontend URL if you keep using it.
 
 ## Limits and errors
 
-A frontend can have up to 64 Function routes. `path_prefix` must start with
+A frontend can have up to 64 routes, Function and
+[Frontend routes](frontend-routes.md) together, and the two kinds can't share a
+prefix. `path_prefix` must start with
 `/`, can't be `/` alone, can't end with `/`, and is at most 512 bytes.
+
+Requests to a route count toward the frontend's
+[per-visitor limit](../guides/plans-and-limits.md#frontends). Past it, the
+frontend answers `429` with code `viewer_rate_limited` and `Retry-After`.
 
 | Status | Error                                                                            | Fix                                                                |
 | ------ | -------------------------------------------------------------------------------- | ------------------------------------------------------------------ |

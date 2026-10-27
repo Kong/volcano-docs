@@ -38,7 +38,7 @@ When `require_email_confirmation` is enabled, this setting cannot be turned off 
 **Default:** null  
 **Required:** Yes (when email_enabled = true)
 
-The sender email address. Must be a valid email address.
+The sender email address. Must be a valid email address. Carriage returns or newlines return `400` when saving.
 
 **Examples:**
 
@@ -58,7 +58,7 @@ The sender email address. Must be a valid email address.
 **Default:** null  
 **Optional**
 
-Display name shown to recipients.
+Display name shown to recipients. Supports punctuation and Unicode. Carriage returns or newlines return `400` when saving.
 
 **Examples:**
 
@@ -69,8 +69,10 @@ Display name shown to recipients.
 **Result:**
 
 ```text
-From: My App <noreply@myapp.com>
+From: "My App" <noreply@myapp.com>
 ```
+
+Leading and trailing whitespace in previously saved sender settings is trimmed in configuration responses and exports, and ignored when sending. Line breaks inside the address or name still prevent delivery.
 
 ### smtp_host
 
@@ -310,6 +312,19 @@ The endpoint uses the project's stored credentials, so save before testing.
 Supplying `html_body`/`text_body` (with an optional `subject`) instead renders a
 custom message — that override path backs the template editor's "Send Test"
 preview. See the `testEmailConfig` operation in the API reference for details.
+
+Full configuration saves preserve unchanged sender values, including legacy
+values with interior line breaks. New or changed sender values must not contain
+CR/LF. Unrelated settings remain editable; repair an unsafe sender before sending.
+
+An interior line break in a saved sender returns `400` with
+`email_from_address must not contain line breaks` or
+`email_from_name must not contain line breaks`; no message is sent. Save a
+single-line value for that field and test again. Outer whitespace on previously
+saved senders is still ignored. When a rendered custom subject contains a line
+break, outer whitespace is trimmed, including trailing newlines from YAML block
+scalars. A remaining interior line break returns `400` with
+`subject must not contain line breaks` without sending.
 
 ## Troubleshooting
 

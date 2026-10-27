@@ -197,20 +197,22 @@ curl "https://api.volcano.dev/capabilities"
     { "id": "sandboxes.sessions", "status": "available" },
     { "id": "sandboxes.custom_templates", "status": "unavailable" },
     { "id": "issues", "status": "available" },
-    { "id": "autofix", "status": "available" },
-    { "id": "autofix.managed_models", "status": "unavailable" }
+    { "id": "lavaflow", "status": "available" },
+    { "id": "functions.response_streaming", "status": "available" },
+    { "id": "frontend_routes", "status": "available" }
   ]
 }
 ```
 
-| ID                           | Covers                                                                                      |
-| ---------------------------- | ------------------------------------------------------------------------------------------- |
-| `sandboxes`                  | The Sandbox API: presets, templates, sessions, and executions                               |
-| `sandboxes.sessions`         | Starting and resuming sessions, and one-shot executions                                     |
-| `sandboxes.custom_templates` | Deploying a custom template; its validation waits while `sandboxes.sessions` is unavailable |
-| `issues`                     | The Issues API: listing, reading, and updating grouped runtime errors                       |
-| `autofix`                    | The Autofix API: a project's AI diagnosis and fix settings                                  |
-| `autofix.managed_models`     | Turning autofix on with Volcano-managed models instead of your own API key                  |
+| ID                             | Covers                                                                                                                                 |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `sandboxes`                    | The Sandbox API: presets, templates, sessions, and executions                                                                          |
+| `sandboxes.sessions`           | Starting and resuming sessions, and one-shot executions                                                                                |
+| `sandboxes.custom_templates`   | Deploying a custom template; its validation waits while `sandboxes.sessions` is unavailable                                            |
+| `issues`                       | The Issues API: listing, reading, and updating grouped runtime errors                                                                  |
+| `lavaflow`                     | The LavaFlow API: a project's AI diagnosis and fix settings                                                                            |
+| `functions.response_streaming` | [Streaming a response](../functions/invoking-functions.md#stream-a-response) on a function's own URL                                   |
+| `frontend_routes`              | Creating and changing [Frontend routes](../frontends/frontend-routes.md); listing, deleting, and serving existing ones work either way |
 
 The endpoint needs no token, and every caller in an environment gets the same
 answer. While a capability is `unavailable`, requests that start new work
@@ -227,6 +229,11 @@ unknown status as unavailable, and refresh the list when a route answers
 `feature_unavailable`. A capability under another,
 such as `sandboxes.sessions`, is unavailable whenever its parent is. A `503` is
 a temporary outage, not an unavailable capability; retry it.
+
+`functions.response_streaming` refuses nothing. While it is `unavailable`, a
+function's own URL sends a streamed response whole, once the function finishes.
+A response sent whole is limited to 6 MiB, headers included; a larger one fails
+the invocation.
 
 ## CLI version gating
 
@@ -304,11 +311,17 @@ See [Functions](functions.md) for details.
 | `POST`   | `/projects/{id}/durable-approvals/{approvalId}/approve`                             | Approve a pending approval; a person only                                                   |
 | `POST`   | `/projects/{id}/durable-approvals/{approvalId}/deny`                                | Deny a pending approval; a person only                                                      |
 | `POST`   | `/durable-approvals`                                                                | Register an approval request; called by the SDK from inside a workflow, not by applications |
+| `POST`   | `/durable-callbacks`                                                                | Get a callback token; called by the SDK from inside a workflow, not by applications         |
+| `POST`   | `/durable-callbacks/succeed`                                                        | Complete a waiting step with a result; the callback token is the only credential            |
+| `POST`   | `/durable-callbacks/fail`                                                           | Fail a waiting step with an error; the callback token is the only credential                |
+| `POST`   | `/durable-callbacks/heartbeat`                                                      | Report that the work behind a callback token is still going on                              |
 
 Durable functions are a separate collection: a standard function's id is `404`
 here, and a durable function's id is `404` under `/projects/{id}/functions`. See
-[Durable functions](../functions/durable-functions.md) for details, and
-[Durable approvals](../functions/durable-approvals.md) for the approval endpoints.
+[Durable functions](../functions/durable-functions.md) for details,
+[Durable approvals](../functions/durable-approvals.md) for the approval endpoints,
+and [Durable callbacks](../functions/durable-callbacks.md) for the callback
+endpoints.
 
 ### Issues
 
@@ -320,18 +333,29 @@ here, and a durable function's id is `404` under `/projects/{id}/functions`. See
 
 Issues are in preview. See [Issues](../guides/issues.md).
 
-### Autofix
+### LavaFlow
 
-| Method   | Endpoint                                       | Description                          |
-| -------- | ---------------------------------------------- | ------------------------------------ |
-| `GET`    | `/projects/{id}/autofix`                       | Get a project's autofix settings     |
-| `PUT`    | `/projects/{id}/autofix`                       | Replace a project's autofix settings |
-| `DELETE` | `/projects/{id}/autofix/api-key`               | Delete a project's stored API key    |
-| `POST`   | `/projects/{id}/issues/{issueId}/autofix-runs` | Diagnose an issue                    |
-| `GET`    | `/projects/{id}/autofix-runs`                  | List autofix runs                    |
-| `GET`    | `/projects/{id}/autofix-runs/{runId}`          | Get an autofix run                   |
+| Method  | Endpoint                                        | Description                          |
+| ------- | ----------------------------------------------- | ------------------------------------ |
+| `GET`   | `/projects/{id}/lavaflow`                       | Get a project's LavaFlow settings    |
+| `PATCH` | `/projects/{id}/lavaflow`                       | Change a project's LavaFlow settings |
+| `POST`  | `/projects/{id}/issues/{issueId}/lavaflow-runs` | Diagnose an issue                    |
+| `GET`   | `/projects/{id}/lavaflow-runs`                  | List LavaFlow runs                   |
+| `GET`   | `/projects/{id}/lavaflow-runs/{runId}`          | Get a LavaFlow run                   |
 
-Autofix is in preview and needs SUPERAGENT. See [Autofix](../guides/autofix.md).
+LavaFlow is in preview. During the preview it needs the SUPERAGENT plan, and
+nothing is charged yet. See [LavaFlow](../guides/lavaflow.md).
+
+### Notifications
+
+| Method | Endpoint                                      | Description                                                                          |
+| ------ | --------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `GET`  | `/projects/{id}/notifications`                | Get where a project's alerts go                                                      |
+| `PUT`  | `/projects/{id}/notifications`                | Turn email on or off, change the webhook, and choose when a failing scheduler alerts |
+| `POST` | `/projects/{id}/notifications/webhook-secret` | Rotate the webhook signing secret                                                    |
+| `POST` | `/projects/{id}/notifications/test`           | Send a test notification on every configured channel                                 |
+
+See [Notifications API](notifications.md) and [Notifications](../projects/notifications.md).
 
 ### Frontends
 
@@ -347,6 +371,10 @@ Autofix is in preview and needs SUPERAGENT. See [Autofix](../guides/autofix.md).
 | `POST`   | `/projects/{id}/frontends/{frontendId}/function-routes`           | Route a frontend path to a public HTTP function               |
 | `PUT`    | `/projects/{id}/frontends/{frontendId}/function-routes/{routeId}` | Replace a Function route                                      |
 | `DELETE` | `/projects/{id}/frontends/{frontendId}/function-routes/{routeId}` | Delete a Function route                                       |
+| `GET`    | `/projects/{id}/frontends/{frontendId}/frontend-routes`           | List a frontend's Frontend routes                             |
+| `POST`   | `/projects/{id}/frontends/{frontendId}/frontend-routes`           | Serve another frontend under a path                           |
+| `PUT`    | `/projects/{id}/frontends/{frontendId}/frontend-routes/{routeId}` | Replace a Frontend route                                      |
+| `DELETE` | `/projects/{id}/frontends/{frontendId}/frontend-routes/{routeId}` | Delete a Frontend route                                       |
 | `POST`   | `/projects/{id}/logs/search`                                      | Search and filter frontend runtime and deployment logs        |
 
 See [Frontend Endpoints](frontend-endpoints.md) for details.

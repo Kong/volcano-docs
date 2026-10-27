@@ -69,3 +69,46 @@ Create request:
 `schedule.cron_expression` must be a standard 5-field cron expression evaluated in UTC. Seconds fields, descriptors such as `@daily`, and Quartz-only syntax such as `?`, `L`, `W`, or `#` are not supported. Volcano validates that the schedule runs no more frequently than once per minute and at least once every 31 days.
 
 At runtime, the function receives the configured `payload` as its event. Volcano adds `__volcano_schedule` metadata to the event with scheduler/run identifiers and the region that performed the invocation.
+
+## Health
+
+Every scheduler response reports how its recent runs went:
+
+```json
+{
+  "id": "2c9d1e0f-3a4b-4c5d-8e9f-0a1b2c3d4e5f",
+  "name": "hourly-sync",
+  "enabled": true,
+  "run_count": 52,
+  "health": "failing",
+  "consecutive_failures": 49,
+  "last_run_status": "failed",
+  "last_error": "TypeError: Cannot read properties of undefined (reading 'rows')",
+  "last_success_at": "2026-10-17T13:00:05Z",
+  "last_failure_at": "2026-10-19T14:00:04Z"
+}
+```
+
+| Field                                | Description                                                                                                                                                                                                                                              |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `health`                             | `failing` while `consecutive_failures` is above `0`, otherwise `healthy`, including before the first run.                                                                                                                                                |
+| `consecutive_failures`               | Runs failed in a row. Resets to `0` when a run succeeds.                                                                                                                                                                                                 |
+| `last_run_status`                    | `succeeded` or `failed`. Absent before the first finished run.                                                                                                                                                                                           |
+| `last_error`                         | What the most recent counted failed run reported. Cleared when a run succeeds. A failure that does not count, such as a tick Volcano is still retrying in its first 15 minutes, leaves this and `health` unchanged and is not reported on the scheduler. |
+| `last_success_at`, `last_failure_at` | When the most recent run of each outcome finished. Absent until there is one.                                                                                                                                                                            |
+
+A durable function's run finishes when the execution it started does, so its
+health follows the execution's outcome: failed, timed out, or stopped counts as
+a failure. A standard function's run fails only when Volcano cannot invoke it;
+an error the handler returns does not count. A disabled scheduler keeps the
+health it had, apart from durable runs already started: they still count when
+their executions finish, and can still send an alert.
+
+`health` and `consecutive_failures` describe the region the scheduler runs in
+now. `last_run_status` and `last_error` describe the last run to finish in any
+region. After you move a scheduler to another region, they can disagree until
+it first runs there: a failed run in the old region is still the last run, but
+the new region starts `healthy`.
+
+To be told when a scheduler starts failing rather than polling for it, see
+[Notifications](../projects/notifications.md).

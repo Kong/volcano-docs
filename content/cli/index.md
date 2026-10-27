@@ -30,6 +30,7 @@ account (auth)
     ├── frontends ............. deployed sites, custom domains → frontends.md
     ├── git connection ........ push-to-deploy from GitHub     → git.md
     ├── access tokens ......... project-scoped CI credentials  → access-tokens.md
+    ├── notifications ......... alerts when schedulers fail    → notifications.md
     └── declarative config .... one YAML syncing the above     → ../project-configuration.md
 ```
 
@@ -84,6 +85,14 @@ project and resource names it acts on, error messages, CLI version, platform,
 and which coding agent ran it. Turn it off with `volcano telemetry disable` or
 `VOLCANO_TELEMETRY_DISABLED=1`. See [telemetry.md](telemetry.md).
 
+## Feedback
+
+`volcano feedback` sends the Volcano team a report about a problem with the
+CLI, the platform, the docs, or the agent skills. Coding agents run it after a
+task. Turning telemetry off also turns it off, unless you run `volcano feedback
+enable`. Turn it off on its own with `volcano feedback disable`. See
+[feedback.md](feedback.md).
+
 ## Element → CLI ability at a glance
 
 | Element | CLI can… | Commands | Details |
@@ -98,7 +107,8 @@ and which coding agent ran it. Turn it off with `volcano telemetry disable` or
 | Databases | create, inspect, delete, migrate | `databases …`, `migrations …` | [databases.md](databases.md) |
 | Storage | manage buckets, objects, policies | `storage …` | [storage.md](storage.md) |
 | Variables | deploy, list, get, delete | `variables …` | [variables.md](variables.md) |
-| Frontends | deploy, inspect, custom domains, function routes | `frontends …`, `cloud frontends …` | [frontends.md](frontends.md) |
+| Notifications | alert by email or webhook when schedulers fail, rotate the webhook secret, send a test | `notifications …`, `cloud notifications …` | [notifications.md](notifications.md) |
+| Frontends | deploy, inspect, custom domains, function and Frontend routes | `frontends …`, `cloud frontends …` | [frontends.md](frontends.md) |
 | Config (declarative) | deploy/pull one YAML manifest | `config deploy`, `config pull` | [project-configuration.md](project-configuration.md) |
 | Local environment | check prerequisites, start/stop/status/reset | `doctor`, `start`, `stop`, `restart`, `status`, `reset` | above |
 | Coding agents | install Volcano skills/plugins, keep them current | `setup` | [setup.md](setup.md) |

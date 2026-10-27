@@ -114,6 +114,83 @@ warns, the manifest step applies the selection afterwards, and the next deploy
 rebuilds with it. Until then, the browser bundle lacks those `NEXT_PUBLIC_`
 values.
 
+### Deploy one build to several frontends
+
+Serve one build from several frontends of a project, such as one per region or
+brand, without building it again for each. Deploy it to one frontend, then
+deploy that frontend's build to the others:
+
+```bash
+volcano cloud frontends deploy --name web --variable-scope scoped --variable NEXT_PUBLIC_API_URL
+volcano cloud frontends deploy web-eu --from web
+volcano cloud frontends deploy web-apac --from web
+```
+
+`--from web` takes the deployment `web` serves. The target must already exist,
+from a first deploy of its own. Through the API, send the source deployment's
+ID to the target frontend:
+
+```bash
+curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/frontends/$FRONTEND_ID/deployments" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"source_deployment_id":"3f6c2a1e-9b0d-4c51-8a39-0c6f2f1e8d42"}'
+```
+
+The response is the target frontend, as for a redeploy: `status: "provisioning"`,
+or a `pending_deployment_id` while another of its deployments runs, with the
+same latest-wins queueing. The new deployment records the build it published
+in `source_deployment_id`.
+
+The target gets its own copy of the source and the build. Volcano gives the
+copy the target's deployment identity and new draft-mode keys, then publishes
+it; nothing is compiled, so the deployment's build minutes cover publishing
+alone. A later redeploy of the target compiles its copied source, and changes
+to the source frontend never reach it. That includes the redeploy Volcano runs
+when you add a region to the project; deploy the source's build again to share
+it once more. The copy keeps the build's Next.js build
+ID, so both frontends serve the same `_next/static` URLs, and it keeps the
+key Next.js encrypts Server Action arguments with, since prerendered pages
+embed values encrypted with it.
+
+Next.js inlines build-time values into the build, so the variables the target
+would build with must equal the ones the source build read, by name and value.
+Volcano records a keyed digest of each value, unique to the build, and never
+stores the values. A difference is refused and names the variables:
+
+```json
+{
+  "error": "build variables differ from the source build: NEXT_PUBLIC_API_URL",
+  "code": "build_variables_differ"
+}
+```
+
+Give the target the same variable selection, or redeploy the source if a value
+changed since its build. The check runs again when the deployment starts. A
+variable changed while it was queued fails the deployment without a retry: its
+`error_message` starts with the refusal's code, such as
+`build_variables_differ:`, and the target keeps serving what it served.
+
+| Refusal                           | Status | Cause                                                                      |
+| --------------------------------- | ------ | -------------------------------------------------------------------------- |
+| `source_deployment_not_found`     | 404    | The deployment is not in this project.                                     |
+| `source_deployment_same_frontend` | 400    | The deployment is the target's own; redeploy it instead.                   |
+| `source_deployment_not_active`    | 409    | The deployment is not `active` or `degraded`.                              |
+| `source_build_unavailable`        | 409    | Volcano no longer keeps the build, or the deployment predates kept builds. |
+| `frontend_incompatible`           | 409    | The frontends use a different framework or app root.                       |
+| `build_variables_differ`          | 409    | A build-time variable differs, as above.                                   |
+
+A project whose source is [managed by Git](../projects/git-deploy.md) deploys
+from a push to its production branch, so deploying a build answers `409`
+without a code, as a direct deploy does.
+
+Volcano keeps the build each frontend serves and removes it shortly after a
+newer deployment of that frontend goes live. The target's copy is made when
+the deployment is accepted, so a queued deployment still publishes after the
+source frontend moves on. Deploy from a frontend's current deployment; one that was deployed before Volcano kept builds needs one
+redeploy of the source first. Local development builds each frontend from its
+own source and answers `501` with `code: build_reuse_unavailable`.
+
 ### Deploy to local development
 
 Leave out `cloud` to build and serve the frontend on the local development
@@ -242,8 +319,9 @@ Volcano controls the Next.js build ID, including when an application defines
 `generateBuildId`. Redeploying the same frontend with identical source, build
 variables, app path, architecture, and build toolchain keeps the same opaque
 build ID and `_next/static` asset URLs. Changing any of those build inputs
-changes the ID. Build IDs are scoped to the project and frontend; do not use
-them as release identifiers.
+changes the ID. Build IDs are scoped to the project and frontend, except that a
+frontend [deployed from another frontend's build](#deploy-one-build-to-several-frontends)
+keeps that build's ID; do not use them as release identifiers.
 
 Each generated frontend runtime image must fit within 4096 MB. Volcano checks an
 uncompressed upper
@@ -335,6 +413,31 @@ that status doesn't confirm routing DNS is live, so verify it separately. See
 and [Wait out the switchover](overview.md#wait-out-the-switchover) before
 treating an error after `active` as a failure.
 
+To serve the site on more hostnames, or send `example.com` to
+`www.example.com`, list every domain under `custom_domains` instead of
+`custom_domain`. Point every domain's DNS at the frontend. Once
+`www.example.com` is `active`, give the apex a `redirect` and deploy again:
+
+```yaml
+version: 1
+frontends:
+  - name: my-site
+    custom_domains:
+      - domain: www.example.com
+        tls:
+          mode: managed
+      - domain: example.com
+        tls:
+          mode: managed
+        redirect:
+          to: www.example.com
+```
+
+A request for `https://example.com/docs?page=2` gets a `308` to
+`https://www.example.com/docs?page=2` without reaching your app. SUPERAGENT
+allows 10 domains per frontend, HOBBY one. See
+[Redirect one domain to another](overview.md#redirect-one-domain-to-another).
+
 ## 5. View logs
 
 ```bash
@@ -409,6 +512,27 @@ Known limits:
 - The CDN caches a page by its URL, host, and a few request headers such as `Authorization`, but not by cookies or other headers. When a `cookie` or `header` condition sends visitors to different content at the same URL, keep that route out of the shared cache, for example by reading the cookie in the page. See [Caching](overview.md#caching).
 - Middleware `matcher` entries match on `source` only. Their `has` and `missing` conditions are not evaluated, so check the condition inside the middleware.
 - Rewrites to files in `public/` do not resolve when `basePath` and i18n are combined. See [Rewrite routes to public files](#rewrite-routes-to-public-files).
+
+## Optimize images under a `basePath`
+
+`next/image` works in an app with a [`basePath`](https://nextjs.org/docs/app/api-reference/config/next-config-js/basePath). Its requests go to `<basePath>/_next/image`, which Volcano optimizes and caches like `/_next/image` at the root. Only the app's own `basePath` is optimized: another `<prefix>/_next/image` reaches your app like any other route, so a rewrite can still send it to another Next.js app. As Next.js requires, include the `basePath` in a `src` that names a file in `public/`:
+
+```jsx
+// next.config.mjs sets basePath: '/docs'
+import Image from 'next/image';
+import hero from './hero.png';
+
+export default function Page() {
+  return (
+    <>
+      <Image src="/docs/logo.png" alt="Logo" width={64} height={64} />
+      <Image src={hero} alt="Hero" />
+    </>
+  );
+}
+```
+
+Redeploy existing frontends to optimize images under their `basePath`.
 
 ## Rewrite routes to public files
 

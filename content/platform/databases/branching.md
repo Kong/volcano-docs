@@ -311,6 +311,10 @@ The allowance is per database, not per project, and counts branches in every
 state — a branch that is still provisioning holds a slot. Creating a branch over
 the allowance returns `403`.
 
+If Volcano cannot read your subscription pricing, branch creation returns `503`
+with `"subscription pricing temporarily unavailable"`. Retry later; no branch is
+created.
+
 ## Naming
 
 Branch names are lowercase letters, numbers, and underscores, up to 64

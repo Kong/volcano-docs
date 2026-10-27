@@ -65,12 +65,21 @@ realtime:
   presence_enabled: true
   postgres_changes_enabled: true
 
-autofix: # SUPERAGENT to turn on; omitted fields keep their value
+lavaflow: # SUPERAGENT during the preview; omitted fields keep their value
   enabled: true
-  max_stage: pull_request # diagnose | pull_request
-  auto_trigger: false
-  provider: anthropic # volcano | anthropic
-  model: claude-opus-5-5 # the API key is never part of the manifest
+  max_stage: pull_request # diagnose | pull_request (default)
+  auto_trigger: true # default
+
+notifications: # omitted fields keep their value
+  email:
+    enabled: true
+    recipients: [] # the project owner; no other address yet
+  webhook:
+    url: https://ops.myapp.com/hooks/volcano # "" removes it; the secret is never in the manifest
+  scheduler_failures:
+    notify_on: consecutive_failures # first_failure | consecutive_failures
+    threshold: 3 # 1-100
+    notify_on_recovery: true
 
 auth:
   tokens:
@@ -207,14 +216,22 @@ frontends: # must already be deployed
       - function: hello # public standard HTTP-mode function
         path_prefix: /api # exact segment prefix; /api or /api/...
         strip_prefix: true # function receives / for /api
+    frontend_routes: # fully synced when declared
+      - frontend: marketing # another frontend of the project
+        path_prefix: /blog # forwarded unchanged; /blog or /blog/...
     custom_domain: # omitted: kept; null or bare key: deleted
       domain: app.myapp.com
       tls: # optional for an existing domain
         mode: managed
   - name: marketing
-    custom_domains: # list form of custom_domain; fully synced when declared
-      - domain: www.myapp.com # one domain per frontend for now
+    custom_domains: # instead of custom_domain; fully synced when declared
+      - domain: www.myapp.com
         tls: { mode: managed }
+      - domain: myapp.com # a second domain requires SUPERAGENT
+        tls: { mode: managed }
+        redirect: # answer with a redirect instead of serving
+          to: www.myapp.com # a serving domain listed here
+          status: 308 # 301, 302, 307, or 308 (default)
 ```
 
 Not in the manifest: project logo, anon/service keys, project access tokens,
@@ -264,6 +281,19 @@ response that created it. Manage them through
   An apply may remove a function's routes and change its visibility or mode
   together; Volcano removes the routes before changing the function. See
   [Frontend Function routes](../frontends/function-routes.md).
+- **Frontend routes.** Declaring `frontends[].frontend_routes` fully syncs the
+  paths that frontend serves from another frontend of the project; routes absent
+  from the list are deleted. Omitting the key preserves existing routes, while
+  `frontend_routes: []` deletes them all. Each `frontend` must already exist and
+  can't be the frontend itself. Function and Frontend routes on one frontend
+  share one set of paths, so a path listed in both is a validation error, as is a
+  path the other kind already routes when the manifest leaves that kind alone.
+  An apply removes routes before it adds any, so it can move a path from one kind
+  to the other. An export includes `frontend_routes` only on frontends that
+  have routes. Where `GET /capabilities` lists `frontend_routes` as
+  unavailable, a manifest that would create or change a route answers `400`
+  with code `feature_unavailable`; keeping or removing routes still applies.
+  See [Frontend routes](../frontends/frontend-routes.md).
 - **Function kind is asserted, never written.** `kind` is fixed when a function
   is created, so the manifest compares it and reports an error when it
   disagrees with the deployed function. Omitting it means `standard`, so name
@@ -346,6 +376,9 @@ response that created it. Manage them through
   the hostname is the apex of your DNS zone, including a separately delegated
   subdomain. At an apex, use your provider's ALIAS, ANAME, or CNAME-flattening
   feature.
+  `custom_domain` describes a frontend with at most one domain and no redirect;
+  for any other frontend an apply that sets it fails validation and names
+  `custom_domains`.
   Omitting `custom_domain` on a declared frontend leaves its domain alone, so a
   domain attached with `volcano cloud frontends domain create` survives a
   manifest that does not mention it. The report lists it as unchanged with a
@@ -369,16 +402,34 @@ response that created it. Manage them through
   Managed domains retain their certificate quota until
   deletion finishes. At the account limit, apply the deletion, wait for cleanup,
   then apply the replacement; planning a deletion does not grant capacity early.
-- **Custom domain sets.** `frontends[].custom_domains` is the list form of
-  `custom_domain` and holds one domain per frontend for now. Its entry has
-  `domain` and `tls`, which follow the `custom_domain` rules above. Declaring
-  the list fully syncs it: an unlisted domain is deleted and the report names
-  the hostname, and `custom_domains: []` deletes it. Omitting the key leaves the
-  domain alone. A frontend entry sets `custom_domain` or `custom_domains`, not
-  both. Export writes `custom_domain`. For now, the list cannot swap one
-  hostname for another in a single apply: replace the domain through
-  `custom_domain`, or delete it with `custom_domains: []` and declare the new
-  hostname in a later apply.
+- **Custom domain sets.** `frontends[].custom_domains` lists every custom
+  domain of the frontend, each with `domain`, `tls`, and an optional
+  `redirect` (`to`, `status`). Declaring it fully syncs the set: listed domains
+  are created or updated, unlisted ones are deleted and the report names each
+  hostname, and `custom_domains: []` deletes them all. Omitting the key leaves
+  the domains alone. An entry sets `custom_domain` or `custom_domains`, not both.
+  Each entry follows the `custom_domain` rules above for ownership, TLS, and
+  rotation; where they say to set `custom_domain: null`, drop the entry from
+  the list instead. A `redirect.to` must name another listed domain that is `active`
+  and has no `redirect`, and `status` defaults to `308`. A domain the apply
+  adds is not active yet, so add redirects to it in a later apply. One apply
+  can add, remove, and retarget redirects among active domains, including
+  swapping which domain serves: Volcano orders the changes so no redirect
+  points at a domain that isn't serving. Replacing a hostname in one apply
+  stops the old one serving as soon as its removal starts, before the new one
+  is active. To swap without downtime, apply the list with both, wait for the
+  new domain to be `active`, then apply the list without the old one. When the
+  plan's allowance holds the old and new domains together, the apply creates
+  the new domain first and keeps the old one if the create fails; the report
+  marks the old entry as an error, and the next apply retries both. If the
+  create stopped before Volcano stored the certificate, the retry needs
+  `certificate_pem` and `private_key_pem` in the entry.
+  A list longer than the plan's custom domains per frontend fails
+  validation when it adds a hostname, so a frontend over the limit after a
+  downgrade still re-applies its export and can shrink. Export writes
+  `custom_domains` for a frontend with more than one domain or any redirect,
+  and `custom_domain` otherwise. See
+  [Redirect one domain to another](../frontends/overview.md#redirect-one-domain-to-another).
 - **BYOC certificates** use `tls.mode: byoc` with `certificate_pem` and
   `private_key_pem` together, plus optional `certificate_chain_pem`. A `tls`
   block without `mode` is BYOC. New
@@ -401,20 +452,55 @@ response that created it. Manage them through
   `signup_and_signin`, or narrowing the list while it is already set, signs out
   every account whose domain the list no longer admits. See
   [Email domain allowlist](../authentication/configuration/email-domain-allowlist.md).
+- **New or changed `auth.email.from.address` and `name` values cannot contain line breaks.** Apply
+  reports invalid values as `422` validation errors. Exports remove leading and
+  trailing whitespace from older sender settings; reapplying them is a no-op
+  and leaves the stored settings unchanged. Unchanged exports of legacy values
+  with interior line breaks also preserve those values; delivery refuses an
+  unsafe stored sender until it is repaired.
+- **New or changed email template subjects cannot contain literal interior line breaks after
+  Go template whitespace trimming.** Apply reports one `422` validation error
+  under the affected template entry. Multiline control flow with `{{-` and
+  `-}}` trim markers, outer whitespace, and trailing newlines from YAML block
+  scalars are allowed; message bodies can span lines.
+  Exports preserve older subjects. Reapplying the exact stored value is a no-op,
+  and unrelated settings or template bodies remain editable. A changed subject
+  must pass validation. Delivery uses the default subject when a rendered
+  legacy value is unsafe. See
+  [Subject headers](../authentication/configuration/email-templates.md#subject-headers).
 
-## Autofix settings
+## LavaFlow settings
 
-The `autofix` section reconciles a project's [autofix](../guides/autofix.md)
-settings. An omitted field keeps its current value. Your API key is never part
-of the manifest, and an apply never sets or deletes it: set it with
-`PUT /projects/{id}/autofix` before turning on provider `anthropic`. Switching
-providers keeps a stored key. Export writes the section once the settings have
-been saved. Where autofix is not available, re-applying saved settings or
-turning autofix off still works; turning it on, or declaring the section for a
-project that never saved settings, is a validation error.
+The `lavaflow` section reconciles a project's [LavaFlow](../guides/lavaflow.md)
+settings. An omitted field keeps its current value; a project that never saved
+settings starts from `max_stage: pull_request` and `auto_trigger: true`, so
+`enabled: true` alone diagnoses new and regressed issues and opens fix pull
+requests. Export writes the section
+once the settings have been saved. Where LavaFlow is not available, re-applying saved settings or
+turning LavaFlow off still works. Any other change that leaves LavaFlow on, such
+as turning it on or changing `max_stage` while it is on, is a validation error,
+as is declaring the section for a project that never saved settings.
 
 A project access token can re-apply the section unchanged, but a change to it
-is refused: only a person changes autofix settings.
+is refused: only a person changes LavaFlow settings.
+
+## Notification settings
+
+The `notifications` section reconciles where the project's
+[alerts](notifications.md) go. An omitted field keeps its current value. Alert emails
+go only to the project owner's verified account address, so leave `recipients`
+empty. Naming that address also works, but the file then fails validation once
+the address changes. Any other address is a validation error, and a dry run
+reports it. The webhook signing secret is
+never part of the manifest. Declaring a `webhook.url` on a project without a
+webhook generates a secret the apply does not return. To get a secret you can
+use, rotate it with `POST /projects/{id}/notifications/webhook-secret`.
+`url: ""` removes the webhook and its secret.
+
+Export writes the section once the settings have been saved. It never writes
+`webhook`, because the URL can carry your receiver's token. An omitted webhook
+keeps its URL and secret, so re-applying an export leaves it in place; declare
+`url: ""` to remove one.
 
 ## Coverage warnings: skipped and missing
 
@@ -454,7 +540,7 @@ env file sets. See the [CLI deploy reference](/cli/deploy).
   gated value. Re-applying an export of a project downgraded from SUPERAGENT stays a
   no-op.
 - SUPERAGENT-gated surfaces: region subsets, email template bodies, hosted pages,
-  `autofix.enabled`, and the `auth.signup.allowed_email_domains` allowlist. A HOBBY project can
+  `lavaflow.enabled`, and the `auth.signup.allowed_email_domains` allowlist. A HOBBY project can
   still declare the allowlist it already has, or clear it to remove the
   restriction. Scheduler counts, storage policy counts, custom domains per
   frontend, and managed TLS certificates respect plan caps.
@@ -541,9 +627,8 @@ to one secret no longer restarts every function in the project.
 
 Write-only secrets — `auth.email.smtp.password`, OAuth `client_secret`, and
 BYOC certificate material — are omitted from exports and stay unchanged unless
-you set them explicitly. The autofix API key cannot be set in the manifest at
-all: set it with `PUT /projects/{id}/autofix` before applying
-`provider: anthropic`. See [Autofix](../guides/autofix.md). Custom-domain exports keep only `tls.mode`, for both
+you set them explicitly. The notification webhook signing secret is never part of the manifest either; see
+[Notification settings](#notification-settings). Custom-domain exports keep only `tls.mode`, for both
 managed and BYOC domains. The CLI interpolates `${ENV_VAR}` references before
 upload, so keep secrets in your environment, not in the file. Variable values
 are included in exports (they are readable through the API).

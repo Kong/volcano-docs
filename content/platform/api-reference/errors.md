@@ -13,6 +13,9 @@ All errors return JSON:
 }
 ```
 
+Some errors also carry a stable `code` naming a specific recovery path. Match on
+`code`, never on the message text, which can change.
+
 ## HTTP Status Codes
 
 **2xx Success:**
@@ -25,9 +28,10 @@ All errors return JSON:
 
 - `400 Bad Request` - Invalid input or validation failed
 - `401 Unauthorized` - Missing, invalid, or expired token
-- `403 Forbidden` - Valid token but no permission
+- `403 Forbidden` - Valid token but the request is refused: no permission, a reached limit, or a feature the plan does not include (code `plan_required`)
 - `404 Not Found` - Resource doesn't exist
 - `409 Conflict` - Resource state conflicts with the request (for example, a duplicate resource or deletion already in progress)
+- `410 Gone` - The resource existed but no longer takes the request (for example, a durable callback token whose wait timed out)
 - `429 Too Many Requests` - Rate limit exceeded
 
 **5xx Server Errors:**
@@ -161,6 +165,20 @@ Returned when a `full` token approves or denies a [durable
 approval](../functions/durable-approvals.md#who-can-decide). A `read_only` token
 gets the read-only message instead. Both can still list and read approvals.
 
+**403 - Repository Change:**
+
+```json
+{
+  "error": "project access tokens cannot change a project's repository; a person changes it in the dashboard or with a platform token"
+}
+```
+
+Returned when a `full` token calls `PUT /projects/{id}/git-connection`. A
+`read_only` token gets the read-only message instead. A `full` token can still
+change the [root
+directory](../projects/git-deploy.md#change-the-root-directory) and [production
+branch](../projects/git-deploy.md#deploy-from-a-different-branch).
+
 **404 - Token Not Found:**
 
 ```json
@@ -288,6 +306,22 @@ password reset, and email change send it on a `429`; signin and refresh do not.
 { "error": "name is required" }
 ```
 
+**400 - Request does not match the API reference:**
+
+When a request's body, query, or path breaks the
+[API reference](openapi.md), the error names the field and the rule where it
+can:
+
+```json
+{
+  "error": "invalid request: time_range.window: value is not one of the allowed values [\"30m\",\"1h\",\"24h\",\"7d\"]"
+}
+```
+
+The message always starts with `invalid request`. Some failures carry no
+detail, such as a path ID that is not a UUID, and then the message is just
+`invalid request`. Read the rest to fix the request; don't parse it.
+
 ### Resource Errors
 
 **404 - Not Found:**
@@ -330,6 +364,25 @@ environment answers `404`, or `400` for a single field or option, with code
 
 Retrying does not help. Check [`GET /capabilities`](overview.md#capabilities)
 for what this environment offers.
+
+### Plan-gated features
+
+A request for a feature or option the project owner's plan does not include
+returns `403` with code `plan_required`. Upgrading the plan unlocks it:
+
+```json
+{ "error": "database logs are only available on the PRO plan", "code": "plan_required" }
+```
+
+A `403` without a code leaves the reason unspecified: it can be an access
+refusal, a reached limit, or a plan check that could not read the owner's plan.
+Only `plan_required` means upgrading is the fix.
+
+A point-in-time restore on a plan that includes restore history, before the
+database has any restore history yet (for example right after an upgrade), also answers
+`403` without a code, with `restore history is not available yet for the
+requested time`. Waiting fixes it, not upgrading. A time outside history that
+has accrued answers `400`.
 
 ### Durable execution errors
 
@@ -514,6 +567,43 @@ rest:
 
 A publish with a session token Volcano does not accept answers `401`. The SDKs
 never send one.
+
+### Durable callback errors
+
+Succeeding, failing, or heartbeating a [durable
+callback](../functions/durable-callbacks.md) with a token that no longer takes
+the request returns a `code`:
+
+```json
+{ "error": "callback already has an outcome", "code": "callback_completed" }
+```
+
+- `callback_not_found` (`404`) — no wait has this token, or its execution is
+  past retention.
+- `callback_completed` (`409`) — the token was already succeeded or failed,
+  including by the request you are retrying. Treat it as done.
+- `callback_expired` (`410`) — the wait timed out, on its timeout or its
+  heartbeat timeout.
+- `execution_ended` (`410`) — the execution finished or was stopped.
+
+None of them clears on retry. Too many answers and heartbeats answer `429`
+with `too many callback requests, try again later`; the limits are 3,600 an
+hour for one token and 36,000 an hour for its project. A heartbeat that cannot
+reach the execution right now answers `503`; retry it with backoff.
+
+A workflow's own request for a token, sent by `ctx.waitForCallback`, has
+refusals of its own. The SDK retries `404`, `429`, every `5xx`, and
+`callback_not_ready` for about 30 seconds, and fails the call on the rest:
+
+- `callback_not_ready` — the request reached Volcano before the workflow
+  finished opening the wait. Retried.
+- `callback_closed` — the wait already timed out, or a retried submitter's
+  token was already answered. Not an error: `waitForCallback` resolves as the
+  wait did, with `null` after a timeout, without calling the submitter.
+- `callback_taken` — the callback is already registered as an approval or a
+  message wait. The SDKs never send this.
+- `execution_ended` — the execution has finished.
+- `too_many_callback_tokens` — the execution already holds 1,000 open tokens.
 
 ### Project lock errors
 

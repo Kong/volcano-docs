@@ -60,6 +60,40 @@ Scheduled invocations deliver your configured payload as the function event. Vol
 
 The top-level `__volcano_auth` and `__volcano_http` keys are reserved. Volcano removes them from your configured payload, so a schedule can never present a caller identity or HTTP-ingress context to the function.
 
+## Scheduler health
+
+Each scheduler reports whether its runs are working. Here `sync-orders` is a
+durable function whose executions keep throwing:
+
+```bash
+volcano cloud durable schedulers list sync-orders
+```
+
+```text
+ID                                    Name                      State      Health    Fails  Cron             Next Run              Last Run
+---------------------------------------------------------------------------------------------------------------------------------------------------
+2c9d1e0f-3a4b-4c5d-8e9f-0a1b2c3d4e5f  hourly-sync               enabled    failing   49     0 * * * *        2026-10-19T16:00:00Z  12m ago
+  last error: TypeError: Cannot read properties of undefined (reading 'rows')
+```
+
+The API returns the same state in `health`, `consecutive_failures`,
+`last_run_status`, `last_success_at`, and `last_failure_at`. See
+[Function Schedulers API](../api-reference/function-schedulers.md#health).
+
+A standard function's run fails when Volcano cannot invoke it, for example
+because it is not deployed in the scheduler's region. Volcano retries that
+tick every minute, and each attempt is a failed run. An error the handler
+returns or throws does not count. When Volcano cannot deliver a tick, such as
+during an outage, it retries the tick every minute, and its attempts count
+against the scheduler once 15 minutes have passed since its first attempt. A durable function's run fails when the
+execution it started fails, times out, or is stopped, so schedule a
+[durable function](durable-functions.md#run-one-on-a-schedule) when an error in
+the job itself must mark the run failed.
+
+By default the project owner gets an email after 3 failed runs in a row, and
+another when the scheduler recovers. To turn email off, add a webhook, or
+alert on the first failure, see [Notifications](../projects/notifications.md).
+
 ## Account access holds
 
 Scheduled invocations and automatic runtime warming stop while the owner is

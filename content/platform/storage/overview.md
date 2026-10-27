@@ -64,6 +64,21 @@ files.forEach((file) => {
 });
 ```
 
+## Range downloads
+
+A byte range that starts at or beyond the end of a file returns HTTP `416` with
+`{"error":"requested range not satisfiable"}`. When the current file size is
+available, `Content-Range: bytes */size` reports it. This applies to authenticated
+and public downloads. Invalid range syntax returns HTTP `400`.
+
+## Storage failures
+
+Unexpected storage failures return HTTP `500` with an operation-specific error
+message, without internal diagnostic details. Listing object records returns
+`{"error":"failed to list objects"}`; fetching file content returns
+`{"error":"failed to download file"}`. Earlier bucket, policy, or object metadata
+lookups can return different messages.
+
 ## Access control
 
 Storage uses RLS-style policies to control access. By default, without policies, all access is denied.

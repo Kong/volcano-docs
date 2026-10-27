@@ -351,6 +351,11 @@ cannot silently consume two slots.
 Retention is applied when a backup is taken: `expires_at` is when it will be
 deleted for you.
 
+Backup, schedule, and restore requests return `503` with
+`"subscription pricing temporarily unavailable"` when Volcano cannot read your
+subscription pricing. Retry later; the refused request starts no backup or
+restore.
+
 Downgrading to HOBBY deletes the backups you took, turns off any schedule, and
 closes the point-in-time window. Backups your schedule had already taken are left
 to expire on their own retention — you cannot list, restore, or delete them
