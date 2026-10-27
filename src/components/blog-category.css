@@ -1,0 +1,29 @@
+/* A post's single category: the label on a card, and the link to that
+   category's page on an article. */
+
+.blog-category {
+  --cmp-fg: var(--text-neutral-strong);
+  --cmp-bg: var(--surface-raised);
+  --cmp-padding-block: var(--spacing-label-block);
+  --cmp-padding-inline: var(--spacing-label-inline);
+  --cmp-font: var(--system-mono-font);
+  --cmp-size: var(--type-meta);
+
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: var(--cmp-padding-block) var(--cmp-padding-inline);
+  background: var(--cmp-bg);
+  color: var(--cmp-fg);
+  font-family: var(--cmp-font);
+  font-size: var(--cmp-size);
+  font-weight: var(--type-navigation-weight);
+  line-height: var(--type-navigation-leading);
+  text-decoration: none;
+  transition: background var(--system-transition), color var(--system-transition);
+}
+
+.blog-category[data-linked="true"]:hover {
+  --cmp-bg: var(--surface-primary-weak);
+  --cmp-fg: var(--color-primary-text);
+}

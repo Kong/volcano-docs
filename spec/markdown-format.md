@@ -31,6 +31,7 @@ order: 3
 | `order` | integer | no | Sort position within its directory. Default: alphabetical. |
 | `nav_title` | string | no | Short label for the sidebar when `title` is long. |
 | `tags` | string[] | no | Topical grouping / filtering. |
+| `category` | string | no | Blog category — exactly one per post, from the fixed set `product`, `engineering`, `research`, `company`. Each has its own page at `/blog/category/<slug>`. |
 | `author` | string | no | Author byline for a blog post. |
 | `cover` | string | no | Blog card image, using a site-absolute path to an asset in `public/` (for example `/blog/sandbox-cover.png`). |
 | `published` | date (`YYYY-MM-DD`) | no | Blog publication date; quote the value in YAML. |

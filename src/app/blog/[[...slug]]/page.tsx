@@ -7,6 +7,8 @@ import { CollectionHome } from "@/components/collection-home";
 import { MarkdownContent } from "@/components/markdown-content";
 import "@/components/collection.css";
 import { BlogMetadata } from "@/components/blog-metadata";
+import { BlogShare } from "@/components/blog-share";
+import { siteUrl } from "@/lib/site-url";
 import { Footer } from "@/components/home/footer";
 
 type BlogPageProps = { params: Promise<{ slug?: string[] }> };
@@ -26,6 +28,7 @@ export default async function BlogPage({ params }: BlogPageProps) {
           <DocsTitle>{page.data.title}</DocsTitle>
           <BlogMetadata data={page.data} />
           <DocsDescription>{page.data.description}</DocsDescription>
+          <BlogShare url={new URL(page.url, siteUrl).toString()} title={page.data.title} />
           <MarkdownContent page={page} />
         </article>
       </div>

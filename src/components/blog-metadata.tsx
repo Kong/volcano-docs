@@ -1,8 +1,10 @@
 import type { ContentPage } from "@/components/markdown-content";
+import { BlogCategory } from "@/components/blog-category";
 import "./blog-metadata.css";
-import { topicLabel } from "@/lib/blog-topics.mjs";
 
-type BlogMetadataProps = { data: Pick<ContentPage["data"], "author" | "published" | "tags"> };
+type BlogMetadataProps = {
+  data: Pick<ContentPage["data"], "author" | "published" | "category">;
+};
 
 function formatPublishedDate(published: string) {
   return new Intl.DateTimeFormat("en-US", {
@@ -13,15 +15,14 @@ function formatPublishedDate(published: string) {
   }).format(new Date(`${published}T00:00:00Z`));
 }
 
+// The byline row: category, author, and date.
 export function BlogMetadata({ data }: BlogMetadataProps) {
-  if (!data.author && !data.published && !data.tags?.length) return null;
+  if (!data.author && !data.published && !data.category) return null;
   return (
     <div data-slot="blog-metadata" className="blog-metadata">
+      {data.category && <BlogCategory category={data.category} />}
       {data.author && <span>By {data.author}</span>}
       {data.published && <time dateTime={data.published}>{formatPublishedDate(data.published)}</time>}
-      {data.tags?.map(function renderTag(tag) {
-        return <span className="blog-metadata-tag" key={tag}>{topicLabel(tag)}</span>;
-      })}
     </div>
   );
 }

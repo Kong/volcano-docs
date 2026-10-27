@@ -1,6 +1,7 @@
 ---
 title: Introducing Volcano Sandbox
 description: An isolated workspace for AI agents to run code, work with files, and carry out tasks.
+category: product
 tags: [sandbox, ai-agents]
 author: Shawn Wu
 cover: /blog/introducing-volcano-sandbox/hero.png
