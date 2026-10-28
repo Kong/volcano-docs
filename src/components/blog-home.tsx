@@ -1,43 +1,19 @@
-"use client";
-
-import type { ReactNode } from "react";
-import { useBlogFilters } from "@/components/blog-filters";
-import { BlogCategoryTabs } from "@/components/blog-category-tabs";
 import { BlogPostCards, type BlogPost } from "@/components/blog-post-cards";
 import { Hero } from "@/components/home/hero";
-import { SectionHeading } from "@/components/home/section-heading";
 import { Footer } from "@/components/home/footer";
-import { blogTopicHref, topicLabel } from "@/lib/blog-topics.mjs";
 import "./collection-home.css";
 import "@/components/home/index.css";
 
-type Category = { slug: string; label: string; count: number };
-type BlogHomeProps = {
-  title: string;
-  description?: string;
-  posts: BlogPost[];
-  categories: Category[];
-  children: ReactNode;
-};
+type BlogHomeProps = { title: string; posts: BlogPost[] };
 
-export function BlogHome({ title, description, posts, categories, children }: BlogHomeProps) {
-  const { topic, setTopic } = useBlogFilters();
-  const filtered = posts.filter(function matchesTopic(post) { return !topic || post.tags?.includes(topic); });
-  let heading = `All posts (${filtered.length})`;
-  if (topic) heading = `${topicLabel(topic)} (${filtered.length})`;
-  function clearTopic() { setTopic(null); }
+// The blog listing: the section's title, then the posts themselves, newest
+// first. Categories live in the sidebar, where each one links to its own page.
+export function BlogHome({ title, posts }: BlogHomeProps) {
   return (
     <div data-slot="collection-home" className="home-page collection-home blog-home">
-      <Hero title={title} description={description} actionHref={blogTopicHref(topic, filtered[0]?.url ?? "/blog")} actionLabel="Start reading">{children}</Hero>
-      <SectionHeading>{heading}</SectionHeading>
-      <BlogCategoryTabs categories={categories} />
-      <BlogPostCards posts={filtered} topic={topic} />
-      {filtered.length === 0 && (
-        <div data-slot="blog-empty" className="blog-empty">
-          <p>No posts match this topic.</p>
-          <button type="button" onClick={clearTopic}>Show all posts</button>
-        </div>
-      )}
+      {/* Title only: no intro line, no call to action, no landing blurb. */}
+      <Hero title={title} description={null} actionHref={null}>{null}</Hero>
+      <BlogPostCards posts={posts} />
       <Footer />
     </div>
   );

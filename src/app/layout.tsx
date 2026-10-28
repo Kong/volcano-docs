@@ -6,7 +6,6 @@ import type { ReactNode } from "react";
 import { PostHogProvider } from "@/components/posthog-provider";
 import { SearchDialog } from "@/components/search-dialog";
 import { siteUrl } from "@/lib/site-url";
-import { BlogFiltersProvider } from "@/components/blog-filters";
 
 // Design system fonts: Inter for body copy, Space Mono for headings/logo.
 const inter = Inter({
@@ -24,7 +23,9 @@ const spaceMono = Space_Mono({
 
 export const metadata: Metadata = {
   metadataBase: siteUrl,
-  openGraph: { type: "website" },
+  // Pages set their own openGraph/twitter through src/lib/social-card.ts:
+  // Next replaces those objects between segments instead of merging them, so
+  // anything declared here would be dropped by every page that sets either.
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -36,9 +37,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     >
       <body>
         <PostHogProvider>
-          <BlogFiltersProvider>
-            <RootProvider search={{ SearchDialog }}>{children}</RootProvider>
-          </BlogFiltersProvider>
+          <RootProvider search={{ SearchDialog }}>{children}</RootProvider>
         </PostHogProvider>
       </body>
     </html>

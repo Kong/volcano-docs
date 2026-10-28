@@ -164,6 +164,13 @@ Conventions are caught by tooling, not reviewers. Config: `eslint.config.mjs`.
 | `lint:docs` | markdown format contract | error (source repos' PR CI) |
 | commitlint | Conventional Commits | error (husky `commit-msg` hook) |
 
+**The one exception:** `src/app/_og/**` renders social cards through Satori
+(`next/og`), which has no CSS cascade — `var(--token)` cannot resolve — and no
+`next/image`. Those files carry literal inline styles, literal color values
+copied from `theme.css`, and a plain `<img>`; `eslint.config.mjs` lifts
+`volcano/no-inline-styles` and `@next/next/no-img-element` for that directory
+rather than waiving them line by line. Nothing else may.
+
 **Why this exists:** prose conventions drift in LLM-generated code. A rule is
 reliable only when it is **executable** (lint/CI) or **verified before PR**
 (`pnpm lint` + `pnpm build`). When a gate and this doc ever disagree, the gate

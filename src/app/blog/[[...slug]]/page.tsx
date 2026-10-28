@@ -1,5 +1,5 @@
-import { BlogTopicLink } from "@/components/blog-filters";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DocsTitle, DocsDescription } from "fumadocs-ui/page";
 import { source } from "@/lib/source";
@@ -9,6 +9,7 @@ import "@/components/collection.css";
 import { BlogMetadata } from "@/components/blog-metadata";
 import { BlogShare } from "@/components/blog-share";
 import { siteUrl } from "@/lib/site-url";
+import { socialMetadata } from "@/lib/social-card";
 import { Footer } from "@/components/home/footer";
 
 type BlogPageProps = { params: Promise<{ slug?: string[] }> };
@@ -24,7 +25,7 @@ export default async function BlogPage({ params }: BlogPageProps) {
     <div className="home-page">
       <div data-slot="blog-content" data-variant="article" className="blog-content">
         <article data-slot="collection-article" className="collection-article">
-          <BlogTopicLink href="/blog" className="collection-back">← Back to posts</BlogTopicLink>
+          <Link href="/blog" className="collection-back">← Back to posts</Link>
           <DocsTitle>{page.data.title}</DocsTitle>
           <BlogMetadata data={page.data} />
           <DocsDescription>{page.data.description}</DocsDescription>
@@ -49,12 +50,18 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
   const { slug = [] } = await params;
   const page = source.getPage(["blog", ...slug]);
   if (!page) notFound();
+  // A post's cover is its social card; a post without one falls back to the
+  // generated card. LinkedIn and X read the image, title and description
+  // straight from these tags — LinkedIn takes no text from the share URL at
+  // all — so a post without them shares as a bare link.
+  const images = [];
+  if (page.data.cover) images.push({ url: page.data.cover, alt: page.data.title });
   const metadata: Metadata = {
     title: page.data.title,
     description: page.data.description,
     keywords: page.data.tags,
     alternates: { canonical: page.url },
-    openGraph: { type: "website" },
+    ...socialMetadata({ url: page.url, images }),
   };
   let authors: string[] | undefined;
   if (page.data.author) {
@@ -62,12 +69,11 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
     authors = [page.data.author];
   }
   if (slug.length > 0) {
-    metadata.openGraph = {
-      type: "article",
-      publishedTime: page.data.published,
-      authors,
-      tags: page.data.tags,
-    };
+    Object.assign(metadata, socialMetadata({
+      url: page.url,
+      images,
+      article: { publishedTime: page.data.published, authors, tags: page.data.tags },
+    }));
   }
   return metadata;
 }

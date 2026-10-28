@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 import { BlogCategory } from "@/components/blog-category";
 import { BlogMetadata } from "@/components/blog-metadata";
 import { FeatureCard } from "@/components/home/feature-card";
-import { blogTopicHref } from "@/lib/blog-topics.mjs";
 
 export type BlogPost = {
   url: string;
@@ -17,17 +16,13 @@ export type BlogPost = {
   cover?: string;
 };
 
-type BlogPostCardsProps = {
-  posts: BlogPost[];
-  /** Keeps an active sidebar topic filter on the links out of the listing. */
-  topic?: string | null;
-};
+type BlogPostCardsProps = { posts: BlogPost[] };
 
 // The post grid, shared by the blog listing and each category page so both
 // show a post the same way: cover or icon, category, title, then the byline.
-export function BlogPostCards({ posts, topic = null }: BlogPostCardsProps) {
+export function BlogPostCards({ posts }: BlogPostCardsProps) {
   return (
-    <div data-slot="blog-post-cards" className="collection-home-cards" aria-live="polite">
+    <div data-slot="blog-post-cards" className="collection-home-cards">
       {posts.map(function renderPost(post) {
         let icon: ReactNode = <Newspaper className="feature-card-glyph" />;
         let image: ReactNode;
@@ -48,7 +43,7 @@ export function BlogPostCards({ posts, topic = null }: BlogPostCardsProps) {
             eyebrow={eyebrow}
             title={post.title}
             description={post.description ?? ""}
-            href={blogTopicHref(topic, post.url)}
+            href={post.url}
           >
             <div className="blog-post-footer">
               <BlogMetadata data={{ author: post.author, published: post.published }} />

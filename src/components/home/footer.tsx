@@ -7,8 +7,10 @@ const MARKETING_URL = "https://volcano.dev";
 const KONG_URL = "https://konghq.com/";
 
 // The same four columns volcano.dev's footer lists, so the docs and the
-// marketing site end on the same links. Product, Features and Legal point back
-// at volcano.dev; Resources resolves to the docs routes those entries mean.
+// marketing site end on the same links. The Features list follows the
+// marketing site's staging build, which carries the newest set. Product,
+// Features and Legal point back at volcano.dev; Resources resolves to the docs
+// routes those entries mean.
 const LINK_COLUMNS = [
   {
     heading: "Product",
@@ -21,11 +23,14 @@ const LINK_COLUMNS = [
     heading: "Features",
     links: [
       { label: "Functions & Agents", href: `${MARKETING_URL}/features/edge-functions` },
+      { label: "Durable Functions", href: `${MARKETING_URL}/features/durable-functions` },
       { label: "Next.js Frontends", href: `${MARKETING_URL}/features/nextjs-hosting` },
+      { label: "Sandboxes", href: `${MARKETING_URL}/features/sandboxes` },
       { label: "Databases & Vector", href: `${MARKETING_URL}/features/postgres` },
       { label: "File Storage", href: `${MARKETING_URL}/features/file-storage` },
       { label: "Authentication", href: `${MARKETING_URL}/features/authentication` },
       { label: "Realtime", href: `${MARKETING_URL}/features/realtime` },
+      { label: "Distributed Locks", href: `${MARKETING_URL}/features/distributed-locks` },
     ],
   },
   {

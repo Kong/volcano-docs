@@ -10,6 +10,7 @@ import { HomePage } from "@/components/home";
 import { CopyPageDropdown } from "@/components/copy-page-dropdown";
 import { MarkdownContent } from "@/components/markdown-content";
 import { isStandaloneSection } from "@/lib/sections";
+import { socialMetadata } from "@/lib/social-card";
 
 type PageProps = { params: Promise<{ slug?: string[] }> };
 
@@ -57,11 +58,13 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
       title: "Volcano docs",
       description:
         "Build AI agents and modern applications with the platform for the AI era, fully integrated with your agentic coding tools.",
-      openGraph: {
+      ...socialMetadata({
+        url: "/",
+        // The landing page's social title names the product, not the section.
         title: "Volcano - AI infrastructure for agents and applications",
         description:
           "Build AI agents and modern applications with the platform for the AI era, fully integrated with your agentic coding tools.",
-      },
+      }),
       alternates: { canonical: "/" },
     };
   }
@@ -72,5 +75,6 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
     title: page.data.title,
     description: page.data.description,
     alternates: { canonical: page.url },
+    ...socialMetadata({ url: page.url }),
   };
 }
