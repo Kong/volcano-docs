@@ -98,16 +98,15 @@ The shared header links three sections while preserving existing docs URLs:
 
 - `/` and the existing guide routes use the documentation sidebar.
 - `/cookbooks` lists recipes; recipe pages use their own sidebar and table of contents.
-- `/blog` lists posts; both the listing and articles share a Blog sidebar with search, All posts, and topic filters with counts.
+- `/blog` lists posts; both the listing and articles share a Blog sidebar with search, All posts, and the categories with counts.
 
 Author recipes in `content/cookbooks/` and posts in `content/blog/`.
 Each section's `index.md` provides its introduction, and `meta.json` controls the card and navigation order.
 Keep `"..."` at the end of each section's `meta.json` page list so new Markdown pages appear automatically after explicitly ordered pages in the listing and navigation tree, using their frontmatter title and description.
-Cookbooks uses that tree for its sidebar; Blog keeps its topic filters in the sidebar.
+Cookbooks uses that tree for its sidebar; Blog lists its categories there.
 All sections share search, sitemap generation, relative Markdown link handling, and the raw Markdown API.
 Search is scoped to the active section.
-In Blog, selecting a topic filters both the post cards and search results; All posts clears the filter.
-Topics and counts are derived from Markdown `tags`, and selections stay active while navigating between posts.
+The Blog listing and each category page are the post cards themselves — no heading, no introduction — so `content/blog/index.md` carries only the title and description the page's metadata and search entry use.
 
 Blog posts can also include optional metadata:
 
@@ -126,9 +125,9 @@ Follow [`spec/markdown-format.md`](spec/markdown-format.md) for the full content
 - **`category`** is a post's single category, from the fixed set in
   [`src/lib/blog-categories.mjs`](src/lib/blog-categories.mjs) (`product`,
   `engineering`, `research`, `company`). It shows on the post and on its card,
-  and links to that category's own page at `/blog/category/<slug>`; the listing
-  carries a row of the categories that have posts. `tags` stay free-form and
-  keep driving the sidebar's topic filter and search scoping.
+  and links to that category's own page at `/blog/category/<slug>`. The sidebar
+  lists every category that has posts, with counts. `tags` stay free-form and
+  are indexed for search; nothing filters by them in the UI.
 - **Share** links on a post open X or LinkedIn with the post's canonical URL,
   or copy that URL. No third-party script is loaded to draw them.
 

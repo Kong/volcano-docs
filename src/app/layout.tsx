@@ -6,7 +6,6 @@ import type { ReactNode } from "react";
 import { PostHogProvider } from "@/components/posthog-provider";
 import { SearchDialog } from "@/components/search-dialog";
 import { siteUrl } from "@/lib/site-url";
-import { BlogFiltersProvider } from "@/components/blog-filters";
 
 // Design system fonts: Inter for body copy, Space Mono for headings/logo.
 const inter = Inter({
@@ -36,9 +35,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     >
       <body>
         <PostHogProvider>
-          <BlogFiltersProvider>
-            <RootProvider search={{ SearchDialog }}>{children}</RootProvider>
-          </BlogFiltersProvider>
+          <RootProvider search={{ SearchDialog }}>{children}</RootProvider>
         </PostHogProvider>
       </body>
     </html>

@@ -1,6 +1,5 @@
 import { BookOpen } from "lucide-react";
 import { getSectionPages, type ContentSection } from "@/lib/sections";
-import { collectCategories } from "@/lib/blog-categories.mjs";
 import { MarkdownContent, type ContentPage } from "@/components/markdown-content";
 import { Hero } from "@/components/home/hero";
 import { FeatureCard } from "@/components/home/feature-card";
@@ -19,16 +18,7 @@ export function CollectionHome({ section, page }: CollectionHomeProps) {
       const { title, description, author, published, category, tags, cover } = entry.data;
       return { url: entry.url, title, description, author, published, category, tags, cover };
     });
-    return (
-      <BlogHome
-        title={page.data.title}
-        description={page.data.description}
-        posts={posts}
-        categories={collectCategories(posts)}
-      >
-        <MarkdownContent page={page} />
-      </BlogHome>
-    );
+    return <BlogHome posts={posts} />;
   }
 
   return (

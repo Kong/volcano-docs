@@ -26,6 +26,9 @@ async function buildIndex(page: Page) {
     structuredData.headings.length > 0;
   const section = getSearchSection(page.url);
   const tags: string[] = [section];
+  // A post's `tags` stay in the index as scoping facets. Nothing in the UI
+  // filters by them today — the blog navigates by category — but they keep a
+  // per-topic query working for anything that asks for one.
   if (section === "blog") {
     for (const topic of data.tags ?? []) tags.push(`blog-topic:${topic}`);
   }

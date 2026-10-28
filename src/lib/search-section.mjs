@@ -16,11 +16,7 @@ export function getSearchLabel(section) {
   return "Search docs";
 }
 
-/**
- * @param {ReturnType<typeof getSearchSection>} section
- * @param {string | null} [topic]
- */
-export function getSearchTags(section, topic = null) {
-  if (section === "blog" && topic) return [section, `blog-topic:${topic}`];
+/** @param {ReturnType<typeof getSearchSection>} section */
+export function getSearchTags(section) {
   return [section];
 }
