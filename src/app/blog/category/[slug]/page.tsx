@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { BlogPostCards, type BlogPost } from "@/components/blog-post-cards";
+import { Hero } from "@/components/home/hero";
 import { Footer } from "@/components/home/footer";
 import { categoryLabel, collectCategories, isBlogCategory, postsInCategory } from "@/lib/blog-categories.mjs";
 import { getSectionPages } from "@/lib/sections";
@@ -30,6 +31,8 @@ export default async function BlogCategoryPage({ params }: CategoryPageProps) {
   if (inCategory.length === 0) notFound();
   return (
     <div data-slot="collection-home" className="home-page collection-home blog-home">
+      {/* The category's name, in the place the listing puts "Blog". */}
+      <Hero title={categoryLabel(slug)} description={null} actionHref={null}>{null}</Hero>
       <BlogPostCards posts={inCategory} />
       <Footer />
     </div>

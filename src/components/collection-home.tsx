@@ -18,7 +18,7 @@ export function CollectionHome({ section, page }: CollectionHomeProps) {
       const { title, description, author, published, category, tags, cover } = entry.data;
       return { url: entry.url, title, description, author, published, category, tags, cover };
     });
-    return <BlogHome posts={posts} />;
+    return <BlogHome title={page.data.title} posts={posts} />;
   }
 
   return (

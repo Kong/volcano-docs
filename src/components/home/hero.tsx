@@ -7,8 +7,10 @@ import { DocsBody } from "fumadocs-ui/page";
 
 type HeroProps = {
   title?: string;
-  description?: string;
-  actionHref?: string;
+  /** `null` renders the hero without its intro line. */
+  description?: string | null;
+  /** `null` renders the hero without its call to action. */
+  actionHref?: string | null;
   actionLabel?: string;
   children?: ReactNode;
 };
@@ -49,12 +51,14 @@ export function Hero({
       <div className="hero-content">
         <div className="hero-copy-stack">
           <h1 className="hero-title">{title}</h1>
-          <p className="hero-lede">{description}</p>
+          {description && <p className="hero-lede">{description}</p>}
           {details}
         </div>
-        <Link href={actionHref} className="hero-cta">
-          {actionLabel}
-        </Link>
+        {actionHref && (
+          <Link href={actionHref} className="hero-cta">
+            {actionLabel}
+          </Link>
+        )}
       </div>
     </section>
   );
