@@ -58,6 +58,7 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
       description:
         "Build AI agents and modern applications with the platform for the AI era, fully integrated with your agentic coding tools.",
       openGraph: {
+        url: "/",
         title: "Volcano - AI infrastructure for agents and applications",
         description:
           "Build AI agents and modern applications with the platform for the AI era, fully integrated with your agentic coding tools.",
@@ -72,5 +73,6 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
     title: page.data.title,
     description: page.data.description,
     alternates: { canonical: page.url },
+    openGraph: { url: page.url },
   };
 }

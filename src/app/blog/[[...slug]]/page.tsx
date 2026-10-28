@@ -49,12 +49,18 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
   const { slug = [] } = await params;
   const page = source.getPage(["blog", ...slug]);
   if (!page) notFound();
+  // A post's cover is its social card: LinkedIn and X read the image, title
+  // and description straight from these tags — LinkedIn takes no text from the
+  // share URL at all — so a post without them shares as a bare link.
+  const images = [];
+  if (page.data.cover) images.push({ url: page.data.cover, alt: page.data.title });
   const metadata: Metadata = {
     title: page.data.title,
     description: page.data.description,
     keywords: page.data.tags,
     alternates: { canonical: page.url },
-    openGraph: { type: "website" },
+    openGraph: { type: "website", url: page.url, images },
+    twitter: { title: page.data.title, description: page.data.description, images },
   };
   let authors: string[] | undefined;
   if (page.data.author) {
@@ -64,6 +70,8 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
   if (slug.length > 0) {
     metadata.openGraph = {
       type: "article",
+      url: page.url,
+      images,
       publishedTime: page.data.published,
       authors,
       tags: page.data.tags,

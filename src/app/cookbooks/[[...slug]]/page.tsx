@@ -39,5 +39,10 @@ export async function generateMetadata({ params }: CookbooksPageProps): Promise<
   const { slug = [] } = await params;
   const page = source.getPage(["cookbooks", ...slug]);
   if (!page) notFound();
-  return { title: page.data.title, description: page.data.description, alternates: { canonical: page.url } };
+  return {
+    title: page.data.title,
+    description: page.data.description,
+    alternates: { canonical: page.url },
+    openGraph: { url: page.url },
+  };
 }

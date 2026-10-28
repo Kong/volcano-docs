@@ -23,7 +23,10 @@ const spaceMono = Space_Mono({
 
 export const metadata: Metadata = {
   metadataBase: siteUrl,
-  openGraph: { type: "website" },
+  openGraph: { type: "website", siteName: "Volcano docs" },
+  // Large card: every page has an image, either its own or the generated
+  // default in opengraph-image.tsx. Without this X renders a thumbnail.
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
