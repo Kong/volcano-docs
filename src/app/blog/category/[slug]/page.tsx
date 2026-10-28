@@ -5,6 +5,7 @@ import { Hero } from "@/components/home/hero";
 import { Footer } from "@/components/home/footer";
 import { categoryLabel, collectCategories, isBlogCategory, postsInCategory } from "@/lib/blog-categories.mjs";
 import { getSectionPages } from "@/lib/sections";
+import { socialMetadata } from "@/lib/social-card";
 import "@/components/collection-home.css";
 import "@/components/home/index.css";
 
@@ -49,9 +50,11 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
   const { slug } = await params;
   if (!isBlogCategory(slug)) notFound();
   const label = categoryLabel(slug);
+  const url = `/blog/category/${slug}`;
   return {
     title: `${label} — Volcano blog`,
     description: describe(label),
-    alternates: { canonical: `/blog/category/${slug}` },
+    alternates: { canonical: url },
+    ...socialMetadata({ url }),
   };
 }

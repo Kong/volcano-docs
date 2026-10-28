@@ -66,6 +66,18 @@ const eslintConfig = [
     },
   },
   {
+    // Social cards are rendered by Satori (next/og), which has no CSS cascade
+    // and no next/image: a card has to carry literal inline styles and a plain
+    // <img>. The token rules cannot be met here, so they are lifted for this
+    // directory rather than waived line by line. The colors in it are literal
+    // snapshots of theme.css — see AGENTS.md.
+    files: ["src/app/_og/**/*.{ts,tsx}"],
+    rules: {
+      "volcano/no-inline-styles": "off",
+      "@next/next/no-img-element": "off",
+    },
+  },
+  {
     // Allow underscore-prefixed variables to be unused (matches apps/web).
     // Scoped to TS files, where eslint-config-next registers @typescript-eslint.
     files: ["**/*.{ts,tsx}"],

@@ -48,7 +48,12 @@ async function loadInterWeight(weight: 400 | 700) {
           "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36",
       },
     },
-  ).then(function readCss(response) { return response.text(); });
+  ).then(function readCss(response) {
+    // fetch resolves for 4xx and 5xx too: an error page would otherwise be
+    // parsed as a stylesheet, and its body handed to the font parser.
+    if (!response.ok) throw new Error(`Google Fonts CSS request failed: HTTP ${response.status}`);
+    return response.text();
+  });
   const latinBlock = css
     .split("@font-face")
     .find(function hasLatinRange(block) { return block.includes(LATIN_UNICODE_RANGE); });
@@ -59,12 +64,17 @@ async function loadInterWeight(weight: 400 | 700) {
   if (new URL(fontUrl).host !== FONT_FILE_HOST) {
     throw new Error(`Social card font URL is not on ${FONT_FILE_HOST}: ${fontUrl}`);
   }
-  return fetch(fontUrl).then(function readFont(response) { return response.arrayBuffer(); });
+  return fetch(fontUrl).then(function readFont(response) {
+    if (!response.ok) throw new Error(`Font file request failed: HTTP ${response.status}`);
+    return response.arrayBuffer();
+  });
 }
 
-// The card still renders without a custom font (Satori falls back to its
-// bundled default), so a Google Fonts hiccup during a build degrades the
-// typeface instead of failing the build.
+// The card still renders without a custom font: ImageResponse uses its bundled
+// default when the `fonts` option is absent — an empty array is not the same
+// thing, it leaves Satori with no font at all — so renderSocialCard omits the
+// option entirely when nothing loaded. A Google Fonts hiccup during a build
+// then degrades the typeface instead of failing the build.
 async function loadInterFonts() {
   const weights = [400, 700] as const;
   const results = await Promise.allSettled(weights.map(loadInterWeight));
@@ -79,11 +89,12 @@ async function loadInterFonts() {
 
 export async function renderSocialCard() {
   const fonts = await loadInterFonts();
+  const options: ConstructorParameters<typeof ImageResponse>[1] = { ...socialCardSize };
+  if (fonts.length > 0) options.fonts = fonts;
 
   return new ImageResponse(
     (
       <div
-        // eslint-disable-next-line volcano/no-inline-styles -- Satori (next/og) has no CSS cascade; var(--token) cannot resolve, literal values required
         style={{
           width: "100%",
           height: "100%",
@@ -96,13 +107,10 @@ export async function renderSocialCard() {
         }}
       >
         <div
-          // eslint-disable-next-line volcano/no-inline-styles -- Satori (next/og) has no CSS cascade; var(--token) cannot resolve, literal values required
           style={{ display: "flex", alignItems: "center", gap: 28 }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element -- Satori renders this to a PNG at build time; next/image does not run inside ImageResponse */}
           <img src={MARK_DATA_URI} width={64} height={64} alt="" />
           <span
-            // eslint-disable-next-line volcano/no-inline-styles -- Satori (next/og) has no CSS cascade; var(--token) cannot resolve, literal values required
             style={{ fontSize: 40, fontWeight: 700, color: TEXT_PRIMARY, letterSpacing: "-0.02em" }}
           >
             Volcano
@@ -110,7 +118,6 @@ export async function renderSocialCard() {
         </div>
 
         <div
-          // eslint-disable-next-line volcano/no-inline-styles -- Satori (next/og) has no CSS cascade; var(--token) cannot resolve, literal values required
           style={{
             display: "flex",
             marginTop: 56,
@@ -126,15 +133,12 @@ export async function renderSocialCard() {
         </div>
 
         <div
-          // eslint-disable-next-line volcano/no-inline-styles -- Satori (next/og) has no CSS cascade; var(--token) cannot resolve, literal values required
           style={{ display: "flex", marginTop: 48, alignItems: "center", gap: 20 }}
         >
           <span
-            // eslint-disable-next-line volcano/no-inline-styles -- Satori (next/og) has no CSS cascade; var(--token) cannot resolve, literal values required
             style={{ display: "flex", width: 56, height: 4, backgroundColor: ACCENT }}
           />
           <span
-            // eslint-disable-next-line volcano/no-inline-styles -- Satori (next/og) has no CSS cascade; var(--token) cannot resolve, literal values required
             style={{ fontSize: 28, color: TEXT_MUTED }}
           >
             docs.volcano.dev
@@ -142,6 +146,6 @@ export async function renderSocialCard() {
         </div>
       </div>
     ),
-    { ...socialCardSize, fonts },
+    options,
   );
 }

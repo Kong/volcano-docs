@@ -9,6 +9,7 @@ import "@/components/collection.css";
 import { BlogMetadata } from "@/components/blog-metadata";
 import { BlogShare } from "@/components/blog-share";
 import { siteUrl } from "@/lib/site-url";
+import { socialMetadata } from "@/lib/social-card";
 import { Footer } from "@/components/home/footer";
 
 type BlogPageProps = { params: Promise<{ slug?: string[] }> };
@@ -49,9 +50,10 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
   const { slug = [] } = await params;
   const page = source.getPage(["blog", ...slug]);
   if (!page) notFound();
-  // A post's cover is its social card: LinkedIn and X read the image, title
-  // and description straight from these tags — LinkedIn takes no text from the
-  // share URL at all — so a post without them shares as a bare link.
+  // A post's cover is its social card; a post without one falls back to the
+  // generated card. LinkedIn and X read the image, title and description
+  // straight from these tags — LinkedIn takes no text from the share URL at
+  // all — so a post without them shares as a bare link.
   const images = [];
   if (page.data.cover) images.push({ url: page.data.cover, alt: page.data.title });
   const metadata: Metadata = {
@@ -59,8 +61,7 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
     description: page.data.description,
     keywords: page.data.tags,
     alternates: { canonical: page.url },
-    openGraph: { type: "website", url: page.url, images },
-    twitter: { title: page.data.title, description: page.data.description, images },
+    ...socialMetadata({ url: page.url, images }),
   };
   let authors: string[] | undefined;
   if (page.data.author) {
@@ -68,14 +69,11 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
     authors = [page.data.author];
   }
   if (slug.length > 0) {
-    metadata.openGraph = {
-      type: "article",
+    Object.assign(metadata, socialMetadata({
       url: page.url,
       images,
-      publishedTime: page.data.published,
-      authors,
-      tags: page.data.tags,
-    };
+      article: { publishedTime: page.data.published, authors, tags: page.data.tags },
+    }));
   }
   return metadata;
 }
