@@ -106,7 +106,7 @@ Keep `"..."` at the end of each section's `meta.json` page list so new Markdown 
 Cookbooks uses that tree for its sidebar; Blog lists its categories there.
 All sections share search, sitemap generation, relative Markdown link handling, and the raw Markdown API.
 Search is scoped to the active section.
-The Blog listing and each category page are the post cards themselves — no heading, no introduction — so `content/blog/index.md` carries only the title and description the page's metadata and search entry use.
+The Blog listing and each category page show their title and then the post cards — no introduction, no post count — so `content/blog/index.md` carries only the title and description the page, its metadata and its search entry use.
 
 Blog posts can also include optional metadata:
 

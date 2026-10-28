@@ -16,16 +16,6 @@
   border-block-end: var(--cmp-divider);
 }
 
-.blog-empty {
-  --cmp-padding: var(--spacing-page);
-  --cmp-fg: var(--text-neutral);
-  --cmp-action-fg: var(--color-primary-text);
-  padding: var(--cmp-padding);
-  color: var(--cmp-fg);
-}
-
-.blog-empty button { color: var(--cmp-action-fg); cursor: pointer; }
-
 .blog-post-footer {
   --cmp-gap: var(--spacing-inline);
   --cmp-action-color: var(--color-primary-text);

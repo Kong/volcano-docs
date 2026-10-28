@@ -1,8 +1,8 @@
 // Every blog post carries exactly one category. Categories are a small curated
 // vocabulary (not free-form tags) because each one is a page of its own at
-// /blog/category/<slug> and appears in the listing's tab row — a label per
-// feature would turn both into noise. `tags` stay free-form and keep driving
-// the sidebar's topic filter and search scoping.
+// /blog/category/<slug> and is listed in the blog sidebar — a label per feature
+// would turn both into noise. `tags` stay free-form and are indexed for search;
+// nothing in the UI filters by them.
 //
 // Shared with spec/frontmatter.schema.json, which validates authored posts
 // against the same list; blog-categories.test.mjs keeps the two in step.
@@ -51,7 +51,7 @@ export function postsInCategory(posts, slug) {
 
 /**
  * The categories that actually have posts, with their counts. An empty
- * category has no page worth linking to, so it never reaches the tab row.
+ * category has no page worth linking to, so it never reaches the sidebar.
  * @param {{ category?: string }[]} posts
  */
 export function collectCategories(posts) {

@@ -33,6 +33,11 @@ const MARK_DATA_URI = `data:image/svg+xml;base64,${readFileSync(
 // only one this card needs) is identified by its unicode-range rather than
 // assumed to be in a fixed position, since subset order is not contractual.
 const LATIN_UNICODE_RANGE = "U+0000-00FF";
+// Google serves the font files themselves from this host. Nothing in a request
+// reaches the fetch below — the stylesheet URL is a constant — but the file URL
+// is read out of a response, so the host it names is checked before it is
+// fetched rather than trusted.
+const FONT_FILE_HOST = "fonts.gstatic.com";
 
 async function loadInterWeight(weight: 400 | 700) {
   const css = await fetch(
@@ -50,6 +55,9 @@ async function loadInterWeight(weight: 400 | 700) {
   const fontUrl = latinBlock?.match(/src: url\((.+?)\) format\('woff'\)/)?.[1];
   if (!fontUrl) {
     throw new Error("Could not resolve the Latin Inter font URL for the social card");
+  }
+  if (new URL(fontUrl).host !== FONT_FILE_HOST) {
+    throw new Error(`Social card font URL is not on ${FONT_FILE_HOST}: ${fontUrl}`);
   }
   return fetch(fontUrl).then(function readFont(response) { return response.arrayBuffer(); });
 }

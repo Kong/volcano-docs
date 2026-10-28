@@ -22,7 +22,7 @@ type BlogPostCardsProps = { posts: BlogPost[] };
 // show a post the same way: cover or icon, category, title, then the byline.
 export function BlogPostCards({ posts }: BlogPostCardsProps) {
   return (
-    <div data-slot="blog-post-cards" className="collection-home-cards" aria-live="polite">
+    <div data-slot="blog-post-cards" className="collection-home-cards">
       {posts.map(function renderPost(post) {
         let icon: ReactNode = <Newspaper className="feature-card-glyph" />;
         let image: ReactNode;
