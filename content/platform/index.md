@@ -1,9 +1,9 @@
 ---
 title: 'Volcano Documentation'
-description: 'Volcano is AI infrastructure for agents and applications: functions, durable functions, databases, auth, realtime, storage, hosting, and locks.'
+description: 'Volcano is AI infrastructure for agents and applications: functions, durable functions, sandboxes, databases, auth, realtime, storage, hosting, and locks.'
 ---
 
-Volcano is AI infrastructure for agents and applications. It gives you functions, durable functions, databases, authentication, realtime, file storage, frontend hosting, and distributed locks, all through one API.
+Volcano is AI infrastructure for agents and applications. It gives you functions, durable functions, sandboxes, databases, authentication, realtime, file storage, frontend hosting, and distributed locks, all through one API.
 
 ## Quick start
 
@@ -19,13 +19,13 @@ Everything Volcano does is one API. The dashboard, the CLI, the SDKs, and the
 MCP server are all ways of calling it — see
 [Ways to use Volcano](interfaces/README.md) for which to reach for.
 
-| Interface  | Reach for it when                                                                                     | Documentation                                                   |
-| ---------- | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| Dashboard  | Exploring, one-off changes, reading logs and usage                                                    | [Dashboard](interfaces/dashboard.md)                            |
-| CLI        | Deploying from a terminal or CI, migrations, local development                                        | [CLI reference](/cli)                                           |
-| SDK        | Writing application code — auth, queries, storage, realtime, durable functions, and distributed locks | [JavaScript](/sdk/js), [Python](/sdk/python), [Ruby](/sdk/ruby) |
-| REST API   | Automating what the CLI does not cover                                                                | [API reference](api-reference/overview.md)                      |
-| MCP server | Letting an AI agent inspect or change one project                                                     | [MCP server](interfaces/mcp.md)                                 |
+| Interface  | Reach for it when                                                                                                | Documentation                                                   |
+| ---------- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Dashboard  | Exploring, one-off changes, reading logs and usage                                                               | [Dashboard](interfaces/dashboard.md)                            |
+| CLI        | Deploying from a terminal or CI, migrations, local development                                                   | [CLI reference](/cli)                                           |
+| SDK        | Writing application code — auth, queries, storage, realtime, durable functions, sandboxes, and distributed locks | [JavaScript](/sdk/js), [Python](/sdk/python), [Ruby](/sdk/ruby) |
+| REST API   | Automating what the CLI does not cover                                                                           | [API reference](api-reference/overview.md)                      |
+| MCP server | Letting an AI agent inspect or change one project                                                                | [MCP server](interfaces/mcp.md)                                 |
 
 ## Core features
 
@@ -54,6 +54,17 @@ JavaScript or Python workflows that checkpoint each step and resume for up to a 
 | [Durable messages](functions/durable-messages.md)                           | Send messages to a running workflow and read what it publishes |
 | [Durable callbacks](functions/durable-callbacks.md)                         | Let another system complete a waiting step with a token        |
 | [Developing durable functions locally](guides/durable-functions-locally.md) | Run one on your machine, then deploy it unchanged              |
+
+### Sandboxes
+
+Isolated sessions where agents and applications run commands, keep files, and serve HTTP, from a published preset or a custom template.
+
+| Guide                                                                    | Description                                                     |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------- |
+| [Overview](sandboxes/overview.md)                                        | What Sandboxes do, who can use them, and how runtime is billed  |
+| [Sandboxes guide](guides/sandboxes.md)                                   | Sessions, files, HTTP access, user grants, and custom templates |
+| [Deploy a custom template](guides/sandboxes.md#deploy-a-custom-template) | Build your own image from a `Dockerfile` fragment               |
+| [CLI](/cli/sandboxes)                                                    | Run commands and manage sessions from a terminal                |
 
 ### Databases
 

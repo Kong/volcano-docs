@@ -74,6 +74,18 @@ value, or takes its default when the project never saved settings. Turn LavaFlow
 on and off, and set `max_stage` or `auto_trigger` to stop at a diagnosis or
 start runs only on request, through this API or [`volcano-config.yaml`](../projects/configuration.md).
 
+A change also reaches runs in progress. Every run checks the settings and your
+plan again once the model finishes, before it records its result, so a
+diagnosis-only run is stopped too. A run that may open a pull request also
+checks before it asks for a fix, before each revision its review asks for, and
+before it opens the pull request. If LavaFlow
+is off by then, or the project is being deleted, the run ends `canceled` with
+`lavaflow_disabled`. If the plan no longer includes LavaFlow, it ends `canceled`
+with `plan_required`. Neither opens a pull request.
+If `max_stage` is `diagnose` by then, the run stops at its diagnosis and reports
+`max_stage: diagnose`. If an interrupted attempt already opened the run's pull
+request, the run keeps it and ends `succeeded` with it; it opens no other.
+
 Read the settings back:
 
 ```bash
@@ -251,14 +263,17 @@ when a newer version has since deployed.
 | `failed`   | `no_diagnosis`           | LavaFlow finished without a diagnosis                                                                                           |
 | `failed`   | `budget_exhausted`       | LavaFlow reached the run's limit before finding a diagnosis                                                                     |
 | `failed`   | `attempts_exhausted`     | The run did not finish within its attempts                                                                                      |
-| `failed`   | `internal_error`         | LavaFlow could not run the diagnosis                                                                                            |
-| `canceled` | `lavaflow_disabled`      | LavaFlow was turned off before the run finished                                                                                 |
+| `failed`   | `internal_error`         | LavaFlow could not run the diagnosis, or could not confirm your settings and plan                                               |
+| `canceled` | `lavaflow_disabled`      | LavaFlow was turned off, or the project is being deleted, before the run finished                                               |
 | `canceled` | `plan_required`          | The plan no longer allows LavaFlow                                                                                              |
 | `canceled` | `issue_not_found`        | The issue no longer exists                                                                                                      |
 
-A run that fails while it opens the pull request keeps its diagnosis and
-reports `stage_reached: diagnose`. A run that fails before its diagnosis has no
-`stage_reached`.
+An attempt saves its diagnosis before it opens the pull request, and when it
+can't confirm your settings and plan after the diagnosis. A retry diagnoses
+again. The run keeps the latest saved diagnosis and reports
+`stage_reached: diagnose`, even if a later attempt fails or the run is
+canceled; `failure_code` describes the last attempt. Such a run opens no pull
+request. A run that fails before any diagnosis has no `stage_reached`.
 
 Older runs may also report codes no new run does: `autofix_disabled` (now
 `lavaflow_disabled`), and `api_key_rejected`, `settings_changed`, or

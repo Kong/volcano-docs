@@ -24995,7 +24995,7 @@ components:
         stage_reached:
           allOf:
             - $ref: '#/components/schemas/LavaFlowStage'
-          description: 'The furthest stage the run reached: `diagnose` once it has a diagnosis, `pull_request` once it opened a pull request. A run that failed while opening the pull request keeps its diagnosis and `diagnose`. Absent until the run has a diagnosis.'
+          description: 'The furthest stage the run reached: `diagnose` once it has a diagnosis, `pull_request` once it opened a pull request. An attempt saves its diagnosis before opening the pull request, and when it could not confirm the project''s settings and plan after the diagnosis. The run keeps the latest saved diagnosis, and `diagnose`, even if a later attempt fails or the run is canceled; `failure_code` then describes the last attempt. Absent until the run has a diagnosis.'
         diagnosis:
           $ref: '#/components/schemas/LavaFlowDiagnosis'
         patch:
