@@ -211,9 +211,6 @@ Names follow the approval rules: up to 237 printable ASCII characters, checked b
 
 ## Wait for another system with a callback token
 
-> **Coming soon.** `ctx.wait_for_callback()` is not in a published SDK release
-> yet, and Volcano does not serve the `/durable-callbacks` requests below yet.
-
 `ctx.wait_for_callback()` hands a token to another system and pauses the execution until that system answers with it. Use it when the work happens somewhere you do not run code, such as a payment provider, a job queue, or a partner's API, and that system can call back once it is done:
 
 ```python
