@@ -20,6 +20,19 @@ export function renderPageMarkdown({ title, description, raw, url, rewriteHref }
 }
 
 /**
+ * Where a link's destination can start: past a link's text, or past the
+ * closing bracket of an image's alt or a definition's label.
+ *
+ * @param {string} text
+ * @param {{ position: { start: { offset: number } }, children?: { position?: { end: { offset: number } } }[] }} node
+ */
+function destinationSearchStart(text, node) {
+  const lastChild = node.children?.at(-1);
+  if (lastChild?.position) return lastChild.position.end.offset;
+  return text.indexOf("]", node.position.start.offset);
+}
+
+/**
  * Rewrite the destination of every inline link, image and link definition,
  * leaving the rest of the text byte for byte. Code is not parsed as links, so
  * examples inside it are untouched.
@@ -35,11 +48,14 @@ export function rewriteMarkdownLinks(text, rewriteHref) {
     if (linkLike && node.url && node.position) {
       const next = rewriteHref(node.url);
       if (next !== node.url) {
-        const { start, end } = node.position;
-        // The destination is the last occurrence of the URL in the node's
-        // source; one written with escapes or entities is left alone.
-        const at = text.lastIndexOf(node.url, end.offset - node.url.length);
-        if (at >= start.offset) edits.push({ at, length: node.url.length, next });
+        const { end } = node.position;
+        // The destination is the first occurrence of the URL after the
+        // bracketed text, ahead of any title; one written with escapes or
+        // entities is left alone.
+        const at = text.indexOf(node.url, destinationSearchStart(text, node));
+        if (at >= 0 && at + node.url.length <= end.offset) {
+          edits.push({ at, length: node.url.length, next });
+        }
       }
     }
     for (const child of node.children ?? []) visit(child);

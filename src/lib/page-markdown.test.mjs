@@ -76,6 +76,20 @@ assert.equal(
   rewriteMarkdownLinks("[./a.md](./a.md)", toAbsolute),
   "[./a.md](https://docs.volcano.dev/cli/a.md)",
 );
+// A title that repeats the destination keeps its text; the destination is
+// rewritten, for links, images and definitions alike.
+assert.equal(
+  rewriteMarkdownLinks('[Install](./install.md "See ./install.md")', toAbsolute),
+  '[Install](https://docs.volcano.dev/cli/install.md "See ./install.md")',
+);
+assert.equal(
+  rewriteMarkdownLinks('![./a.md](./a.md "./a.md")', toAbsolute),
+  '![./a.md](https://docs.volcano.dev/cli/a.md "./a.md")',
+);
+assert.equal(
+  rewriteMarkdownLinks('[r]\n\n[r]: ./ref.md "./ref.md"', toAbsolute),
+  '[r]\n\n[r]: https://docs.volcano.dev/cli/ref.md "./ref.md"',
+);
 // renderPageMarkdown applies the rewrite to the body only.
 assert.equal(
   renderPageMarkdown({ title: "T", raw: "[x](./x.md)\n", rewriteHref: toAbsolute }),
