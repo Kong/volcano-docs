@@ -65,9 +65,11 @@ curl https://api.volcano.dev/projects/$PROJECT_ID/databases/main_db/backups \
 }
 ```
 
-Backups come back newest first. `source` tells apart the ones you asked for from
-the ones your schedule produced — only `manual` backups count against your
-plan's allowance. `restore_window` is the span a point-in-time restore can
+Backups come back newest first. `source` tells apart the ones you asked for
+(`manual`), the ones your schedule produced (`scheduled`), and the one Volcano
+takes before it applies migrations to the database (`migration`). Volcano
+applies the migrations only once that backup is ready to restore. Only `manual`
+backups count against your plan's allowance. `restore_window` is the span a point-in-time restore can
 target right now; it is absent on a plan without point-in-time restore, and for
 a short while after an upgrade to one, until the window is in place at the
 storage provider. Read it rather than assuming your plan's full window: it is
@@ -343,13 +345,18 @@ Backups, scheduled backups, and point-in-time restore are all SUPERAGENT. A HOBB
 project gets `403` from every endpoint here, with nothing to configure and
 nothing to turn on.
 
-The allowance counts only the backups you took; scheduled ones are free of it.
-Taking one over the allowance returns `403` — delete one first. Backups are
-rate-limited to one per minute per database, so a retried create that timed out
-cannot silently consume two slots.
+The allowance counts only the backups you took; scheduled and migration backups
+are free of it. Taking one over the allowance returns `403` — delete one first.
+Backups are rate-limited to one per minute per database, so a retried create
+that timed out cannot silently consume two slots. A migration backup is not
+rate-limited and does not block one you take.
 
 Retention is applied when a backup is taken: `expires_at` is when it will be
-deleted for you.
+deleted for you. Volcano also keeps at most the 20 most recent migration backups
+of a database: before a migration run takes its backup, and when the run ends,
+older migration backups are deleted, whatever their `expires_at`. Only backups
+a migration run took are deleted this way. If that cleanup fails, the run is
+unaffected, and the next run that takes a backup tries again.
 
 Backup, schedule, and restore requests return `503` with
 `"subscription pricing temporarily unavailable"` when Volcano cannot read your
@@ -357,8 +364,8 @@ subscription pricing. Retry later; the refused request starts no backup or
 restore.
 
 Downgrading to HOBBY deletes the backups you took, turns off any schedule, and
-closes the point-in-time window. Backups your schedule had already taken are left
-to expire on their own retention — you cannot list, restore, or delete them
+closes the point-in-time window. Backups your schedule or a migration had already
+taken are left to expire on their own retention — you cannot list, restore, or delete them
 meanwhile, and they are not charged to you. Backup storage stops counting toward
 your database's storage with the downgrade itself, so a database whose data fits
 HOBBY is not held over backups you can no longer reach. Upgrading gives the capability
@@ -373,7 +380,13 @@ up to 63 characters, starting with a letter or number, and unique within the
 database. An uppercase letter is rejected rather than folded. Names beginning with
 `volcano-` are reserved: Volcano takes its own snapshots during a point-in-time
 restore, and they are neither listed as your backups nor counted against your
-allowance.
+allowance. Names beginning with `before-migration-` are reserved for migration
+backups, which are listed as yours, kept for your plan's retention (at most
+the 20 most recent), and restorable like any other. What makes a backup a
+migration backup is that a migration run took it, not its name. A backup you
+named with that prefix before it was reserved, whatever follows the prefix,
+stays yours: it is listed as `manual`, counts against your allowance, and is
+never deleted to make room for migration backups.
 
 Reading, deleting, or restoring a backup accepts any name a backup can have, not
 just the ones you can create, because a schedule names its own backups.

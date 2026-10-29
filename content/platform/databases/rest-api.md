@@ -676,6 +676,15 @@ generic message and an `X-Request-Id` response header:
 Use the request ID when contacting support. Volcano keeps connection details
 in server logs and does not return them to clients.
 
+If the database ends the connection under a `select` or `ping`, for example
+when it scales to zero or restarts, Volcano runs the query once more on another
+connection, inside a read-only transaction, before it answers. Volcano never
+reruns `insert`, `update`, or `delete`, because the database may already have
+applied the change. A `select` that writes, such as one on a view over a
+function that inserts rows, fails the read-only rerun instead of writing twice.
+These return the `500` above; retry them only when running the change twice is
+safe.
+
 ### Permission Denied (RLS)
 
 ```json

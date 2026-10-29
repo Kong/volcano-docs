@@ -393,8 +393,9 @@ Authorization: Bearer <platform_token>
 }
 ```
 
-Newest first. `source` is `manual` or `scheduled`; only `manual` backups count
-against the plan's allowance. `size_bytes` is absent until the storage provider
+Newest first. `source` is `manual`, `scheduled`, or `migration` (taken before
+migrations were applied); only `manual` backups count against the plan's
+allowance. `size_bytes` is absent until the storage provider
 has costed the backup. `restore_window` is the span a point-in-time restore may
 target, and is absent on a plan without point-in-time restore. This route keeps
 working while a restore is running.
@@ -424,7 +425,8 @@ there is nothing to poll.
 
 Names are lowercase letters, numbers, underscores, and hyphens, up to 63
 characters, unique within the database. Names beginning with `volcano-` are
-reserved for the platform's own snapshots.
+reserved for the platform's own snapshots, and names beginning with
+`before-migration-` for migration backups.
 
 | Status | Meaning                                                                                      |
 | ------ | -------------------------------------------------------------------------------------------- |

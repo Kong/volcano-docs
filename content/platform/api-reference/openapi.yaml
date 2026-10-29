@@ -10173,9 +10173,9 @@ paths:
         Returns every backup of the database, newest first, together with the
         window a point-in-time restore may target.
 
-        Both backups you took and backups the schedule produced are listed;
-        `source` tells them apart. Only manual backups count against the plan's
-        backup allowance.
+        Backups you took, backups the schedule produced, and backups taken
+        before migrations are all listed; `source` tells them apart. Only manual
+        backups count against the plan's backup allowance.
       operationId: listDatabaseBackups
       security:
         - UserToken: []
@@ -19708,7 +19708,9 @@ components:
           type: string
           description: |
             Backup name, unique within the database. Names beginning with
-            `volcano-` are reserved for the platform's own snapshots.
+            `volcano-` are reserved for the platform's own snapshots, and names
+            beginning with `before-migration-` for the backups migration runs
+            take.
           pattern: ^[a-z0-9][a-z0-9_-]{0,62}$
           maxLength: 63
           example: before_migration
@@ -20264,10 +20266,11 @@ components:
           enum:
             - manual
             - scheduled
+            - migration
           description: |
-            Whether the backup was requested explicitly or produced by the
-            backup schedule. Only `manual` backups count against the plan's
-            backup allowance.
+            Whether the backup was requested explicitly, produced by the backup
+            schedule, or taken before migrations were applied to the database.
+            Only `manual` backups count against the plan's backup allowance.
         size_bytes:
           type: integer
           format: int64
@@ -24991,7 +24994,9 @@ components:
         status:
           $ref: '#/components/schemas/LavaFlowRunStatus'
         max_stage:
-          $ref: '#/components/schemas/LavaFlowStage'
+          allOf:
+            - $ref: '#/components/schemas/LavaFlowStage'
+          description: How far the run may go. Lowered to `diagnose` when the project lowers its `max_stage` before the run publishes; it never rises.
         stage_reached:
           allOf:
             - $ref: '#/components/schemas/LavaFlowStage'
