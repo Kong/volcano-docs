@@ -1,6 +1,7 @@
 // Run: node src/lib/page-markdown.test.mjs
 import assert from "node:assert/strict";
 import {
+  canonicalLinkHeader,
   mapTreeUrls,
   markdownPath,
   pageSlugs,
@@ -147,6 +148,16 @@ assert.equal(markdownPath("/cli/installation"), "/cli/installation.md");
 assert.equal(markdownPath("/sdk"), "/sdk.md");
 assert.equal(markdownPath("/sdk/"), "/sdk.md");
 assert.equal(markdownPath("/"), "/index.md");
+
+// A page's markdown names its HTML page as canonical, root included.
+assert.equal(
+  canonicalLinkHeader("https://docs.volcano.dev/cli/installation"),
+  '<https://docs.volcano.dev/cli/installation>; rel="canonical"',
+);
+assert.equal(
+  canonicalLinkHeader("https://docs.volcano.dev/"),
+  '<https://docs.volcano.dev/>; rel="canonical"',
+);
 
 // /index.md names the root page; every other slug passes through.
 assert.deepEqual(pageSlugs(["index"]), []);

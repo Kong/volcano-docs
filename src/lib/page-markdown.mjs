@@ -85,6 +85,17 @@ export function markdownPath(pageUrl) {
 }
 
 /**
+ * The `Link` header that names a page's HTML as the canonical copy of its
+ * markdown, so search engines index the page rather than the `.md` duplicate.
+ * It is not a noindex: agents and AI crawlers should still read the markdown.
+ *
+ * @param {string} pageUrl the page's absolute HTML URL
+ */
+export function canonicalLinkHeader(pageUrl) {
+  return `<${pageUrl}>; rel="canonical"`;
+}
+
+/**
  * A root-absolute link to a docs page, such as `/platform/functions#deploy`,
  * pointed at that page's markdown URL, keeping its query and fragment. Any
  * other link, and one to a route that is not a page (an image, a file, an API

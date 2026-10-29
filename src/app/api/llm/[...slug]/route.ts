@@ -1,4 +1,5 @@
-import { getMarkdownPage, getPageMarkdown } from "@/lib/agent-docs";
+import { absoluteUrl, getMarkdownPage, getPageMarkdown } from "@/lib/agent-docs";
+import { canonicalLinkHeader } from "@/lib/page-markdown.mjs";
 import { notFound } from "next/navigation";
 
 // Also serves /<slug>.md, which next.config.ts rewrites here.
@@ -16,6 +17,10 @@ export async function GET(
   }
 
   return new Response(markdown, {
-    headers: { "Content-Type": "text/markdown; charset=utf-8" },
+    headers: {
+      "Content-Type": "text/markdown; charset=utf-8",
+      // Search engines index the HTML page, not this duplicate.
+      Link: canonicalLinkHeader(absoluteUrl(page.url)),
+    },
   });
 }
