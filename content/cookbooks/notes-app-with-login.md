@@ -22,7 +22,7 @@ Try the [live demo](https://e86d69db-a9e5-4022-b0f2-506a57cf3d44.frontends.volca
 
 ## What you need
 
-- A Volcano account. Tested on SUPERAGENT. Everything this app uses (email and password sign-in, one database, one frontend, no functions) is also on HOBBY according to the plans and limits page.
+- A Volcano account. Tested on SUPERAGENT. Everything this app uses (email and password sign-in, one database, one frontend, no functions) is also on HOBBY according to the [plans and limits page](/platform/guides/plans-and-limits).
 - Claude Code, Codex or Cursor with the Volcano skills (`volcano setup`).
 
 New Volcano projects start with email sending and confirmation off, so anyone can sign up with any address. That's fine for a demo or an internal tool. For a real app, add an email provider and turn confirmation on (see the last section).
@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS notes (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
+GRANT SELECT, INSERT, UPDATE, DELETE ON notes TO authenticated;
 DROP POLICY IF EXISTS notes_select_own ON notes;
 CREATE POLICY notes_select_own ON notes FOR SELECT USING (user_id = auth.uid());
 DROP POLICY IF EXISTS notes_insert_own ON notes;
@@ -69,7 +70,7 @@ DROP POLICY IF EXISTS notes_delete_own ON notes;
 CREATE POLICY notes_delete_own ON notes FOR DELETE USING (user_id = auth.uid());
 ```
 
-Each statement goes in its own file under `volcano/migrations/`, since Volcano runs one statement per migration. `--with-migrations` runs every file again on each deploy, so each `CREATE POLICY` has a `DROP POLICY IF EXISTS` before it and redeploys don't fail. The browser asks for all notes and gets only its own:
+Each statement goes in its own numbered file under `volcano/migrations/` (for example `005_notes_policy_select_own_drop.sql`, then `006_notes_policy_select_own_create.sql`), since Volcano runs one statement per migration and runs them in order. `--with-migrations` runs every file again on each deploy, so each `CREATE POLICY` has a `DROP POLICY IF EXISTS` before it and redeploys don't fail. The browser asks for all notes and gets only its own:
 
 ```js
 const { data } = await volcano.from("notes").select("id,title,content,created_at").order("created_at", { ascending: false });
