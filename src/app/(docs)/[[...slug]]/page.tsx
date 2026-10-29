@@ -11,6 +11,7 @@ import { CopyPageDropdown } from "@/components/copy-page-dropdown";
 import { MarkdownContent } from "@/components/markdown-content";
 import { isStandaloneSection } from "@/lib/sections";
 import { socialMetadata } from "@/lib/social-card";
+import { markdownUrl } from "@/lib/agent-docs";
 
 type PageProps = { params: Promise<{ slug?: string[] }> };
 
@@ -65,7 +66,10 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
         description:
           "Build AI agents and modern applications with the platform for the AI era, fully integrated with your agentic coding tools.",
       }),
-      alternates: { canonical: "/" },
+      alternates: {
+        canonical: "/",
+        types: { "text/markdown": markdownUrl("/") },
+      },
     };
   }
 
@@ -74,7 +78,11 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
   return {
     title: page.data.title,
     description: page.data.description,
-    alternates: { canonical: page.url },
+    alternates: {
+      canonical: page.url,
+      // Lets agents find the page's markdown instead of parsing its HTML.
+      types: { "text/markdown": markdownUrl(page.url) },
+    },
     ...socialMetadata({ url: page.url }),
   };
 }

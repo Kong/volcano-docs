@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { DocsPage, DocsTitle, DocsDescription } from "fumadocs-ui/page";
 import { source } from "@/lib/source";
+import { markdownUrl } from "@/lib/agent-docs";
 import { socialMetadata } from "@/lib/social-card";
 import { CollectionHome } from "@/components/collection-home";
 import { MarkdownContent } from "@/components/markdown-content";
@@ -43,7 +44,10 @@ export async function generateMetadata({ params }: CookbooksPageProps): Promise<
   return {
     title: page.data.title,
     description: page.data.description,
-    alternates: { canonical: page.url },
+    alternates: {
+      canonical: page.url,
+      types: { "text/markdown": markdownUrl(page.url) },
+    },
     ...socialMetadata({ url: page.url }),
   };
 }
