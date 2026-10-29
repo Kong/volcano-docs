@@ -26,6 +26,7 @@
     "fumadocs-core": "^16.12.1",
     "fumadocs-mdx": "^15.2.0",
     "fumadocs-ui": "^16.12.1",
+    "mdast-util-from-markdown": "^2.0.3",
     "next": "16.3.8",
     "posthog-js": "^1.438.21",
     "react": "19.2.3",
@@ -44,7 +45,6 @@
     "eslint-config-next": "16.3.8",
     "husky": "^9.1.7",
     "js-yaml": "^4.1.0",
-    "mdast-util-from-markdown": "^2.0.3",
     "postcss": "^8",
     "tailwindcss": "^4",
     "typescript": "^5.9.3"

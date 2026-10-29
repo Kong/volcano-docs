@@ -5,6 +5,7 @@ import {
   markdownPath,
   pageSlugs,
   renderPageMarkdown,
+  rewriteMarkdownLinks,
   treePages,
 } from "./page-markdown.mjs";
 
@@ -33,6 +34,54 @@ assert.equal(
   "# T\n\nIntro\n\n---\n\nMore\n",
 );
 
+// Links, images and definitions are rewritten in place; code, autolinks to
+// other targets, and the rest of the text are left byte for byte.
+function toAbsolute(href) {
+  if (href.endsWith(".md")) return `https://docs.volcano.dev/cli/${href.replace(/^\.\//, "")}`;
+  return href;
+}
+const linked = [
+  "See [Install](./install.md) and [Auth](auth.md \"Sign in\").",
+  "",
+  "A [ref][r] and ![shot](./shot.png) and [web](https://volcano.dev).",
+  "",
+  "[r]: ./ref.md",
+  "",
+  "```md",
+  "[kept](./kept.md)",
+  "```",
+  "",
+  "Inline `[kept](./kept.md)` too.",
+  "",
+].join("\n");
+assert.equal(
+  rewriteMarkdownLinks(linked, toAbsolute),
+  [
+    "See [Install](https://docs.volcano.dev/cli/install.md) and [Auth](https://docs.volcano.dev/cli/auth.md \"Sign in\").",
+    "",
+    "A [ref][r] and ![shot](./shot.png) and [web](https://volcano.dev).",
+    "",
+    "[r]: https://docs.volcano.dev/cli/ref.md",
+    "",
+    "```md",
+    "[kept](./kept.md)",
+    "```",
+    "",
+    "Inline `[kept](./kept.md)` too.",
+    "",
+  ].join("\n"),
+);
+// Link text that repeats the destination does not take the rewrite.
+assert.equal(
+  rewriteMarkdownLinks("[./a.md](./a.md)", toAbsolute),
+  "[./a.md](https://docs.volcano.dev/cli/a.md)",
+);
+// renderPageMarkdown applies the rewrite to the body only.
+assert.equal(
+  renderPageMarkdown({ title: "T", raw: "[x](./x.md)\n", rewriteHref: toAbsolute }),
+  "# T\n\n[x](https://docs.volcano.dev/cli/x.md)\n",
+);
+
 // Page routes map to .md paths; the root is /index.md.
 assert.equal(markdownPath("/cli/installation"), "/cli/installation.md");
 assert.equal(markdownPath("/sdk"), "/sdk.md");
@@ -57,6 +106,7 @@ const tree = {
       children: [
         { type: "separator", name: "Guides" },
         { type: "page", url: "/cli/installation", name: "Install" },
+        { type: "page", url: "https://github.com/Kong", name: "GitHub", external: true },
       ],
     },
   ],
@@ -65,7 +115,7 @@ assert.deepEqual(
   treePages(tree).map(function url(node) {
     return node.url;
   }),
-  ["/", "/cli", "/cli/installation"],
+  ["/", "/cli", "/cli/installation", "https://github.com/Kong"],
 );
 const mapped = mapTreeUrls(tree, function toMd(url) {
   return `https://docs.volcano.dev${markdownPath(url)}`;
@@ -78,6 +128,8 @@ assert.deepEqual(
     "https://docs.volcano.dev/index.md",
     "https://docs.volcano.dev/cli.md",
     "https://docs.volcano.dev/cli/installation.md",
+    // External nodes keep their URL.
+    "https://github.com/Kong",
   ],
 );
 assert.equal(mapped.children[1].index.$ref, ref);

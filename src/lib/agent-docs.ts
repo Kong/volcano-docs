@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import { readContentFile } from "@/lib/content-file.mjs";
+import { resolveRelativeMdHref } from "@/lib/relative-md-href.mjs";
 import {
   markdownPath,
   mapTreeUrls,
@@ -28,6 +29,29 @@ export function getMarkdownPage(slug: string[]): DocsPage | undefined {
   return source.getPage(pageSlugs(slug));
 }
 
+// The page route a relative .md link in a page's source names, with its query
+// and fragment, or null when it names no page. A section's README.md is synced
+// as index.md, so a link to the README falls back to the index.
+function resolvePageHref(href: string, page: DocsPage): string | null {
+  const candidates = [href, href.replace(/README\.md(?=[?#]|$)/, "index.md")];
+  for (const candidate of candidates) {
+    const resolved = resolveRelativeMdHref(candidate, source, page);
+    if (resolved?.startsWith("/")) return resolved;
+  }
+  return null;
+}
+
+// Relative links in a page's source are relative to its file, which is not
+// where its .md is served (content/cli/index.md is /cli.md), so each relative
+// .md link becomes the absolute .md URL of the page it names.
+function markdownHref(href: string, page: DocsPage): string {
+  if (/^([a-z][a-z0-9+.-]*:|\/|#)/i.test(href)) return href;
+  const resolved = resolvePageHref(href, page);
+  if (resolved === null) return href;
+  const [, route, suffix] = resolved.match(/^([^?#]*)(.*)$/)!;
+  return markdownUrl(route) + suffix;
+}
+
 // Read the raw markdown source file from disk, contained to content/.
 export async function getPageMarkdown(
   page: DocsPage,
@@ -40,6 +64,9 @@ export async function getPageMarkdown(
     description: page.data.description,
     raw,
     url: options.url,
+    rewriteHref: function rewriteHref(href: string) {
+      return markdownHref(href, page);
+    },
   });
 }
 
