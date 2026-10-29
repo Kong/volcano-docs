@@ -6,6 +6,7 @@ import {
   pageSlugs,
   renderPageMarkdown,
   rewriteMarkdownLinks,
+  rootPageMarkdownHref,
   treePages,
 } from "./page-markdown.mjs";
 
@@ -90,6 +91,51 @@ assert.equal(
   rewriteMarkdownLinks('[r]\n\n[r]: ./ref.md "./ref.md"', toAbsolute),
   '[r]\n\n[r]: https://docs.volcano.dev/cli/ref.md "./ref.md"',
 );
+// Root-absolute links to pages point at the page's .md URL, keeping their
+// query and fragment; assets, API routes, other routes and external or
+// protocol-relative links are left alone.
+const pageRoutes = new Set(["/", "/cli", "/platform/functions/overview"]);
+function isPage(route) {
+  return pageRoutes.has(route);
+}
+function toMdUrl(route) {
+  return `https://docs.volcano.dev${markdownPath(route)}`;
+}
+function rootHref(href) {
+  return rootPageMarkdownHref(href, isPage, toMdUrl);
+}
+assert.equal(
+  rootHref("/platform/functions/overview"),
+  "https://docs.volcano.dev/platform/functions/overview.md",
+);
+assert.equal(
+  rootHref("/platform/functions/overview#deploy"),
+  "https://docs.volcano.dev/platform/functions/overview.md#deploy",
+);
+assert.equal(rootHref("/cli/?tab=npm#top"), "https://docs.volcano.dev/cli.md?tab=npm#top");
+assert.equal(rootHref("/"), "https://docs.volcano.dev/index.md");
+assert.equal(rootHref("/#intro"), "https://docs.volcano.dev/index.md#intro");
+for (const kept of [
+  "/blog/introducing-volcano-sandbox/cover.png",
+  "/api/llm/cli",
+  "/llms.txt",
+  "/llms-full.txt",
+  "/nope",
+  "//cdn.example.com/cli",
+  "https://volcano.dev/cli",
+  "#section",
+  "./install.md",
+]) {
+  assert.equal(rootHref(kept), kept);
+}
+assert.equal(
+  rewriteMarkdownLinks(
+    "[Overview](/platform/functions/overview#deploy) ![x](/blog/x.png) [api](/api/llm/cli)\n\n[d]: /cli",
+    rootHref,
+  ),
+  "[Overview](https://docs.volcano.dev/platform/functions/overview.md#deploy) ![x](/blog/x.png) [api](/api/llm/cli)\n\n[d]: https://docs.volcano.dev/cli.md",
+);
+
 // renderPageMarkdown applies the rewrite to the body only.
 assert.equal(
   renderPageMarkdown({ title: "T", raw: "[x](./x.md)\n", rewriteHref: toAbsolute }),

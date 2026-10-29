@@ -6,6 +6,7 @@ import {
   mapTreeUrls,
   pageSlugs,
   renderPageMarkdown,
+  rootPageMarkdownHref,
   treePages,
 } from "@/lib/page-markdown.mjs";
 import { siteUrl } from "@/lib/site-url";
@@ -41,11 +42,20 @@ function resolvePageHref(href: string, page: DocsPage): string | null {
   return null;
 }
 
-// Relative links in a page's source are relative to its file, which is not
-// where its .md is served (content/cli/index.md is /cli.md), so each relative
-// .md link becomes the absolute .md URL of the page it names.
+// Whether a route such as "/cli/installation" is a docs page.
+function isPageRoute(route: string): boolean {
+  return source.getPage(route.split("/").filter(Boolean)) !== undefined;
+}
+
+// Every link to a docs page becomes the absolute .md URL of that page, so an
+// agent reading markdown stays on markdown. Relative links in a page's source
+// are relative to its file, which is not where its .md is served
+// (content/cli/index.md is /cli.md), so they resolve against the file.
 function markdownHref(href: string, page: DocsPage): string {
-  if (/^([a-z][a-z0-9+.-]*:|\/|#)/i.test(href)) return href;
+  if (href.startsWith("/")) {
+    return rootPageMarkdownHref(href, isPageRoute, markdownUrl);
+  }
+  if (/^([a-z][a-z0-9+.-]*:|#)/i.test(href)) return href;
   const resolved = resolvePageHref(href, page);
   if (resolved === null) return href;
   const [, route, suffix] = resolved.match(/^([^?#]*)(.*)$/)!;

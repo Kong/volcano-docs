@@ -85,6 +85,24 @@ export function markdownPath(pageUrl) {
 }
 
 /**
+ * A root-absolute link to a docs page, such as `/platform/functions#deploy`,
+ * pointed at that page's markdown URL, keeping its query and fragment. Any
+ * other link, and one to a route that is not a page (an image, a file, an API
+ * route), is returned unchanged.
+ *
+ * @param {string} href
+ * @param {(route: string) => boolean} isPage whether a route such as "/cli" is a docs page
+ * @param {(route: string) => string} toMarkdownUrl
+ */
+export function rootPageMarkdownHref(href, isPage, toMarkdownUrl) {
+  if (!href.startsWith("/") || href.startsWith("//")) return href;
+  const [, path, suffix] = href.match(/^([^?#]*)(.*)$/);
+  const route = path.replace(/\/+$/, "") || "/";
+  if (!isPage(route)) return href;
+  return toMarkdownUrl(route) + suffix;
+}
+
+/**
  * The page slugs a markdown request names. `/index.md` is the site root, which
  * the [...slug] route cannot otherwise reach.
  *
