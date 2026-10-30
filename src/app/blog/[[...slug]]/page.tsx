@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DocsTitle, DocsDescription } from "fumadocs-ui/page";
 import { source } from "@/lib/source";
+import { markdownUrl } from "@/lib/agent-docs";
 import { CollectionHome } from "@/components/collection-home";
 import { MarkdownContent } from "@/components/markdown-content";
 import "@/components/collection.css";
@@ -60,7 +61,10 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
     title: page.data.title,
     description: page.data.description,
     keywords: page.data.tags,
-    alternates: { canonical: page.url },
+    alternates: {
+      canonical: page.url,
+      types: { "text/markdown": markdownUrl(page.url) },
+    },
     ...socialMetadata({ url: page.url, images }),
   };
   let authors: string[] | undefined;
