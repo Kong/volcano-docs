@@ -2,6 +2,7 @@
   "pages": [
     "index",
     "pixel-board",
+    "notes-app-with-login",
     "petstore-api",
     "mcp-server",
     "..."
