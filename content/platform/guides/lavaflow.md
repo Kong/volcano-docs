@@ -75,16 +75,22 @@ on and off, and set `max_stage` or `auto_trigger` to stop at a diagnosis or
 start runs only on request, through this API or [`volcano-config.yaml`](../projects/configuration.md).
 
 A change also reaches runs in progress. Every run checks the settings and your
-plan again once the model finishes, before it records its result, so a
+plan again once the diagnosis finishes, before it records its result, so a
 diagnosis-only run is stopped too. A run that may open a pull request also
-checks before it asks for a fix, before each revision its review asks for, and
-before it opens the pull request. If LavaFlow
+checks before it asks for a fix, before each revision its review asks for, when
+it saves the diagnosis, and right before it writes the pull request's commit
+and branch. A retried or resumed run that publishes a saved fix checks before it
+starts writing the pull request and again right before the commit and branch. If LavaFlow
 is off by then, or the project is being deleted, the run ends `canceled` with
 `lavaflow_disabled`. If the plan no longer includes LavaFlow, it ends `canceled`
 with `plan_required`. Neither opens a pull request.
 If `max_stage` is `diagnose` by then, the run stops at its diagnosis and reports
 `max_stage: diagnose`. If an interrupted attempt already opened the run's pull
 request, the run keeps it and ends `succeeded` with it; it opens no other.
+
+A change after that last check, in the moment while the commit and branch are
+written and the pull request is created, may still open it. Turning LavaFlow off
+or lowering `max_stage` after that doesn't close it; close it on GitHub.
 
 Read the settings back:
 
@@ -173,7 +179,8 @@ Only exceptions count: one your code threw, or one it logged with
 other way does not, even with its stack, such as
 `console.error(JSON.stringify(entry))`, an error line from pino, bunyan, or
 winston, or a Python traceback you print as text. Neither does a line that
-only reads like an error, such as `console.log("request failed")`.
+only reads like an error, such as `console.log("request failed")`. An issue's
+`exception` field says whether it holds one; see [Issues](issues.md).
 
 Poll the run until `status` is `succeeded`, `failed`, or `canceled`:
 
@@ -255,7 +262,7 @@ when a newer version has since deployed.
 | `status`   | `failure_code`           | Means                                                                                                                           |
 | ---------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
 | `queued`   | `feature_unavailable`    | LavaFlow is temporarily unavailable. The run resumes automatically without using an attempt while paused                        |
-| `queued`   | `feature_paused`         | LavaFlow is paused. The run resumes automatically without using an attempt; a run paused with a fix opens its pull request then |
+| `queued`   | `feature_paused`         | LavaFlow is paused, even mid-run. The run resumes without using any attempt; one paused with a saved fix opens its pull request |
 | `failed`   | `model_request_rejected` | LavaFlow's AI service rejected the request                                                                                      |
 | `failed`   | `model_unavailable`      | LavaFlow couldn't reach its AI service on any attempt                                                                           |
 | `failed`   | `timed_out`              | The run did not finish in time on its last attempt                                                                              |
@@ -331,17 +338,41 @@ The pull request:
   services do not run model-written code before someone reviews it. Push a
   commit to the branch to run CI.
 - Describes the fix according to the repository's visibility. On a public
-  repository, the description names the resource, prints the run ID, and links
+  repository, or an internal one that everyone in your enterprise can read,
+  the description says the repository is not private, names the resource only
+  when the title does, prints the run ID, and links
   to the Volcano dashboard. The diagnosis stays with the run there, where only
   the project's members can read it. The review's findings are not shown, but
-  a fix whose review did not pass still says so. On a private repository, the description
-  explains the diagnosis, evidence, and review after removing credentials,
-  email addresses, quoted values, identifiers, addresses, and numbers the model
-  or its reviewers may have copied from your runtime logs. A description too
-  long for GitHub lists fewer items; if it still does not fit, it links to the
-  dashboard as on a public repository. The title and commit message have the
-  same values removed on every repository. The change is model-written and
-  visible to anyone who can read the repository.
+  a fix whose review did not pass still says so. On a private repository, the
+  description quotes the issue's title, which names the issue rather than the
+  occurrence the run fixed, and explains the diagnosis, evidence, and review
+  after removing
+  credentials, email addresses, quoted and backticked values, identifiers,
+  addresses, and numbers the model or its reviewers may have copied from your
+  runtime logs; every number is replaced. A description too long for GitHub
+  lists fewer items; if it still does not fit, it links to the dashboard as on
+  a public repository. On a
+  private repository, the title and commit message lose the same values as the
+  description. On a public or internal one, they name the error type only when
+  it is one of the runtimes' own, such as `TypeError`, `KeyError`, or
+  `ECONNREFUSED`, and the resource, as in
+  `LavaFlow: handle TypeError in function checkout`; any other error type reads
+  `an error`. They leave the resource out when its name holds anything but
+  letters, digits, and
+  `_ . : / -`, holds a long number, address, time, or ID, such as a card
+  number, an IP address, or `user_12345`, looks like a key or a random token,
+  or names a password, as `pass:` does. The suggested fix in a private
+  repository's description loses credentials, the lines a credential's value
+  continues onto, a code block that follows a credential's name, names one
+  where its language tag goes, or that its value continues into, the value
+  after a field such as `name: DB_PASSWORD`, and long random-looking values,
+  then every quoted or backticked string, identifier, address, and number,
+  short numbers included. Its outermost code fences and their language tags
+  stay; a fence inside another code block is read as code. The change is
+  model-written and visible to anyone who can read the repository.
+- Keeps the description it opened with. A private repository's description
+  includes diagnosis text drawn from your runtime logs, and it stays in the
+  pull request if you make the repository public later.
 - Says so when its base is a commit your deploy client reported rather than one
   a push deployed. See [Commit](deployment-source.md#commit).
 
@@ -401,16 +432,18 @@ repository. The App opens pull requests only where the owner could.
 A run whose `max_stage` is `pull_request` still succeeds with its diagnosis when
 it opens no pull request, and says why in `pull_request_skipped`:
 
-| `pull_request_skipped` | Means                                                                                                                                                    |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `source_unavailable`   | The project has no connected repository, the deployment came neither from a push to it nor with a verified clean commit, or the source could not be read |
-| `pull_request_open`    | A fix pull request for this issue is still open, or merged and not yet deployed                                                                          |
-| `not_fixable`          | The cause is not a code change in this repository                                                                                                        |
-| `low_confidence`       | The diagnosis is not confident enough to propose a fix                                                                                                   |
-| `no_patch`             | The model gave no fix that passed Volcano's checks                                                                                                       |
-| `permission_missing`   | The GitHub App installation lacks the permissions above or access to the repository, or the project owner cannot push to it                              |
-| `repository_changed`   | The project points at a different repository, or none, than when the run started or LavaFlow was turned on                                               |
-| `publish_failed`       | GitHub refused the pull request, or was unavailable                                                                                                      |
+| `pull_request_skipped`   | Means                                                                                                                                                    |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `source_unavailable`     | The project has no connected repository, the deployment came neither from a push to it nor with a verified clean commit, or the source could not be read |
+| `pull_request_open`      | A fix pull request for this issue is still open, or merged and not yet deployed                                                                          |
+| `not_fixable`            | The cause is not a code change in this repository                                                                                                        |
+| `low_confidence`         | The diagnosis is not confident enough to propose a fix                                                                                                   |
+| `no_patch`               | The model gave no fix that passed Volcano's checks                                                                                                       |
+| `permission_missing`     | The GitHub App installation lacks the permissions above or access to the repository, or the project owner cannot push to it                              |
+| `repository_changed`     | The project points at a different repository, or none, than when the run started or LavaFlow was turned on                                               |
+| `publish_failed`         | GitHub refused the pull request, or was unavailable                                                                                                      |
+| `possible_credential`    | The fix adds what looks like a credential, such as an access key or a value from your logs, so nothing was pushed                                        |
+| `possible_personal_data` | The fix adds an email address your public or internal repository does not already contain, so nothing was pushed                                         |
 
 When a valid fix could not be published, the run keeps it in `patch` so you can
 apply it yourself.

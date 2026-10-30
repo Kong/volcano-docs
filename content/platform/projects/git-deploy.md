@@ -33,8 +33,8 @@ my-repo/
 │   └── functions/
 │       ├── hello.js              # single-file function -> "hello"
 │       ├── checkout/             # directory function   -> "checkout"
-│       │   ├── index.ts
-│       │   └── tax.ts
+│       │   ├── index.mjs
+│       │   └── tax.mjs
 │       └── _shared/              # shared code, packaged into every function
 │           └── db.js
 ├── web/                          # frontend app root (package.json here)
@@ -51,9 +51,17 @@ root:
 | `hello.js`  | `hello`       | the file itself                                                                                                   |
 | `checkout/` | `checkout`    | `index.*`, else the runtime's handler file (`index.js`, `main.py`, `main.rb`), else the first source file by name |
 
+Node.js functions deploy `.js` and `.mjs` files. Volcano doesn't compile
+TypeScript yet, so compile it first and commit the output, such as
+`checkout/index.mjs`. A function that holds only TypeScript, such as a
+`checkout.ts` file or a `checkout/` directory with no `.js` or `.mjs` file at its
+top, isn't deployed; the push deploys everything else. Commit its compiled
+JavaScript to deploy it. Keep shared TypeScript that isn't a function under a
+`_`-prefixed name, such as `_lib/`, so it isn't taken for one.
+
 Names must be DNS-safe: lowercase letters, digits, and internal hyphens, 1–63
-characters. `batch`, `invocations`, and `logs` are reserved. Entries that do not
-qualify — an unsupported file type, a hidden entry, a name Volcano cannot
+characters. `batch`, `invocations`, and `logs` are reserved. Other entries that
+do not qualify — an unsupported file type, a hidden entry, a name Volcano cannot
 deploy — are **skipped silently** so one stray file cannot fail the whole push.
 Two entries resolving to the same name (`foo.js` and `foo/`) fail the run.
 
@@ -73,6 +81,13 @@ excludes `node_modules`, `vendor`, `.git`, and `.volcano`. Function archives
 exclude those plus the Python artifact directories `.venv`, `venv`,
 `site-packages`, `__pycache__`, and `python_deps` — a frontend build root
 carrying those still packages them, which counts against the size limits below.
+
+**Frontend dependencies** install from the outermost directory in the frontend's
+archive that has a lockfile or declares workspaces. With the layout above, a
+lockfile beside the root `package.json` makes the root the install root. Its
+install covers `web/` only when the root is a workspace that includes it, through
+`pnpm-workspace.yaml` or a `workspaces` field. Otherwise the build fails because
+`web/`'s dependencies aren't installed.
 
 Already running on Volcano and want your code in Git? [Export your
 source](export-to-git.md) can initialize a new empty repository and push the
@@ -562,9 +577,14 @@ state does deploy again, so you can retry a failed deploy by re-pushing.
 change detection yet: a commit that touches only the frontend still redeploys
 the functions, and vice versa.
 
+**A frontend served by a promoted [preview](../frontends/previews.md) is not
+deployed.** The push fails the frontend's deployment with an error that says to
+roll back to the frontend's own build first. Roll back, then push again.
+
 **Runs are skipped, not failed,** when there is nothing to do: auto-deploy is
 off, the project was disconnected or its binding changed before execution, the
-project was deleted, or the commit contains no deployable resource.
+project was deleted, or the commit contains no deployable resource and no
+function that holds only TypeScript.
 
 ## Deploying directly while connected
 
@@ -633,7 +653,8 @@ repository (`GET /projects/{id}/git-connection`).
 **A function is missing.** It is probably being skipped by discovery. Confirm it
 sits directly under `volcano/functions/` inside `root_directory`, that its name
 is DNS-safe and not reserved, and that a directory function contains at least one
-supported source file.
+supported source file. A function that holds only TypeScript isn't deployed;
+commit its compiled JavaScript.
 
 **The frontend did not deploy.** `frontend_name` must be set, and
 `root_directory` + `frontend_app_root` must contain a `package.json`, or the

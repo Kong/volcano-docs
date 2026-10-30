@@ -29,6 +29,7 @@ curl "https://api.volcano.dev/projects/$PROJECT_ID/issues?status=open" \
       "error_type": "TypeError",
       "culprit": "chargeCustomer (src/payments.js)",
       "status": "open",
+      "exception": true,
       "event_count": 42,
       "first_seen_at": "2026-10-13T09:12:04Z",
       "last_seen_at": "2026-10-13T11:47:31Z",
@@ -91,6 +92,12 @@ Volcano groups errors by:
   `traceback.format_exc()`, groups by its type and frames. Like a structured
   log, it is a separate issue from the same error raised and never starts a
   LavaFlow run on its own.
+
+`exception` is `true` when an issue holds an exception: one your code threw, or
+one it logged with `console.error(err)` or Python's `logger.exception()`. It is
+`false` for an issue grouped only from messages, structured logs, or printed
+tracebacks, and once `true`, it stays `true`. Only an issue with `exception` set starts a
+[LavaFlow](lavaflow.md) run on its own.
 
 In local mode, output a function writes to stderr without a level of its own is
 at `error` level, so only an exception becomes an issue: one your code threw or

@@ -438,7 +438,11 @@ templates are not enabled, a deployment request returns `404` with code
 `feature_unavailable`.
 
 Place a `Dockerfile` fragment and its files in a directory. Volcano supplies the
-base image and supervisor. Use `RUN`, `COPY`, `ENV`, `WORKDIR` within `/workspace`,
+base image and supervisor. The base image is Amazon Linux 2023 on arm64 in the
+cloud; local mode uses your machine's architecture. Compile binaries in a `RUN`
+step so they match either one. A binary built elsewhere and copied in must target
+`linux/arm64` for the cloud and your machine's architecture for local mode.
+Use `RUN`, `COPY`, `ENV`, `WORKDIR` within `/workspace`,
 and `CMD`; omit `FROM`, `ENTRYPOINT`, and `USER`.
 Use JSON-array `CMD` to pass arguments literally, without shell expansion.
 Shell-form `CMD` explicitly runs a shell and supports expansion and pipelines.
@@ -487,6 +491,19 @@ operator recovery, so a new Git deployment fails immediately instead of waiting.
 
 Create sessions with `sandbox_id` after activation. Sessions retain the exact
 image they started with even when a later deployment activates.
+
+In the cloud, Volcano starts your `CMD` service once while it builds the
+template, then starts every session from a saved copy of that running service,
+memory included. Anything the service creates at startup is the same in many
+sessions: random tokens, keys, IDs, and random generators seeded at startup.
+Create those values when a session first needs them, and read randomness from
+the operating system at that point, for example with Python `secrets` or Go
+`crypto/rand`. Local mode starts `CMD` separately in each session.
+
+Don't build secrets into a template. Its files, `ENV` values, and startup
+memory are shared by every session. Pass a secret after the session starts,
+in the `environment` field of an exec request or as a file written with
+[the files API](#read-and-write-files).
 
 Read build logs with
 `GET /projects/{id}/sandboxes/{sandboxId}/deployments/{deploymentId}/logs?region=aws-us-east-1`.

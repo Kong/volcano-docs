@@ -43,8 +43,11 @@ the meantime, export returns `409` without writing the repository. Read the
 connection again and ask the user to confirm the new branch.
 
 Export also returns `409` while a function or frontend deployment is queued or
-provisioning. Wait for that deployment to finish, then export again. Volcano
-checks this before creating or pushing the root commit.
+provisioning. Wait for that deployment to finish, then export again. It returns
+`409` too while a [preview](../frontends/previews.md) is serving any of the
+project's frontends, because the repository would not hold the source that
+frontend serves. Roll each such frontend back to its own build, then export
+again. Volcano checks both before creating or pushing the root commit.
 
 Volcano does not create the repository. Export refuses any repository that
 already has a commit or branch. This avoids merges, conflict resolution, and
@@ -134,8 +137,9 @@ Export is a one-time transition:
    ordinary Git deployment and changes the mode to `git_pending`.
 4. After a complete production deployment succeeds, the mode becomes `git`.
 
-The project stays locked if the deployment fails. Fix the repository and push
-the production branch again. The latest complete successful deployment
+The project stays locked if the deployment fails, or if a function holds only
+TypeScript, which [isn't deployed](git-deploy.md). Fix the
+repository and push the production branch again. The latest complete successful deployment
 finishes the transition; the exported root commit does not need to deploy if a
 newer push supersedes it.
 

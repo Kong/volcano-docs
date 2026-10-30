@@ -138,6 +138,7 @@ Service keys have full access to your project:
 - Modify any data regardless of owner
 - Delete any data across all users
 - Invoke functions without user context
+- Read and stop every durable execution in the project, results and errors included. A key scoped to a list without `*` reads and stops the executions it started, with the `client_token` from the start response
 - Bypass all RLS policies
 
 ## What service keys cannot do

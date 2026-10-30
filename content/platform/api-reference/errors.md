@@ -645,6 +645,47 @@ the same status can describe more than one condition:
 - `project_deleting` (`409`) — the Project is being deleted, so its
   Environments can no longer be changed.
 
+### Database migration errors
+
+The [migration](../guides/migrations.md) routes can answer `400` and `409` for
+different reasons. Branch on `code`:
+
+```json
+{
+  "error": "a migration run is already in progress for this database: 7f3a1c2e-5d4b-4a91-8c6f-2b1e9d0a4c73",
+  "code": "migration_run_in_progress",
+  "run_id": "7f3a1c2e-5d4b-4a91-8c6f-2b1e9d0a4c73"
+}
+```
+
+- `invalid_layout` (`400`) — a file's path does not map to this database: it
+  is in another database's directory, or the files mix both layouts.
+- `invalid_file` (`400`) — a file name is repeated or too long. A request the
+  schema refuses, such as one with too many files, carries no code.
+- `migration_run_in_progress` (`409`) — the database has a run queued or
+  running, named by `run_id`. Wait for it to end, then send the request again.
+  Starting a [restore](../databases/backups.md#what-a-restore-refuses) answers
+  it too, while a run backs up or applies to the database.
+- `checksum_mismatch` (`409`) — a baseline named a file the history records
+  with a different checksum. Nothing was recorded.
+- `history_missing` (`409`) — reading the history found its table gone from a
+  database where migrations ran. Record a baseline of the files that were
+  already applied; see [Recover a lost history](../guides/migrations.md#recover-a-lost-history).
+- `history_too_large` (`409`) — reading the history or recording a baseline
+  found more than the 1,000 entries Volcano reads; see
+  [Read the history](../guides/migrations.md#read-the-history) to bring it back
+  under the bound.
+- `database_busy` (`409`) — a baseline found another request changing the
+  database, or the database held it up, such as with a lock on its history.
+  Nothing was recorded; try again.
+
+A `409` without a code means the `Idempotency-Key` already started a run of
+other files, the database is not active or changed while the request ran, or
+another session holds its migration lock. A `400` without a code whose message starts
+`storage limit reached` means the database is over its storage allowance, so
+it takes no run or baseline. A run that fails reports its reason in the run's own
+`error.code`; see [Why a run failed](../guides/migrations.md#why-a-run-failed).
+
 ## Error Handling
 
 ### JavaScript/TypeScript

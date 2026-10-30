@@ -92,6 +92,7 @@ See [Project access tokens](project-access-tokens.md) for the full security mode
 - Refresh endpoint
 - Logout endpoint
 - Invoking functions whose `visibility` is `public` (requires `functions.invoke` permission)
+- Reading and stopping a durable execution whose client token it sends (requires `functions.invoke` permission)
 
 **Format:** JWT (project-scoped)
 

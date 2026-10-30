@@ -49,6 +49,8 @@ tags:
     description: PostgreSQL database provisioning and management
   - name: Database Branches
     description: Short-lived forks of a database for development and testing
+  - name: Database Migrations
+    description: A database's migration history and the runs that apply migration files to it. Where migration runs are not available, starting a run or recording a baseline answers `404` with code `feature_unavailable`; history and runs stay readable.
   - name: Database Queries
     description: REST API for querying databases (SELECT, INSERT, UPDATE, DELETE)
   - name: Authentication
@@ -2996,7 +2998,8 @@ paths:
             The source has already been exported, the repository has already
             taken over as the source of truth, the confirmed production branch
             is stale, a function or frontend deployment is still in progress,
-            or the project has no stored source to export
+            a preview is serving one of the project's frontends, or the project
+            has no stored source to export
           content:
             application/json:
               schema:
@@ -4510,10 +4513,13 @@ paths:
         A `private` durable function answers every credential but a service key
         exactly as a missing one, with 404.
 
-        Starting is all this endpoint does. Reading a result or stopping an
-        execution requires the project owner's token, because an anon key is
-        shared by everyone who loads the page and an execution is addressed by
-        id alone.
+        The start returns a `client_token`. An anon key, or a user who did not
+        start the execution, sends it as `X-Volcano-Client-Token` to read the
+        execution, stop it, and reach its messages. A service key scoped to a
+        list without `*` sends it to read and stop the execution. An anon key is shared by
+        everyone who loads the page, so the id alone never reaches an
+        execution. Listing executions takes the project owner's token or a
+        project access token.
 
         Send `X-Volcano-Execution-Name` to make the start idempotent: repeating
         a start with the same name returns the existing execution instead of
@@ -4628,6 +4634,200 @@ paths:
             plan terms for the start could not be read. The first means the
             capability is paused or this deployment cannot serve it, so it is
             not one to retry in a loop; the second is transient.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /durable-functions/{functionId}/executions/{executionId}:
+    get:
+      tags:
+        - Durable Functions
+      summary: Get a durable execution from an application
+      description: |
+        Returns the execution's current state with the credential that started
+        it, including its `result` once it has succeeded. Poll this to wait for
+        an execution to finish.
+
+        **With a service key:** any execution in the project when the key holds
+        `*`, the default. A key scoped to a list without `*` reaches an
+        execution whose `X-Volcano-Client-Token` the request carries, as an
+        anon key does; the start returns that token.
+
+        **With an auth user token:** an execution the user started, or one
+        whose `X-Volcano-Client-Token` the request carries, of a durable
+        function whose `visibility` is `authenticated` or `public`.
+
+        **With an anon key:** an execution whose `X-Volcano-Client-Token` the
+        request carries, of a function with `visibility: public`.
+
+        Only a service key holding `*` reaches an execution that is still
+        `pending`. Any other execution answers `404`, as a missing one does.
+
+        The response is the one `GET
+        /projects/{id}/durable-functions/{functionId}/executions/{executionId}`
+        returns. It never carries `client_token`.
+      operationId: getDurableExecutionFromApplication
+      security:
+        - AnonKey: []
+        - ServiceRoleKey: []
+        - AuthUserAccessToken: []
+      parameters:
+        - $ref: '#/components/parameters/DurableFunctionId'
+        - $ref: '#/components/parameters/DurableExecutionId'
+        - $ref: '#/components/parameters/DurableClientToken'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DurableExecution'
+        '401':
+          description: Missing or invalid credential
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: |
+            The anon key lacks `functions.invoke`, the service key is scoped
+            without it, or the function is `authenticated` and the request
+            carries an anon key. Also returned when the request's origin is
+            refused by the project's CORS policy.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: |
+            Durable function or execution not found, or the credential cannot
+            reach the execution. A `private` function answers every credential
+            but a service key this way.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: |
+            The function's or the project's function rate limit, which reads
+            share with invocations and starts, or the project is over its
+            bandwidth cap.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: |
+            Durable execution is not available in this environment, the plan
+            terms for the request could not be read, or reads of the
+            execution's state in its region are throttled. The first is not one
+            to retry in a loop; the others are transient, and a throttled read
+            carries `Retry-After`.
+          headers:
+            Retry-After:
+              description: |
+                Seconds to wait before reading again. Sent only when reads in
+                the execution's region are throttled.
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /durable-functions/{functionId}/executions/{executionId}/stop:
+    post:
+      tags:
+        - Durable Functions
+      summary: Stop a durable execution from an application
+      description: |
+        Cancels a running execution with the credential that started it. Its
+        completed steps are not undone.
+
+        Access follows the same rules as reading the execution.
+
+        The call is accepted rather than awaited: the response reports the
+        execution as it was read back and may still say `running`. Poll
+        `GET /durable-functions/{functionId}/executions/{executionId}` to see
+        it settle into `stopped`.
+
+        Stopping an execution that already finished is not an error: the
+        response carries the state it settled in.
+      operationId: stopDurableExecutionFromApplication
+      security:
+        - AnonKey: []
+        - ServiceRoleKey: []
+        - AuthUserAccessToken: []
+      parameters:
+        - $ref: '#/components/parameters/DurableFunctionId'
+        - $ref: '#/components/parameters/DurableExecutionId'
+        - $ref: '#/components/parameters/DurableClientToken'
+      responses:
+        '200':
+          description: |
+            Stop accepted. The body is the execution as it was read back, which
+            may still report `running`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DurableExecution'
+        '401':
+          description: Missing or invalid credential
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: |
+            The anon key lacks `functions.invoke`, the service key is scoped
+            without it, or the function is `authenticated` and the request
+            carries an anon key. Also returned when the request's origin is
+            refused by the project's CORS policy.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: |
+            Durable function or execution not found, or the credential cannot
+            reach the execution. A `private` function answers every credential
+            but a service key this way.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: |
+            The execution has not started yet. Only a service key holding `*`
+            can reach an execution in that state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: |
+            The function's or the project's function rate limit, which stops
+            share with invocations and starts, or the project is over its
+            bandwidth cap.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: |
+            Durable execution is not available in this environment, the plan
+            terms for the request could not be read, or the execution's state
+            could not be read back because reads in its region are throttled.
+            The first is not one to retry in a loop; the others are transient,
+            and a throttled read carries `Retry-After`. A stop answered with a
+            throttle may already have been sent, so read the execution before
+            stopping it again.
+          headers:
+            Retry-After:
+              description: |
+                Seconds to wait before reading again. Sent only when reads in
+                the execution's region are throttled.
+              schema:
+                type: integer
           content:
             application/json:
               schema:
@@ -6252,9 +6452,18 @@ paths:
                 $ref: '#/components/schemas/Error'
         '503':
           description: |
-            Durable execution is not available in this environment. Either the
-            capability is paused or this deployment cannot serve it, so the
-            request is not one to retry in a loop.
+            Durable execution is not available in this environment, or reads of
+            the execution's state in its region are throttled. The first means
+            the capability is paused or this deployment cannot serve it, so the
+            request is not one to retry in a loop. A throttled read is transient
+            and carries `Retry-After`.
+          headers:
+            Retry-After:
+              description: |
+                Seconds to wait before reading again. Sent only when reads in
+                the execution's region are throttled.
+              schema:
+                type: integer
           content:
             application/json:
               schema:
@@ -6363,9 +6572,20 @@ paths:
                 $ref: '#/components/schemas/Error'
         '503':
           description: |
-            Durable execution is not available in this environment. Either the
-            capability is paused or this deployment cannot serve it, so the
-            request is not one to retry in a loop.
+            Durable execution is not available in this environment, or the
+            execution's state could not be read back because reads in its region
+            are throttled. The first means the capability is paused or this
+            deployment cannot serve it, so the request is not one to retry in a
+            loop. A throttled read is transient and carries `Retry-After`; the
+            stop may already have been sent, so read the execution before
+            stopping it again.
+          headers:
+            Retry-After:
+              description: |
+                Seconds to wait before reading again. Sent only when reads in
+                the execution's region are throttled.
+              schema:
+                type: integer
           content:
             application/json:
               schema:
@@ -8040,7 +8260,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '409':
-          description: Conflict - frontend deletion is queued or running
+          description: 'Conflict. `code: frontend_served_by_candidate` - a promoted Candidate serves the existing frontend; roll back to the frontend''s own runtime before deploying it. Without a code, the frontend''s deletion is queued or running.'
           content:
             application/json:
               schema:
@@ -8219,7 +8439,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '409':
-          description: Conflict - frontend deletion is queued or running
+          description: 'Conflict. `code: frontend_served_by_candidate` - a promoted Candidate serves the frontend; roll back to the frontend''s own runtime before redeploying it. Without a code, the frontend''s deletion is queued or running.'
           content:
             application/json:
               schema:
@@ -8839,7 +9059,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '409':
-          description: 'Conflict. `code: build_variables_differ` names the build-time variables whose values differ. `code: source_deployment_not_active` refuses a deployment that is not `active` or `degraded`. `code: source_build_unavailable` refuses a deployment made before Volcano kept builds, or whose build is no longer kept; redeploy the source frontend once and deploy from that deployment. `code: frontend_incompatible` refuses a different framework or app root. Without a code, the frontend''s deletion is queued or running, or the project''s source is managed by Git, where deploys come from a push to the production branch.'
+          description: 'Conflict. `code: build_variables_differ` names the build-time variables whose values differ. `code: source_deployment_not_active` refuses a deployment that is not `active` or `degraded`. `code: source_build_unavailable` refuses a deployment made before Volcano kept builds, or whose build is no longer kept; redeploy the source frontend once and deploy from that deployment. `code: frontend_incompatible` refuses a different framework or app root. `code: frontend_served_by_candidate` refuses a frontend a promoted Candidate serves; roll back to the frontend''s own runtime first. Without a code, the frontend''s deletion is queued or running, or the project''s source is managed by Git, where deploys come from a push to the production branch.'
           content:
             application/json:
               schema:
@@ -8864,6 +9084,602 @@ paths:
                 $ref: '#/components/schemas/Error'
         '503':
           description: Service unavailable - frontend workflow configuration missing, or the build-minutes check is temporarily unavailable; retry later.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /projects/{id}/frontends/{frontendId}/candidates:
+    get:
+      tags:
+        - Frontends
+      summary: List a frontend's Candidates
+      description: |
+        Returns the frontend's Candidates, oldest first, each with its latest deployment. A frontend
+        has at most 20 live Candidates. Reading never depends on the `frontends.candidates` capability.
+      operationId: listFrontendCandidates
+      security:
+        - UserToken: []
+        - ProjectAccessToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/FrontendId'
+      responses:
+        '200':
+          description: The frontend's Candidates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FrontendCandidateList'
+        '400':
+          description: Bad request - invalid identifier
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized - invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - project ownership required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Frontend not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags:
+        - Frontends
+      summary: Create a frontend Candidate
+      description: |
+        Builds a copy of the frontend from the uploaded archive, with the frontend's own variable
+        selection, and deploys it to one region: the first region the frontend deploys to, or the
+        project's first region by name if it has not deployed yet. The Candidate is served at its own
+        URL, so it can be checked without changing what the frontend serves. The URL is reachable by
+        anyone who holds it and is not indexed; a Candidate is never public and does not claim to be
+        private. The response is `202` while the first deployment runs; read the Candidate for its
+        `status` and `url`.
+
+        Creating a Candidate is available while the `frontends.candidates` capability is. While it is
+        not, this operation, redeploying, promoting and rolling back to a Candidate answer `404` with
+        code `feature_unavailable`; reading and deleting existing Candidates, and rolling back to the
+        frontend's own runtime, keep working.
+
+        A Candidate builds like any deploy and spends the project's build minutes. A frontend has at
+        most 20 live Candidates, and each name is unique within the frontend. Without `ttl_seconds` a
+        Candidate is kept until it is deleted.
+      operationId: createFrontendCandidate
+      security:
+        - UserToken: []
+        - ProjectAccessToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/FrontendId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - archive
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 128
+                  description: Names the Candidate within the frontend. Cannot be `production`.
+                ttl_seconds:
+                  type: integer
+                  minimum: 1
+                  maximum: 2592000
+                  description: Deletes the Candidate this many seconds after it is created, at most 30 days. Omit to keep it until deleted.
+                archive:
+                  type: string
+                  format: binary
+                  description: ZIP or tar.gz archive of the frontend project, as for creating a frontend. The API enforces SOURCE_ARCHIVE_SIZE_LIMIT_MB.
+      responses:
+        '202':
+          description: Candidate created; its first deployment is running
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FrontendCandidate'
+        '400':
+          description: Bad request - invalid name, expiry, identifier or archive, a variable the frontend declares has no value, or the resolved variables are too large
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized - invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - project ownership required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Frontend not found, or the `frontends.candidates` capability is unavailable (code `feature_unavailable`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 'Conflict. `code: candidate_name_taken` - the name is taken. `code: candidate_limit_reached` - the frontend has the maximum Candidates. `code: configuration_changed` - the frontend''s configuration changed during the deploy; retry. `code: frontend_deleting` or `code: project_deleting` - the frontend or project is being deleted.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '413':
+          description: The request body is larger than the archive limit, SOURCE_ARCHIVE_SIZE_LIMIT_MB
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Too many requests - the project's build minutes for the billing cycle are used up
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Service unavailable - frontend deployments are not configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /projects/{id}/frontends/{frontendId}/candidates/{candidateId}:
+    get:
+      tags:
+        - Frontends
+      summary: Get a frontend Candidate
+      operationId: getFrontendCandidate
+      security:
+        - UserToken: []
+        - ProjectAccessToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/FrontendId'
+        - $ref: '#/components/parameters/FrontendCandidateId'
+      responses:
+        '200':
+          description: The Candidate with its latest deployment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FrontendCandidate'
+        '400':
+          description: Bad request - invalid identifier
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized - invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - project ownership required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Frontend or Candidate not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags:
+        - Frontends
+      summary: Delete a frontend Candidate
+      description: |
+        Starts deleting the Candidate: its regional runtime, images, edge state and stored source are
+        removed once any running deployment finishes. Asking again for a Candidate that is already being
+        deleted is the same request. The Candidate answers `404` once it is gone.
+
+        A Candidate the frontend serves cannot be deleted: roll back first. A Candidate the frontend only
+        keeps as the runtime a rollback returns to can be deleted, and doing so gives up that rollback;
+        rolling back to the frontend's own runtime stays possible.
+      operationId: deleteFrontendCandidate
+      security:
+        - UserToken: []
+        - ProjectAccessToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/FrontendId'
+        - $ref: '#/components/parameters/FrontendCandidateId'
+      responses:
+        '202':
+          description: Deletion started
+        '400':
+          description: Bad request - invalid identifier
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized - invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - project ownership required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Frontend or Candidate not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: '`code: candidate_in_use` - the frontend serves this Candidate.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /projects/{id}/frontends/{frontendId}/candidates/{candidateId}/deployments:
+    post:
+      tags:
+        - Frontends
+      summary: Deploy a new archive to a frontend Candidate
+      description: |
+        Builds the uploaded archive with the frontend's own variable selection and deploys it to the
+        Candidate. The Candidate keeps serving its previous deployment until this one succeeds, and a
+        failed deployment leaves it on the previous one. A Candidate takes one deployment at a time.
+        While the `frontends.candidates` capability is unavailable, it answers `404` with code
+        `feature_unavailable`.
+      operationId: redeployFrontendCandidate
+      security:
+        - UserToken: []
+        - ProjectAccessToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/FrontendId'
+        - $ref: '#/components/parameters/FrontendCandidateId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - archive
+              properties:
+                archive:
+                  type: string
+                  format: binary
+                  description: ZIP or tar.gz archive of the frontend project, as for creating a frontend.
+      responses:
+        '202':
+          description: The deployment is running
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FrontendCandidateDeployment'
+        '400':
+          description: Bad request - invalid identifier or archive, a variable the frontend declares has no value, or the resolved variables are too large
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized - invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - project ownership required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Frontend or Candidate not found, or the `frontends.candidates` capability is unavailable (code `feature_unavailable`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 'Conflict. `code: deployment_in_progress` - a deployment is already running; retry once it finishes. `code: candidate_not_deployable` - the Candidate is being deleted or is not ready to deploy to. `code: candidate_in_use` - the frontend serves it or keeps it for a rollback. `code: configuration_changed` - the frontend''s configuration changed during the deploy; retry. `code: frontend_deleting` or `code: project_deleting` - the frontend or project is being deleted.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '413':
+          description: The request body is larger than the archive limit, SOURCE_ARCHIVE_SIZE_LIMIT_MB
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Too many requests - the project's build minutes for the billing cycle are used up
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Service unavailable - frontend deployments are not configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /projects/{id}/frontends/{frontendId}/serving:
+    get:
+      tags:
+        - Frontends
+      summary: Get what a frontend serves
+      description: |
+        Reports whether the frontend serves its own runtime or a promoted Candidate's, and the
+        revision a promotion or rollback must name.
+      operationId: getFrontendServing
+      security:
+        - UserToken: []
+        - ProjectAccessToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/FrontendId'
+      responses:
+        '200':
+          description: What the frontend serves
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FrontendServing'
+        '400':
+          description: Bad request - invalid identifier
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized - invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - project ownership required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Frontend not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /projects/{id}/frontends/{frontendId}/serving/rollback:
+    post:
+      tags:
+        - Frontends
+      summary: Roll a frontend back to the runtime it served before
+      description: |
+        Returns the frontend's traffic to the runtime it served before the last activation, or to its
+        own runtime with `to_production`. A rollback is a new activation, so what it leaves becomes the
+        runtime a further rollback returns to, and it can itself be undone. It names the revision the
+        caller read; a competing activation makes it fail with `409`.
+
+        Rolling back to a Candidate promotes it again and is refused with `409` when promoting it would
+        be. Rolling back to the frontend's own runtime is not.
+      operationId: rollbackFrontendServing
+      security:
+        - UserToken: []
+        - ProjectAccessToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/FrontendId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - expected_revision
+              properties:
+                expected_revision:
+                  type: integer
+                  format: int64
+                  minimum: 0
+                to_production:
+                  type: boolean
+                  default: false
+                  description: Return to the frontend's own runtime whatever it served before.
+      responses:
+        '200':
+          description: The frontend serves the runtime it was rolled back to
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FrontendServing'
+        '400':
+          description: Bad request - invalid identifier or body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized - invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - project ownership required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Frontend not found, or `feature_unavailable` when the release gate is off and the rollback would make a candidate serve again
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 'Conflict. `code: stale_revision` - the revision is stale; read `serving` again. `code: nothing_to_roll_back` - there is no earlier runtime to return to. `code: rollback_unavailable` - the runtime to roll back to is gone. `code: configuration_changed` - the Candidate to roll back to was built with a different configuration. `code: deployment_in_progress` - a deployment of the Candidate or of the frontend itself is still running; retry once it finishes. `code: source_managed_by_git` - the project''s repository is the source of truth; roll back to the frontend''s own runtime.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '413':
+          description: The request body is larger than 4 KiB
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /projects/{id}/frontends/{frontendId}/candidates/{candidateId}/promote:
+    post:
+      tags:
+        - Frontends
+      summary: Promote a frontend Candidate
+      description: |
+        Makes the Candidate what the frontend serves. Nothing is rebuilt or copied: the frontend's
+        traffic is routed to the Candidate's runtime, its own custom domains and metering are
+        unchanged, and what it served becomes the runtime a rollback returns to.
+
+        The Candidate must be ready and serving an active deployment, and that deployment must have
+        been built with the variables the frontend selects now. A Candidate that serves stops expiring and cannot be deleted. While one
+        serves, deploying the frontend itself answers `409`; roll back to the frontend's own runtime
+        first. Promotion names the revision the caller read from `serving`; a competing activation
+        makes it fail with `409`. Once the project's repository is the source of truth, promotion
+        is refused with `409`, as a direct deploy is, and so is rolling back to a Candidate; rolling
+        back to the frontend's own runtime is not. While the `frontends.candidates` capability is
+        unavailable, promotion and rolling back to a Candidate answer `404` with code
+        `feature_unavailable`; rolling back to the frontend's own runtime does not.
+      operationId: promoteFrontendCandidate
+      security:
+        - UserToken: []
+        - ProjectAccessToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/FrontendId'
+        - $ref: '#/components/parameters/FrontendCandidateId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - expected_revision
+              properties:
+                expected_revision:
+                  type: integer
+                  format: int64
+                  minimum: 0
+      responses:
+        '200':
+          description: The frontend serves the Candidate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FrontendServing'
+        '400':
+          description: Bad request - invalid identifier or body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized - invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - project ownership required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Frontend or Candidate not found, or the `frontends.candidates` capability is unavailable (code `feature_unavailable`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 'Conflict. `code: stale_revision` - the revision is stale; read `serving` again. `code: candidate_not_ready` - the Candidate is not ready. `code: configuration_changed` - it was built with a different configuration; redeploy it. `code: already_serving` - it already serves. `code: deployment_in_progress` - a deployment of the Candidate or of the frontend itself is still running; retry once it finishes. `code: source_managed_by_git` - the project''s repository is the source of truth. `code: frontend_not_deployed` - the frontend has no deployment of its own to roll back to; deploy it first.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '413':
+          description: The request body is larger than 4 KiB
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
           content:
             application/json:
               schema:
@@ -10173,9 +10989,9 @@ paths:
         Returns every backup of the database, newest first, together with the
         window a point-in-time restore may target.
 
-        Both backups you took and backups the schedule produced are listed;
-        `source` tells them apart. Only manual backups count against the plan's
-        backup allowance.
+        Backups you took, backups the schedule produced, and backups taken
+        before migrations are all listed; `source` tells them apart. Only manual
+        backups count against the plan's backup allowance.
       operationId: listDatabaseBackups
       security:
         - UserToken: []
@@ -10247,7 +11063,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/DatabaseBackup'
         '400':
-          description: Invalid backup name
+          description: Invalid backup name, or one with a reserved prefix
           content:
             application/json:
               schema:
@@ -10609,13 +11425,16 @@ paths:
                 $ref: '#/components/schemas/Error'
         '409':
           description: |
-            A restore is already in progress, the database is not active,
-            another database operation is still running, or the database is
-            holding as many pre-restore branches as it may.
+            Code `migration_run_in_progress`: a migration run is backing up or
+            applying to the database, named by `run_id`. Wait for it to end,
+            then send the request again. Without a code: a restore is already
+            in progress, the database is not active, another database operation
+            is still running, or the database is holding as many pre-restore
+            branches as it may.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/DatabaseRestoreConflictError'
         '503':
           description: Backups are temporarily unavailable
           content:
@@ -10659,6 +11478,321 @@ paths:
                 $ref: '#/components/schemas/Error'
         '503':
           description: Backups are temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /projects/{id}/databases/{databaseName}/migrations:
+    get:
+      tags:
+        - Database Migrations
+      summary: Get a database's migration history
+      description: |
+        Returns the migrations the database has recorded, in name order, read
+        from the database's own `_volcano_migrations.history` table. The history
+        is empty until a migration run or a baseline first records a file.
+
+        `active_run_id` is the run that is queued or running, if any.
+
+        If the history table is gone from a database where migrations ran,
+        answers `409` with code `history_missing`, and every run fails with
+        that code, rather than running files again. Record a baseline of the
+        files that were already applied to rebuild it. Dropping the whole
+        `_volcano_migrations` schema is not supported: the database then reads
+        as new, and the next run applies every file again.
+
+        Volcano reads at most 1,000 history entries, as many files as one run
+        may carry. A history with more answers `409` with code
+        `history_too_large`. A baseline is refused with that code, and a run
+        fails with it. Deleting the entries of files no longer among your
+        migrations brings the history back under the bound.
+
+        Available whether or not migration runs are.
+      operationId: getDatabaseMigrations
+      security:
+        - UserToken: []
+        - ProjectAccessToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/DatabaseName'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseMigrations'
+        '404':
+          description: Project or database not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: |
+            Code `history_missing`: the history table is gone from a database
+            where migrations ran; record a baseline of the files that were
+            already applied. Code `history_too_large`: the history has more
+            than 1,000 entries. Without a code: the database is not active, so
+            its history cannot be read.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Volcano could not reach the database
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /projects/{id}/databases/{databaseName}/migrations/baseline:
+    post:
+      tags:
+        - Database Migrations
+      summary: Record migrations as applied without running them
+      description: |
+        Records each file in the database's migration history as applied,
+        without running it. Use it once for a database whose schema already
+        reflects the files, such as one migrated before Volcano tracked its
+        migrations, so later runs apply only newer files. It is refused while
+        a run is queued or running, and no run starts while it records. It
+        does not queue: while another request is changing the database, or the
+        database holds it up, such as with a lock on the migration history, it
+        answers `409` with code `database_busy`.
+
+        Files the history already records with the same checksum are skipped, so
+        repeating the request changes nothing. A file recorded with a different
+        checksum is refused, and nothing is recorded.
+
+        It also rebuilds a history that was lost (`history_missing`): send
+        exactly the files that were already applied, and later runs apply only
+        the rest.
+
+        Where migration runs are not available, answers `404` with code
+        `feature_unavailable`.
+      operationId: baselineDatabaseMigrations
+      security:
+        - UserToken: []
+        - ProjectAccessToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/DatabaseName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatabaseMigrationFilesRequest'
+      responses:
+        '200':
+          description: The files are recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseMigrationBaseline'
+        '400':
+          description: |
+            A file breaks a rule: too many files, a file over 1 MiB, a name that
+            is not a `.sql` file, a name repeated, or a directory other than
+            this database's. Nothing is recorded or queued. Code
+            `invalid_layout`: a path does not map to this database. Code
+            `invalid_file`: a name is repeated or too long. A request the
+            schema refuses carries no code. Without a code, the message
+            starting `storage limit reached`: the database is over its storage
+            allowance, so its writes are blocked, as they are over a
+            connection.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: |
+            Project or database not found, or migration runs are not available
+            here (code `feature_unavailable`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: |
+            Nothing was recorded. Code `checksum_mismatch`: a file is already
+            recorded with a different checksum. Code
+            `migration_run_in_progress`: a run is queued or running, named by
+            `run_id`. Code `history_too_large`: the history has more than 1,000
+            entries. Code `database_busy`: another request is changing the
+            database, or the database held the baseline up, such as with a lock
+            on its migration history; try again. Without a code: the database is not active or changed
+            while the request ran, or another session holds its migration
+            lock.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseMigrationConflictError'
+        '413':
+          description: The request body is larger than 4 MiB
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Volcano could not reach the database
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /projects/{id}/databases/{databaseName}/migration-runs:
+    get:
+      tags:
+        - Database Migrations
+      summary: List a database's migration runs
+      description: |
+        Returns the database's 50 most recent migration runs, newest first,
+        without their files; get a run for its files. There is no pagination.
+
+        Available whether or not migration runs are.
+      operationId: listDatabaseMigrationRuns
+      security:
+        - UserToken: []
+        - ProjectAccessToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/DatabaseName'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseMigrationRunList'
+        '404':
+          description: Project or database not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags:
+        - Database Migrations
+      summary: Apply migrations to a database
+      description: |
+        Starts a migration run: Volcano compares the files with the database's
+        history, rehearses the pending ones on a short-lived branch of the
+        database, takes a backup, and applies them in name order. Files the
+        history already records with the same checksum are skipped.
+
+        Asynchronous: the response is `202` with the run `queued`. Poll the run
+        until its `status` is `succeeded` or `failed`.
+
+        Send `Idempotency-Key` to make a retry safe: a repeat with a key this
+        database has seen returns that run with `200` and starts nothing. A
+        database runs one migration run at a time.
+
+        Where migration runs are not available, answers `404` with code
+        `feature_unavailable`.
+      operationId: createDatabaseMigrationRun
+      security:
+        - UserToken: []
+        - ProjectAccessToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/DatabaseName'
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: |
+            Makes the request safe to retry. A repeat with a key this database
+            has seen returns the run it started. Reusing a key for different
+            files answers `409`. Up to 255 printable ASCII characters.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 255
+            pattern: ^[!-~]+$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatabaseMigrationFilesRequest'
+      responses:
+        '200':
+          description: A run with this `Idempotency-Key` already exists; it is returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseMigrationRun'
+        '202':
+          description: Run accepted and queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseMigrationRun'
+        '400':
+          description: |
+            A file breaks a rule: too many files, a file over 1 MiB, a name that
+            is not a `.sql` file, a name repeated, or a directory other than
+            this database's. Nothing is recorded or queued. Code
+            `invalid_layout`: a path does not map to this database. Code
+            `invalid_file`: a name is repeated or too long. A request the
+            schema refuses carries no code. Without a code, the message
+            starting `storage limit reached`: the database is over its storage
+            allowance, so its writes are blocked, as they are over a
+            connection.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: |
+            Project or database not found, or migration runs are not available
+            here (code `feature_unavailable`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: |
+            Code `migration_run_in_progress`: a run is already queued or running
+            for this database, named by `run_id`. Wait for it to end, then send
+            the request again. Without a code: the `Idempotency-Key` already
+            started a run of different files.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseMigrationConflictError'
+        '413':
+          description: The request body is larger than 4 MiB
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /projects/{id}/databases/{databaseName}/migration-runs/{runId}:
+    get:
+      tags:
+        - Database Migrations
+      summary: Get a migration run
+      description: |
+        Returns the run with each file's outcome. Poll this after starting a
+        run.
+
+        Available whether or not migration runs are.
+      operationId: getDatabaseMigrationRun
+      security:
+        - UserToken: []
+        - ProjectAccessToken: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/DatabaseName'
+        - $ref: '#/components/parameters/MigrationRunId'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseMigrationRun'
+        '404':
+          description: Project, database, or run not found
           content:
             application/json:
               schema:
@@ -10948,7 +12082,7 @@ paths:
 
         **Authentication:** Requires auth user access token (from signup/signin)
 
-        **Row-Level Security:** Automatically enforced - you see only data you have access to
+        **Row-Level Security:** Applied on tables with RLS enabled. A table without RLS returns every row your role is granted
 
         **Use Cases:**
         - Query from browser/mobile apps
@@ -11307,7 +12441,7 @@ paths:
 
         **Authentication:** Requires auth user access token (from signup/signin)
 
-        **Row-Level Security:** Automatically enforced - you see only data you have access to
+        **Row-Level Security:** Applied on tables with RLS enabled. A table without RLS returns every row your role is granted
 
         **Use Cases:**
         - Query from browser/mobile apps
@@ -16089,7 +17223,9 @@ paths:
                     grants everything. Scope enforcement applies to function invocation,
                     storage object operations, project locks, and server-side auth proxy
                     metadata (auth.signin, auth.signup, auth.refresh, auth.logout,
-                    auth.password_reset).
+                    auth.password_reset). A key scoped to a list without "*" reads and
+                    stops a durable execution only with the `client_token` its start
+                    returned.
                   example:
                     - functions.invoke
                     - locks.manage
@@ -17379,6 +18515,8 @@ paths:
         | `lavaflow` | The LavaFlow API: a project's AI diagnosis and fix settings |
         | `functions.response_streaming` | Streaming an HTTP-mode function's response on its own URL as the function writes it |
         | `frontend_routes` | Creating and changing Frontend routes; listing, deleting, and serving existing ones work either way |
+        | `frontends.candidates` | Creating, redeploying, promoting and rolling back to a frontend Candidate; reading, deleting and rolling back to the frontend's own runtime always work |
+        | `databases.migrations` | Starting migration runs and recording a baseline; reading history and runs works either way |
 
         A capability missing from the list is unavailable, and a capability under
         another, such as `sandboxes.sessions`, is unavailable whenever its parent is.
@@ -17416,6 +18554,10 @@ paths:
                   - id: functions.response_streaming
                     status: available
                   - id: frontend_routes
+                    status: available
+                  - id: frontends.candidates
+                    status: unavailable
+                  - id: databases.migrations
                     status: available
   /openapi.json:
     get:
@@ -17828,6 +18970,14 @@ components:
         type: string
         format: uuid
       description: Frontend ID
+    FrontendCandidateId:
+      name: candidateId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Frontend Candidate ID
     FrontendFunctionRouteId:
       name: routeId
       in: path
@@ -17941,7 +19091,8 @@ components:
       required: false
       description: |
         The `client_token` the execution's start returned. Lets an anon key,
-        or a user who did not start the execution, reach it.
+        or a user who did not start the execution, reach it, and a service key
+        scoped to a list without `*` read and stop it.
       schema:
         type: string
         maxLength: 128
@@ -18153,6 +19304,14 @@ components:
         type: string
         format: uuid
       description: Database restore ID
+    MigrationRunId:
+      name: runId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Database migration run ID
     SchedulerId:
       name: schedulerId
       in: path
@@ -19708,7 +20867,9 @@ components:
           type: string
           description: |
             Backup name, unique within the database. Names beginning with
-            `volcano-` are reserved for the platform's own snapshots.
+            `volcano-` are reserved for the platform's own snapshots, and names
+            beginning with `before-migration-` for the backups migration runs
+            take.
           pattern: ^[a-z0-9][a-z0-9_-]{0,62}$
           maxLength: 63
           example: before_migration
@@ -20264,10 +21425,11 @@ components:
           enum:
             - manual
             - scheduled
+            - migration
           description: |
-            Whether the backup was requested explicitly or produced by the
-            backup schedule. Only `manual` backups count against the plan's
-            backup allowance.
+            Whether the backup was requested explicitly, produced by the backup
+            schedule, or taken before migrations were applied to the database.
+            Only `manual` backups count against the plan's backup allowance.
         size_bytes:
           type: integer
           format: int64
@@ -20718,6 +21880,394 @@ components:
           type: string
           format: date-time
           description: The most recent point that can be restored, which is now.
+    DatabaseRestoreConflictError:
+      description: |
+        A restore refused by the database's state. With code
+        `migration_run_in_progress`, `run_id` names the migration run backing up
+        or applying to the database.
+      allOf:
+        - $ref: '#/components/schemas/Error'
+        - type: object
+          properties:
+            run_id:
+              type: string
+              format: uuid
+    DatabaseMigrationFile:
+      type: object
+      description: One migration file and its SQL.
+      properties:
+        name:
+          type: string
+          minLength: 5
+          maxLength: 320
+          pattern: ^([a-z0-9_]+/)?[^/\\]+\.sql$
+          description: |
+            The file's path under `volcano/migrations/`: a file name such as
+            `001_create_users.sql`, or `<database>/001_create_users.sql` in a
+            project with more than one database, where `<database>` must be
+            this database. Every file in a request takes the same form. Files
+            run in byte order of their file name, which the history records.
+          example: 001_create_users.sql
+        sql:
+          type: string
+          maxLength: 1048576
+          description: |
+            The file's SQL, at most 1 MiB. A file may hold several statements
+            and runs in one transaction. A file cannot commit, roll back, use
+            savepoints, or `COPY` from the client, and statements that cannot
+            run in a transaction, such as `CREATE INDEX CONCURRENTLY`, are not
+            supported yet; such a file fails with `migration_failed`.
+      required:
+        - name
+        - sql
+    DatabaseMigrationFilesRequest:
+      type: object
+      properties:
+        files:
+          type: array
+          minItems: 1
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/DatabaseMigrationFile'
+      required:
+        - files
+    DatabaseMigrationHistoryEntry:
+      type: object
+      description: One file the database's migration history records.
+      properties:
+        name:
+          type: string
+          example: 001_create_users.sql
+        checksum:
+          type: string
+          description: |
+            `sha256:` and the hex digest of the file as recorded, with a leading
+            byte order mark removed and CRLF line endings converted to LF.
+          example: sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+        status:
+          type: string
+          enum:
+            - applied
+            - baselined
+          description: |
+            `applied`: a run ran the file and it committed. `baselined`: the file
+            was recorded as applied without running.
+        applied_at:
+          type: string
+          format: date-time
+        run_id:
+          type: string
+          format: uuid
+          description: The run that recorded the file. Absent for a baseline.
+      required:
+        - name
+        - checksum
+        - status
+        - applied_at
+    DatabaseMigrations:
+      type: object
+      properties:
+        history:
+          type: array
+          description: Every file the history records, in name order.
+          items:
+            $ref: '#/components/schemas/DatabaseMigrationHistoryEntry'
+        active_run_id:
+          type: string
+          format: uuid
+          description: The run that is queued or running, if any.
+      required:
+        - history
+    DatabaseMigrationBaseline:
+      type: object
+      properties:
+        recorded:
+          type: array
+          description: |
+            The files this request recorded, in name order. Empty when the
+            history already recorded every file.
+          items:
+            type: string
+      required:
+        - recorded
+    DatabaseMigrationConflictError:
+      description: |
+        A migration request refused by the database's state. With code
+        `migration_run_in_progress`, `run_id` names the run that is queued or
+        running.
+      allOf:
+        - $ref: '#/components/schemas/Error'
+        - type: object
+          properties:
+            run_id:
+              type: string
+              format: uuid
+    DatabaseMigrationRunFile:
+      type: object
+      properties:
+        name:
+          type: string
+          example: 001_create_users.sql
+        outcome:
+          type: string
+          enum:
+            - pending
+            - already_applied
+            - applied
+            - failed
+            - not_run
+            - unknown
+          description: |
+            `pending`: not settled yet, including a file the run will try again
+            on its next attempt. `already_applied`: the history already recorded
+            it, so it did not run; a file can also end this way in `apply`, when
+            another session applied or baselined it after the run planned.
+            `applied`: this run applied it. `failed`: its own SQL failed and
+            its transaction rolled back, in the rehearsal or in the database as
+            the run's `phase` says, including when the run's time limit stopped
+            it; a file whose `COMMIT` failed is `unknown` instead. `not_run`:
+            the run ended before the file committed, without its SQL failing:
+            before `apply`, after an earlier file failed or lost its `COMMIT`,
+            or after the connection was lost or Volcano's own statements around
+            the file failed, which rolled it back. `unknown`: the run ended
+            in `apply` without confirming whether the file ran, for example
+            because its attempts ran out or its `COMMIT` failed or was cut
+            short. The file may have committed; the database's history says,
+            and the next run's plan applies it only if it is not recorded.
+            While the run is `queued` or `running`, each attempt reads the
+            history again before it runs a file, and sets every file the run
+            has not applied from it: `already_applied` if the history holds
+            it, `pending` otherwise.
+        error:
+          $ref: '#/components/schemas/DatabaseMigrationFileError'
+      required:
+        - name
+        - outcome
+    DatabaseMigrationFileError:
+      type: object
+      description: |
+        The database's error for a failed file. `message` is the database's own
+        message and can quote values from the file or the data.
+      properties:
+        message:
+          type: string
+          description: |
+            At most 8 KiB (8,192 bytes). A longer message is cut and ends with
+            ` … [truncated]`. Volcano reads each reply the database sends about
+            the file up to 4 MiB, which leaves room for a reply that quotes the
+            whole file twice. A larger reply is not read: the file fails, and
+            this message says so instead.
+          example: column "email" of relation "users" already exists
+        sqlstate:
+          type: string
+          description: The Postgres error code, when the database reported one.
+          example: '42701'
+        line:
+          type: integer
+          minimum: 1
+          description: The line of the file the database reported, when known.
+      required:
+        - message
+    DatabaseMigrationWarning:
+      type: object
+      description: A condition the run reports that did not stop it.
+      properties:
+        code:
+          type: string
+          enum:
+            - out_of_order
+            - missing_file
+            - rehearsal_skipped
+            - backup_skipped
+            - backup_prune_failed
+            - warnings_truncated
+          description: |
+            `out_of_order`: a pending file sorts before one the history already
+            records; it still ran. `missing_file`: the history records a file
+            the run did not include. `rehearsal_skipped`: the files were not
+            rehearsed, because branches are not available here or on the plan.
+            `backup_skipped`: no backup was taken, because backups are not
+            available here or on the plan. `backup_prune_failed`: Volcano
+            could not delete older migration backups beyond the 20 it keeps;
+            the run's outcome is unaffected, and the next run that takes a
+            backup tries again. `warnings_truncated`: the run raised more than
+            100 warnings; it is the last one, and its message says how many
+            more were not kept.
+        file:
+          type: string
+          description: The file the warning is about, when it is about one.
+        message:
+          type: string
+      required:
+        - code
+        - message
+    DatabaseMigrationRunError:
+      type: object
+      description: Why the run failed, or why its last attempt did.
+      properties:
+        code:
+          type: string
+          enum:
+            - migration_failed
+            - checksum_mismatch
+            - history_missing
+            - history_too_large
+            - invalid_file
+            - invalid_layout
+            - plan_changed
+            - branch_limit
+            - rehearsal_unavailable
+            - backup_failed
+            - restore_in_progress
+            - database_unavailable
+            - locked
+            - connection_failed
+            - timeout
+            - attempts_exhausted
+            - internal_error
+            - operator_failed
+          description: |
+            Stable machine-readable reason. `migration_failed`: a file's SQL,
+            or its `COMMIT`, failed; `phase` says whether in the rehearsal,
+            leaving the database untouched, or in the database, where the files
+            before it stay applied. `checksum_mismatch`: an applied file changed.
+            `history_missing`: the database's history table is gone though
+            migrations ran there; record a baseline of the files already
+            applied. Dropping the whole `_volcano_migrations` schema is not
+            supported and not detected: the database reads as new, and the run
+            applies every file again. `history_too_large`: the history has
+            more than the 1,000 entries Volcano reads. `invalid_file`: a file
+            Volcano refuses to run. `invalid_layout`: file paths that do not map
+            to the database.
+            `plan_changed`: the history changed after the rehearsal.
+            `branch_limit`: the rehearsal branch would exceed the plan's branch
+            allowance. `backup_failed` and `rehearsal_unavailable`: Volcano
+            could not take the backup or prepare the rehearsal.
+            `restore_in_progress` and `database_unavailable`: the database could
+            not take the run. `locked`: another session held the migration lock,
+            or a file waited too long for a lock. `connection_failed`: the
+            database could not be reached, or the connection was lost,
+            including while a file ran. `internal_error`: Volcano failed for a
+            reason of its own, such as its own statements around a file.
+            `timeout` and `attempts_exhausted`: the run could not finish.
+            `operator_failed`: Volcano ended a run that stopped making
+            progress; read the history to see which files were applied, then
+            start a new run.
+        message:
+          type: string
+          description: |
+            What happened, naming files and Postgres error codes. The
+            database's own message is on the failed file.
+      required:
+        - code
+        - message
+    DatabaseMigrationRun:
+      type: object
+      description: |
+        One application of migration files to a database. A run plans the files
+        against the database's history, rehearses the pending ones on a
+        short-lived branch, takes a backup, and applies them.
+      properties:
+        id:
+          type: string
+          format: uuid
+        database:
+          $ref: '#/components/schemas/ResourceReference'
+        status:
+          type: string
+          enum:
+            - queued
+            - running
+            - succeeded
+            - failed
+          description: |
+            `queued` and `running` mean the run has not ended; a run waiting
+            to retry stays `running`. `succeeded`: every pending file was
+            applied, or none was pending. `failed`: `error` says why.
+        phase:
+          type: string
+          enum:
+            - plan
+            - rehearse
+            - backup
+            - apply
+          x-enum-varnames:
+            - DatabaseMigrationRunPhasePlan
+            - DatabaseMigrationRunPhaseRehearse
+            - DatabaseMigrationRunPhaseBackup
+            - DatabaseMigrationRunPhaseApply
+          description: |
+            The step the run is on, or the one it ended on. `plan` compares the
+            files with the history. `rehearse` applies the pending files to a
+            short-lived branch of the database, which is deleted afterwards.
+            `backup` takes the backup named by `backup_name`. `apply` applies
+            the files to the database.
+        source:
+          type: string
+          enum:
+            - git_deploy
+            - api
+          description: What started the run.
+        commit_sha:
+          type: string
+          description: The commit whose files the run applies. Present for `git_deploy` runs.
+        backup_name:
+          type: string
+          description: |
+            The backup the run takes before it applies the files, named once
+            the run starts taking it. It is listed with the database's backups
+            with `source: migration`. A run that ended in its `backup` phase
+            may name a backup that was never created.
+          example: before-migration-7f3a1c2e-5d4b-4a91-8c6f-2b1e9d0a4c73
+        files:
+          type: array
+          description: |
+            The run's files, in the order they run, with what became of each.
+            Absent when listing runs.
+          items:
+            $ref: '#/components/schemas/DatabaseMigrationRunFile'
+        warnings:
+          type: array
+          maxItems: 101
+          description: |
+            A run keeps at most 100 warnings, keeping those about the run, such
+            as a skipped backup, ahead of those about files. A run that raised
+            more ends the list with a `warnings_truncated` warning.
+          items:
+            $ref: '#/components/schemas/DatabaseMigrationWarning'
+        error:
+          $ref: '#/components/schemas/DatabaseMigrationRunError'
+        started_at:
+          type: string
+          format: date-time
+          description: When a worker first picked the run up.
+        completed_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - database
+        - status
+        - phase
+        - source
+        - warnings
+        - created_at
+        - updated_at
+    DatabaseMigrationRunList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/DatabaseMigrationRun'
+      required:
+        - data
     DatabaseStats:
       type: object
       properties:
@@ -21805,6 +23355,16 @@ components:
           type: string
           format: uuid
           description: Newest queued deployment that will run after the current operation
+        serving_candidate_id:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+          description: |
+            The promoted Candidate whose runtime receives this frontend's traffic, the same as
+            `candidate_id` in `serving`. Null when the frontend serves its own runtime. While it is
+            set, `current_deployment_id` and `status` describe a deployment that receives no traffic,
+            and deploying the frontend is refused until it is rolled back.
         site_url:
           type: string
         custom_domain:
@@ -21858,10 +23418,151 @@ components:
         - framework
         - status
         - deployed_regions
+        - serving_candidate_id
         - function_routes
         - frontend_routes
         - created_at
         - updated_at
+    FrontendCandidate:
+      type: object
+      additionalProperties: false
+      description: |
+        A copy of a frontend built from an uploaded archive with the frontend's own configuration, so
+        it can be checked before anything is promoted. A Candidate is reachable by anyone who holds its
+        URL and is not indexed or listed; it is never public, and it does not claim to be private.
+      properties:
+        id:
+          type: string
+          format: uuid
+        frontend_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 128
+        status:
+          type: string
+          enum:
+            - creating
+            - ready
+            - deleting
+            - error
+          description: |
+            `creating` until its first deployment succeeds, `ready` while it serves, `deleting` while
+            its runtime is removed, and `error` when its deletion gave up and needs an operator.
+        url:
+          type: string
+          format: uri
+          description: Where the Candidate is served. Absent until its first deployment succeeds.
+        expires_at:
+          type: string
+          format: date-time
+          description: When the Candidate is deleted on its own. Absent when it is kept until deleted.
+        current_deployment_id:
+          type: string
+          format: uuid
+          description: |
+            The deployment the Candidate serves. Absent until its first
+            deployment succeeds. It differs from `deployment` while a redeploy runs or after one failed.
+        deployment:
+          $ref: '#/components/schemas/FrontendCandidateDeployment'
+        configuration_status:
+          type: string
+          enum:
+            - current
+            - changed
+          description: |
+            Present while the Candidate serves a deployment. `current` means that deployment was built
+            with the variables the frontend selects now; `changed` means they differ, or can no longer
+            be resolved. Promotion refuses a Candidate whose status is `changed`.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - frontend_id
+        - name
+        - status
+        - created_at
+        - updated_at
+    FrontendCandidateDeployment:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - provisioning
+            - active
+            - failed
+          description: |
+            `provisioning` while the build and deploy run, `active` once the Candidate serves this
+            deployment, and `failed` when it could not be built or deployed. A failed deployment of a
+            Candidate that already served keeps the previous deployment serving.
+        configuration_digest:
+          type: string
+          pattern: ^sha256:[0-9a-f]{64}$
+          description: Identifies the resolved configuration the deployment was built with. It carries no value.
+        error_message:
+          type: string
+          description: Why a failed deployment failed.
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          description: Set once the deployment is no longer provisioning.
+      required:
+        - id
+        - status
+        - configuration_digest
+        - created_at
+    FrontendServing:
+      type: object
+      additionalProperties: false
+      description: |
+        What a frontend serves. Until a Candidate is promoted it serves its own runtime and
+        `candidate_id` is null. After a promotion, the frontend's traffic is routed to that
+        Candidate's runtime, nothing is rebuilt or copied, and `previous_candidate_id` is the runtime a
+        rollback returns to (null when that is the frontend's own). A Candidate that serves cannot be
+        deleted and does not expire. One kept only as the runtime a rollback returns to does not
+        expire either, but it can be deleted, which gives up that rollback; the frontend's own
+        runtime stays one `to_production` rollback away.
+      properties:
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Counts changes to what the frontend serves or can roll back to — promotions, rollbacks, and deleting the Candidate kept for a rollback. A promotion or rollback names the revision it read, so one that read before such a change fails with `409` instead of overwriting it; read the serving state again and retry.
+        candidate_id:
+          type: string
+          format: uuid
+          nullable: true
+        previous_candidate_id:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+        - revision
+        - candidate_id
+        - previous_candidate_id
+    FrontendCandidateList:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FrontendCandidate'
+      required:
+        - data
     FrontendFunctionRoute:
       type: object
       additionalProperties: false
@@ -22719,11 +24420,18 @@ components:
             - $ref: '#/components/schemas/FunctionVisibility'
           description: |
             Who may start executions of this function through
-            `POST /durable-functions/{functionId}/executions`: service keys at
-            every level, signed-in users of the project from `authenticated`,
-            and anon keys holding `functions.invoke` only at `public`. Reading
-            and stopping an execution always require the project owner's
-            token, whatever this is set to.
+            `POST /durable-functions/{functionId}/executions`, and read and stop
+            them through `GET /durable-functions/{functionId}/executions/{executionId}`
+            and its `/stop`: service keys at every level (a scoped key needs
+            `functions.invoke`), signed-in users of the project from
+            `authenticated`, and anon keys holding `functions.invoke` only at
+            `public`. On the read and stop routes a service key holding `*`,
+            the default, reaches every execution. A service key scoped to a
+            list without `*` and an anon key reach the ones whose client token
+            they send, which the start returns, and a signed-in user also the
+            ones they started. The project-scoped routes under
+            `/projects/{id}/durable-functions` take the project owner's token or
+            a project access token, whatever this is set to.
 
             Set it when the function is deployed. Durable functions have no
             update endpoint, so changing visibility later means redeploying.
@@ -22801,7 +24509,10 @@ components:
           description: |
             How long a finished execution's result and history are retained, for
             as long as the function exists. Deleting the function, or its
-            project, ends retention early and takes the history with it.
+            project, ends retention early and takes the history with it. A
+            result or error Volcano has just read is kept in memory for up to
+            five minutes, so a read can still return it for up to five minutes
+            after retention ends.
       required:
         - execution_timeout_seconds
         - retention_days
@@ -22831,7 +24542,8 @@ components:
             Whatever the function returned, verbatim. Absent while the execution
             is still running, absent when the result was too large to return and
             was checkpointed instead, and absent once the retention period has
-            lapsed.
+            lapsed. A result Volcano has just read can still be returned for up
+            to five minutes after that.
         result_expired:
           type: boolean
           description: |
@@ -22854,9 +24566,11 @@ components:
         client_token:
           type: string
           description: |
-            Lets a browser read and send the execution's messages. Returned only
-            by the start whose input the execution runs, never by a repeat under
-            the same name or by a read. Send it as `X-Volcano-Client-Token`.
+            Lets a browser read the execution, stop it, and read and send its
+            messages, and a service key scoped to a list without `*` read and
+            stop it. Returned only by the start whose input the execution runs,
+            never by a repeat under the same name or by a read. Send it as
+            `X-Volcano-Client-Token`.
       required:
         - id
         - function_id
@@ -24557,6 +26271,14 @@ components:
           description: The innermost frame of your code in the stack, as `function (file)`. For a frontend's Next.js build output, the outermost route or page file of the build in the stack, such as `.next/server/app/checkout/route.js`, or without one, the outermost file of the build. Omitted without a stack.
         status:
           $ref: '#/components/schemas/IssueStatus'
+        exception:
+          type: boolean
+          description: |
+            Whether the issue holds an exception: one your code threw, or one it
+            logged with `console.error(err)` or Python's `logger.exception()`.
+            Only these start LavaFlow runs on their own. `false` for an error
+            logged any other way, such as a structured log line, a logger's
+            error line, or a printed traceback. Once `true`, it stays `true`.
         event_count:
           type: integer
           format: int64
@@ -24597,6 +26319,7 @@ components:
         - resource
         - title
         - status
+        - exception
         - event_count
         - first_seen_at
         - last_seen_at
@@ -24771,7 +26494,7 @@ components:
         - LavaFlowRunStatusSucceeded
         - LavaFlowRunStatusFailed
         - LavaFlowRunStatusCanceled
-      description: Where a run is. `canceled` means the project's settings or plan stopped allowing the run before it finished; `failure_code` says which. A `running` run about to open its pull request returns to `queued` when LavaFlow pauses its runs, with `failure_code` `feature_paused`.
+      description: Where a run is. `canceled` means the project's settings or plan stopped allowing the run before it finished; `failure_code` says which. When LavaFlow pauses its runs, an attempt in progress stops at any stage and its run returns to `queued` with `failure_code` `feature_paused`, without spending an attempt. A `running` run waiting to retry a failed attempt keeps its status and waits until runs resume.
     LavaFlowRunTrigger:
       description: What started the run, named by `type`. Every run today has `type` `issue`. Other types will carry their own fields, so treat a `type` you do not know as another kind of trigger, not as an error.
       oneOf:
@@ -24965,6 +26688,8 @@ components:
         - permission_missing
         - repository_changed
         - publish_failed
+        - possible_credential
+        - possible_personal_data
       x-enum-varnames:
         - LavaFlowPullRequestSkippedSourceUnavailable
         - LavaFlowPullRequestSkippedPullRequestOpen
@@ -24974,6 +26699,8 @@ components:
         - LavaFlowPullRequestSkippedPermissionMissing
         - LavaFlowPullRequestSkippedRepositoryChanged
         - LavaFlowPullRequestSkippedPublishFailed
+        - LavaFlowPullRequestSkippedPossibleCredential
+        - LavaFlowPullRequestSkippedPossiblePersonalData
       description: Why a run whose `max_stage` is `pull_request` opened no pull request. The diagnosis stands either way.
     LavaFlowRun:
       type: object
@@ -24991,7 +26718,9 @@ components:
         status:
           $ref: '#/components/schemas/LavaFlowRunStatus'
         max_stage:
-          $ref: '#/components/schemas/LavaFlowStage'
+          allOf:
+            - $ref: '#/components/schemas/LavaFlowStage'
+          description: How far the run may go. Lowered to `diagnose` when the project lowers its `max_stage` before the run publishes; it never rises.
         stage_reached:
           allOf:
             - $ref: '#/components/schemas/LavaFlowStage'
@@ -25011,7 +26740,7 @@ components:
           $ref: '#/components/schemas/LavaFlowCommitOrigin'
         failure_code:
           type: string
-          description: 'Why the run failed or was canceled, or why its last attempt will be retried. A queued run paused while LavaFlow is unavailable reports `feature_unavailable`; it resumes without spending an attempt when LavaFlow returns. A queued run waiting while LavaFlow''s runs are paused reports `feature_paused`; it resumes without spending an attempt when they resume. A run paused after it wrote a fix keeps its `diagnosis`, `patch`, and `commit_sha`, and opens its pull request on resume. Other values are `model_request_rejected`, `model_unavailable`, `model_refused`, `no_diagnosis`, `budget_exhausted`, `timed_out`, `attempts_exhausted`, `lavaflow_disabled`, `plan_required`, `issue_not_found`, or `internal_error`. Older runs may also report codes no new run does: `autofix_disabled` (now `lavaflow_disabled`), and `api_key_rejected`, `settings_changed`, or `managed_models_unavailable` from before Volcano picked the models for every run.'
+          description: 'Why the run failed or was canceled, or why its last attempt will be retried. A queued run paused while LavaFlow is unavailable reports `feature_unavailable`; it resumes without spending an attempt when LavaFlow returns. A queued run waiting while LavaFlow runs are paused, including one a pause stopped mid-run, reports `feature_paused`; it resumes without spending an attempt when runs resume. A run paused after it saved a fix keeps its `diagnosis`, `patch`, and `commit_sha`, and opens its pull request on resume; one paused before that diagnoses again. Other values are `model_request_rejected`, `model_unavailable`, `model_refused`, `no_diagnosis`, `budget_exhausted`, `timed_out`, `attempts_exhausted`, `lavaflow_disabled`, `plan_required`, `issue_not_found`, or `internal_error`. Older runs may also report codes no new run does: `autofix_disabled` (now `lavaflow_disabled`), and `api_key_rejected`, `settings_changed`, or `managed_models_unavailable` from before Volcano picked the models for every run.'
         failure_message:
           type: string
         created_at:

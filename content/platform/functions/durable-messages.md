@@ -213,7 +213,7 @@ A send that arrives in the moments before Volcano has seen the execution end is 
 
 ## Who can send and read
 
-The same rule covers sending, listing, and subscribing on the application endpoint. First the function's [visibility](durable-functions.md#who-can-start-executions) has to admit the caller. Sends and lists check it on every request, so a function made private stops answering them at once; a [subscription](#subscribe-to-an-execution) is checked when it is made and about once a minute while it is open, and ends when the check fails. Then the caller has to be allowed to reach the execution:
+The same rule covers sending, listing, and subscribing on the application endpoint, and [reading](durable-functions.md#wait-for-the-result) and [stopping](durable-functions.md#stop-an-execution) the execution itself, where a service key scoped to a list without `*` also needs the client token. First the function's [visibility](durable-functions.md#who-can-start-executions) has to admit the caller. Sends and lists check it on every request, so a function made private stops answering them at once; a [subscription](#subscribe-to-an-execution) is checked when it is made and about once a minute while it is open, and ends when the check fails. Then the caller has to be allowed to reach the execution:
 
 | Credential                    | Reaches                                                                           |
 | ----------------------------- | --------------------------------------------------------------------------------- |
@@ -241,9 +241,9 @@ Every start whose input an execution runs returns a `client_token` with it, what
 }
 ```
 
-Send it as `X-Volcano-Client-Token` to reach that execution with an anon key, or as a signed-in user who did not start it. A backend that starts the execution with the service key can hand the token to the browser that should talk to it.
+Send it as `X-Volcano-Client-Token` to reach that execution with an anon key, or as a signed-in user who did not start it: its messages, its status, and stopping it. A backend that starts the execution with the service key can hand the token to the browser that should talk to it.
 
-Volcano stores only a hash of the token, and a repeated start under the same execution name never returns it, because execution names are guessable. If the start response is lost, the token is lost too: the service key and the user who started the execution can still reach it. If the start fails with a `5xx`, retry it under the same name. A retry that begins the execution returns a token, and its caller becomes the one who started it. A retry that finds the first start did begin returns the execution without one. An anon-key client that then needs the token can start under a new execution name, which may run the work twice.
+Volcano stores only a hash of the token, and a repeated start under the same execution name never returns it, because execution names are guessable. If the start response is lost, the token is lost too: a service key holding `*` and the user who started the execution can still reach it. If the start fails with a `5xx`, retry it under the same name. A retry that begins the execution returns a token, and its caller becomes the one who started it. A retry that finds the first start did begin returns the execution without one. An anon-key client that then needs the token can start under a new execution name, which may run the work twice.
 
 The service key can retry any start that failed before it began. A signed-in user can retry only their own, and an anon key only one an anon key made. Any other retry under that name answers `409`, so pick a name of your own.
 

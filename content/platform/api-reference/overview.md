@@ -199,7 +199,8 @@ curl "https://api.volcano.dev/capabilities"
     { "id": "issues", "status": "available" },
     { "id": "lavaflow", "status": "available" },
     { "id": "functions.response_streaming", "status": "available" },
-    { "id": "frontend_routes", "status": "available" }
+    { "id": "frontend_routes", "status": "available" },
+    { "id": "databases.migrations", "status": "available" }
   ]
 }
 ```
@@ -213,6 +214,7 @@ curl "https://api.volcano.dev/capabilities"
 | `lavaflow`                     | The LavaFlow API: a project's AI diagnosis and fix settings                                                                            |
 | `functions.response_streaming` | [Streaming a response](../functions/invoking-functions.md#stream-a-response) on a function's own URL                                   |
 | `frontend_routes`              | Creating and changing [Frontend routes](../frontends/frontend-routes.md); listing, deleting, and serving existing ones work either way |
+| `databases.migrations`         | Starting [migration runs](../guides/migrations.md) and recording a baseline; reading history and runs works either way                 |
 
 The endpoint needs no token, and every caller in an environment gets the same
 answer. While a capability is `unavailable`, requests that start new work
@@ -293,6 +295,8 @@ See [Functions](functions.md) for details.
 | `DELETE` | `/projects/{id}/durable-functions/{functionId}`                                     | Delete a durable function                                                                   |
 | `GET`    | `/projects/{id}/durable-functions/{functionId}/deployments`                         | List durable function deployments                                                           |
 | `POST`   | `/durable-functions/{functionId}/executions`                                        | Start an execution with an application credential                                           |
+| `GET`    | `/durable-functions/{functionId}/executions/{executionId}`                          | Get an execution with an application credential                                             |
+| `POST`   | `/durable-functions/{functionId}/executions/{executionId}/stop`                     | Stop an execution with an application credential                                            |
 | `POST`   | `/projects/{id}/durable-functions/{functionId}/executions`                          | Start an execution as the project owner                                                     |
 | `GET`    | `/projects/{id}/durable-functions/{functionId}/executions`                          | List executions                                                                             |
 | `GET`    | `/projects/{id}/durable-functions/{functionId}/executions/{executionId}`            | Get an execution                                                                            |
