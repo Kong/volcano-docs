@@ -2,6 +2,8 @@
   "pages": [
     "index",
     "pixel-board",
+    "petstore-api",
+    "mcp-server",
     "..."
   ]
 }
