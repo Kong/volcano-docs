@@ -793,5 +793,6 @@ until it is active, or remove it and attach it again with the other mode.
 - [Deploy a frontend](deploy.md) — step-by-step with the CLI.
 - [Frontend Function routes](function-routes.md) — serve a function under a frontend path.
 - [Frontend routes](frontend-routes.md) — serve another frontend under a frontend path.
+- [Frontend previews](previews.md) — deploy a build to its own URL, then promote or roll back.
 - [Frontend API reference](../api-reference/frontend-endpoints.md) — the HTTP surface.
 - [CLI reference](/cli) — every `volcano cloud frontends` command.

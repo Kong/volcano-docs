@@ -367,8 +367,8 @@ async function getLinkedProviders() {
   const data = await response.json();
 
   // data.providers = [
-  //   { provider: 'google', linked_at: '...', updated_at: '...' },
-  //   { provider: 'github', linked_at: '...', updated_at: '...' }
+  //   { provider: 'google', provider_user_id: '1081…', linked_at: '...', updated_at: '...' },
+  //   { provider: 'github', provider_user_id: '583231', provider_login: 'octocat', linked_at: '...', updated_at: '...' }
   // ]
 
   return data.providers;
@@ -451,7 +451,7 @@ async function unlinkProvider(provider) {
   if (response.status === 400) {
     const data = await response.json();
     if (data.error.includes('last authentication method')) {
-      alert('You need to set a password before unlinking this provider');
+      alert('Link another way to sign in before unlinking this provider');
       return;
     }
   }

@@ -7,10 +7,6 @@ A durable function can hand work to a system you do not run code in, such as a p
 
 Callbacks need `@volcano.dev/sdk` 2.2 or `volcano-sdk-python` 0.16. Earlier releases have no `ctx.waitForCallback`.
 
-> **Coming soon.** `@volcano.dev/sdk` 2.2 and `volcano-sdk-python` 0.16 are not
-> released yet, and Volcano does not serve the `/durable-callbacks` requests
-> below yet.
-
 ```javascript
 const { CallbackFailedError, durable } = require('@volcano.dev/sdk/durable');
 
@@ -126,6 +122,14 @@ A token is `vcb_` followed by 43 URL-safe characters. Volcano looks it up by a h
 ## Answer a callback
 
 Each route takes the token in the body and no other authentication.
+
+From a shell, the CLI sends the same requests without a login. Pass `-` in place of the token to read it from stdin, which keeps it out of your shell history and the process list:
+
+```bash
+printf '%s' "$CALLBACK_TOKEN" | volcano cloud durable callbacks succeed - --result '{"charge_id": "ch_1"}'
+```
+
+`fail - --type CardDeclined` and `heartbeat -` read the token the same way. See [durable functions in the CLI](/cli/durable-functions#callbacks).
 
 ### Succeed it
 

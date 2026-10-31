@@ -29,6 +29,7 @@ curl "https://api.volcano.dev/projects/$PROJECT_ID/issues?status=open" \
       "error_type": "TypeError",
       "culprit": "chargeCustomer (src/payments.js)",
       "status": "open",
+      "exception": true,
       "event_count": 42,
       "first_seen_at": "2026-10-13T09:12:04Z",
       "last_seen_at": "2026-10-13T11:47:31Z",
@@ -85,12 +86,15 @@ Volcano groups errors by:
   included, and its numbers replaced, so objects of the same shape are one
   issue. A line whose own `level` is below error, such as pino's `40`,
   `"warn"`, or winston's `"verbose"`, is not an issue. An error you log this
-  way is a separate issue from the same error thrown, and never starts a
-  [LavaFlow](lavaflow.md) run on its own.
+  way is a separate issue from the same error thrown.
 - **Printed tracebacks.** A Python traceback you log as text, such as
   `traceback.format_exc()`, groups by its type and frames. Like a structured
-  log, it is a separate issue from the same error raised and never starts a
-  LavaFlow run on its own.
+  log, it is a separate issue from the same error raised.
+
+`exception` is `true` when an issue holds an exception: one your code threw, or
+one it logged with `console.error(err)` or Python's `logger.exception()`. It is
+`false` for an issue grouped only from messages, structured logs, or printed
+tracebacks, and once `true`, it stays `true`.
 
 In local mode, output a function writes to stderr without a level of its own is
 at `error` level, so only an exception becomes an issue: one your code threw or
@@ -194,11 +198,6 @@ The response is the whole issue; it is shortened here.
 An issue resolved at `resolved_at` that is seen again after that moment
 reopens as `open`, and `regressed_at` records when. Set `status` back to
 `open` yourself to reopen it.
-
-When you merge a [LavaFlow](lavaflow.md) pull request, the issue resolves once a
-deployment that includes the fix goes live, with `resolved_at` set to that
-moment. Errors from the previous deployment while the fix rolls out do not
-reopen it.
 
 ## Credentials
 

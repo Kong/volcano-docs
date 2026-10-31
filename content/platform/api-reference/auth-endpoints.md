@@ -75,7 +75,8 @@ request uses eligible cookie session storage.
 
 - `400` - Missing email/password
 - `401` - Invalid credentials, invalid/tampered/revoked anon key, or account banned/deleted
-- `403` - Anon key lacks `auth.signin` permission, or the email domain is not in
+- `403` - Anon key lacks `auth.signin` permission, email/password is turned off
+  for the project (`enable_email_password: false`), or the email domain is not in
   `allowed_email_domains` while `allowed_email_domains_mode` is
   `signup_and_signin`. The domain is taken from the account's canonical email —
   its primary identity — which is not necessarily the address you sign in with
@@ -286,7 +287,7 @@ Content-Type: application/json
 **Errors:**
 
 - `401` - Missing/invalid anon key
-- `403` - Password reset disabled or CORS blocked
+- `403` - Password reset or email/password turned off, or CORS blocked
 
 ---
 
@@ -325,7 +326,7 @@ Content-Type: application/json
 
 - `400` - Password doesn't meet requirements or in password history
 - `401` - Invalid/expired token
-- `403` - Password reset disabled
+- `403` - Password reset or email/password turned off
 
 ---
 
@@ -419,6 +420,7 @@ Merging is shallow: a nested object replaces the stored value for that top-level
 **Errors:**
 
 - `400` - Password doesn't meet requirements or in password history
+- `403` - A non-empty `password` sent while email/password is turned off; nothing is updated
 
 ---
 

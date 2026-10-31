@@ -120,8 +120,6 @@ curl -H "Authorization: Bearer $VOLCANO_TOKEN" \
 
 A frontend deployed from another frontend's build carries the commit of the deployment it publishes. A redeploy reports no commit; it serves the code of the deployment that built its artifact.
 
-[LavaFlow](lavaflow.md) reads source and opens pull requests for a deployment built by a Git push, or for one whose commit is verified and has `dirty: false`. Any other deployment still gets a diagnosis, without a pull request.
-
 ## Attribution
 
 Request-initiated deployments (`cli`, `web`, `api`) also record `initiated_by`, the platform user that triggered them. `git` and `system` deployments have no user actor, so `initiated_by` is absent.

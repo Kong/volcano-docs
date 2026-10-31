@@ -59,6 +59,23 @@ request is served. For a custom template, use a region in its verified deploymen
 New regions appear after their deployment is ready and the corresponding images
 have passed verification.
 
+### Temporarily unavailable regions
+
+`us-west-2` is temporarily unavailable for Sandboxes. The catalog omits it, and
+a new session or one-shot execution there answers `400`:
+
+```json
+{
+  "error": "this region is temporarily unavailable for Sandboxes; choose another region from GET /sandboxes/presets",
+  "code": "sandbox_region_unavailable"
+}
+```
+
+Choose another region from the catalog. Sessions already in `us-west-2` stay
+readable and can be terminated, and templates and deployments are unchanged. A
+custom template deployed while the region is unavailable builds no image there;
+redeploy it once the region returns to start sessions there.
+
 ## Keep a session alive
 
 Create a session, then poll its returned ID until `state` is `running`:
@@ -274,6 +291,8 @@ active connections; clients must obtain fresh access and reconnect after expiry.
 
 Include the authorization, content type, and idempotency headers shown above.
 Use the returned ID as `sandbox_id` in later session or execution requests.
+A named Sandbox keeps the preset image it was created with. To move to a
+later preset update, delete it and create it again with a new idempotency key.
 `PATCH /projects/{id}/sandboxes/{sandboxId}` changes its name. `DELETE` stops
 new sessions and requests termination of its existing sessions. You can reuse
 the name with a new idempotency key. Replaying the deleted Sandbox’s creation
@@ -438,7 +457,11 @@ templates are not enabled, a deployment request returns `404` with code
 `feature_unavailable`.
 
 Place a `Dockerfile` fragment and its files in a directory. Volcano supplies the
-base image and supervisor. Use `RUN`, `COPY`, `ENV`, `WORKDIR` within `/workspace`,
+base image and supervisor. The base image is Amazon Linux 2023 on arm64 in the
+cloud; local mode uses your machine's architecture. Compile binaries in a `RUN`
+step so they match either one. A binary built elsewhere and copied in must target
+`linux/arm64` for the cloud and your machine's architecture for local mode.
+Use `RUN`, `COPY`, `ENV`, `WORKDIR` within `/workspace`,
 and `CMD`; omit `FROM`, `ENTRYPOINT`, and `USER`.
 Use JSON-array `CMD` to pass arguments literally, without shell expansion.
 Shell-form `CMD` explicitly runs a shell and supports expansion and pipelines.
@@ -487,6 +510,27 @@ operator recovery, so a new Git deployment fails immediately instead of waiting.
 
 Create sessions with `sandbox_id` after activation. Sessions retain the exact
 image they started with even when a later deployment activates.
+
+In the cloud, Volcano starts your `CMD` service once while it builds the
+template, then starts every session from a saved copy of that running service,
+memory included. Anything the service creates at startup is the same in many
+sessions: random tokens, keys, IDs, and random generators seeded at startup.
+Create those values when a session first needs them, and read randomness from
+the operating system at that point, for example with Python `secrets` or Go
+`crypto/rand`. Local mode starts `CMD` separately in each session.
+
+When a session starts, Volcano reseeds the operating system's random generator,
+so reads from it differ between sessions. A custom template or named Sandbox
+keeps the image it was saved with: redeploy the template, or delete and
+recreate the named Sandbox, to pick this up. A process that was already running when the copy was saved keeps its
+own in-memory generator, such as OpenSSL's or a language's seeded random
+module, and can return the same values in many sessions. Start such processes
+after the session starts, or reseed them then.
+
+Don't build secrets into a template. Its files, `ENV` values, and startup
+memory are shared by every session. Pass a secret after the session starts,
+in the `environment` field of an exec request or as a file written with
+[the files API](#read-and-write-files).
 
 Read build logs with
 `GET /projects/{id}/sandboxes/{sandboxId}/deployments/{deploymentId}/logs?region=aws-us-east-1`.
