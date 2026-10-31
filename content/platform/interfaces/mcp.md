@@ -174,12 +174,12 @@ A **platform token (`pk-`) is refused with `403`.** The endpoint takes its proje
 | `list_durable_message_waits`  | `read_only` | Lists the message names an execution is waiting on                                                   | `GET /projects/{id}/durable-functions/{functionId}/executions/{executionId}/message-waits` |
 | `list_issues`                 | `read_only` | Lists runtime errors grouped into issues, most recently seen first                                   | `GET /projects/{id}/issues`                                                                |
 | `get_issue`                   | `read_only` | Returns one issue with its resource, error, counts, and status                                       | `GET /projects/{id}/issues/{issueId}`                                                      |
-| `get_lavaflow_settings`       | `read_only` | Returns whether LavaFlow is on, how far a run may go, and whether runs start on their own            | `GET /projects/{id}/lavaflow`                                                              |
-| `list_lavaflow_runs`          | `read_only` | Lists LavaFlow runs, newest first                                                                    | `GET /projects/{id}/lavaflow-runs`                                                         |
-| `get_lavaflow_run`            | `read_only` | Returns one LavaFlow run with its diagnosis, patch, pull request, or failure                         | `GET /projects/{id}/lavaflow-runs/{runId}`                                                 |
+| `get_git_owner_push`          | `read_only` | Checks whether the project owner can push to the connected repository, and why not                   | `GET /projects/{id}/git-connection/owner-push`                                             |
 | `list_schedulers`             | `read_only` | Lists the project's function schedulers with their schedule, next run, and health                    | `GET /projects/{id}/schedulers`                                                            |
 | `list_capabilities`           | `read_only` | Lists which capabilities, such as Sandboxes, accept new work in this environment                     | `GET /capabilities`                                                                        |
 | `list_variable_environments`  | `read_only` | Lists the project's variable Environments                                                            | `GET /projects/{id}/variable-environments`                                                 |
+| `list_git_deployment_runs`    | `read_only` | Lists the runs Git pushes started, newest first, with each one's migration runs and error            | `GET /projects/{id}/git-deployment-runs`                                                   |
+| `get_git_deployment_run`      | `read_only` | Returns one Git deployment run                                                                       | `GET /projects/{id}/git-deployment-runs/{runId}`                                           |
 | `list_databases`              | `full`      | Lists the project's databases. Returns connection strings                                            | `GET /projects/{id}/databases`                                                             |
 | `set_variable`                | `full`      | Creates or updates an environment variable                                                           | `POST /projects/{id}/variables`                                                            |
 | `create_variable_environment` | `full`      | Creates a custom variable Environment                                                                | `POST /projects/{id}/variable-environments`                                                |
@@ -314,13 +314,13 @@ A call that ran and failed comes back as a tool result with `isError` set and th
 }
 ```
 
+When the route answers with `Retry-After`, the text carries the wait, such as `get_git_owner_push failed with HTTP 503, retry after 5s: ...`. Wait that long before calling the tool again.
+
 A JSON-RPC error means the request itself was wrong — an unknown tool or bad params (`-32602`), an unknown method (`-32601`) — and nothing ran.
 
 Results are capped at 64 KiB. Past that the text ends with a note saying it was truncated and to narrow the request, so an agent knows it is reading a prefix. Use `limit` and the `search_logs` filters rather than paging through a truncated result.
 
 `list_durable_messages` stays valid JSON instead: it leaves out the data of the largest messages until the page fits, sets `data_omitted: true` on each and its `data` to `null`, and says how many in the note. Every `seq` and `has_more` survive, so a message too large to show never blocks the next page. A page still over the cap without its data is truncated like any other result; lower `limit`.
-
-`list_lavaflow_runs` and `get_lavaflow_run` do the same with a run's `patch`, then its `diagnosis`: each one left out is `null` with `patch_omitted` or `diagnosis_omitted` set, and the run's status, trigger, pull request, and the page's cursor survive. When the run opened a pull request, it has the full change.
 
 `send_durable_message` echoes the message it sent. When that echo is over the cap, it leaves out the message's data the same way, so its `id`, `seq` and `status` still say how the send went.
 

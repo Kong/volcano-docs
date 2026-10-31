@@ -235,9 +235,12 @@ curl -X POST "https://api.volcano.dev/durable-functions/$FUNCTION_ID/executions"
   "name": "order-4417",
   "status": "running",
   "region": "us-east-1",
-  "created_at": "2026-09-04T18:31:02Z"
+  "created_at": "2026-09-04T18:31:02Z",
+  "client_token": "vdct_..."
 }
 ```
+
+Keep `client_token` with the caller that will follow the execution: it is what lets an anon key [read](#wait-for-the-result) and [stop](#stop-an-execution) this execution and reach its [messages](durable-messages.md#client-tokens). Only the start that creates the execution returns it.
 
 The request body is the function's input and must be valid JSON if present, up to 256 KiB. An empty body starts the execution with no input.
 
@@ -292,7 +295,7 @@ Starting has two endpoints, because starting and managing are done by different 
 
 They behave identically otherwise: the same body, the same idempotency header, the same `202` and handle. `volcano.durable.start` calls the first one.
 
-Everything else about an execution — reading it, listing, stopping — is on the project-scoped collection and takes the owner's token or a [project access token](../authentication/security/project-access-tokens.md). Either token scope can read and list; stopping needs `full`. The SDK has `volcano.durable.get`, `.list` and `.stop` for those, but they carry one of these credentials, so call them from a backend rather than a browser.
+An application reads and stops executions on the same data-plane path, with the same credentials. An anon key reaches the executions whose client token it sends, and a signed-in user also the ones they started. A service key holding `*`, the default, reaches every execution in the project. A service key scoped to a list without `*`, such as `["functions.invoke"]`, reads, stops, and messages an execution only with its `client_token`, which the start response returns. See [Wait for the result](#wait-for-the-result) and [Stop an execution](#stop-an-execution). Listing executions is on the project-scoped collection and takes the owner's token or a [project access token](../authentication/security/project-access-tokens.md). Either token scope can read and list; stopping needs `full`. The SDK has `volcano.durable.get`, `.list` and `.stop` for those, but they carry one of these credentials, so call them from a backend rather than a browser.
 
 ### Who can start executions
 
@@ -338,7 +341,7 @@ Durable functions have no update endpoint, so visibility travels with a deploy. 
 
 Three things are worth being precise about:
 
-- **Public means startable, not readable.** An anon key ships inside your pages, so everyone who loads one holds it. Reading a result or stopping an execution stays with the owner's token — otherwise any visitor could poll or cancel work started by another, since an execution is addressed by its id alone. Return results to the browser through a table of your own, as in [Return the result to the user](#return-the-result-to-the-user), or an endpoint that decides who may see them. An execution's [messages](durable-messages.md#who-can-send-and-read) are the exception: the user who started it, and whoever holds the `client_token` its start returned, can send to it and read what it publishes.
+- **Public means startable, not readable by everyone.** An anon key ships inside your pages, so everyone who loads one holds it, and an execution id alone reaches nothing with it. Reading an execution, stopping it, and its [messages](durable-messages.md#who-can-send-and-read) take the `client_token` its start returned, so a visitor reaches only the run they started. A signed-in user also reaches the executions they started without it.
 - **Public means startable, not invocable.** A durable function is never reachable through `POST /functions/{functionId}/invoke` or a function URL, whatever its visibility; both answer `404`. A synchronous call would run it with no execution record, no idempotency, no concurrency accounting and no pinned version, which is not a durable execution however much it looks like one.
 - **Anyone can start it.** A public durable function is startable by anyone who reads your anon key out of a page. So is an `authenticated` one when your project allows [anonymous sign-ins](../authentication/anonymous-users.md), because anyone can get one of those tokens. Every start counts against your [execution and operation allowances](#limits-and-billing) and your concurrency cap — a caller who cannot see the result can still spend both. Validate the input inside the function and keep the payload small.
 
@@ -384,11 +387,12 @@ so row-level security applies to that user however long the execution runs.
 
 ### Return the result to the user
 
-Reading an execution takes the owner's token, so a browser cannot poll its own
-execution. Have the function write its result to a table the user can read,
-and have the page listen for it with
-[Postgres changes](../realtime/postgres-changes.md), which respect row-level
-security:
+A browser can poll the execution it started with its client token, as
+[Wait for the result](#wait-for-the-result) shows. The token lives in the page,
+though, so when a reload or another device should still show the result, have
+the function write it to a table the user can read, and have the page listen
+for it with [Postgres changes](../realtime/postgres-changes.md), which respect
+row-level security:
 
 ```sql
 CREATE TABLE chat_replies (
@@ -422,11 +426,12 @@ events do not count against your Realtime message allowance.
 
 ## Wait for the result
 
-Poll the execution. Reading is project-scoped, so this takes your platform token or a project access token rather than the credential that started it:
+Poll the execution with the credential that started it. With an anon key, send the `client_token` the start returned as `X-Volcano-Client-Token`:
 
 ```bash
-curl "https://api.volcano.dev/projects/$PROJECT_ID/durable-functions/$FUNCTION_ID/executions/$EXECUTION_ID" \
-  -H "Authorization: Bearer $PLATFORM_TOKEN"
+curl "https://api.volcano.dev/durable-functions/$FUNCTION_ID/executions/$EXECUTION_ID" \
+  -H "Authorization: Bearer $ANON_KEY" \
+  -H "X-Volcano-Client-Token: $CLIENT_TOKEN"
 ```
 
 ```json
@@ -452,9 +457,27 @@ curl "https://api.volcano.dev/projects/$PROJECT_ID/durable-functions/$FUNCTION_I
 | `stopped`   | Cancelled through the stop endpoint                                     |
 | `unknown`   | The platform lost track of the outcome; no result or error is available |
 
-The last five are terminal. `result` is whatever the function returned, verbatim. It is absent while the execution is still running, absent when the result was too large to return and was checkpointed instead, and absent once the function's retention period lapses. Only the last of those sets `result_expired` to `true`, which distinguishes a discarded result from an empty one; a checkpointed result reads exactly like a function that returned nothing, so keep what you need to read back small. A finished execution is dropped entirely a day or so after its retention lapses, and reads and listings stop returning it — record anything you need to keep for longer while the execution is still readable.
+Who can read an execution on this endpoint:
 
-A `failed` or `timed_out` execution carries `error` when one was recorded: the type and message of what ended it, such as an error your handler did not catch. Like `result`, it is gone once the function's retention period lapses.
+| Credential                               | Reaches                                                                        |
+| ---------------------------------------- | ------------------------------------------------------------------------------ |
+| Service key holding `*`, the default     | Any execution of the project                                                   |
+| Service key scoped to a list without `*` | Only executions whose client token it sends; the list needs `functions.invoke` |
+| Signed-in user's access token            | Executions that user started, and any execution whose client token they send   |
+| Anon key                                 | Only executions whose client token it sends                                    |
+
+An execution's [messages](durable-messages.md#who-can-send-and-read) follow the same rule. The function's [visibility](#who-can-start-executions) also has to admit the caller. While an execution is still `pending`, only a service key holding `*` reaches it. Everything else answers `404`, the same as an execution that does not exist, so an execution id cannot be probed. The response never carries `client_token`.
+
+Tooling working against a project reads the same execution on the project-scoped collection, with the owner's token or a project access token instead:
+
+```bash
+curl "https://api.volcano.dev/projects/$PROJECT_ID/durable-functions/$FUNCTION_ID/executions/$EXECUTION_ID" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN"
+```
+
+The two answer with the same body. The last five statuses are terminal. `result` is whatever the function returned, verbatim. It is absent while the execution is still running, absent when the result was too large to return and was checkpointed instead, and absent once the function's retention period lapses. Only the last of those sets `result_expired` to `true`, which distinguishes a discarded result from an empty one; a checkpointed result reads exactly like a function that returned nothing, so keep what you need to read back small. Volcano keeps a finished execution's result and error in memory for up to five minutes after reading them, so a read can still return them for up to five minutes after the retention period lapses. A finished execution is dropped entirely a day or so after its retention lapses, and reads and listings stop returning it — record anything you need to keep for longer while the execution is still readable.
+
+A `failed` or `timed_out` execution carries `error` when one was recorded: the type and message of what ended it, such as an error your handler did not catch. Like `result`, it is gone once the function's retention period lapses, or up to five minutes later if Volcano has just read it. Whoever can read the execution reads its error too, including a browser holding the client token, so keep secrets out of the errors your handler throws.
 
 ```json
 {
@@ -481,7 +504,7 @@ A start whose outcome could not be established is charged one durable execution.
 
 A `running` execution that is suspended on a wait costs nothing while it waits, so polling on a long interval is fine.
 
-The SDK reads the same execution from a backend holding the platform token:
+The SDKs read an execution through the project-scoped endpoint, from a backend holding the platform token:
 
 ```javascript
 const { data } = await volcano.durable.get(projectId, 'order-pipeline', executionId);
@@ -632,10 +655,22 @@ The dashboard draws the same trace as a timeline when you open an execution. **O
 
 ### Stop an execution
 
+From the application that started it, with the same credentials as a [read](#wait-for-the-result):
+
+```bash
+curl -X POST "https://api.volcano.dev/durable-functions/$FUNCTION_ID/executions/$EXECUTION_ID/stop" \
+  -H "Authorization: Bearer $ANON_KEY" \
+  -H "X-Volcano-Client-Token: $CLIENT_TOKEN"
+```
+
+From tooling, on the project-scoped collection, with the owner's token or a `full` project access token:
+
 ```bash
 curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/durable-functions/$FUNCTION_ID/executions/$EXECUTION_ID/stop" \
   -H "Authorization: Bearer $PLATFORM_TOKEN"
 ```
+
+Both answer the same way:
 
 ```json
 {
@@ -650,7 +685,7 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/durable-functions/$FU
 
 The call is accepted rather than awaited. Cancellation happens behind it, so the response reports the execution as it was read back and often still says `running`; do not branch on that status. The execution settles into `stopped` shortly after, and polling is how you see it get there.
 
-Stopping does not undo completed steps. Stopping one that already finished is not an error: the response carries the state it settled in, so a stop racing a `succeeded` reads back `succeeded`.
+Stopping does not undo completed steps. Stopping one that already finished is not an error: the response carries the state it settled in, so a stop racing a `succeeded` reads back `succeeded`. Stopping one that is still `pending` answers `409`; only a service key holding `*` and the project endpoint reach an execution in that state.
 
 ## Run one on a schedule
 
@@ -879,7 +914,7 @@ Every allowance is applied to the next start rather than to work already under w
 
 The number of executions in flight at once is capped per project, and a start beyond that cap answers `429` as well. An execution stops counting against the cap once it finishes, whether or not you ever read it. Fire-and-forget starts are safe: you do not have to poll an execution to release its slot.
 
-Starting through the application endpoint goes through the same rate limit and the same CORS policy as a function invocation: on HOBBY that is 100 starts per 10 seconds for one function and 600 across the project, and a browser start is refused when the project enforces CORS and the page's origin is not allowed. Both refuse before an execution begins — `429` for the rate limit, `403` for the origin — so neither spends an execution. The project-scoped owner endpoint is not rate limited.
+Starting through the application endpoint goes through the same rate limit and the same CORS policy as a function invocation: on HOBBY that is 100 starts per 10 seconds for one function and 600 across the project, and a browser start is refused when the project enforces CORS and the page's origin is not allowed. Both refuse before an execution begins — `429` for the rate limit, `403` for the origin — so neither spends an execution. Reads and stops on the application endpoint share the same rate limit and CORS policy, so poll every few seconds rather than in a tight loop. The project-scoped owner endpoint is not rate limited. On either endpoint, a read or stop answers `503` with `Retry-After` while reads or stops of executions in the region are briefly throttled; wait that many seconds before trying again. A stop whose read back was throttled may already have been sent, and repeating it is safe: a stop of an execution that has already ended answers the state it ended in.
 
 Durable functions are counted against their own per-project cap, so they cannot exhaust the standard function cap or the other way round. See [Plans and limits](../guides/plans-and-limits.md).
 

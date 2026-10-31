@@ -431,8 +431,8 @@ When you get user info, you can see auth methods:
     "id": "uuid",
     "email": "user@example.com",
     "encrypted_password": "[hidden]",  // Presence indicates has password
-    "raw_user_meta_data": {
-      "provider": "google"  // Signup provider (if OAuth)
+    "user_metadata": {
+      "provider": "google"  // Signup provider (if OAuth); the user can edit it
     }
   }
 }
@@ -440,11 +440,13 @@ When you get user info, you can see auth methods:
 // GET /auth/oauth/providers
 {
   "providers": [
-    {"provider": "google", "linked_at": "..."},
-    {"provider": "github", "linked_at": "..."}
+    {"provider": "google", "provider_user_id": "108123456789012345678", "linked_at": "..."},
+    {"provider": "github", "provider_user_id": "583231", "provider_login": "octocat", "linked_at": "..."}
   ]
 }
 ```
+
+`user_metadata`, including its `provider` key, is editable by the user through `PUT /auth/user`. Don't use it to decide who a user is; use `GET /auth/oauth/providers`.
 
 ---
 
@@ -481,19 +483,20 @@ async function getAvailableProvidersToLink(userId) {
 ### Use Case 3: Prevent Last Method Removal
 
 ```javascript
-async function canUnlinkProvider(userId, provider) {
+async function canUnlinkProvider(userId, provider, authConfig) {
   const user = await getUser(userId);
   const providers = await getLinkedOAuthProviders(userId);
 
-  const hasPassword = !!user.encrypted_password;
+  // A password signs in only while email/password is on for the project
+  const passwordSignsIn = !!user.encrypted_password && authConfig.enable_email_password;
   const linkedProviderCount = providers.length;
 
-  // If user has password OR other OAuth providers, can unlink
-  if (hasPassword || linkedProviderCount > 1) {
+  // Another provider, or a password that still signs in, keeps a way back
+  if (passwordSignsIn || linkedProviderCount > 1) {
     return true;
   }
 
-  // Cannot unlink if it's the only auth method
+  // Cannot unlink the only way to sign in
   return false;
 }
 ```
@@ -706,14 +709,13 @@ Instead, use a boolean flag:
 }
 ```
 
-### Provider user ID security
+### Matching a user to provider records
 
-The `provider_user_id` is sensitive. It's the user's ID in the external system (Google, GitHub, etc.).
+`GET /auth/oauth/providers` returns each `provider_user_id` only to the signed-in user it belongs to. Use it to match that user to records from the provider, such as a GitHub webhook's `sender.id`.
 
-| Allowed                       | Avoid                 |
-| ----------------------------- | --------------------- |
-| Store in database for linking | Expose in public APIs |
-| Use for user lookups          | Log in plaintext      |
+- Match on `provider_user_id`. Logins and emails can change hands; the ID can't.
+- Read it on your server with the user's access token, then store it with your own user record.
+- Don't show one user's provider IDs to other users.
 
 ---
 

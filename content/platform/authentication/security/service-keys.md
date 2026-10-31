@@ -41,6 +41,30 @@ Response:
 
 > **Important:** Save the `key_value` immediately. This is your service key. You can retrieve it later via the API, but it's displayed truncated in the dashboard using `key_prefix`.
 
+## Scope a service key
+
+Pass `permissions` when you create a key to limit what it can do. A key created without `permissions`, or with an empty list, gets `["*"]`, which grants everything.
+
+```bash
+curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/service-keys" \
+  -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "invoke-only", "permissions": ["functions.invoke"]}'
+```
+
+A list without `*` restricts these operations:
+
+| Operation                             | Permission                                                                                                                                                                                                                                                                                                                        |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Invoke a function                     | `functions.invoke`                                                                                                                                                                                                                                                                                                                |
+| Read, stop, and message a durable run | `functions.invoke`, plus the `client_token` the run's start returned                                                                                                                                                                                                                                                              |
+| Storage objects                       | `storage.upload`, `storage.download`, `storage.list`, `storage.delete`                                                                                                                                                                                                                                                            |
+| Project locks                         | `locks.manage`                                                                                                                                                                                                                                                                                                                    |
+| Sandboxes                             | `sandboxes.read`, `sandboxes.sessions.create`, `sandboxes.exec`, `sandboxes.files.read`, `sandboxes.files.write`, `sandboxes.proxy.connect`, `sandboxes.suspend`, `sandboxes.resume`, `sandboxes.terminate`, `sandboxes.templates.read`, `sandboxes.templates.write`, `sandboxes.deployments.read`, `sandboxes.deployments.write` |
+| Auth endpoints called through the key | `auth.signin`, `auth.signup`, `auth.refresh`, `auth.logout`, `auth.password_reset`                                                                                                                                                                                                                                                |
+
+The list doesn't restrict the database API, and restricts realtime only on a durable run's channel. Every service key, scoped or not, can query and change every table with RLS bypassed, and can connect to realtime, subscribe to any other channel, publish on broadcast channels, and watch changes to any table. Give a backend that must not touch your data a credential other than a service key.
+
 ## Using service keys
 
 ### Invoke a function
@@ -132,12 +156,13 @@ This generates a new key and invalidates the old one. The old key stops working 
 
 ## What service keys can do
 
-Service keys have full access to your project:
+A key holding `*` has full access to your project. A scoped key loses the operations its list leaves out, but keeps the database access below; see [Scope a service key](#scope-a-service-key).
 
 - Read all data from all users
 - Modify any data regardless of owner
 - Delete any data across all users
 - Invoke functions without user context
+- Read, stop, and message every durable execution in the project, results and errors included. A key scoped to a list without `*` reaches an execution only with its `client_token`, which the start response returns
 - Bypass all RLS policies
 
 ## What service keys cannot do
@@ -181,7 +206,7 @@ A deleted key stops working within a few seconds.
 
 ## Default service key
 
-When you create a project, a default service key is automatically created. You can find it by listing your project's service keys or in the dashboard under **Authentication → Service Keys**.
+When you create a project, a default service key is automatically created. List the project's keys with `volcano projects keys service list`, then print one with `volcano projects keys service get <key-id> --show-key`, or call `GET /projects/{id}/service-keys`. The dashboard shows them under **Authentication → Service Keys**.
 
 ## What's next
 

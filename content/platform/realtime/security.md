@@ -151,10 +151,10 @@ The server:
 
 A durable execution's channel admits the same callers as its [messages API](../functions/durable-messages.md#who-can-send-and-read). The durable function's visibility has to admit the connection first; then:
 
-- A service role key can watch any execution in the project, unless the key is scoped without `functions.invoke`.
+- A service role key holding `*` can watch any execution in the project. A key scoped to a list without `*` needs `functions.invoke` and the execution's `client_token`, sent with the subscribe request. The start returns that token.
 - A signed-in user, anonymous sign-ins included, can watch the executions they started.
 - Any other signed-in user needs the execution's `client_token`, which the SDK sends with the subscribe request.
-- Until an execution is `running`, only a service role key can watch it.
+- Until an execution is `running`, only a service role key holding `*` can watch it.
 
 An anon key alone does not open a realtime connection, so a visitor who is not signed in can sign in anonymously first or poll the [messages list](../functions/durable-messages.md#who-can-send-and-read) instead.
 

@@ -11,7 +11,7 @@ the normal Git deployment flow.
 curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/source-export" \
   -H "Authorization: Bearer $VOLCANO_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"production_branch":"main"}'
+  -d '{"production_branch":"main","repo_id":873345021}'
 ```
 
 ```json
@@ -29,22 +29,41 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/source-export" \
 
 1. Create a GitHub repository without a README, license, `.gitignore`, or any
    other initial commit.
-2. In the export dialog, select that repository. Because an empty repository
-   has no branch yet, Volcano proposes `main` as the production branch. Change
-   the name if needed.
-3. Review the branch and select **Export**. Volcano uses the confirmed name to
-   connect the repository, configure the Git deployment path, and create its
-   first branch.
+2. Connect it to the project and export from the
+   [CLI](/cli/git). An empty repository has no default branch, so name the
+   branch pushes will deploy from when you connect it:
+
+   ```bash
+   volcano git connect https://github.com/acme/storefront --production-branch main
+   volcano git export
+   ```
+
+   `volcano git export` shows the repository and production branch and asks
+   before it writes. In a script, pass the branch you expect and skip the
+   prompt; the command refuses if the project's branch is different:
+
+   ```bash
+   volcano git export --branch main --yes --json
+   ```
+
+`volcano git repos` lists the repositories you can connect and marks the empty
+ones.
 
 For API clients, connect the repository and configure Git auto-deploy first.
-Read `production_branch` from `GET /projects/{id}/git-connection`, show it for
-confirmation, then send the same value to the export endpoint. If it changed in
-the meantime, export returns `409` without writing the repository. Read the
-connection again and ask the user to confirm the new branch.
+Read `repo_full_name`, `repo_id` and `production_branch` from
+`GET /projects/{id}/git-connection`, show the repository and branch for
+confirmation, then send `repo_id` and `production_branch` to the export
+endpoint. If either changed in the meantime, export returns `409` without
+writing the repository. Read the connection again and ask the user to confirm
+what it holds now. `repo_id` is optional, but without it export writes to
+whatever repository is connected when the request arrives.
 
 Export also returns `409` while a function or frontend deployment is queued or
-provisioning. Wait for that deployment to finish, then export again. Volcano
-checks this before creating or pushing the root commit.
+provisioning. Wait for that deployment to finish, then export again. It returns
+`409` too while a [preview](../frontends/previews.md) is serving any of the
+project's frontends, because the repository would not hold the source that
+frontend serves. Roll each such frontend back to its own build, then export
+again. Volcano checks both before creating or pushing the root commit.
 
 Volcano does not create the repository. Export refuses any repository that
 already has a commit or branch. This avoids merges, conflict resolution, and
@@ -125,17 +144,19 @@ never be committed, such as a private key or credential store.
 
 Export is a one-time transition:
 
-1. Volcano verifies the confirmed production branch still matches the project,
-   pins it, and changes the project to `git_exporting`. Direct source deploys
-   and Git connection changes are frozen.
+1. Volcano verifies the confirmed repository and production branch still
+   match the project, pins the branch, and changes the project to
+   `git_exporting`. Direct source deploys and Git connection changes are
+   frozen.
 2. Volcano creates one root commit and pushes it to the production branch.
 3. GitHub's signed push event confirms that the root commit reached the
    production branch. That commit or a newer production push starts the
    ordinary Git deployment and changes the mode to `git_pending`.
 4. After a complete production deployment succeeds, the mode becomes `git`.
 
-The project stays locked if the deployment fails. Fix the repository and push
-the production branch again. The latest complete successful deployment
+The project stays locked if the deployment fails, or if a function holds only
+TypeScript, which [isn't deployed](git-deploy.md). Fix the
+repository and push the production branch again. The latest complete successful deployment
 finishes the transition; the exported root commit does not need to deploy if a
 newer push supersedes it.
 
@@ -145,7 +166,8 @@ After handover you can
 [return it to the default](git-deploy.md#deploy-from-a-different-branch) with an
 empty `production_branch`.
 
-To stop an incomplete transition and restore direct platform deploys:
+To stop an incomplete transition and restore direct platform deploys, run
+`volcano git export cancel`, or call the API:
 
 ```bash
 curl -X DELETE "https://api.volcano.dev/projects/$PROJECT_ID/source-export" \
@@ -159,7 +181,8 @@ branch remains pinned. Once the repository has its first commit, send an empty
 `production_branch` to
 [follow it again](git-deploy.md#deploy-from-a-different-branch).
 
-Check the state at any time:
+Check the state at any time. `volcano git status` reports it as the project's
+source of truth; the API returns it as `mode`:
 
 ```bash
 curl "https://api.volcano.dev/projects/$PROJECT_ID/source-export" \
@@ -196,13 +219,14 @@ confirmed.
 
 If GitHub does not confirm whether the initial push succeeded, the endpoint
 returns a retryable error and the project remains `git_exporting`. Call the
-endpoint again. Volcano builds the same commit: it adopts that commit if it is
-already on the production branch, or retries the initial push while the
-repository is still empty.
+endpoint again, or rerun `volcano git export`. Volcano builds the same commit:
+it adopts that commit if it is already on the production branch, or retries the
+initial push while the repository is still empty.
 
 If the commit reached GitHub but its push event never reaches Volcano, the
-project remains `git_exporting`. Cancel the transition with `DELETE
-/projects/{id}/source-export` to restore platform deploys. The root commit stays
+project remains `git_exporting`. Cancel the transition with
+`volcano git export cancel` or `DELETE /projects/{id}/source-export` to restore
+platform deploys. The root commit stays
 in the repository and the one-time export remains consumed.
 
 ## Related

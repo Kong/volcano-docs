@@ -215,11 +215,14 @@ Authorization: Bearer {access_token}
   "providers": [
     {
       "provider": "google",
+      "provider_user_id": "108123456789012345678",
       "linked_at": "2026-01-03T10:00:00Z",
       "updated_at": "2026-01-03T10:00:00Z"
     },
     {
       "provider": "github",
+      "provider_user_id": "583231",
+      "provider_login": "octocat",
       "linked_at": "2026-01-05T14:30:00Z",
       "updated_at": "2026-01-05T14:30:00Z"
     }
@@ -449,11 +452,12 @@ This prevents account takeover if someone else already has an account with that 
 
 ### Last Authentication Method
 
-Users cannot unlink their last authentication method:
+Users cannot unlink their last way to sign in. Unlinking Google is refused with `400` unless something else still signs the user in:
 
-- If user has ONLY Google linked (no password) → cannot unlink Google
-- If user has password AND Google → can unlink Google
-- This prevents users from locking themselves out
+- Another linked OAuth provider
+- A password, while email/password is on for the project (`enable_email_password`)
+
+A guest (anonymous) login doesn't count.
 
 ## User Experience Flows
 
@@ -551,7 +555,7 @@ Users cannot unlink their last authentication method:
 
 **Cause:** User trying to remove their only way to log in
 
-**Solution:** Add password or another OAuth provider first
+**Solution:** Link another OAuth provider first, or set a password while email/password is on for the project
 
 ### "invalid state parameter"
 

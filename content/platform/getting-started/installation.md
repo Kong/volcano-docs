@@ -107,7 +107,7 @@ const volcano = new VolcanoAuth({
 });
 ```
 
-You can find your project ID and anon key in the Volcano dashboard or by querying the API:
+List your projects' IDs with `volcano projects list` and the current project's anon keys with `volcano projects keys anon list`, or query the API:
 
 ```bash
 # Get project details including default anon key

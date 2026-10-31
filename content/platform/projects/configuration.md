@@ -65,11 +65,6 @@ realtime:
   presence_enabled: true
   postgres_changes_enabled: true
 
-lavaflow: # SUPERAGENT during the preview; omitted fields keep their value
-  enabled: true
-  max_stage: pull_request # diagnose | pull_request (default)
-  auto_trigger: true # default
-
 notifications: # omitted fields keep their value
   email:
     enabled: true
@@ -469,26 +464,11 @@ response that created it. Manage them through
   legacy value is unsafe. See
   [Subject headers](../authentication/configuration/email-templates.md#subject-headers).
 
-## LavaFlow settings
+## Removed: `lavaflow`
 
-The `lavaflow` section reconciles a project's [LavaFlow](../guides/lavaflow.md)
-settings. An omitted field keeps its current value; a project that never saved
-settings starts from `max_stage: pull_request` and `auto_trigger: true`, so
-`enabled: true` alone diagnoses new and regressed issues and opens fix pull
-requests. Export writes the section
-once the settings have been saved. Where LavaFlow is not available, re-applying saved settings or
-turning LavaFlow off still works. Any other change that leaves LavaFlow on, such
-as turning it on or changing `max_stage` while it is on, is a validation error,
-as is declaring the section for a project that never saved settings.
-
-A project access token can re-apply the section unchanged, but a change to it
-is refused: only a person changes LavaFlow settings.
-
-When the project points at a different repository than LavaFlow was turned on
-for, or its repository is disconnected, LavaFlow pauses. Re-applying `enabled: true` does not resume it: the dry
-run and the apply report it as paused, and a person turns LavaFlow on again
-through the API or the dashboard. See
-[When the project's repository changes](../guides/lavaflow.md#when-the-projects-repository-changes).
+LavaFlow is no longer part of Volcano. A manifest that still has a `lavaflow`
+section applies as if the section were absent: the dry run and the apply list
+it as `unchanged` with a notice to remove it, and export never writes it.
 
 ## Notification settings
 
@@ -546,7 +526,7 @@ env file sets. See the [CLI deploy reference](/cli/deploy).
   gated value. Re-applying an export of a project downgraded from SUPERAGENT stays a
   no-op.
 - SUPERAGENT-gated surfaces: region subsets, email template bodies, hosted pages,
-  `lavaflow.enabled`, and the `auth.signup.allowed_email_domains` allowlist. A HOBBY project can
+  and the `auth.signup.allowed_email_domains` allowlist. A HOBBY project can
   still declare the allowlist it already has, or clear it to remove the
   restriction. Scheduler counts, storage policy counts, custom domains per
   frontend, and managed TLS certificates respect plan caps.
@@ -620,6 +600,12 @@ the same pass. It rejects the apply before any change lands when:
   unchanged. Create the variable, or drop the name.
 - A function's resulting environment exceeds 4096 bytes. Scope the function to
   fewer variables, or shorten the values.
+
+`volcano cloud config deploy` and a Git push refuse a `variables` key with no
+value, such as a bare `variables:` or `variables: null`, rather than reading it
+as omitted. Write `variables: []` to declare no names, or remove the key to keep
+the current list. `volcano cloud config deploy` answers `400`, and a Git push
+fails its deploy with nothing applied.
 
 Changing `variable_scope` or `variables` redeploys that function's environment,
 so switching from `all` to `scoped` removes the variables it no longer selects
