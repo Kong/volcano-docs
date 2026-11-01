@@ -13,7 +13,7 @@ The Database REST API lets you perform CRUD operations on your database tables u
 | --------------------- | -------------------------------------------- |
 | Frontend applications | Query databases directly from browser/mobile |
 | Quick prototyping     | No SQL knowledge required                    |
-| Automatic security    | Row-level security enforced automatically    |
+| Row-level security    | Your RLS policies apply to user requests     |
 | Type-safe             | Structured queries with validation           |
 
 **Authentication:** Requires an auth user access token (obtained via signup/signin)
@@ -411,7 +411,7 @@ const posts = await volcano
 
 ## Row-Level Security
 
-**Automatic Protection:** All queries automatically enforce Row-Level Security (RLS).
+A request with a user's access token runs as `authenticated`, so the RLS policies on your tables apply to it. A request with a service key bypasses RLS. RLS applies only to tables where you enable it: on a table without RLS, any user session can read, change, and delete every row. See [Default grants](database-roles.md#default-grants).
 
 ### How It Works
 
@@ -419,7 +419,7 @@ const posts = await volcano
 2. **You query** - Send access token with request
 3. **Volcano validates** - Checks your token and identity
 4. **Your identity is injected** - `auth.uid()` returns your user ID
-5. **RLS filters data** - You see only what you have access to
+5. **RLS filters data** - On tables with RLS enabled, you see only what your policies allow
 
 ### Example RLS Policy
 
@@ -589,7 +589,7 @@ Returns orders created in January 2026.
 }
 ```
 
-Row-Level Security automatically filters to current user's posts!
+With RLS enabled on `posts` and a policy like the one above, this returns only the current user's posts.
 
 ### Search Posts by Title
 
@@ -676,6 +676,15 @@ generic message and an `X-Request-Id` response header:
 Use the request ID when contacting support. Volcano keeps connection details
 in server logs and does not return them to clients.
 
+If the database ends the connection under a `select` or `ping`, for example
+when it scales to zero or restarts, Volcano runs the query once more on another
+connection, inside a read-only transaction, before it answers. Volcano never
+reruns `insert`, `update`, or `delete`, because the database may already have
+applied the change. A `select` that writes, such as one on a view over a
+function that inserts rows, fails the read-only rerun instead of writing twice.
+These return the `500` above; retry them only when running the change twice is
+safe.
+
 ### Permission Denied (RLS)
 
 ```json
@@ -694,12 +703,12 @@ Row-Level Security silently filters out data you don't have access to.
 
 ### Automatic protection
 
-| Protection               | Description                    |
-| ------------------------ | ------------------------------ |
-| Row-level security       | Enforced on all queries        |
-| SQL injection prevention | All inputs validated           |
-| Parameterized queries    | Values never interpolated      |
-| Identity verification    | JWT validated on every request |
+| Protection               | Description                        |
+| ------------------------ | ---------------------------------- |
+| Row-level security       | Applied on tables with RLS enabled |
+| SQL injection prevention | All inputs validated               |
+| Parameterized queries    | Values never interpolated          |
+| Identity verification    | JWT validated on every request     |
 
 ### What's protected
 
@@ -825,7 +834,7 @@ reached — and 14 ms on the database.
 A: Yes! That's exactly what it's designed for.
 
 **Q: Is my data secure?**  
-A: Yes! Row-Level Security is automatically enforced on all queries.
+A: Requests with a user's access token run as `authenticated`, so your RLS policies apply. Enable RLS on every table first; a table without it is open to any user session. See [Default grants](database-roles.md#default-grants).
 
 **Q: Do I need to write SQL?**  
 A: No! The REST API handles SQL generation for you.

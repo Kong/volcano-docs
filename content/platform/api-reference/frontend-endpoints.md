@@ -640,3 +640,93 @@ Frontend runtime and deployment logs are available through
 `POST /projects/{project_id}/logs/search` with `resource.type=frontend`.
 For deployment build logs, include `resource.ids=[frontend_id]` and
 `resource.deployments.ids=[deployment_id]`.
+
+## Previews
+
+A preview is a Candidate of a frontend: an unlisted build served at its own host. Anyone who holds its URL can open it.
+Creating, redeploying, promoting and rolling back to one are behind the
+`frontends.candidates` capability; reading, deleting and rolling back to the
+frontend's own build work whether or not it is on. See [Frontend previews](../frontends/previews.md).
+
+### Create a preview
+
+`POST /projects/{project_id}/frontends/{frontend_id}/candidates`
+
+Multipart form fields: `name` (required, unique within the frontend, not
+`production`), `ttl_seconds` (optional, 1 to 2592000) and `archive` (required, a
+ZIP or `tar.gz` of the project). Returns `202` with the Candidate while its first
+deployment runs, `400` when a variable the frontend declares has no value or the
+resolved variables are too large, `404` with `feature_unavailable` while the gate
+is off, `413` when the upload exceeds the archive limit, and `409` when the name
+is taken
+(`candidate_name_taken`), the frontend already has 20 live previews
+(`candidate_limit_reached`), the frontend's variables changed during the deploy
+(`configuration_changed`; retry), or the frontend or project is being deleted
+(`frontend_deleting`, `project_deleting`).
+
+### List and get previews
+
+`GET /projects/{project_id}/frontends/{frontend_id}/candidates`
+
+`GET /projects/{project_id}/frontends/{frontend_id}/candidates/{candidate_id}`
+
+A Candidate reports `status` (`creating`, `ready`, `deleting`, `error`), its `url`
+once ready, `expires_at`, the latest `deployment`, the `current_deployment_id` it
+serves, and `configuration_status` (`current` or `changed`).
+
+### Deploy to a preview
+
+`POST /projects/{project_id}/frontends/{frontend_id}/candidates/{candidate_id}/deployments`
+
+Multipart form with `archive`. Returns `202` with the deployment, `400` when the
+frontend's variables cannot be resolved (as on create), `413` when the upload
+exceeds the archive limit, or `409` while
+one is running, while the preview is not ready to deploy to, or while the frontend
+serves it or keeps it for a rollback.
+
+### Delete a preview
+
+`DELETE /projects/{project_id}/frontends/{frontend_id}/candidates/{candidate_id}`
+
+Returns `202`. Returns `409` while the frontend serves the preview. A preview kept
+only as the runtime a rollback returns to can be deleted, which gives up that
+rollback.
+
+### What a frontend serves
+
+`GET /projects/{project_id}/frontends/{frontend_id}/serving`
+
+Returns `revision`, `candidate_id` (`null` when the frontend serves its own
+build) and `previous_candidate_id`.
+
+### Promote a preview
+
+`POST /projects/{project_id}/frontends/{frontend_id}/candidates/{candidate_id}/promote`
+
+JSON body `{"expected_revision": <revision>}`, the revision `serving` returned.
+Returns `200` with the new serving state, or `413` when the body is larger than
+4 KiB. Returns `409` when the revision is stale (`stale_revision`), the preview
+is not ready or serves no active deployment (`candidate_not_ready`), it was
+built with different variables (`configuration_changed`), it already serves
+(`already_serving`), the frontend itself or the preview is deploying
+(`deployment_in_progress`), the project's repository is the source of truth
+(`source_managed_by_git`), or the frontend has never deployed a build of its own
+to roll back to (`frontend_not_deployed`).
+
+### Roll back
+
+`POST /projects/{project_id}/frontends/{frontend_id}/serving/rollback`
+
+JSON body `{"expected_revision": <revision>, "to_production": false}`. Returns
+`200` with the new serving state, or `413` when the body is larger than 4 KiB.
+Returns `409` when the revision is stale (`stale_revision`), there is nothing to
+roll back to (`nothing_to_roll_back`), or the runtime to roll back to is gone
+(`rollback_unavailable`).
+
+Rolling back to a preview promotes it again, so it is refused with `409` when
+promoting it would be: `configuration_changed` when it was built with different
+variables, `deployment_in_progress` while the frontend itself or the preview is
+deploying, and `source_managed_by_git` once the project's repository is the
+source of truth. While the release gate is off it is refused with `404` and
+`feature_unavailable`, as a promotion is. Rolling back to the frontend's own build
+is not refused for any of these.

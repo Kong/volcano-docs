@@ -197,22 +197,22 @@ curl "https://api.volcano.dev/capabilities"
     { "id": "sandboxes.sessions", "status": "available" },
     { "id": "sandboxes.custom_templates", "status": "unavailable" },
     { "id": "issues", "status": "available" },
-    { "id": "lavaflow", "status": "available" },
     { "id": "functions.response_streaming", "status": "available" },
-    { "id": "frontend_routes", "status": "available" }
+    { "id": "frontend_routes", "status": "available" },
+    { "id": "databases.migrations", "status": "available" }
   ]
 }
 ```
 
-| ID                             | Covers                                                                                                                                 |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `sandboxes`                    | The Sandbox API: presets, templates, sessions, and executions                                                                          |
-| `sandboxes.sessions`           | Starting and resuming sessions, and one-shot executions                                                                                |
-| `sandboxes.custom_templates`   | Deploying a custom template; its validation waits while `sandboxes.sessions` is unavailable                                            |
-| `issues`                       | The Issues API: listing, reading, and updating grouped runtime errors                                                                  |
-| `lavaflow`                     | The LavaFlow API: a project's AI diagnosis and fix settings                                                                            |
-| `functions.response_streaming` | [Streaming a response](../functions/invoking-functions.md#stream-a-response) on a function's own URL                                   |
-| `frontend_routes`              | Creating and changing [Frontend routes](../frontends/frontend-routes.md); listing, deleting, and serving existing ones work either way |
+| ID                             | Covers                                                                                                                                                                                                                      |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sandboxes`                    | The Sandbox API: presets, templates, sessions, and executions                                                                                                                                                               |
+| `sandboxes.sessions`           | Starting and resuming sessions, and one-shot executions                                                                                                                                                                     |
+| `sandboxes.custom_templates`   | Deploying a custom template; its validation waits while `sandboxes.sessions` is unavailable                                                                                                                                 |
+| `issues`                       | The Issues API: listing, reading, and updating grouped runtime errors                                                                                                                                                       |
+| `functions.response_streaming` | [Streaming a response](../functions/invoking-functions.md#stream-a-response) on a function's own URL                                                                                                                        |
+| `frontend_routes`              | Creating and changing [Frontend routes](../frontends/frontend-routes.md); listing, deleting, and serving existing ones work either way                                                                                      |
+| `databases.migrations`         | Starting [migration runs](../guides/migrations.md), recording a baseline, and turning on `apply_migrations` for [Git deploy](../projects/git-deploy.md#apply-migrations-on-push); reading history and runs works either way |
 
 The endpoint needs no token, and every caller in an environment gets the same
 answer. While a capability is `unavailable`, requests that start new work
@@ -253,18 +253,20 @@ without the version header are unaffected. See CLI Version Gating.
 
 ### Projects
 
-| Method   | Endpoint                             | Description                                                                                         |
-| -------- | ------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| `POST`   | `/projects`                          | Create a project                                                                                    |
-| `GET`    | `/projects`                          | List projects                                                                                       |
-| `GET`    | `/projects/{id}`                     | Get a project                                                                                       |
-| `GET`    | `/deployments`                       | List deployments across every project you own                                                       |
-| `GET`    | `/projects/{id}/deployments`         | List a project's function and frontend deployments; filter with `resource_type` and `function_kind` |
-| `GET`    | `/projects/{id}/deployments/summary` | Summarize one deployment pipeline (`resource_type`, optionally `function_kind`)                     |
-| `PATCH`  | `/projects/{id}`                     | Update project name/region policy                                                                   |
-| `DELETE` | `/projects/{id}`                     | Delete a project                                                                                    |
+| Method   | Endpoint                                     | Description                                                                                         |
+| -------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `POST`   | `/projects`                                  | Create a project                                                                                    |
+| `GET`    | `/projects`                                  | List projects                                                                                       |
+| `GET`    | `/projects/{id}`                             | Get a project                                                                                       |
+| `GET`    | `/deployments`                               | List deployments across every project you own                                                       |
+| `GET`    | `/projects/{id}/deployments`                 | List a project's function and frontend deployments; filter with `resource_type` and `function_kind` |
+| `GET`    | `/projects/{id}/deployments/summary`         | Summarize one deployment pipeline (`resource_type`, optionally `function_kind`)                     |
+| `GET`    | `/projects/{id}/git-deployment-runs`         | List the runs Git pushes started; filter with `status` and `branch`                                 |
+| `GET`    | `/projects/{id}/git-deployment-runs/{runId}` | Get one Git deployment run                                                                          |
+| `PATCH`  | `/projects/{id}`                             | Update project name/region policy                                                                   |
+| `DELETE` | `/projects/{id}`                             | Delete a project                                                                                    |
 
-See [Projects](projects.md) for details.
+See [Projects](projects.md) for details, and [Git deploy](../projects/git-deploy.md#check-deployment-runs) for deployment runs.
 
 ### Functions
 
@@ -293,6 +295,8 @@ See [Functions](functions.md) for details.
 | `DELETE` | `/projects/{id}/durable-functions/{functionId}`                                     | Delete a durable function                                                                   |
 | `GET`    | `/projects/{id}/durable-functions/{functionId}/deployments`                         | List durable function deployments                                                           |
 | `POST`   | `/durable-functions/{functionId}/executions`                                        | Start an execution with an application credential                                           |
+| `GET`    | `/durable-functions/{functionId}/executions/{executionId}`                          | Get an execution with an application credential                                             |
+| `POST`   | `/durable-functions/{functionId}/executions/{executionId}/stop`                     | Stop an execution with an application credential                                            |
 | `POST`   | `/projects/{id}/durable-functions/{functionId}/executions`                          | Start an execution as the project owner                                                     |
 | `GET`    | `/projects/{id}/durable-functions/{functionId}/executions`                          | List executions                                                                             |
 | `GET`    | `/projects/{id}/durable-functions/{functionId}/executions/{executionId}`            | Get an execution                                                                            |
@@ -332,19 +336,6 @@ endpoints.
 | `PATCH` | `/projects/{id}/issues/{issueId}` | Resolve, ignore, or reopen an issue                                             |
 
 Issues are in preview. See [Issues](../guides/issues.md).
-
-### LavaFlow
-
-| Method  | Endpoint                                        | Description                          |
-| ------- | ----------------------------------------------- | ------------------------------------ |
-| `GET`   | `/projects/{id}/lavaflow`                       | Get a project's LavaFlow settings    |
-| `PATCH` | `/projects/{id}/lavaflow`                       | Change a project's LavaFlow settings |
-| `POST`  | `/projects/{id}/issues/{issueId}/lavaflow-runs` | Diagnose an issue                    |
-| `GET`   | `/projects/{id}/lavaflow-runs`                  | List LavaFlow runs                   |
-| `GET`   | `/projects/{id}/lavaflow-runs/{runId}`          | Get a LavaFlow run                   |
-
-LavaFlow is in preview. During the preview it needs the SUPERAGENT plan, and
-nothing is charged yet. See [LavaFlow](../guides/lavaflow.md).
 
 ### Notifications
 

@@ -133,10 +133,11 @@ Postgres changes, broadcast, and presence over WebSockets.
 
 Next.js, static or server-rendered, served from the edge. A failed build never replaces the live version. Custom domains are on every plan.
 
-| Guide                                    | Description                            |
-| ---------------------------------------- | -------------------------------------- |
-| [Overview](frontends/overview.md)        | How frontends build, deploy, and serve |
-| [Deploy a frontend](frontends/deploy.md) | Deploy a Next.js site with the CLI     |
+| Guide                                      | Description                                              |
+| ------------------------------------------ | -------------------------------------------------------- |
+| [Overview](frontends/overview.md)          | How frontends build, deploy, and serve                   |
+| [Deploy a frontend](frontends/deploy.md)   | Deploy a Next.js site with the CLI                       |
+| [Frontend previews](frontends/previews.md) | Deploy a build to its own URL, then promote or roll back |
 
 ### Security
 
@@ -186,11 +187,10 @@ Step-by-step guides for common tasks.
 | ---------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | [Deploy to production](guides/production.md)               | Ship your project to the cloud                                                      |
 | [Plans and limits](guides/plans-and-limits.md)             | HOBBY vs SUPERAGENT limits by resource                                              |
-| [Database migrations](guides/migrations.md)                | Manage schema changes with the CLI                                                  |
+| [Database migrations](guides/migrations.md)                | Apply schema changes once each, rehearsed and backed up, or with the CLI            |
 | [Deployment performance](guides/deployment-performance.md) | Deployment latency objectives, phases, and telemetry                                |
 | [Sandboxes](guides/sandboxes.md)                           | Run commands and HTTP services in isolated sessions with plan-based runtime pricing |
 | [Issues](guides/issues.md)                                 | See runtime errors grouped into issues, and resolve or ignore them                  |
-| [LavaFlow](guides/lavaflow.md)                             | Have AI diagnose your issues and open draft pull requests that fix them             |
 
 ## Examples
 

@@ -119,15 +119,15 @@ Installing dependencies and running your build command must finish at least five
 
 ## Databases
 
-| Limit                                              | HOBBY           | SUPERAGENT      | Scope                                                                                                                                                                                                                                                                                 |
-| -------------------------------------------------- | --------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Request allowance                                  | 100,000 / month | 200,000 / month | Combined across all your projects; each completed statement counts once, and transaction control and an empty query such as a driver's connection ping do not count. See [how requests are counted](../databases/overview.md#how-requests-are-counted). HOBBY enforcement is eventual |
-| Databases per project                              | 1               | 10,000          | Creation cap                                                                                                                                                                                                                                                                          |
-| Database-storage allowance                         | 1 GB / month    | 10 GB / month   | Peak combined storage across every database you own; HOBBY makes all owned databases read-only at the allowance                                                                                                                                                                       |
-| [Branches](../databases/branching.md) per database | 10              | 25              | Counts branches in every state                                                                                                                                                                                                                                                        |
-| [Backups](../databases/backups.md) per database    | Not included    | 50              | Backups you take; scheduled ones do not count                                                                                                                                                                                                                                         |
-| Backup retention                                   | Not included    | 30 days         | Applied when the backup is taken                                                                                                                                                                                                                                                      |
-| Point-in-time restore window                       | Not included    | 7 days          | How far back a restore can reach without a backup                                                                                                                                                                                                                                     |
+| Limit                                              | HOBBY           | SUPERAGENT      | Scope                                                                                                                                                                                                                                                                                                                                            |
+| -------------------------------------------------- | --------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Request allowance                                  | 100,000 / month | 200,000 / month | Combined across all your projects; each completed statement counts once, and transaction control, an empty query such as a driver's connection ping, and the statements a [migration run](migrations.md) executes do not count. See [how requests are counted](../databases/overview.md#how-requests-are-counted). HOBBY enforcement is eventual |
+| Databases per project                              | 1               | 10,000          | Creation cap                                                                                                                                                                                                                                                                                                                                     |
+| Database-storage allowance                         | 1 GB / month    | 10 GB / month   | Peak combined storage across every database you own; HOBBY makes all owned databases read-only at the allowance                                                                                                                                                                                                                                  |
+| [Branches](../databases/branching.md) per database | 10              | 25              | Counts branches in every state                                                                                                                                                                                                                                                                                                                   |
+| [Backups](../databases/backups.md) per database    | Not included    | 50              | Backups you take; scheduled and migration ones do not count                                                                                                                                                                                                                                                                                      |
+| Backup retention                                   | Not included    | 30 days         | Applied when the backup is taken; at most the 20 most recent migration backups are kept                                                                                                                                                                                                                                                          |
+| Point-in-time restore window                       | Not included    | 7 days          | How far back a restore can reach without a backup                                                                                                                                                                                                                                                                                                |
 
 Backup storage counts against the storage allowance — a backup you take is
 charged as a full copy of the database — and the point-in-time history window
@@ -205,14 +205,6 @@ Revoked and expired tokens do not count against it, so cycling short-lived token
 | Custom email templates                                                              | Unavailable | Available  | Per project; HOBBY projects send the default templates                                                                        |
 | Custom managed auth pages                                                           | Unavailable | Available  | Per project                                                                                                                   |
 
-## LavaFlow
-
-LavaFlow is in preview. During the preview, it needs the SUPERAGENT plan.
-
-| Limit                   | HOBBY       | SUPERAGENT | Scope                                                                                                   |
-| ----------------------- | ----------- | ---------- | ------------------------------------------------------------------------------------------------------- |
-| [LavaFlow](lavaflow.md) | Unavailable | Available  | Per project; a downgrade parks the settings and no run starts. See [run limits](lavaflow.md#run-limits) |
-
 ## Scheduling and logs
 
 | Limit                 | HOBBY       | SUPERAGENT | Scope                     |
@@ -249,7 +241,6 @@ moment you upgrade. You do not have to set them up twice.
 | Scheduled functions                                                                 | Kept; they stop running, and their next run time keeps advancing                   |
 | Database query logs                                                                 | Kept; new queries stop being recorded, and query insights stop being readable      |
 | Database compute size                                                               | Shrunk to the HOBBY size, and restored when you upgrade. No downtime, no data loss |
-| [LavaFlow](lavaflow.md) settings                                                    | Kept; no run starts                                                                |
 | [Custom domains](../frontends/overview.md#custom-domains) past one per frontend     | Kept; only one serves                                                              |
 
 A frontend with more custom domains than HOBBY allows keeps all of them, with
@@ -266,8 +257,9 @@ Five things are not parked:
 - **[Database backups](../databases/backups.md).** Backups are a SUPERAGENT capability.
   Downgrading deletes the backups you took, turns off any backup schedule, closes
   the point-in-time restore window, and stops backup storage counting toward your
-  database's storage. Backups your schedule already took are left to expire on
-  their own retention, unreachable and uncharged. Upgrading gives the capability
+  database's storage. Backups your schedule or a migration run already took are
+  left to expire on their own retention, unreachable and uncharged, and
+  migration runs on HOBBY skip the backup. Upgrading gives the capability
   straight back, but it starts from that moment: there is nothing to restore from
   until you take a backup, and the point-in-time window fills as the database
   writes.

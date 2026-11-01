@@ -163,7 +163,7 @@ GET /auth/oauth/providers
 Authorization: Bearer {access_token}
 ```
 
-Get list of OAuth providers linked to current user.
+Get list of OAuth providers linked to current user, with the user's own account ID at each provider.
 
 **Headers:**
 
@@ -176,17 +176,25 @@ Get list of OAuth providers linked to current user.
   "providers": [
     {
       "provider": "google",
+      "provider_user_id": "108123456789012345678",
       "linked_at": "2026-01-03T10:00:00Z",
       "updated_at": "2026-01-03T10:00:00Z"
     },
     {
       "provider": "github",
+      "provider_user_id": "583231",
+      "provider_login": "octocat",
       "linked_at": "2026-01-05T14:30:00Z",
       "updated_at": "2026-01-05T14:30:00Z"
     }
   ]
 }
 ```
+
+| Field              | Description                                                                                                                                                                   |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `provider_user_id` | The user's account ID at the provider. It never changes, so match on it. For GitHub it's the numeric user ID, as in a webhook's `sender.id`.                                  |
+| `provider_login`   | The login when the account was linked, such as a GitHub username. It isn't updated after a rename, so display it but don't match on it. Omitted for providers without logins. |
 
 **Errors:**
 
@@ -523,12 +531,12 @@ If OAuth email already exists:
 
 ### Last authentication method
 
-Users cannot remove their only authentication method:
+An unlink that would leave the account no way to sign in is refused with `400`. What counts as a way to sign in:
 
-- If user has ONLY OAuth (no password) → cannot unlink
-- If user has password AND OAuth → can unlink OAuth
-- If user has multiple OAuth → can unlink any single one
-- Prevents account lockout
+- Another linked OAuth provider
+- A password, while email/password is on for the project (`enable_email_password`)
+
+A guest (anonymous) login doesn't count. To unlink a user's only provider, link another provider first, or set a password while email/password is on.
 
 ## Provider differences
 
