@@ -208,7 +208,7 @@ After upload, the cloud compile build installs dependencies from manifests such 
 ## File Requirements
 
 1. **Must be a ZIP or tar.gz file** - Other formats rejected
-2. **Include handler file** - e.g., `index.js` exporting the submitted `handler` function
+2. **Include the handler's module** - usually `index.js`, `index.mjs` or `index.cjs` for Node.js, `main.py` for Python, or `main.rb` for Ruby, exporting the submitted `handler` function. The runtime can also load it from an installed dependency or a compiled module. If the runtime can't find it, the compile build fails, unless a project variable such as `NODE_PATH`, `PYTHONPATH` or `RUBYLIB` adds a directory it loads modules from. Upload compiled JavaScript: Volcano doesn't compile TypeScript.
 3. **Include dependency manifests/lockfiles** - Do not include installed dependency directories for cloud deploys
 4. **No symlink entries** - Uploaded source archives cannot contain symlinks. Safe symlinks created during the cloud build, such as package-manager workspace links, are materialized before publish.
 5. **No top-level `.volcano-dependencies` path** - Volcano reserves it for dependency staging. An upload containing it is accepted asynchronously, then fails during the compile build.
@@ -228,11 +228,13 @@ Volcano infers build roots deterministically:
 - When `function_root` is `.` and no manifest contains the handler module, the fallback selects the longest nested manifest directory path by character count; equal-length ties choose the lexicographically first directory. With no matching manifest or applicable fallback, `install_root` is `function_root`.
 
 Volcano prefixes the supplied `handler` with `index.` for Node.js or `main.`
-for Python and Ruby. The final dot separates the module from the exported
-function. For example, the Node.js handler `src/handler.main` becomes
-`index.src/handler.main`, so its module file is `index.src/handler.js`,
-relative to `function_root`. Python module dots become path separators;
-Node.js and Ruby preserve module directory dots.
+for Python and Ruby. For Node.js and Ruby, the module runs up to the first dot
+after the last `/`; the rest names the export, or Ruby's `Class.method`. For
+Python, the final dot separates the module from the function. For example, the
+Node.js handler `src/handler.main` becomes `index.src/handler.main`, so its
+module file is `index.src/handler.js`, relative to `function_root`. Python
+module dots become path separators; Node.js and Ruby preserve module directory
+dots.
 
 When a root-level dependency manifest exists, unrelated nested manifests do
 not select the install root. For a root-level `index.js` and `package.json`,

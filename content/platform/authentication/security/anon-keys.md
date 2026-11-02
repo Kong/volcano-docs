@@ -100,23 +100,23 @@ Each anon key has a set of permissions that control what operations it allows. B
 
 ### Available permissions
 
-| Category      | Permission                 | Description                                             |
-| ------------- | -------------------------- | ------------------------------------------------------- |
-| **Auth**      | `auth.signup`              | Allow users to create new accounts                      |
-| **Auth**      | `auth.signin`              | Allow users to sign in to existing accounts             |
-| **Auth**      | `auth.refresh`             | Allow refreshing expired access tokens                  |
-| **Auth**      | `auth.logout`              | Allow users to sign out and invalidate sessions         |
-| **Auth**      | `auth.password_reset`      | Allow password reset flow (forgot/reset password)       |
-| **Auth**      | `auth.confirm_email`       | Allow email confirmation via token                      |
-| **Auth**      | `auth.resend_confirmation` | Allow resending email confirmation                      |
-| **Storage**   | `storage.upload`           | Allow uploading files to storage buckets                |
-| **Storage**   | `storage.download`         | Allow downloading files from storage buckets            |
-| **Storage**   | `storage.list`             | Allow listing files in storage buckets                  |
-| **Storage**   | `storage.delete`           | Allow deleting files from storage buckets               |
-| **Realtime**  | `realtime.connect`         | Allow connecting to realtime WebSocket                  |
-| **Realtime**  | `realtime.subscribe`       | Allow subscribing to realtime channels                  |
-| **Realtime**  | `realtime.publish`         | Allow publishing messages to broadcast channels         |
-| **Functions** | `functions.invoke`         | Allow invoking functions whose `visibility` is `public` |
+| Category      | Permission                 | Description                                                                                                                                              |
+| ------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Auth**      | `auth.signup`              | Allow users to create new accounts                                                                                                                       |
+| **Auth**      | `auth.signin`              | Allow users to sign in to existing accounts                                                                                                              |
+| **Auth**      | `auth.refresh`             | Allow refreshing expired access tokens                                                                                                                   |
+| **Auth**      | `auth.logout`              | Allow users to sign out and invalidate sessions                                                                                                          |
+| **Auth**      | `auth.password_reset`      | Allow password reset flow (forgot/reset password)                                                                                                        |
+| **Auth**      | `auth.confirm_email`       | Allow email confirmation via token                                                                                                                       |
+| **Auth**      | `auth.resend_confirmation` | Allow resending email confirmation                                                                                                                       |
+| **Storage**   | `storage.upload`           | Allow uploading files to storage buckets                                                                                                                 |
+| **Storage**   | `storage.download`         | Allow downloading files from storage buckets                                                                                                             |
+| **Storage**   | `storage.list`             | Allow listing files in storage buckets                                                                                                                   |
+| **Storage**   | `storage.delete`           | Allow deleting files from storage buckets                                                                                                                |
+| **Realtime**  | `realtime.connect`         | Allow connecting to realtime WebSocket                                                                                                                   |
+| **Realtime**  | `realtime.subscribe`       | Allow subscribing to realtime channels                                                                                                                   |
+| **Realtime**  | `realtime.publish`         | Allow publishing messages to broadcast channels                                                                                                          |
+| **Functions** | `functions.invoke`         | Allow invoking functions whose `visibility` is `public`, and reading, stopping, and messaging a durable execution whose client token the request carries |
 
 ### Default permissions
 
@@ -213,7 +213,6 @@ With additional permissions configured:
 
 Regardless of permissions:
 
-- Access other users' data (RLS enforced)
 - Bypass row-level security
 - Manage users (ban, delete)
 - Access admin endpoints
@@ -225,7 +224,7 @@ Regardless of permissions:
 Anon keys are safe to expose because:
 
 1. **Limited permissions** — Configurable, auth-only by default
-2. **RLS enforced** — Users can only see their own data
+2. **RLS policies apply** — On tables with row-level security enabled, users see only the rows your policies allow
 3. **No admin access** — Cannot manage other users
 4. **Project scoped** — Cannot access other projects
 5. **Revocable** — Delete the key to revoke access

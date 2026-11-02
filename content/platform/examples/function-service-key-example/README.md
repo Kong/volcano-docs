@@ -41,11 +41,15 @@ This example demonstrates admin operations using service keys:
 
 ### 1. Get Service Key
 
-From Volcano Dashboard:
+List the project's service keys and print one, or create a new one:
 
-1. Navigate to **Service Keys** page
-2. Copy an existing key OR create new one
-3. **NEVER expose this key publicly!**
+```bash
+volcano projects keys service list
+volcano projects keys service get <key-id> --show-key
+volcano projects keys service create backend-jobs
+```
+
+**NEVER expose this key publicly!**
 
 ### 2. Install Dependencies
 
