@@ -7,7 +7,9 @@ Secure your data at the database level using PostgreSQL's RLS.
 
 ## What is RLS?
 
-Row-Level Security (RLS) automatically filters query results based on the authenticated user.
+Row-Level Security (RLS) filters query results based on the authenticated user, on every table where you enable it.
+
+> **Important:** RLS is off on a new table. Volcano grants new tables in `public` to `anon` and `authenticated` by default, so until you run `ALTER TABLE ... ENABLE ROW LEVEL SECURITY`, any user session, including an anonymous user's, can read, change, and delete every row. See [Default grants](database-roles.md#default-grants).
 
 **Without RLS:**
 
@@ -83,39 +85,41 @@ CREATE POLICY "users_own_posts" ON posts
 
 ## Using in Functions
 
-When you connect to your database from your functions, Volcano automatically handles user context:
+Set `DATABASE_URL` yourself as a project variable, from the connection string in [Connection strings](connection-strings.md#using-in-functions). That connection string uses `application_name=volcano_full_access`, which **bypasses RLS**. To have your policies apply, connect as the signed-in user by replacing `application_name` with `volcano_user_access:{user_id}`:
 
 ```javascript
-const { Pool } = require('pg');
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL, // Set by Volcano
-});
+const { Client } = require('pg');
 
 exports.handler = async (event) => {
-  // User context is automatically set by Volcano!
-  // No manual SET commands needed
+  const auth = event.__volcano_auth;
+  if (!auth) {
+    return { statusCode: 401, body: 'Unauthorized' };
+  }
 
-  const client = await pool.connect();
+  // Replace application_name; don't append a second one.
+  const url = new URL(process.env.DATABASE_URL);
+  url.searchParams.set('application_name', `volcano_user_access:${auth.user_id}`);
+
+  const client = new Client({ connectionString: url.toString() });
+  await client.connect();
   try {
-    // RLS automatically filters based on authenticated user
+    // RLS filters to the current user's rows
     const result = await client.query('SELECT * FROM posts');
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify(result.rows), // Only current user's posts
-    };
+    return { statusCode: 200, body: JSON.stringify(result.rows) };
   } finally {
-    client.release();
+    await client.end();
   }
 };
 ```
 
 **How it works:**
 
-- Volcano detects the authenticated user from `event.__volcano_auth`
-- User context is automatically injected into the database connection
-- `auth.uid()` returns the current user's ID
-- RLS policies filter automatically
+- Your function reads the authenticated user from `event.__volcano_auth`.
+- `volcano_user_access:{user_id}` tells Volcano's database proxy to run the session as that user.
+- The proxy sets the session variables that `auth.uid()` reads, so your policies apply.
+- A connection left on `volcano_full_access` skips RLS. Use it only for trusted server-side work.
+
+For a pooled version, see [Function integration](../authentication/backend/function-integration.md).
 
 ## Auto-Set user_id
 

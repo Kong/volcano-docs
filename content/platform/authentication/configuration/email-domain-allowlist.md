@@ -58,11 +58,11 @@ auth:
 `allowed_email_domains_mode` decides how far the list reaches. An empty list
 restricts nothing whatever the mode is.
 
-| Mode                | Signup                   | Sign-in                  | Existing sessions                   |
-| ------------------- | ------------------------ | ------------------------ | ----------------------------------- |
-| `signup` (default)  | Blocked outside the list | Allowed                  | Kept                                |
-| `signup_and_signin` | Blocked outside the list | Blocked outside the list | Revoked for the addresses it blocks |
-| `disabled`          | Allowed                  | Allowed                  | Kept                                |
+| Mode                | Signup                   | Sign-in                  | Existing sessions                  |
+| ------------------- | ------------------------ | ------------------------ | ---------------------------------- |
+| `signup` (default)  | Blocked outside the list | Allowed                  | Kept                               |
+| `signup_and_signin` | Blocked outside the list | Blocked outside the list | Revoked for the sign-ins it blocks |
+| `disabled`          | Allowed                  | Allowed                  | Kept                               |
 
 Pick `signup` to stop new accounts while letting everyone who already signed up
 carry on. Pick `signup_and_signin` to cut off accounts outside the list too —
@@ -92,6 +92,11 @@ from the promoted identity. An account can hold an identity that predates the
 restriction, and promoting it would move the account onto an address signup
 would refuse.
 
+Unlinking the account's primary provider (`DELETE /auth/oauth/{provider}/unlink`)
+also moves its canonical email to another identity. While the list is enforced,
+an identity whose address is on the list goes first, so the account keeps an
+allowed canonical email whenever it has one.
+
 Under `signup_and_signin`, every path that hands out a session is checked as
 well:
 
@@ -108,12 +113,18 @@ well:
 Linking a provider whose address the account already owns keeps working, so a
 user grandfathered in before the restriction can still add a provider.
 
-Sign-in is judged on the account's **canonical email** — the address of its
-primary identity, the one `GET /auth/user` returns — not on the address the
-request presented. An account with several identities is therefore either in or
-out as a whole: it cannot sign in through a secondary address that happens to be
-on the list while its canonical address is not. That is the same address the
-session revocation matches, so the two never disagree.
+A session needs two addresses on the list:
+
+- the account's **canonical email** — the address of its primary identity, the
+  one `GET /auth/user` returns
+- the email of the identity it signs in with — the password identity for
+  `POST /auth/signin`, the provider's identity for an OAuth/SSO sign-in
+
+Both are checked when the session is issued and every time it is refreshed. A
+session that does not sign in through one identity, such as a CLI device login,
+needs every identity on the account to be on the list. An identity with no
+email is outside the list. Session revocation applies the same rule, so the two
+never disagree.
 
 The error message is `email domain is not allowed for this project`.
 
@@ -122,16 +133,20 @@ The error message is `email domain is not allowed for this project`.
 Matching is an exact, case-insensitive comparison of the part after the last
 `@`:
 
-| Allowlist     | Address                     | Result   |
-| ------------- | --------------------------- | -------- |
-| `domain1.com` | `user@domain1.com`          | Allowed  |
-| `domain1.com` | `User@DOMAIN1.COM`          | Allowed  |
-| `domain1.com` | `user+tag@domain1.com`      | Allowed  |
-| `domain1.com` | `user@mail.domain1.com`     | Rejected |
-| `domain1.com` | `user@domain1.com.evil.com` | Rejected |
+| Allowlist          | Address                     | Result   |
+| ------------------ | --------------------------- | -------- |
+| `domain1.com`      | `user@domain1.com`          | Allowed  |
+| `domain1.com`      | `User@DOMAIN1.COM`          | Allowed  |
+| `domain1.com`      | `user+tag@domain1.com`      | Allowed  |
+| `domain1.com`      | `user@mail.domain1.com`     | Rejected |
+| `domain1.com`      | `user@domain1.com.evil.com` | Rejected |
+| `domain1.com`      | `user@domain1.com.`         | Allowed  |
+| `xn--bcher-kva.de` | `user@bücher.de`            | Allowed  |
 
 Subdomains are not implied. List `mail.domain1.com` explicitly if you want to
-accept it.
+accept it. Domains are compared after IDNA mapping, so list an
+internationalized domain in its ASCII (`xn--`) form; it matches addresses
+written in either form.
 
 ## Entry Format
 
@@ -155,8 +170,8 @@ Under `signup` and `disabled`, adding a restriction never locks anyone out.
 Users whose domain is no longer on the list keep signing in normally; the
 allowlist only governs new accounts and email changes.
 
-Under `signup_and_signin`, saving the policy signs out every account outside the
-list right away — their sessions are deleted, so their access tokens stop
+Under `signup_and_signin`, saving the policy signs out every session the list
+refuses right away — those sessions are deleted, so their access tokens stop
 working on the next request rather than at expiry. The accounts themselves stay,
 so putting the domain back restores access; delete the users if you need them
 gone for good.
@@ -249,18 +264,19 @@ dropping them.
 The address is outside the list. Add its domain, or clear the list.
 
 **Sign-in returns 403 `email domain is not allowed for this project`**
-The project is in `signup_and_signin` and the account's domain is not listed.
-Check the account's canonical email (`GET /auth/user`) rather than the address
-you signed in with — they differ when another identity is primary. Add the
-domain, or switch the mode back to `signup` to let existing accounts in.
+The project is in `signup_and_signin` and either the account's canonical email
+or the email of the identity you signed in with is not listed. Check both: the
+canonical email is the one `GET /auth/user` returns, and the identities are
+listed by `GET /auth/user/identities`. Add the domain, or switch the mode back
+to `signup` to let existing accounts in.
 
 **Signup returns 403 for an `@anonymous.volcano.internal` address**
 That domain is reserved for anonymous accounts the platform creates. No project
 can accept it, and adding it to the allowlist has no effect.
 
 **Users were signed out after a config change**
-Expected under `signup_and_signin`: saving the policy revokes the sessions of
-every account outside the list.
+Expected under `signup_and_signin`: saving the policy revokes every session the
+list refuses.
 
 **A subdomain is rejected even though the parent domain is listed**
 Expected — add the subdomain as its own entry.

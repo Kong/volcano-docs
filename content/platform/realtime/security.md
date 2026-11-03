@@ -56,7 +56,8 @@ const realtime = new VolcanoRealtime({
 
 **Security notes:**
 
-- Service keys bypass RLS for Postgres changes
+- A service key holding `*` receives Postgres changes with RLS bypassed. Until Volcano applies service key scopes to realtime, so does every other service key
+- Once Volcano applies [service key scopes](../authentication/security/service-keys.md#scope-a-service-key) to realtime, a key scoped without `*` needs `realtime.subscribe` to subscribe to broadcast and presence channels, `realtime.publish` to publish, and `*` for Postgres changes. An open subscription the scope doesn't cover ends within seconds, with unsubscribe code `2100` and reason `service key scope`. Durable run channels keep [their rule](#durable-execution-channels)
 - Use only in trusted backend environments
 - Never expose in client-side code
 
@@ -132,6 +133,8 @@ Any authenticated user can track and be tracked:
 const channel = realtime.channel('lobby', { type: 'presence' });
 ```
 
+A connection reads a presence channel's members only after subscribing to it. The SDKs subscribe first.
+
 ### Postgres changes channels
 
 **Respect Row Level Security.** Users only receive events for rows they can SELECT:
@@ -151,10 +154,10 @@ The server:
 
 A durable execution's channel admits the same callers as its [messages API](../functions/durable-messages.md#who-can-send-and-read). The durable function's visibility has to admit the connection first; then:
 
-- A service role key can watch any execution in the project, unless the key is scoped without `functions.invoke`.
+- A service role key holding `*` can watch any execution in the project. A key scoped to a list without `*` needs `functions.invoke` and the execution's `client_token`, sent with the subscribe request. The start returns that token.
 - A signed-in user, anonymous sign-ins included, can watch the executions they started.
 - Any other signed-in user needs the execution's `client_token`, which the SDK sends with the subscribe request.
-- Until an execution is `running`, only a service role key can watch it.
+- Until an execution is `running`, only a service role key holding `*` can watch it.
 
 An anon key alone does not open a realtime connection, so a visitor who is not signed in can sign in anonymously first or poll the [messages list](../functions/durable-messages.md#who-can-send-and-read) instead.
 

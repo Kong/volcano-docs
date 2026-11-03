@@ -92,6 +92,8 @@ while cleanup runs, then the function disappears from `get` and `list` results.
 | Python   | python3.14, python3.13, python3.12, python3.11, python3.10 | `main.handler`  |
 | Ruby     | ruby4.0, ruby3.4, ruby3.3                                  | `main.handler`  |
 
+`python3.10` is deprecated: Python 3.10 reached end of life in October 2026. It still deploys, and Volcano will remove it before 2027-08-31. Move functions to a newer Python runtime.
+
 The handler is the entry point Volcano calls when your code runs. For Node.js, `index.handler` means the `handler` export in `index.js`. You can customize this when deploying.
 
 ## Quick example

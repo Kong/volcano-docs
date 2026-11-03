@@ -56,7 +56,7 @@ The anon key is safe to use in frontend applications. It allows users to:
 - Sign up and sign in
 - Refresh access tokens
 - Sign out
-- Access their own data (RLS enforced)
+- Access their own data, on tables with [row-level security](../databases/row-level-security.md) enabled
 
 ```javascript
 const volcano = new VolcanoAuth({

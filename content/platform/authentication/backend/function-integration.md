@@ -197,11 +197,10 @@ exports.handler = async (event) => {
 
 ## Environment Variables
 
-Volcano automatically injects these into your functions:
+Volcano doesn't set `DATABASE_URL` for you. Set it yourself as a project variable, from the connection string in [Connection strings](../../databases/connection-strings.md#using-in-functions):
 
 ```javascript
-process.env.DATABASE_URL; // Your database connection string
-// Plus any variables you configure
+process.env.DATABASE_URL; // The connection string you set as a project variable
 ```
 
 ## See Also

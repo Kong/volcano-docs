@@ -45,16 +45,18 @@ curl -X POST https://api.volcano.dev/projects/{PROJECT_ID}/oauth/configs \
     "redirect_url": "https://yourapp.com/auth/callback"
   }'
 
-# 2. Disable email/password signup
+# 2. Turn off email and password
 curl -X PUT https://api.volcano.dev/projects/{PROJECT_ID}/auth/config \
   -H "Authorization: Bearer {PLATFORM_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{
-    "enable_signup": false
+    "enable_email_password": false
   }'
 ```
 
-**Result:** Users can ONLY sign in with Google or GitHub.
+**Result:** Users can ONLY sign up and sign in with Google or GitHub. Keep
+`enable_signup` on: setting it to `false` stops new sign-ups through every
+provider, OAuth included.
 
 ---
 
@@ -80,12 +82,12 @@ curl -X PUT https://api.volcano.dev/projects/{PROJECT_ID}/auth/config \
   -H "Authorization: Bearer {PLATFORM_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{
-    "enable_signup": false,
+    "enable_email_password": false,
     "enable_anonymous_signins": false
   }'
 ```
 
-**Result:** Users can ONLY sign in with Microsoft/Azure AD.
+**Result:** Users can ONLY sign up and sign in with Microsoft/Azure AD.
 
 ---
 
@@ -139,7 +141,7 @@ curl -X PUT https://api.volcano.dev/projects/{PROJECT_ID}/auth/config \
   -H "Authorization: Bearer {PLATFORM_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{
-    "enable_signup": false,
+    "enable_email_password": false,
     "enable_anonymous_signins": true
   }'
 ```
@@ -195,7 +197,10 @@ is returned by:
 
 Under `signup_and_signin` the same `403` also comes back from `POST /auth/signin`,
 `POST /auth/refresh`, the OAuth callback for an already-linked account, and the
-device-code token exchange; saving that mode signs out the accounts it excludes.
+device-code token exchange. A session needs both the account's email and the
+email of the identity it signs in with on the list (see
+[What It Covers](configuration/email-domain-allowlist.md#what-it-covers)), and
+saving that mode signs out the sessions it excludes.
 
 Matching is exact and case-insensitive on the domain part, so listing
 `domain1.com` does **not** allow `mail.domain1.com`. Existing accounts are never
@@ -432,11 +437,22 @@ When a method is disabled, all related endpoints return errors:
 ```bash
 # Email/password disabled
 POST /auth/signup
-# Response: 403 Forbidden - "signups are disabled for this project"
+POST /auth/signin
+POST /auth/forgot-password
+POST /auth/reset-password
+PUT /auth/user   # with a non-empty "password" in the body
+# Response: 403 Forbidden - "email/password authentication is not enabled for this project"
+
+# A password no longer counts as a way to sign in, so an account can't
+# unlink its last OAuth provider or identity
+DELETE /auth/oauth/{provider}/unlink   # 400 - "cannot unlink last authentication method"
+DELETE /auth/user/identities/{id}      # 400 - "cannot remove the last sign-in method"
 
 # Google OAuth disabled
 GET /auth/oauth/google/authorize
 # Response: 400 Bad Request - "OAuth provider is disabled"
+# A Google login no longer counts as a way to sign in, so the unlinks above
+# refuse to remove an account's last other method
 
 # Anonymous disabled
 POST /auth/signup-anonymous
@@ -450,11 +466,11 @@ POST /auth/signup-anonymous
 ### Method 1: Individual Settings
 
 ```bash
-# Disable email/password
+# Turn email/password off
 curl -X PUT https://api.volcano.dev/projects/{PROJECT_ID}/auth/config \
   -H "Authorization: Bearer {TOKEN}" \
   -H "Content-Type: application/json" \
-  -d '{"enable_signup": false}'
+  -d '{"enable_email_password": false}'
 
 # Enable anonymous
 curl -X PUT https://api.volcano.dev/projects/{PROJECT_ID}/auth/config \
@@ -582,6 +598,22 @@ curl -X PUT .../auth/config -d '{"enable_signup": true}'
 
 ---
 
+### "email/password authentication is not enabled for this project"
+
+**Cause:** `enable_email_password` is `false`. It refuses password sign-up,
+sign-in, reset, and setting a password through `PUT /auth/user`, including for
+accounts that already have a password. Their passwords are kept and work again
+when you turn it back on. Sessions that already signed in with a password stay
+valid until they expire or you revoke them.
+
+**Solution:** Sign in with an enabled provider, or turn email/password back on
+
+```bash
+curl -X PUT .../auth/config -d '{"enable_email_password": true}'
+```
+
+---
+
 ### "OAuth provider is disabled"
 
 **Cause:** Provider exists but `enabled` is `false`
@@ -609,7 +641,9 @@ curl -X PUT .../auth/config -d '{"enable_anonymous_signins": true}'
 ### "email domain is not allowed for this project"
 
 **Cause:** the address is outside `allowed_email_domains`. On sign-in rather than
-signup, the project is also in `allowed_email_domains_mode: signup_and_signin`
+signup, the project is also in `allowed_email_domains_mode: signup_and_signin`,
+and either the account's email or the email of the identity signed in with is
+outside the list
 
 **Solution:** add the domain, clear the list, or move the mode back to `signup`
 so existing accounts can still sign in
@@ -741,14 +775,14 @@ POST /oauth/configs (Google, GitHub, etc.)
 
 # 3. Wait for migration period (e.g., 30 days)
 
-# 4. Disable email/password
-PUT /auth/config {"enable_signup": false}
-
-# Note: Existing users with passwords can still sign in
-# But new signups must use OAuth
+# 4. Turn email/password off
+PUT /auth/config {"enable_email_password": false}
 ```
 
-**Impact:** Existing users can still use passwords
+**Impact:** Password sign-in, changes and resets stop at once. Users who linked
+OAuth sign in with it; users who didn't can't sign in until you turn
+email/password back on. Stored passwords are kept, and existing sessions stay
+valid until they expire or are revoked.
 
 ---
 
@@ -839,17 +873,19 @@ POST /auth/signup
 
 ### Can I change configuration after users have signed up?
 
-**Yes!** Configuration changes don't affect existing users.
-
-- Existing users keep their authentication methods
-- New signups use new configuration
-- You can add/remove methods anytime
+**Yes.** Existing users keep the methods linked to their accounts, and new
+sign-ups use the new configuration. A method you turn off stops working for
+everyone, though: turning email/password off also stops existing accounts
+signing in with a password. See the next question.
 
 ### What happens if I disable email/password but users have passwords?
 
-**Existing users can still sign in** with their passwords. Only NEW signups are blocked.
+**They can no longer sign in with their passwords**, change them, or reset them.
+Their passwords are kept and work again if you turn email/password back on, and
+sessions that already signed in stay valid until they expire or you revoke them.
 
-To fully migrate, ask users to link an OAuth provider first.
+To migrate, ask users to link an OAuth provider before you turn email/password
+off.
 
 ### Can users have multiple authentication methods?
 
