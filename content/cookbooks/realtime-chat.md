@@ -185,6 +185,8 @@ async function send(roomId, authorName, body) {
 For each room, register listeners, show history, subscribe, then load history again. `merge(rows)` adds rows by id and sorts by `created_at`, so the same message can arrive from history and from a broadcast without showing twice. `joinRoom` returns the cleanup for when the room unmounts, for example from a React effect:
 
 ```javascript
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function joinRoom(roomId) {
   let cancelled = false;
   currentRoomId = roomId;
@@ -203,7 +205,8 @@ function joinRoom(roomId) {
 
   // The broadcast channel outlives this room view, so keep each handler's off().
   const offMessage = live.on('message', async ({ id } = {}) => {
-    if (typeof id !== 'string') return;
+    // Any visitor can publish, so a bogus id costs one ignored event, not a history reload.
+    if (typeof id !== 'string' || !UUID_RE.test(id)) return;
     const { data, error } = await volcano.from('messages')
       .select('id,room_id,user_id,author_name,body,created_at').eq('id', id).limit(1);
     if (cancelled) return;
