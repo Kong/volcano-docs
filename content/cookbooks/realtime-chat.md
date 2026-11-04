@@ -75,7 +75,7 @@ volcano use volcano-chat
 volcano cloud databases create chat --region us-east-1 --pg-version 16
 ```
 
-`volcano init nextjs` puts `package.json` at the root, the app in `web/`, and the migrations in `volcano/migrations/`. Add `.volcano/source-layout.json` so `volcano cloud deploy` knows where the app is:
+`volcano init nextjs` puts `package.json` at the root, the app in `web/`, and the migrations in `volcano/migrations/`. It also writes `.volcano/source-layout.json`, which tells `volcano cloud deploy` where the app is. Check that it lists the app, or create it if it's missing (older CLI versions don't write it):
 
 ```json
 { "version": 1, "frontends": [{ "name": "web", "workspace": "", "app_root": "web" }] }
