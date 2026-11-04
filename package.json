@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build && node scripts/emit-search-index.mjs && node scripts/check-search-index.mjs",
+    "build": "next build && node scripts/emit-search-index.mjs && node scripts/check-search-index.mjs && node scripts/check-server-traces.mjs",
     "start": "next start",
     "lint": "eslint .",
     "postinstall": "fumadocs-mdx",
