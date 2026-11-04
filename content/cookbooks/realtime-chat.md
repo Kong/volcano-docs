@@ -31,36 +31,22 @@ Paste this into Claude Code, Codex or Cursor in an empty folder:
 ```text
 Build a real-time chat app in this empty folder with Next.js and deploy it to Volcano.
 
-- Restore the session or sign in anonymously; no sign-up form. Visitors pick a
-  display name (24 characters max), kept in localStorage.
-- Seed three rooms (general, random, help). Keep messages in Postgres with
-  row-level security: signed-in visitors can read every message and post only
-  as themselves (user_id = auth.uid()). No UPDATE or DELETE grants. Bodies are
-  1 to 500 characters, enforced by a CHECK constraint.
-- Save each message before announcing it. Broadcast only the new message id on
-  a per-room channel; receivers read the row from the database and never trust
-  broadcast content. Show the sender's own message from the insert result.
-- Use a per-room presence channel for the online count (distinct users) and
-  broadcast typing events that expire after 3 seconds.
-- Load history straight away, then load it again once the channels are
-  subscribed and after every reconnect, merging by id so nothing is lost or
-  duplicated. Keep each room's broadcast channel subscribed for the session so
-  a send that finishes after a room switch still reaches its room. When a room
-  view unmounts, remove its own handlers and its presence channel
-  (unsubscribe() keeps handlers). If reading a broadcast message fails, reload
-  history instead of dropping it.
-- One SQL statement per migration file, each safe to re-run, because
-  volcano cloud deploy --with-migrations runs every file on each deploy.
-- Only the anon key goes to the browser. It needs the default Auth permissions
-  plus Realtime Connect, Subscribe and Publish.
+- Visitors pick a display name and chat with no sign-up form (anonymous sign-in).
+- Three rooms: general, random, help. Show who's online and who's typing.
+- Keep messages in Postgres with row-level security: anyone signed in can read,
+  people can only post as themselves, and messages can't be edited or deleted.
+- Save each message before announcing it, and broadcast only its id, so a client
+  can't make others display something the database didn't accept.
+- Only the anon key goes to the browser. It needs Realtime Connect, Subscribe and
+  Publish as well as the default Auth permissions.
 
-Create a new Volcano project named volcano-chat, deploy to production and give
-me the URL. Ask before creating cloud resources. Before you finish, test the
-live project with two anonymous users: B's message must reach A live, presence
-must show both, and RLS must refuse a message posted with A's user_id by B.
+Create a new Volcano project named volcano-chat, deploy to production and give me
+the URL. Before you finish, test the live app with two anonymous users: B's message
+reaches A without a reload, both show as online, and the database refuses a message
+B posts with A's user id.
 ```
 
-This app was built and deployed with Claude Code (claude-opus-5-5) and the Volcano CLI in one session, and the prompt sums up the decisions from that run. The prompt itself hasn't been run again from an empty folder yet. In that session, three things needed fixing after the first deploy: `volcano.insert()` can't be chained with `.select()`, migrations must hold one statement each, and waiting for both channel subscriptions before showing history made rooms look empty for several seconds. The prompt asks for the fixed behavior directly.
+Tested with a fresh Claude Code agent (claude-opus-5-5) in an empty folder. It had only this prompt, Volcano CLI 0.66.0 and `volcano docs`, without the Volcano plugin, and the project was renamed so it didn't collide with an existing one. It worked on the first try in about 13 minutes. It deployed, then wrote a two-browser test that passed all 10 checks and passed again on a second run by hand. Those checks covered live delivery, both users online, typing, the refused post as another user, no edits or deletes, and forged broadcasts showing nothing. The one thing it had to work around was the Realtime key: the CLI only makes auth-only keys, so it called the anon key API with a project access token. It also chose one online list for the whole app, not one per room.
 
 ## Build it yourself
 
@@ -275,7 +261,7 @@ frontends:
       - NEXT_PUBLIC_VOLCANO_DATABASE
 ```
 
-The browser key needs Realtime permissions, and `volcano projects keys anon create` only makes auth-only keys. Create it in the [dashboard's anonymous keys page](https://volcano.dev/dashboard/keys): select the project, click **Create Key**, name it `Chat`, keep the default **Auth** permissions, add **Realtime → Connect, Subscribe, Publish**, and copy the value. The [anon key API](/platform/authentication/security/anon-keys) accepts the same permission list if you'd rather script it.
+The browser key needs Realtime permissions, and `volcano projects keys anon create` only makes auth-only keys. Create it in the [dashboard's anonymous keys page](https://volcano.dev/dashboard/keys): select the project, click **Create Key**, name it `Chat`, keep the default **Auth** permissions, add **Realtime → Connect, Subscribe, Publish**, and copy the value. To script it, mint a short-lived project access token with `volcano cloud access-tokens create --expires-at <time> --json`. Send it as the bearer token to the [anon key API](/platform/authentication/security/anon-keys) with the same permission list, then revoke the token with `volcano cloud access-tokens revoke <name> --yes`.
 
 Put the three variables in `volcano/cloud.env`, and the same values in `web/.env.local` for `npm run dev`. Both paths are gitignored:
 
