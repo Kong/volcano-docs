@@ -187,7 +187,7 @@ async function makeThumbnail(file) {
 }
 ```
 
-Upload both files, then save the row. The gallery lists rows, so a photo only shows up once both files exist. If a step fails, remove what was uploaded so no orphan files are left behind:
+Upload both files, then save the row. The gallery lists rows, so a photo only shows up once both files exist. If a step fails, remove what was uploaded so no orphan files are left behind. The one exception is a failed insert: its response can be lost after the row committed, so look the row up by its id first and keep the files unless it's definitely not there:
 
 ```javascript
 const EXTENSIONS = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' };
@@ -202,6 +202,7 @@ async function uploadPhoto(file, caption) {
   const thumb = await makeThumbnail(file);
   const bucket = volcano.storage.from('photos');
   const uploaded = [];
+  let inserting = false;
   try {
     const original = await bucket.upload(storagePath, file, { contentType: file.type });
     if (original.error) throw original.error;
@@ -209,6 +210,7 @@ async function uploadPhoto(file, caption) {
     const small = await bucket.upload(thumbPath, thumb.blob, { contentType: 'image/jpeg' });
     if (small.error) throw small.error;
     uploaded.push(thumbPath);
+    inserting = true;
     const { data, error } = await volcano.insert('photos', {
       id, storage_path: storagePath, thumb_path: thumbPath,
       caption: caption.trim().slice(0, 140), width: thumb.width, height: thumb.height,
@@ -216,6 +218,13 @@ async function uploadPhoto(file, caption) {
     if (error) throw error;
     return data[0];
   } catch (error) {
+    if (inserting) {
+      const saved = await volcano.from('photos')
+        .select('id,user_id,uploader_email,storage_path,thumb_path,caption,width,height,created_at')
+        .eq('id', id).limit(1);
+      if (saved.error) throw error; // can't tell, so keep the files
+      if (saved.data.length) return saved.data[0];
+    }
     if (uploaded.length) await bucket.remove(uploaded);
     throw error;
   }
@@ -332,6 +341,7 @@ A run in two headless Chrome windows also passed: thumbnails came back at 640 pi
 - **Two layers, each enforcing its own rules.** Bucket policies guard the files and RLS guards the rows. A client can skip the app and call either API directly, so each has to hold up alone. The path constraint is what ties them together: a row can only point at files in its owner's folder, and only the owner can put files there.
 - **One folder per user.** Putting the user id first in the path gives the `INSERT` policy something to check, since `owner_id` doesn't exist until the file does. Delete checks `owner_id`, the uploader Volcano recorded, not the path.
 - **Thumbnails made in the browser.** Volcano Storage stores and serves files as they are, with no resizing. A 640-pixel JPEG of about 10 to 15 KB keeps the grid fast, and the original loads only when someone opens it. To resize on the server, run a [function](/platform/functions/overview) after upload.
-- **Private files and object URLs.** The files are never made public, so every view goes through a policy check with the viewer's token. That costs one authenticated download per thumbnail. In return, the page never holds a shareable link: an object URL only works inside the tab that made it.
+- **Private files and object URLs.** The files are never made public, so every download goes through a policy check with the viewer's token. That costs one authenticated download per thumbnail, and in return there's never a link that works for someone who isn't signed in. An object URL is a temporary reference to bytes already in the browser. It works in that browser until the page revokes it or closes, and showing it again doesn't repeat the check.
+- **Members see each other's email addresses.** `uploader_email` is readable by everyone signed in, so anyone with an account can read every uploader's address through the database API, even though the page only shows the part before the `@`. That suits a group that already knows each other. Otherwise, store a display name the person chooses and leave the email out of the table.
 - **A shared wall, not private albums.** For per-person photos, change `members-view` to `auth.uid() = owner_id` and `photos_read` to `user_id = auth.uid()`. Storage policies see the path, the owner and the session, not your tables, so sharing with chosen people needs the path to carry the rule (for example a folder per album) or a [function](/platform/functions/overview) that checks a shares table before serving the file.
-- **No moderation.** Anyone who signs up can upload, and there's no rate limit or report flow. Restrict sign-up with `allowed_email_domains`, or add an admin delete path, before opening it to the public.
+- **No moderation.** Anyone who signs up can upload, and there's no rate limit or report flow. Before opening it beyond a trusted group, turn on email confirmation (see [Email SMTP configuration](/platform/authentication/configuration/email-smtp)) and add an admin delete path. Restricting sign-up with `allowed_email_domains` only keeps outsiders out once confirmation is on. Without it, anyone can register a made-up address in an allowed domain.
