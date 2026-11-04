@@ -146,15 +146,16 @@ const realtime = new VolcanoRealtime({
     return session.access_token;
   },
 });
-const [{ data: rooms }] = await Promise.all([
+const [{ data: rooms, error: roomsError }] = await Promise.all([
   volcano.from('rooms').select('id,title').order('id'),
   realtime.connect(),
 ]);
+if (roomsError) throw roomsError;
 ```
 
 ### Send a message
 
-Save first. `volcano.insert()` resolves to the created rows, so show your own message from that result, then tell the room the new id:
+Save first. `volcano.insert()` resolves to the created rows, so show your own message from that result, then tell the room the new id. `roomChannel` is the current room's broadcast channel, set by `joinRoom` below:
 
 ```javascript
 async function send(roomId, authorName, body) {
@@ -163,7 +164,7 @@ async function send(roomId, authorName, body) {
   });
   if (error) throw error;
   showMessage(data[0]);
-  live.send({ event: 'message', id: data[0].id }).catch(() => {
+  roomChannel.send({ event: 'message', id: data[0].id }).catch(() => {
     showError(new Error('Sent, but live delivery failed. Peers will see it on reload.'));
   });
 }
@@ -171,51 +172,66 @@ async function send(roomId, authorName, body) {
 
 ### Receive messages, presence and typing
 
-For each room, register listeners, show history, subscribe, then load history again. `merge(rows)` adds rows by id and sorts by `created_at`, so the same message can arrive from history and from a broadcast without showing twice:
+For each room, register listeners, show history, subscribe, then load history again. `merge(rows)` adds rows by id and sorts by `created_at`, so the same message can arrive from history and from a broadcast without showing twice. `joinRoom` returns the cleanup for when the room unmounts, for example from a React effect:
 
 ```javascript
-const live = realtime.channel(`chat-${roomId}`, { type: 'broadcast' });
-const presence = realtime.channel(`presence-${roomId}`, { type: 'presence' });
+function joinRoom(roomId) {
+  let cancelled = false;
+  const live = realtime.channel(`chat-${roomId}`, { type: 'broadcast' });
+  const presence = realtime.channel(`presence-${roomId}`, { type: 'presence' });
+  roomChannel = live; // send() and typing events use this room's channel
 
-function loadHistory() {
-  return volcano.from('messages').select('id,room_id,user_id,author_name,body,created_at')
-    .eq('room_id', roomId).order('created_at', { ascending: false }).limit(50)
-    .then(({ data, error }) => { if (error) throw error; merge(data.reverse()); });
+  // Reads take 1–2 seconds; drop any that finish after the room is gone.
+  function loadHistory() {
+    return volcano.from('messages').select('id,room_id,user_id,author_name,body,created_at')
+      .eq('room_id', roomId).order('created_at', { ascending: false }).limit(50)
+      .then(({ data, error }) => {
+        if (error) throw error;
+        if (!cancelled) merge(data.reverse());
+      });
+  }
+
+  live.on('message', async ({ id } = {}) => {
+    if (typeof id !== 'string') return;
+    const { data, error } = await volcano.from('messages')
+      .select('id,room_id,user_id,author_name,body,created_at').eq('id', id).limit(1);
+    if (cancelled) return;
+    // A failed read would drop the message, so reconcile from history instead.
+    if (error) return loadHistory().catch(showError);
+    if (data?.[0]?.room_id === roomId) merge(data);
+  });
+  live.on('typing', ({ user, name } = {}) => {
+    if (user !== me && typeof name === 'string') showTyping(user, name.slice(0, 24));
+  });
+  presence.onPresenceSync((state) => {
+    if (!cancelled) setOnline(new Set(Object.values(state).map((p) => p.user)).size);
+  });
+
+  let ready = false;
+  const offConnect = realtime.onConnect(() => {
+    if (ready && !cancelled) void live.subscribe().then(loadHistory).catch(showError);
+  });
+  loadHistory().catch(showError);
+  Promise.all([live.subscribe(), presence.subscribe()])
+    .then(() => {
+      if (cancelled) return;
+      ready = true;
+      return loadHistory();
+    })
+    .catch(showError);
+
+  return function leaveRoom() {
+    cancelled = true;
+    offConnect();
+    realtime.removeChannel(`chat-${roomId}`, 'broadcast');
+    realtime.removeChannel(`presence-${roomId}`, 'presence');
+  };
 }
-
-live.on('message', async ({ id } = {}) => {
-  if (typeof id !== 'string') return;
-  const { data, error } = await volcano.from('messages')
-    .select('id,room_id,user_id,author_name,body,created_at').eq('id', id).limit(1);
-  // A failed read would drop the message, so reconcile from history instead.
-  if (error) return loadHistory().catch(showError);
-  if (data?.[0]?.room_id === roomId) merge(data);
-});
-live.on('typing', ({ user, name } = {}) => {
-  if (user !== me && typeof name === 'string') showTyping(user, name.slice(0, 24));
-});
-presence.onPresenceSync((state) => {
-  setOnline(new Set(Object.values(state).map((p) => p.user)).size);
-});
-
-let ready = false;
-const offConnect = realtime.onConnect(() => {
-  if (ready) void live.subscribe().then(loadHistory).catch(showError);
-});
-loadHistory().catch(showError);
-await Promise.all([live.subscribe(), presence.subscribe()]);
-ready = true;
-await loadHistory();
-
-// When the room unmounts:
-offConnect();
-realtime.removeChannel(`chat-${roomId}`, 'broadcast');
-realtime.removeChannel(`presence-${roomId}`, 'presence');
 ```
 
 Use `removeChannel()` and not `unsubscribe()` on unmount. Channels are cached by name, and `unsubscribe()` only pauses delivery and keeps the handlers. Switching #general → #random → #general would then stack a second set of handlers, and each broadcast would trigger two database reads.
 
-Send typing events at most every 1.5 seconds while someone types (`live.send({ event: 'typing', user: me, name })`), and drop each typer 3 seconds after their last event. Queue the database reads the way the [Pixelboard](./pixel-board.md) does if out-of-order responses matter in your UI. Here, merging by id makes the order of reads harmless.
+Send typing events at most every 1.5 seconds while someone types (`roomChannel.send({ event: 'typing', user: me, name })`), and drop each typer 3 seconds after their last event. Queue the database reads the way the [Pixelboard](./pixel-board.md) does if out-of-order responses matter in your UI. Here, merging by id makes the order of reads harmless.
 
 ### Configure and deploy
 
