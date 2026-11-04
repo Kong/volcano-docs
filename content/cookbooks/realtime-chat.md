@@ -17,7 +17,7 @@ A chat app where visitors pick a display name and talk in three rooms with no si
 
 ![Volcano Chat in #random: ada and sam trading messages, 2 online, and "ada is typing…" under the conversation](/cookbooks/realtime-chat-poster.png)
 
-![sam's view earlier in the same conversation: ada's first two messages arriving live while she types the next one](/cookbooks/realtime-chat-typing.png)
+![sam's view a moment later: ada's new message has arrived live, she is typing again, and sam has a reply drafted](/cookbooks/realtime-chat-typing.png)
 
 ## What you need
 
