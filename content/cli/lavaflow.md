@@ -1,63 +1,88 @@
 ---
 title: "LavaFlow"
-description: "Turn LavaFlow on from the CLI so Volcano diagnoses your project's runtime errors and opens pull requests that fix them."
+description: "Turn LavaFlow on from the CLI so Volcano diagnoses your project's runtime errors and opens pull requests that fix them, then follow what it did."
 ---
 
 ## What it is
 
 LavaFlow uses AI to diagnose this project's errors from their logs and
 deployed source, and opens fix pull requests in your connected repository.
-Turning it on is the whole setup: there is nothing to choose and no key to
-bring.
+It covers every function, frontend and durable function in the project.
+Turning it on is the whole setup: there is nothing to install and no key to
+bring. You review and merge its pull requests like any other, unless you
+choose autonomy `merge`: then LavaFlow can merge them, and a fix it holds or
+stops is yours to review and merge on GitHub.
 
-By default, runs start without a request once LavaFlow is on. A project
-configuration with `auto_trigger: false` keeps them to `runs start` instead
-(see "Declare it in the project configuration" below). You review and merge
-its pull requests like any other.
+Where LavaFlow isn't available, every `volcano cloud lavaflow` command says
+why:
 
-LavaFlow is in preview. During the preview, it needs the SUPERAGENT plan.
+- When LavaFlow isn't open to the project or its owner yet, every command
+  says "LavaFlow isn't available for this project yet" and exits with code 4.
+  Volcano checks this before the owner's plan.
+- When LavaFlow is open to the project but the owner's plan doesn't include
+  it, every command says "LavaFlow needs a plan that includes it, and the
+  project owner's plan doesn't" and exits with code 5.
+- On a Volcano API that has no LavaFlow, every command says "LavaFlow isn't
+  available on this Volcano API" and exits with code 4.
 
-Where LavaFlow isn't available, a `volcano cloud lavaflow` command that needs
-it says "LavaFlow isn't available on this Volcano API" and exits with code 4:
-
-- On a Volcano API that has no LavaFlow, every command says so.
-- Where Volcano has LavaFlow off, `enable` and `runs start` say so. A project
-  that saved LavaFlow settings can still read its status and turn LavaFlow
-  off; for a project that never saved them, `status` and `disable` say so
-  too. `runs list` and `runs get` still show past runs.
+A project that already has LavaFlow records, such as saved settings or past
+runs, keeps them readable while LavaFlow isn't available for it:
+`status`, `settings`, `stats`, `resources`, `list` and `show` still work, and
+`disable` still turns LavaFlow off. `enable` says "LavaFlow can't be turned on
+for this project: it isn't open to the owner's account, or the owner's plan
+doesn't include it" before it asks anything, and exits with code 4. It says
+the same when the owner's plan couldn't be read.
+`settings set` exits with the plan's code 5 or code 4, as above.
 
 ## How it relates
 
 - Belongs to a **project**. It reads the runtime errors of the project's
-  functions and frontends.
+  functions, frontends and durable functions.
 - Opens pull requests in the repository the **Git connection** names. Without
   one, LavaFlow diagnoses issues and opens no pull requests. See
   [git.md](git.md).
-- Fixes code it can read at the commit that built it: code that a push to the
-  connected repository deployed. For any other deployment, LavaFlow diagnoses
-  the issue and opens no pull request.
-- Declared in the **project configuration** under `lavaflow:`. See
-  [project-configuration.md](project-configuration.md).
-- Cloud only. Local development has no GitHub App for LavaFlow to open pull
-  requests with, so `volcano lavaflow` refuses and points to
+- Fixes code it can read at the commit that built it. See
+  [Source commit](deploy.md#source-commit).
+- Cloud only. LavaFlow runs on Volcano's cloud service, which local
+  development doesn't run, so `volcano lavaflow` refuses and points to
   `volcano cloud lavaflow`.
-
-See [LavaFlow](/platform/guides/lavaflow) for how runs work and their limits.
 
 ## CLI operations
 
 | Operation | Command |
 |---|---|
 | Show whether LavaFlow is on | `volcano cloud lavaflow status [--json]` |
-| Turn LavaFlow on | `volcano cloud lavaflow enable [--json]` |
+| Turn LavaFlow on | `volcano cloud lavaflow enable [--yes] [--json]` |
 | Turn LavaFlow off | `volcano cloud lavaflow disable [--json]` |
-| List runs | `volcano cloud lavaflow runs list [--limit n] [--cursor c] [--json]` |
-| Show a run and its diagnosis | `volcano cloud lavaflow runs get <run-id> [--json]` |
-| Diagnose an issue again | `volcano cloud lavaflow runs start --issue <issue-id> [--json]` |
+| Show the settings in full | `volcano cloud lavaflow settings [--json]` |
+| Change the settings | `volcano cloud lavaflow settings set [--autonomy a] [--human-review-path p]... [--clear-human-review-paths] [--custom-context t \| --custom-context-file f] [--system-prompt t \| --system-prompt-file f] [--yes] [--json]` |
+| Show issues and fix pull requests per day | `volcano cloud lavaflow stats [--days n] [--json]` |
+| Show what LavaFlow did for each resource | `volcano cloud lavaflow resources [--days n] [--json]` |
+| List runs | `volcano cloud lavaflow list [--status s] [--resource id] [--limit n] [--cursor c] [--json]` |
+| Show a run | `volcano cloud lavaflow show <run-id> [--json]` |
 
-Turning LavaFlow on or off and starting a run need your login: a project access
-token is refused, and so is a `config deploy` with one that changes the
-`lavaflow` section. A project access token can read the status and runs.
+Every command takes `--json` for the API's own fields and values.
+
+Text from a run, such as its diagnosis, log lines, diff and title, prints as
+plain text. A control character in it, such as a color code or a carriage
+return in a log line, prints as a visible escape such as `\x1b`, and with
+`--json` it stays escaped inside the JSON string.
+
+LavaFlow belongs to the project's owner. For anyone else, every command says
+"project not found", as for a project that doesn't exist, and exits with
+code 4. A project access token can run the read commands for its own
+project, but only the owner's own session can turn LavaFlow on or off and
+change its settings: `enable`, `disable` and `settings set` refuse a project
+access token before they ask or send anything, with code 5. Sign in with
+`volcano login` instead, and if `VOLCANO_TOKEN` holds a project access token,
+unset it first.
+
+When the owner's plan can't be read, a command says "LavaFlow couldn't read
+the project owner's plan; try again later" and exits with code 5. A change
+that `enable`, `disable` or `settings set` sends can also be refused for a
+read-only access token or account; the API doesn't tell those apart from a
+plan it couldn't read, so the command names all three, adds what Volcano
+said, and exits with code 5.
 
 ## Turn it on
 
@@ -67,26 +92,25 @@ volcano cloud lavaflow enable
 ```
 
 ```text
+LavaFlow uses AI to diagnose this project's errors from their logs and deployed source, and opens fix pull requests in your connected repository.
+LavaFlow sends this project's logs and source code to an AI service that Volcano operates.
+Turn LavaFlow on? Type 'y' or 'yes' to confirm: y
 ✓ LavaFlow is on
-Note: LavaFlow uses AI to diagnose this project's errors from their logs and deployed source, and opens fix pull requests in your connected repository.
-Note: LavaFlow diagnoses the next issue that happens a second time or comes back after you resolve it, and opens a fix pull request in acme/shop.
-Note: LavaFlow is in preview. During the preview, it needs the SUPERAGENT plan.
+LavaFlow: on
+Autonomy: open fix pull requests
+Human review paths: none
+Custom context: not set
+System prompt: not set
 ```
 
-`enable` says what LavaFlow does, then in one line what it does next, naming
-the repository its fix pull request goes to. With no repository connected, it
-says LavaFlow only diagnoses until one is connected, and names
-`volcano git connect`.
+`enable` says what LavaFlow does and where it sends the project's data, then
+asks before it turns LavaFlow on. `--yes` skips the question, not those
+sentences, which go to stderr so `--json` output stays JSON. Without `--yes`, `enable` needs a
+terminal to answer: in a script or CI job it exits non-zero and changes
+nothing.
 
-A project whose plan does not allow LavaFlow is refused, and the command exits
-non-zero. A project that had LavaFlow on before its plan changed stays on;
-`enable` then succeeds and says no run starts until the plan allows LavaFlow
-again. Turn it off again with `volcano cloud lavaflow disable`. Runs that
-have not finished are canceled; past runs and their pull requests stay.
-Where LavaFlow is not available, turning it on fails with "LavaFlow isn't
-available on this Volcano API". Turning it off still works for a project that has saved LavaFlow
-settings. A project that never saved them already has LavaFlow off, and
-`disable` fails the same way.
+`disable` turns it off. No new run starts; past runs and their pull requests
+stay readable.
 
 ## Check the status
 
@@ -95,97 +119,183 @@ volcano cloud lavaflow status
 ```
 
 ```text
-LavaFlow: on, opening fix pull requests in acme/shop
-Plan: allows LavaFlow
+LavaFlow: on
+Autonomy: open fix pull requests
 Repository: acme/shop
-
-LavaFlow is in preview. During the preview, it needs the SUPERAGENT plan.
+Custom context: not set
+System prompt: not set
+Updated: 2026-10-30 12:00
 ```
 
-The first row says the state at a glance: `off`, or what LavaFlow does while
-it is on, such as `on, diagnosing only until a repository is connected`. The
-status says when no repository is connected. When LavaFlow is on and set
-to open pull requests, it also names `volcano git connect`. When the project configuration narrows LavaFlow, with
-`max_stage: diagnose` or `auto_trigger: false`, the status and `enable` say
-that too, and the status says it while LavaFlow is off, because those settings
-apply when it is turned on. With `--json`, `repository_state` is `connected`,
-`not_connected`, or `unknown` when the connection could not be read.
+While LavaFlow is off, the status says what it does and how to turn it on.
+When you use a project access token, which can read but not change the
+settings, the status says so instead.
+When it is set to open pull requests and no repository is connected, the
+status says to run `volcano git connect`. When LavaFlow isn't available for
+a project that has LavaFlow records, the status notes that it can't be turned
+on or changed, and that the owner can still turn it off.
+
+With `--json`, `repository_state` is `connected`, `not_connected`, or
+`unknown` when the connection could not be read. `available` is `true` when
+LavaFlow can be turned on and changed for the project and `false` when it
+can't; it is left out when the project's capabilities could not be read.
+
+## Choose how far it goes
+
+```bash
+volcano cloud lavaflow settings set --autonomy diagnose_only
+```
+
+`--autonomy` takes one of three values:
+
+- `open_pr`: LavaFlow diagnoses each issue and opens a fix pull request for
+  you to review and merge.
+- `diagnose_only`: LavaFlow diagnoses each issue and leaves any fix to a
+  person.
+- `merge`: LavaFlow can also merge its fix pull requests. See
+  [Merge fixes](#merge-fixes).
+
+Two more settings are saved for LavaFlow's runs, which don't use them yet:
+
+- `--custom-context`: what LavaFlow should know about the project, such as
+  which code is legacy or how it is deployed.
+- `--system-prompt`: instructions added to LavaFlow's own, such as how small
+  a fix should be.
+
+Each takes up to 4,000 characters, from the flag or a file
+(`--custom-context-file`, `--system-prompt-file`). An empty value clears it.
+A setting you don't pass keeps its value. `settings` shows both in full.
+
+### Merge fixes
+
+At autonomy `merge`, LavaFlow can merge its fix pull requests. A fix it holds
+or stops is yours to review and merge on GitHub.
+
+```bash
+volcano cloud lavaflow settings set --autonomy merge
+```
+
+Turning on merge lets LavaFlow's fixes, including those from runs it starts
+on its own, run your CI with the secrets your pull request workflows get.
+
+`--autonomy merge` prints that and asks first. `--yes` skips the question but
+still prints it, on stderr, so `--json` output stays JSON. Without a terminal
+and without `--yes`, it changes nothing and exits with a non-zero code.
+
+Only the project's owner can turn merging on, signed in with `volcano login`
+while that sign-in lasts, or with a platform token that has an expiry. Volcano
+refuses a platform token that never expires, or a sign-in that ended, and the
+command says why in Volcano's words and exits with code 5. While
+`VOLCANO_TOKEN` is set, its token is used instead of a `volcano login`
+sign-in. A project access token is refused before anything is sent, also with
+code 5. Merging applies to the
+repository the project is connected to when you turn it on: once the project
+is connected to another, autonomy reads `open_pr` until you turn merge on
+again. Merging is only for a project where
+it's available; elsewhere `--autonomy merge` says "LavaFlow merging isn't
+available for this project yet" and exits with code 1. When the owner's
+GitHub account can't push to the project's repository, it says so, adds what
+Volcano said, points to
+[connecting GitHub](/platform/projects/git-deploy#1-connect-github), and exits
+with code 5.
+
+`--human-review-path` names a path whose changes always hold a fix for a
+person, such as `db/migrations/**`. Repeat it for each path, up to 50, each 1
+to 200 characters. It replaces the saved paths; `--clear-human-review-paths`
+removes them all. Volcano's own held paths, such as deploy configuration and
+authentication code, always hold a fix too. `settings` prints the paths. Like
+`--autonomy merge`, both flags need merging to be available for the project;
+elsewhere they say "LavaFlow merging isn't available for this project yet"
+and exit with code 1.
+
+```bash
+volcano cloud lavaflow settings set --human-review-path 'infra/**' --human-review-path 'db/migrations/**'
+```
+
+`show` prints `Merge:` with where the merge is: `waiting for CI`,
+`queued to merge`, `merged`, `held` or `stopped`. While merging is paused for
+the project, a waiting fix says `paused while merging is off`. `held` and
+`stopped` are final: LavaFlow doesn't touch the pull request again, and it's
+yours to review and merge on GitHub. A held fix lists each reason in Volcano's
+words, with the paths it names; a stopped fix gives its reason, such as
+`checks failed`. In `list`, their runs show `Held: yours to merge` or
+`Stopped: yours to merge` as their status.
+
+```text
+Merge: held
+  - It changes a path in human_review_paths. (db/migrations/0042_orders.sql)
+The pull request is now yours to review and merge on GitHub.
+```
+
+## See what it did
+
+`stats` counts the issues LavaFlow took on and the fix pull requests it opened,
+per UTC day, today included. Merges aren't counted. `--days` takes 1 to 90 and
+defaults to 30.
+
+```bash
+volcano cloud lavaflow stats --days 7
+```
+
+`resources` lists every function, frontend and durable function: when
+LavaFlow last analyzed it, and the issues and fix pull requests in the window.
+A resource whose issues suddenly jumped is flagged `issue rate jumped`, with
+the reason: at least 3 issues in the last 24 hours, and at least 3 times its
+daily average over the 29 days before.
+
+```bash
+volcano cloud lavaflow resources
+```
+
+```text
+Type              Name                            Last analyzed     Issues  Fix PRs
+----------------------------------------------------------------------------------------------------
+function          checkout                        2026-10-30 09:00       6        3  issue rate jumped
+durable function  nightly-report                  never                  0        0
+```
 
 ## Follow the runs
 
-A run diagnoses one issue. List the newest first:
+A run works on one issue. `list` shows the newest first, with the resource,
+the run's title, and the fix pull request. A run's title is the title of the
+fix it proposed, or its diagnosis summary; until LavaFlow has either, the
+title shows `-`. Narrow it with
+`--status` (`queued`, `diagnosing`, `fixing`, `reviewing`, `pr_open`,
+`completed`, `failed` or `cancelled`) or `--resource` with an ID from
+`resources --json`. When there are more, the
+list ends with the command for the next page. With `--json`, pass
+`next_cursor` to `--cursor`, with the same `--limit`, `--status` and
+`--resource`.
 
 ```bash
-volcano cloud lavaflow runs list
+volcano cloud lavaflow list --status failed
+```
+
+A running run's status says which stage it is in: "Running: finding the root
+cause" (`diagnosing`), "Running: writing the fix" (`fixing`) or "Running:
+reviewing the fix" (`reviewing`). An open pull request shows as "PR open". A
+status the CLI doesn't know prints as the API gives it.
+
+`show` prints a run's diagnosis and root cause, the evidence and log lines it
+read, its review, the fix pull request and when it opened, and the diff when
+the run has one. A pull request opened before LavaFlow recorded the time has
+no open time. A run that failed says why.
+
+```bash
+volcano cloud lavaflow show 9c1e4f2a-7b3d-4e8f-a1c2-5d6e7f8a9b0c
 ```
 
 ```text
-ID                                    Issue                                 Trigger     Status      Result                      Created
---------------------------------------------------------------------------------------------------------------------------------------------
-9c1e4f2a-7b3d-4e8f-a1c2-5d6e7f8a9b0c  TypeError: Cannot read properties...  new issue   succeeded   PR #42 open                 2h ago
+Run: 9c1e4f2a-7b3d-4e8f-a1c2-5d6e7f8a9b0c
+Status: PR open
+Resource: function checkout
+Title: Load the cart before checkout reads it
+Issue: 5b2d8e1c-3f4a-4c6b-9d7e-8a1f2b3c4d5e
+Started: 2026-10-30 09:00
+Pull request: #42 (open) https://github.com/acme/shop/pull/42
+Pull request opened: 2026-10-30 09:03
+Review: passed after 2 round(s)
+
+Diagnosis
+  Checkout reads the cart before it loads.
 ```
-
-An issue's title is a template of its error message, with values replaced by
-placeholders such as `<str>`. The list shortens long titles; `runs get` shows
-the whole title.
-
-The result says why a run stopped or opened no pull request, such as
-`no PR: low confidence` or `timed out`. When a run on the page ended without a
-fix, the list ends with the `runs get` command that says what to do about it.
-
-`runs get` shows a run's diagnosis: a summary, the root cause, the suggested
-fix, the evidence it found, and the pull request it opened. When it opened
-none, it says why, such as a code change not fixing the issue, LavaFlow not
-being able to read the deployed source, or `max_stage: diagnose`. A run that
-stopped or opened no pull request ends with `Next:` and what to do about it,
-such as the `runs start` command that diagnoses the issue again. Add `--json`
-for the run as JSON, including the proposed edits.
-
-```bash
-volcano cloud lavaflow runs get 9c1e4f2a-7b3d-4e8f-a1c2-5d6e7f8a9b0c
-```
-
-```text
-ID: 9c1e4f2a-7b3d-4e8f-a1c2-5d6e7f8a9b0c
-Issue: TypeError: Cannot read properties of undefined (reading <str>) (3f5a8b1c-2d4e-4f6a-8b9c-0d1e2f3a4b5c)
-Trigger: new issue
-Status: succeeded
-...
-Pull request: https://github.com/acme/shop/pull/42 (open)
-```
-
-A queued run can be paused. Its result says `paused` while LavaFlow is
-unavailable or Volcano has paused LavaFlow's runs, and the run carries on by
-itself when LavaFlow resumes, without using an attempt. A run paused after it
-wrote a fix keeps its diagnosis and opens its pull request then. A queued run
-whose last attempt failed says `retrying`.
-
-To diagnose an issue again, for example after a run failed, start a run with
-the issue ID (`trigger.issue.id`) from an earlier run in `runs list --json`, or
-from the
-[Issues API](/platform/guides/issues):
-
-```bash
-volcano cloud lavaflow runs start --issue 3f5a8b1c-2d4e-4f6a-8b9c-0d1e2f3a4b5c
-```
-
-An issue has at most one queued or running run. LavaFlow also limits how many
-runs an issue and a project start in 24 hours. At a limit, `runs start` prints
-the reason and when to try again, and exits non-zero; it never retries on its
-own.
-
-## Declare it in the project configuration
-
-```yaml
-version: 1
-lavaflow:
-  enabled: true
-```
-
-`enabled` is all most projects need. Two more fields narrow what LavaFlow
-does. `max_stage: diagnose` stops each run at the diagnosis and opens no pull
-request; the default, `pull_request`, opens one. `auto_trigger: false` starts
-runs only with `runs start`; the default, `true`, starts one when an issue
-happens a second time or comes back after you resolve it, within LavaFlow's run
-limits. An omitted field keeps its current value. `enable` and
-`disable` change only `enabled`, so they keep what the manifest set.

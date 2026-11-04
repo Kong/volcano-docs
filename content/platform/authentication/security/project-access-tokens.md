@@ -45,7 +45,7 @@ A project access token authenticates the same control-plane API a platform token
 
 It cannot:
 
-- **Touch another project.** Presenting it on a different project's route returns `403`.
+- **Touch another project.** Presenting it on a different project's route returns `403`. On an endpoint that names its project with `project_id`, such as the [LavaFlow](../../guides/lavaflow.md#name-the-project) endpoints, naming another project returns `404`, as a project that doesn't exist does.
 - **Act on your account.** Listing your projects, creating a project, billing, and every other account-scoped endpoint returns `403`.
 - **Manage project access tokens.** Creating, listing, reading, and revoking tokens all require a platform token.
 - **Manage Sandbox end-user grants or issue Sandbox port credentials.** Both token scopes are refused, including `full`.
@@ -153,20 +153,23 @@ Every day in the window is present, so a gap reads as `0` rather than going miss
 
 ## Choosing a credential
 
-|                              | Platform token (`pk-`)           | Project access token (`pt-`)                | Anon key                                                               | Service key                        |
-| ---------------------------- | -------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------- | ---------------------------------- |
-| Reaches                      | Every project you own            | One project                                 | One project                                                            | One project                        |
-| Used for                     | Account and project management   | Project management from CI, scripts, agents | User signup and signin from a browser                                  | Backend data access as an admin    |
-| Deploy and configure         | Yes                              | Yes (`full`), reads only with `read_only`   | No                                                                     | No                                 |
-| Query data, invoke functions | No                               | No                                          | Limited by permissions                                                 | Yes, bypasses RLS                  |
-| Create or delete projects    | Yes                              | No                                          | No                                                                     | No                                 |
-| Manage project access tokens | Yes                              | No                                          | No                                                                     | No                                 |
-| Decide durable approvals     | Yes                              | No, reads only                              | No                                                                     | No                                 |
-| Send durable messages        | Yes                              | Yes (`full`), reads only with `read_only`   | With the execution's client token, as the function's visibility allows | Yes                                |
-| Safe in frontend code        | Never                            | Never                                       | Yes                                                                    | Never                              |
-| Comes from                   | `volcano login` or the dashboard | `POST /projects/{id}/access-tokens`         | Created with the project                                               | `POST /projects/{id}/service-keys` |
-| Readable after creation      | —                                | No, shown once                              | Yes                                                                    | Yes                                |
-| If it leaks                  | Every project you own            | One project, within its scope               | Little — RLS still applies                                             | All of that project's data         |
+|                              | Platform token (`pk-`)           | Project access token (`pt-`)                | Anon key                                                               | Service key                          |
+| ---------------------------- | -------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------ |
+| Reaches                      | Every project you own            | One project                                 | One project                                                            | One project                          |
+| Used for                     | Account and project management   | Project management from CI, scripts, agents | User signup and signin from a browser                                  | Backend data access as an admin      |
+| Deploy and configure         | Yes                              | Yes (`full`), reads only with `read_only`   | No                                                                     | No                                   |
+| Query data, invoke functions | No                               | No                                          | Limited by permissions                                                 | Yes, bypasses RLS                    |
+| Create or delete projects    | Yes                              | No                                          | No                                                                     | No                                   |
+| Manage project access tokens | Yes                              | No                                          | No                                                                     | No                                   |
+| Decide durable approvals     | Yes                              | No, reads only                              | No                                                                     | No                                   |
+| Read or stop executions      | Yes                              | Yes (`full`), reads only with `read_only`   | With the execution's client token, as the function's visibility allows | Yes; with the client token if scoped |
+| Send durable messages        | Yes                              | Yes (`full`), reads only with `read_only`   | With the execution's client token, as the function's visibility allows | Yes; with the client token if scoped |
+| Safe in frontend code        | Never                            | Never                                       | Yes                                                                    | Never                                |
+| Comes from                   | `volcano login` or the dashboard | `POST /projects/{id}/access-tokens`         | Created with the project                                               | `POST /projects/{id}/service-keys`   |
+| Readable after creation      | —                                | No, shown once                              | Yes                                                                    | Yes                                  |
+| If it leaks                  | Every project you own            | One project, within its scope               | Little — RLS still applies                                             | All of that project's data           |
+
+A service key scoped to a list without `*` reads, stops, and messages only the durable executions whose client token it sends, such as the ones it started; the start returns the token. It also needs `functions.invoke`.
 
 Rules of thumb:
 

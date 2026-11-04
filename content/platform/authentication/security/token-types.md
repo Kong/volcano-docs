@@ -92,6 +92,7 @@ See [Project access tokens](project-access-tokens.md) for the full security mode
 - Refresh endpoint
 - Logout endpoint
 - Invoking functions whose `visibility` is `public` (requires `functions.invoke` permission)
+- Reading, stopping, and messaging a durable execution whose client token it sends (requires `functions.invoke` permission)
 
 **Format:** JWT (project-scoped)
 
@@ -206,7 +207,7 @@ const response = await fetch('/auth/refresh', {
 
 **Purpose:** Admin operations, background jobs, database admin access
 
-**Created via:** Platform Dashboard or API
+**Created via:** `volcano projects keys service create`, the API, or the dashboard
 
 **Used for:**
 

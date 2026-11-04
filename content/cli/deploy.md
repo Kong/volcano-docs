@@ -61,6 +61,16 @@ the first manifest isn't the default one, it only says to run it again:
 `functions deploy` and `durable deploy` read the default manifest, so run by
 hand they could deploy a durable function as a standard one.
 
+The server only adds or changes a scheduler on an active function, and a
+function the run just deployed is usually still building when the config step
+runs. When a manifest adds or changes a scheduler on such a function, the config
+step leaves out that function's schedulers and applies the rest of the manifest.
+After the wait, the command applies just those schedulers, so values a later
+manifest set stay in place. Schedulers that don't change apply in the config
+step as usual. With `--no-wait`, or when the wait fails because any deployment
+fails or times out, it prints the `config deploy` commands that apply the
+schedulers later.
+
 A deployment can be redeployed while the run waits, for example when the config
 step changes a function's regions. The run then waits for the newer deployment,
 since that is the one that serves. A durable function also has to accept
@@ -187,6 +197,64 @@ predates these rules refuses `custom_domain: null` in the dry run, and removes
 the domain of an entry without `custom_domain`. Deploying a manifest written by
 `volcano config pull` keeps every domain on either server, and the dry run
 lists any domain it would delete.
+
+## Source commit
+
+A cloud frontend deploy reports the commit its source came from, so Volcano
+can tie the deployment to your repository. The CLI sends four things: the
+GitHub repository as `owner/name`, the commit ID, whether the uploaded files
+differ from that commit, and the uploaded directory's path in the repository,
+which is empty when it's the repository's top level. It never sends the
+remote URL or any credentials in it, local paths, branch names, or diffs.
+Function and durable function deploys don't report a commit for now.
+
+The CLI reads the commit checked out in the directory `--path` names: the
+`origin` remote and `HEAD`, the same in GitHub Actions as anywhere else. It
+sends nothing, and the deploy goes ahead, when git isn't available, the
+repository isn't on github.com, the uploaded directory is outside the
+repository, or any part is missing. Local deploys never send it.
+
+The upload matches the commit when each file in it is in the commit at the
+same path with the same content and executable bit, and it holds every file
+the commit has in the uploaded directory. Files every upload leaves out, such
+as `node_modules`, `dist`, `build`, `.vscode`, `.gitignore`, and `*.log`, don't
+count. Line endings count as the same where git converts them, as
+`core.autocrlf` and the `text`, `eol`, and `crlf` attributes decide, and a file
+whose `filter=lfs` attribute has Git LFS store it matches its pointer. The CLI
+runs no other git filter, so a file another filter changes counts as changed.
+
+Anything else counts as changed:
+
+- An edited, moved, or deleted file.
+- A file the commit doesn't have that the upload includes, such as an untracked
+  file.
+- A committed file the upload lacks, such as one replaced by a symlink or a
+  directory, one in a directory a symlink replaced, one the root `.gitignore`
+  lists, or the env file that `volcano deploy` deploys as variables instead of
+  uploading. The upload never holds a symlink, so a committed symlink counts
+  too.
+
+The upload skips what the `.gitignore` at the root of the uploaded directory
+lists, not what a `.gitignore` in a subdirectory or outside it lists, so a file
+only those ignore is uploaded and counts as changed. Windows has no executable
+bit, so a frontend deployed from Windows doesn't match a commit that holds an
+executable file.
+
+Volcano verifies the commit against the project's connected repository: a
+commit on its production branch is verified. LavaFlow reads source and opens
+fix pull requests only for a deployment whose commit is verified and whose
+upload matched it, so commit your changes before you deploy. Of the deploys
+the CLI runs, only frontend deploys can get LavaFlow fix pull requests for
+now. A workflow run for a pull request deploys GitHub's merge commit, which is
+on no branch, so that deployment is recorded unverified.
+`frontends deploy --from` and a redeploy keep the commit of the build they
+publish.
+
+To send nothing, set:
+
+```bash
+export VOLCANO_DEPLOY_COMMIT=off
+```
 
 ## Cloud projects that deploy from Git
 

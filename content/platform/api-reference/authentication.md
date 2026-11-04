@@ -59,6 +59,63 @@ Authorization: Bearer pk-...
 
 A platform token reaches every project you own. For automation, create a project access token with it instead of handing it to the job.
 
+### Revoke the token you are using
+
+To end a login from a script, CI job, or agent, send its token to `DELETE /user/tokens/current`:
+
+```bash
+curl -X DELETE https://api.volcano.dev/user/tokens/current \
+  -H "Authorization: Bearer pk-..."
+```
+
+```http
+HTTP/1.1 204 No Content
+```
+
+The call also ends the sign-in session the token came from, which revokes every other token created from that session. Every later request with the token answers `401`. Tokens from other sign-ins, and tokens created without one, keep working. Only a platform token can call it: a project access token gets `403`. In local mode the route answers `501`, because a local stack has no server-side sign-in to end.
+
+### List and end your sessions
+
+Your account's sign-ins are sessions: one per dashboard sign-in (`kind: browser`) and one per CLI login (`kind: cli`). A platform token can list them and end them:
+
+| Request                             | Effect                                                                        |
+| ----------------------------------- | ----------------------------------------------------------------------------- |
+| `GET /user/sessions`                | Lists the sessions. The one your token came from is `is_current: true`        |
+| `DELETE /user/sessions/{sessionId}` | Ends one session and revokes the tokens exchanged from it; `404` if not yours |
+| `DELETE /user/sessions`             | Ends every session except the current one, and revokes their exchanged tokens |
+
+```bash
+curl https://api.volcano.dev/user/sessions \
+  -H "Authorization: Bearer pk-..."
+```
+
+```json
+{
+  "sessions": [
+    {
+      "id": "6f1c0b9e-1d7a-4a3e-9f0e-2a4b5c6d7e8f",
+      "user_id": "0b7c6d5e-4f3a-2b1c-0d9e-8f7a6b5c4d3e",
+      "provider": "device:volcano-cli",
+      "kind": "cli",
+      "user_agent": "volcano-cli/1.8.0",
+      "is_active": true,
+      "is_current": true,
+      "expires_at": "2026-11-29T10:00:00Z",
+      "created_at": "2026-10-30T10:00:00Z",
+      "updated_at": "2026-10-30T10:00:00Z"
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "limit": 20,
+  "total_pages": 1
+}
+```
+
+Pagination matches [`GET /auth/user/sessions`](auth-endpoints.md).
+
+A platform token created in the dashboard or through the management API, rather than by signing in, has no session. A token saved with `volcano login --token` keeps the session it came from, if any. Ending sessions does not revoke a token without one, and a call made with it has no current session, so `DELETE /user/sessions` ends every session. Revoke such a token with `DELETE /user/tokens/current`.
+
 ## Project access token
 
 | Property    | Value                                                                |

@@ -393,8 +393,9 @@ Authorization: Bearer <platform_token>
 }
 ```
 
-Newest first. `source` is `manual` or `scheduled`; only `manual` backups count
-against the plan's allowance. `size_bytes` is absent until the storage provider
+Newest first. `source` is `manual`, `scheduled`, or `migration` (taken before
+migrations were applied); only `manual` backups count against the plan's
+allowance. `size_bytes` is absent until the storage provider
 has costed the backup. `restore_window` is the span a point-in-time restore may
 target, and is absent on a plan without point-in-time restore. This route keeps
 working while a restore is running.
@@ -424,11 +425,12 @@ there is nothing to poll.
 
 Names are lowercase letters, numbers, underscores, and hyphens, up to 63
 characters, unique within the database. Names beginning with `volcano-` are
-reserved for the platform's own snapshots.
+reserved for the platform's own snapshots, and names beginning with
+`before-migration-` for migration backups.
 
 | Status | Meaning                                                                                      |
 | ------ | -------------------------------------------------------------------------------------------- |
-| `400`  | Invalid backup name                                                                          |
+| `400`  | Invalid backup name, or one with a reserved prefix                                           |
 | `403`  | Backup allowance reached, or backups are SUPERAGENT-only                                     |
 | `404`  | Project or database not found                                                                |
 | `409`  | Name already exists, a backup was taken less than a minute ago, or the database is restoring |
@@ -582,6 +584,10 @@ Backups](#list-backups).
 | `409`  | A restore is already in progress, the database is not active, another database operation is running, or too many pre-restore states are still held open        |
 | `503`  | Restores are temporarily unavailable                                                                                                                           |
 
+A `409` with code `migration_run_in_progress` means a migration run is backing
+up or applying to the database; `run_id` names it. See
+[What a restore refuses](../databases/backups.md#what-a-restore-refuses).
+
 ### Get Restore
 
 ```http
@@ -613,6 +619,210 @@ up. Either leaves the database `failed` if its data may already have been
 replaced, and `active` if the restore never started — a backup that is gone from
 the provider ends the restore without touching the database. `error` carries why
 the most recent attempt failed.
+
+## Migrations
+
+A migration run applies SQL files to a database and records each one in the
+database's history, so a file runs once. See [Database
+migrations](../guides/migrations.md) for what a run does; this section is the
+endpoint reference.
+
+Starting a run and recording a baseline need the `databases.migrations`
+[capability](overview.md#capabilities). Where it is unavailable, they answer
+`404` with code `feature_unavailable`; reading the history and runs works
+either way. A `read_only` project access token can read; starting a run or a
+baseline needs a `full` one.
+
+### Start a Migration Run
+
+```http
+POST /projects/{projectId}/databases/{databaseName}/migration-runs
+Authorization: Bearer <platform_token>
+Content-Type: application/json
+Idempotency-Key: deploy-4f2a9c1
+```
+
+**Request:**
+
+```json
+{
+  "files": [
+    {
+      "name": "001_create_notes.sql",
+      "sql": "CREATE TABLE notes (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), title text NOT NULL);"
+    },
+    {
+      "name": "002_add_notes_pinned.sql",
+      "sql": "ALTER TABLE notes ADD COLUMN pinned boolean NOT NULL DEFAULT false;"
+    }
+  ]
+}
+```
+
+**Response:** `202 Accepted` with the run, `queued`. Poll it until `status` is
+`succeeded` or `failed`.
+
+`Idempotency-Key` is optional, up to 255 printable ASCII characters. A repeat
+with a key the database has seen returns that run with `200` and starts
+nothing; the same key with different files answers `409`.
+
+| Status | Meaning                                                                                                                                                                                                                                                                      |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `400`  | Over 1,000 files, a file over 1 MiB, a name that is not a `.sql` file, a name repeated (code `invalid_file`), a directory other than this database's (code `invalid_layout`), or a database over its storage allowance (no code; the message starts `storage limit reached`) |
+| `404`  | Project or database not found, or migration runs are unavailable (code `feature_unavailable`)                                                                                                                                                                                |
+| `409`  | A run is already queued or running (code `migration_run_in_progress`, with its `run_id`), or the `Idempotency-Key` started a run of other files                                                                                                                              |
+| `413`  | The request body is over 4 MiB                                                                                                                                                                                                                                               |
+
+### Get a Migration Run
+
+```http
+GET /projects/{projectId}/databases/{databaseName}/migration-runs/{runId}
+Authorization: Bearer <platform_token>
+```
+
+**Response:**
+
+```json
+{
+  "id": "7f3a1c2e-5d4b-4a91-8c6f-2b1e9d0a4c73",
+  "database": {
+    "type": "database",
+    "id": "0b9c3f5e-2a41-4d7e-9f0a-6c8e1d2b3a45",
+    "name": "main_db"
+  },
+  "status": "failed",
+  "phase": "rehearse",
+  "source": "api",
+  "files": [
+    { "name": "001_create_notes.sql", "outcome": "already_applied" },
+    {
+      "name": "002_add_notes_pinned.sql",
+      "outcome": "failed",
+      "error": {
+        "message": "column \"pinned\" of relation \"notes\" already exists",
+        "sqlstate": "42701",
+        "line": 1
+      }
+    }
+  ],
+  "warnings": [],
+  "error": {
+    "code": "migration_failed",
+    "message": "migration 002_add_notes_pinned.sql failed at line 1 (SQLSTATE 42701); it failed in rehearsal, so production was not changed"
+  },
+  "started_at": "2024-01-01T00:00:02Z",
+  "completed_at": "2024-01-01T00:01:10Z",
+  "created_at": "2024-01-01T00:00:00Z",
+  "updated_at": "2024-01-01T00:01:10Z"
+}
+```
+
+`phase` is the step the run is on, or ended on: `plan`, `rehearse`, `backup`,
+or `apply`. `source` is `api` for a run started here, or `git_deploy` for one a
+push started with
+[`apply_migrations`](../projects/git-deploy.md#apply-migrations-on-push) on; a
+`git_deploy` run carries the pushed `commit_sha`. `backup_name` names the run's
+backup once the run starts taking it; a run that ended in its `backup` phase
+may name one that was never created. Each file's `outcome` is `pending`, `already_applied`,
+`applied`, `failed`, `not_run`, or `unknown`. A `failed` file's own SQL failed,
+and its transaction rolled back. `not_run` covers files after one that failed
+or lost its `COMMIT`, and a file rolled back by a lost connection or by
+Volcano's own statements around it.
+A file another session applied or baselined after the run planned ends
+`already_applied`. `unknown` means the run ended in `apply` before it confirmed
+whether the file ran, for example because it used every attempt or the file's
+`COMMIT` failed or was cut short. The file may have committed; the database's
+history says, and the next run applies the file only if the history does not
+record it. Each attempt reads the history again before it runs a file, so while
+a run retries, the files it has not applied read `pending` again, or
+`already_applied` if the history now holds them. A failed file's
+`error.message` is the database's own message and can quote values from your
+file or data. Volcano keeps at most 8 KiB of it; a longer message is cut and
+ends with ` … [truncated]`. Volcano reads each reply the database sends about a
+file up to 4 MiB, which leaves room for a reply that quotes the whole file
+twice, as Postgres does for a statement the file executes. A larger reply is not
+read: the file fails, and its `error.message` says so instead. A run keeps at most 100 `warnings`; one that raised more ends the
+list with a `warnings_truncated` warning whose message says how many more were
+not kept. See [Warnings](../guides/migrations.md#warnings).
+
+### List Migration Runs
+
+```http
+GET /projects/{projectId}/databases/{databaseName}/migration-runs
+Authorization: Bearer <platform_token>
+```
+
+Returns the 50 most recent runs, newest first, in `data`, each without
+`files`. Get a run for its files.
+
+### Get Migration History
+
+```http
+GET /projects/{projectId}/databases/{databaseName}/migrations
+Authorization: Bearer <platform_token>
+```
+
+**Response:**
+
+```json
+{
+  "history": [
+    {
+      "name": "001_create_notes.sql",
+      "checksum": "sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "status": "applied",
+      "applied_at": "2024-01-01T00:00:40Z",
+      "run_id": "5c2d8e1a-3b4f-4c6d-9e7a-1f2b3c4d5e6f"
+    }
+  ],
+  "active_run_id": "7f3a1c2e-5d4b-4a91-8c6f-2b1e9d0a4c73"
+}
+```
+
+Every file the database's history records, in name order. `status` is
+`applied`, or `baselined` for a file recorded without running. `active_run_id`
+is the run that is queued or running, if any. Volcano reads at most 1,000
+entries; [Read the history](../guides/migrations.md#read-the-history) says how
+to bring a larger history back under the bound.
+
+| Status | Meaning                                                                                                                                                                                                                                                                  |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `404`  | Project or database not found                                                                                                                                                                                                                                            |
+| `409`  | The history table is gone from a database where migrations ran (code `history_missing`; see [Recover a lost history](../guides/migrations.md#recover-a-lost-history)), the history has more than 1,000 entries (code `history_too_large`), or the database is not active |
+| `503`  | Volcano could not reach the database; retry                                                                                                                                                                                                                              |
+
+### Record a Baseline
+
+```http
+POST /projects/{projectId}/databases/{databaseName}/migrations/baseline
+Authorization: Bearer <platform_token>
+Content-Type: application/json
+```
+
+Takes the same body as starting a run. Records each file as applied without
+running it. After `history_missing`, a baseline of exactly the files that were
+already applied rebuilds the history. No run starts while a baseline records,
+and a baseline does not queue: while another request is changing the database,
+or the database holds the baseline up, such as with a lock on its history, it
+answers `409` with code `database_busy`.
+
+**Response:**
+
+```json
+{
+  "recorded": ["001_create_notes.sql"]
+}
+```
+
+`recorded` is empty when the history already held every file.
+
+| Status | Meaning                                                                                                                                                                                                                                                                                                                            |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `400`  | The same file rules as starting a run, or a database over its storage allowance                                                                                                                                                                                                                                                    |
+| `404`  | Project or database not found, or migration runs are unavailable (code `feature_unavailable`)                                                                                                                                                                                                                                      |
+| `409`  | A file is recorded with a different checksum (code `checksum_mismatch`), a run is queued or running (code `migration_run_in_progress`), the history has more than 1,000 entries (code `history_too_large`), the database is busy (code `database_busy`; try again), or the database is not active or changed while the request ran |
+| `413`  | The request body is over 4 MiB                                                                                                                                                                                                                                                                                                     |
+| `503`  | Volcano could not reach the database; retry                                                                                                                                                                                                                                                                                        |
 
 ## Database Query API
 
@@ -662,7 +872,7 @@ Content-Type: application/json
 
 **Authentication:** Requires **auth user access token** (from signup/signin), not platform token
 
-**Row-Level Security:** Automatically enforced - users see only their own data
+**Row-Level Security:** Applied on tables with RLS enabled. A table without RLS returns every row. See [Default grants](../databases/database-roles.md#default-grants)
 
 **Filter Operators:**
 

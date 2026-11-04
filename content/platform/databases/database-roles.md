@@ -5,6 +5,29 @@ description: 'When you create a database in Volcano, it comes with built-in role
 
 When you create a database in Volcano, it comes with built-in roles for secure multi-tenant access.
 
+## Default grants
+
+Volcano grants every table you create in the `public` schema to two roles:
+
+| Role            | Default grant on new tables in `public` | Default grant on new sequences |
+| --------------- | --------------------------------------- | ------------------------------ |
+| `anon`          | `SELECT`                                | none                           |
+| `authenticated` | `ALL`                                   | `ALL`                          |
+
+These grants decide what each role may touch. Row-level security decides which rows, and only once you enable it on the table. Until you do, any user session, including an anonymous user's, can read, change, and delete every row of the table, and connections that run as `anon` can read every row.
+
+Make this the first step for every table you create in `public`:
+
+```sql
+ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
+```
+
+Then add [policies](row-level-security.md) for the rows each role may use. With RLS enabled and no policies, `anon` and `authenticated` see no rows. To keep a table away from both roles entirely, revoke the grants or create it in a schema of your own:
+
+```sql
+REVOKE ALL ON internal_notes FROM anon, authenticated;
+```
+
 ## Available Roles
 
 ### No User Session (`anon`)
@@ -13,15 +36,15 @@ When you create a database in Volcano, it comes with built-in roles for secure m
 
 **Permissions:**
 
-- Read public data
-- Cannot write
-- Cannot access private data
+- `SELECT` on new tables in `public` by default
+- Sees only the rows your policies allow, on tables with RLS enabled
+- Reads every row of a table without RLS, on connections that run as `anon`
 
 **Example:**
 
 ```javascript
 // Unauthenticated request - automatically uses 'anon' role
-// Can only SELECT from tables with public read policies
+// On a table with RLS enabled, sees only rows a policy allows
 ```
 
 ### User Sessions (`authenticated`)
@@ -30,9 +53,9 @@ When you create a database in Volcano, it comes with built-in roles for secure m
 
 **Permissions:**
 
-- Read own data
-- Write own data (INSERT, UPDATE, DELETE)
-- Cannot access other users' data (RLS enforced)
+- `ALL` on new tables and sequences in `public` by default
+- Reads and writes only the rows your policies allow, on tables with RLS enabled
+- Reads, changes, and deletes every row of a table without RLS
 - Cannot modify database schema
 
 **Example:**
@@ -41,7 +64,7 @@ When you create a database in Volcano, it comes with built-in roles for secure m
 // Authenticated request - automatically uses 'authenticated' role
 // Can perform CRUD operations on own data
 const result = await client.query('SELECT * FROM posts');
-// Returns only current user's posts (RLS automatic)
+// Returns only current user's posts, once posts has RLS and a policy
 ```
 
 ### Volcano Platform (`volcano_platform`)
@@ -159,7 +182,12 @@ CREATE POLICY "public_read" ON posts
 
 ### 3. Grant Permissions
 
+Tables you create in `public` already carry the [default grants](#default-grants). Grant explicitly for tables in other schemas, or after you revoke. A table in another schema also needs `USAGE` on its schema:
+
 ```sql
+-- Only for a schema other than public
+GRANT USAGE ON SCHEMA app TO anon, authenticated;
+
 -- Grant to authenticated users
 GRANT ALL ON posts TO authenticated;
 
@@ -181,7 +209,7 @@ GRANT SELECT ON posts TO anon;
 - Don't bypass RLS in application code
 - Don't manually filter by user_id (let RLS do it)
 - Don't grant write permissions to `anon`
-- Don't forget to ENABLE ROW LEVEL SECURITY
+- Don't leave a table in `public` without ENABLE ROW LEVEL SECURITY
 
 ## Examples
 
