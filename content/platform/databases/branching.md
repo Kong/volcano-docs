@@ -315,6 +315,11 @@ If Volcano cannot read your subscription pricing, branch creation returns `503`
 with `"subscription pricing temporarily unavailable"`. Retry later; no branch is
 created.
 
+A [migration run](../guides/migrations.md#what-a-run-does)'s rehearsal branch
+counts toward the allowance and costs like any branch while it exists. A run
+that would take the database over its allowance fails with `branch_limit`
+before it changes anything.
+
 ## Naming
 
 Branch names are lowercase letters, numbers, and underscores, up to 64

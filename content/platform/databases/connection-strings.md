@@ -146,7 +146,7 @@ try {
 ```
 
 `psql -f` already sends a file statement by statement. `psql -c` with several
-statements does not, and neither do [`volcano` migrations](../guides/migrations.md#error-handling):
+statements does not, and neither do [`volcano` migrations](../guides/migrations.md#one-statement-per-file):
 each file is one query, so keep one statement per file.
 
 ## Security

@@ -13,6 +13,8 @@ Deploy functions to Volcano. Volcano supports Node.js, Python, and Ruby runtimes
 | Python   | python3.14, python3.13, python3.12, python3.11, python3.10 | `handler`       |
 | Ruby     | ruby4.0, ruby3.4, ruby3.3                                  | `handler`       |
 
+`python3.10` is deprecated: Python 3.10 reached end of life in October 2026. It still deploys, and Volcano will remove it before 2027-08-31. Move functions to a newer Python runtime.
+
 Your code is automatically packaged with a standard filename (`index.js`, `main.py`, or `main.rb`). You only need to specify the function name.
 
 ## Writing functions

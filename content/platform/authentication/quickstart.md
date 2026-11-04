@@ -171,7 +171,7 @@ exports.handler = async (event) => {
 
 ## Step 7: Query a database with RLS
 
-When you query a database through the SDK or from a function, row-level security policies automatically filter data based on the authenticated user.
+When you query a database through the SDK or from a function, row-level security policies filter data based on the authenticated user, on every table where you enable RLS.
 
 ### From the browser (Query Builder)
 

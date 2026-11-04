@@ -159,11 +159,11 @@ exports.handler = async (event, context) => {
 };
 ```
 
-Package and deploy:
+Save it as `volcano/functions/hello/index.js` and deploy it. The CLI packages the
+archive for you:
 
 ```bash
-zip function.zip index.js
-# Upload via Volcano dashboard
+volcano cloud functions deploy -f hello
 ```
 
 **Package size**: < 1KB
