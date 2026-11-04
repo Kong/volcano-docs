@@ -23,9 +23,14 @@ const ACCENT = "#f37a58"; // --color-lava-500
 // brand tint, the same pairing the dark theme uses for raised surfaces.
 const BACKGROUND = "linear-gradient(135deg, #0a0a0a 0%, #352320 100%)";
 
-const MARK_DATA_URI = `data:image/svg+xml;base64,${readFileSync(
-  join(process.cwd(), "public/design/logo-mark.svg"),
-).toString("base64")}`;
+// Read when the card renders, not when the module loads: every page's metadata
+// imports this module for the card's size and alt, and a 404 renders at
+// request time. The file reaches the server only through next.config.ts's
+// outputFileTracingIncludes; public/ is not part of the server bundle.
+function markDataUri() {
+  const mark = readFileSync(join(process.cwd(), "public/design/logo-mark.svg"));
+  return `data:image/svg+xml;base64,${mark.toString("base64")}`;
+}
 
 // Google's css2 endpoint serves woff2 to modern user agents; Satori only
 // parses ttf/otf/woff, so an old-browser UA is sent to get a woff URL back.
@@ -109,7 +114,7 @@ export async function renderSocialCard() {
         <div
           style={{ display: "flex", alignItems: "center", gap: 28 }}
         >
-          <img src={MARK_DATA_URI} width={64} height={64} alt="" />
+          <img src={markDataUri()} width={64} height={64} alt="" />
           <span
             style={{ fontSize: 40, fontWeight: 700, color: TEXT_PRIMARY, letterSpacing: "-0.02em" }}
           >
