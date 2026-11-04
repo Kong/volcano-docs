@@ -17,7 +17,7 @@ A chat app where visitors pick a display name and talk in three rooms with no si
 
 ![Volcano Chat in #random: ada and sam trading messages, 2 online, and "ada is typing…" under the conversation](/cookbooks/realtime-chat-poster.png)
 
-![The other side of the same room a moment earlier: ada's messages arriving live while she types the next one](/cookbooks/realtime-chat-typing.png)
+![sam's view earlier in the same conversation: ada's first two messages arriving live while she types the next one](/cookbooks/realtime-chat-typing.png)
 
 ## What you need
 
@@ -44,7 +44,9 @@ Build a real-time chat app in this empty folder with Next.js and deploy it to Vo
   broadcast typing events that expire after 3 seconds.
 - Load history straight away, then load it again once the channels are
   subscribed and after every reconnect, merging by id so nothing is lost or
-  duplicated. Remove listeners and unsubscribe when a room unmounts.
+  duplicated. When a room unmounts, remove its channels with
+  realtime.removeChannel() (unsubscribe() keeps their handlers). If reading a
+  broadcast message fails, reload history instead of dropping it.
 - One SQL statement per migration file, each safe to re-run, because
   volcano cloud deploy --with-migrations runs every file on each deploy.
 - Only the anon key goes to the browser. It needs the default Auth permissions
@@ -183,8 +185,10 @@ function loadHistory() {
 
 live.on('message', async ({ id } = {}) => {
   if (typeof id !== 'string') return;
-  const { data } = await volcano.from('messages')
+  const { data, error } = await volcano.from('messages')
     .select('id,room_id,user_id,author_name,body,created_at').eq('id', id).limit(1);
+  // A failed read would drop the message, so reconcile from history instead.
+  if (error) return loadHistory().catch(showError);
   if (data?.[0]?.room_id === roomId) merge(data);
 });
 live.on('typing', ({ user, name } = {}) => {
@@ -204,8 +208,12 @@ ready = true;
 await loadHistory();
 
 // When the room unmounts:
-// offConnect(); live.unsubscribe(); presence.unsubscribe();
+offConnect();
+realtime.removeChannel(`chat-${roomId}`, 'broadcast');
+realtime.removeChannel(`presence-${roomId}`, 'presence');
 ```
+
+Use `removeChannel()` and not `unsubscribe()` on unmount. Channels are cached by name, and `unsubscribe()` only pauses delivery and keeps the handlers. Switching #general → #random → #general would then stack a second set of handlers, and each broadcast would trigger two database reads.
 
 Send typing events at most every 1.5 seconds while someone types (`live.send({ event: 'typing', user: me, name })`), and drop each typer 3 seconds after their last event. Queue the database reads the way the [Pixelboard](./pixel-board.md) does if out-of-order responses matter in your UI. Here, merging by id makes the order of reads harmless.
 
@@ -258,7 +266,7 @@ It saves the variables, runs the migrations, builds the frontend and applies the
 
 Open the URL in a normal window and a private window, so each gets its own anonymous user. Pick different names and open the same room. Each window should show "2 online". A message sent in one appears in the other without a reload, and typing in one shows "… is typing" in the other for about 3 seconds. Reload either window to confirm the history is still there.
 
-To check the database and not just the page, run a script with two anonymous users against the live project. The example repository's `npm run smoke` does this. It passed all eight checks:
+To check the database and not just the page, write a short Node script that signs in two anonymous users against the live project with the same SDK calls. It should check that presence sees both users, that B's message reaches A as a broadcast id A can read back, that B can't insert a row with A's `user_id`, that an update fails, and that a 501-character body is rejected. In testing, that script passed all eight checks:
 
 ```text
 PASS two distinct anonymous users
