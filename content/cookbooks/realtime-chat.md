@@ -44,9 +44,11 @@ Build a real-time chat app in this empty folder with Next.js and deploy it to Vo
   broadcast typing events that expire after 3 seconds.
 - Load history straight away, then load it again once the channels are
   subscribed and after every reconnect, merging by id so nothing is lost or
-  duplicated. When a room unmounts, remove its channels with
-  realtime.removeChannel() (unsubscribe() keeps their handlers). If reading a
-  broadcast message fails, reload history instead of dropping it.
+  duplicated. Keep each room's broadcast channel subscribed for the session so
+  a send that finishes after a room switch still reaches its room. When a room
+  view unmounts, remove its own handlers and its presence channel
+  (unsubscribe() keeps handlers). If reading a broadcast message fails, reload
+  history instead of dropping it.
 - One SQL statement per migration file, each safe to re-run, because
   volcano cloud deploy --with-migrations runs every file on each deploy.
 - Only the anon key goes to the browser. It needs the default Auth permissions
@@ -151,20 +153,28 @@ const [{ data: rooms, error: roomsError }] = await Promise.all([
   realtime.connect(),
 ]);
 if (roomsError) throw roomsError;
+
+// One broadcast channel per room for the whole session. A channel only sends
+// while subscribed, so a message still saving when you switch rooms can still
+// reach the room it was written in.
+const roomChannels = new Map(rooms.map((room) =>
+  [room.id, realtime.channel(`chat-${room.id}`, { type: 'broadcast' })]));
+for (const channel of roomChannels.values()) channel.subscribe().catch(showError);
 ```
 
 ### Send a message
 
-Save first. `volcano.insert()` resolves to the created rows, so show your own message from that result, then tell the room the new id. `roomChannel` is the current room's broadcast channel, set by `joinRoom` below:
+Save first. `volcano.insert()` resolves to the created rows, so show your own message from that result, then tell the room the new id. Take the room's channel before the insert, and show the row only if that room is still on screen:
 
 ```javascript
 async function send(roomId, authorName, body) {
+  const channel = roomChannels.get(roomId);
   const { data, error } = await volcano.insert('messages', {
     room_id: roomId, user_id: volcano.auth.user().id, author_name: authorName, body,
   });
   if (error) throw error;
-  showMessage(data[0]);
-  roomChannel.send({ event: 'message', id: data[0].id }).catch(() => {
+  if (roomId === currentRoomId) showMessage(data[0]);
+  channel.send({ event: 'message', id: data[0].id }).catch(() => {
     showError(new Error('Sent, but live delivery failed. Peers will see it on reload.'));
   });
 }
@@ -177,9 +187,9 @@ For each room, register listeners, show history, subscribe, then load history ag
 ```javascript
 function joinRoom(roomId) {
   let cancelled = false;
-  const live = realtime.channel(`chat-${roomId}`, { type: 'broadcast' });
+  currentRoomId = roomId;
+  const live = roomChannels.get(roomId);
   const presence = realtime.channel(`presence-${roomId}`, { type: 'presence' });
-  roomChannel = live; // send() and typing events use this room's channel
 
   // Reads take 1–2 seconds; drop any that finish after the room is gone.
   function loadHistory() {
@@ -191,7 +201,8 @@ function joinRoom(roomId) {
       });
   }
 
-  live.on('message', async ({ id } = {}) => {
+  // The broadcast channel outlives this room view, so keep each handler's off().
+  const offMessage = live.on('message', async ({ id } = {}) => {
     if (typeof id !== 'string') return;
     const { data, error } = await volcano.from('messages')
       .select('id,room_id,user_id,author_name,body,created_at').eq('id', id).limit(1);
@@ -200,7 +211,7 @@ function joinRoom(roomId) {
     if (error) return loadHistory().catch(showError);
     if (data?.[0]?.room_id === roomId) merge(data);
   });
-  live.on('typing', ({ user, name } = {}) => {
+  const offTyping = live.on('typing', ({ user, name } = {}) => {
     if (user !== me && typeof name === 'string') showTyping(user, name.slice(0, 24));
   });
   presence.onPresenceSync((state) => {
@@ -223,15 +234,16 @@ function joinRoom(roomId) {
   return function leaveRoom() {
     cancelled = true;
     offConnect();
-    realtime.removeChannel(`chat-${roomId}`, 'broadcast');
+    offMessage();
+    offTyping();
     realtime.removeChannel(`presence-${roomId}`, 'presence');
   };
 }
 ```
 
-Use `removeChannel()` and not `unsubscribe()` on unmount. Channels are cached by name, and `unsubscribe()` only pauses delivery and keeps the handlers. Switching #general → #random → #general would then stack a second set of handlers, and each broadcast would trigger two database reads.
+Channels are cached by name, and `unsubscribe()` only pauses delivery and keeps the handlers. So a room view that leaves its listeners behind stacks a second set on #general → #random → #general, and each broadcast then triggers two database reads. Here the broadcast channel stays subscribed and `leaveRoom` calls each handler's `off()`. The presence channel belongs to the view, so `removeChannel()` drops it along with its listeners.
 
-Send typing events at most every 1.5 seconds while someone types (`roomChannel.send({ event: 'typing', user: me, name })`), and drop each typer 3 seconds after their last event. Queue the database reads the way the [Pixelboard](./pixel-board.md) does if out-of-order responses matter in your UI. Here, merging by id makes the order of reads harmless.
+Send typing events at most every 1.5 seconds while someone types (`roomChannels.get(currentRoomId).send({ event: 'typing', user: me, name })`), and drop each typer 3 seconds after their last event. Queue the database reads the way the [Pixelboard](./pixel-board.md) does if out-of-order responses matter in your UI. Here, merging by id makes the order of reads harmless.
 
 ### Configure and deploy
 
