@@ -185,9 +185,6 @@ The list shows the `progress` message the function published and the `settled` m
 
 ## Answer callbacks locally
 
-> **Coming soon.** `@volcano.dev/sdk` 2.2 and `volcano-sdk-python` 0.16 are not
-> released yet.
-
 A function that calls [`ctx.waitForCallback`](../functions/durable-callbacks.md), which needs `@volcano.dev/sdk` 2.2 or `volcano-sdk-python` 0.16, gets a token the local server answers to. To play the external system yourself, print the token instead of sending it anywhere:
 
 ```javascript
@@ -217,13 +214,11 @@ Redeploy, start an execution, read the token from its logs, and answer it agains
 volcano durable deploy --all
 volcano durable start orders --input '{"card_token":"tok_1","amount":4200,"email":"a@example.com"}'
 volcano durable logs orders --type runtime
-curl -X POST http://localhost:8000/durable-callbacks/heartbeat \
-  -H "Content-Type: application/json" -d '{"token": "vcb_..."}'
-curl -X POST http://localhost:8000/durable-callbacks/succeed \
-  -H "Content-Type: application/json" -d '{"token": "vcb_...", "result": {"batch": "b_31"}}'
+volcano durable callbacks heartbeat vcb_...
+volcano durable callbacks succeed vcb_... --result '{"batch": "b_31"}'
 ```
 
-Send `/durable-callbacks/fail` with `{"token": "vcb_...", "error": {"type": "Declined"}}` instead to watch the `catch` branch return the failure's `type`.
+Run `volcano durable callbacks fail vcb_... --type Declined` instead to watch the `catch` branch return the failure's `type`. The same requests work with `curl` against `http://localhost:8000/durable-callbacks/succeed`, `/fail`, and `/heartbeat`.
 
 **A callback's timeout and heartbeat timeout run in real time** as well. Stop heartbeating for two minutes to watch the `null` branch run.
 

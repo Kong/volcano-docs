@@ -179,13 +179,15 @@ Then redirect user to `authorization_url` to complete OAuth flow.
 
 The API enforces these rules:
 
-| Rule                  | Description                                                           |
-| --------------------- | --------------------------------------------------------------------- |
-| Provider availability | At least one provider must be available at all times                  |
-| Lockout prevention    | Cannot disable `enable_signup` AND all providers                      |
-| OAuth signup          | Requires `enable_signup = true`                                       |
-| Anonymous signup      | Requires `enable_signup = true` AND `enable_anonymous_signins = true` |
-| Email/password signup | Requires `enable_signup = true` AND `enable_email_password = true`    |
+| Rule                  | Description                                                                        |
+| --------------------- | ---------------------------------------------------------------------------------- |
+| Provider availability | At least one provider must be available at all times                               |
+| Lockout prevention    | Cannot disable `enable_signup` AND all providers                                   |
+| OAuth signup          | Requires `enable_signup = true`                                                    |
+| Anonymous signup      | Requires `enable_signup = true` AND `enable_anonymous_signins = true`              |
+| Email/password signup | Requires `enable_signup = true` AND `enable_email_password = true`                 |
+| Password sign-in      | Requires `enable_email_password = true`, for existing accounts too                 |
+| Password change       | Requires `enable_email_password = true`: reset, and `password` on `PUT /auth/user` |
 
 ### Configuration warnings
 
