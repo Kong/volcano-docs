@@ -261,7 +261,7 @@ frontends:
       - NEXT_PUBLIC_VOLCANO_DATABASE
 ```
 
-The browser key needs Realtime permissions, and `volcano projects keys anon create` only makes auth-only keys. Create it in the [dashboard's anonymous keys page](https://volcano.dev/dashboard/keys): select the project, click **Create Key**, name it `Chat`, keep the default **Auth** permissions, add **Realtime → Connect, Subscribe, Publish**, and copy the value. To script it, mint a short-lived project access token with `volcano cloud access-tokens create --expires-at <time> --json`. Send it as the bearer token to the [anon key API](/platform/authentication/security/anon-keys) with the same permission list, then revoke the token with `volcano cloud access-tokens revoke <name> --yes`.
+The browser key needs Realtime permissions, and `volcano projects keys anon create` only makes auth-only keys. Create it in the [dashboard's anonymous keys page](https://volcano.dev/dashboard/keys): select the project, click **Create Key**, name it `Chat`, keep the default **Auth** permissions, add **Realtime → Connect, Subscribe, Publish**, and copy the value. To script it, mint a short-lived project access token with `volcano cloud access-tokens create chat-key-setup --expires-at <RFC3339 time> --json`. Send it as the bearer token to the [anon key API](/platform/authentication/security/anon-keys) with the same permission list, then revoke it with `volcano cloud access-tokens revoke chat-key-setup --yes`.
 
 Put the three variables in `volcano/cloud.env`, and the same values in `web/.env.local` for `npm run dev`. Both paths are gitignored:
 
