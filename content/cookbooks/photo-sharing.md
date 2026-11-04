@@ -187,7 +187,7 @@ async function makeThumbnail(file) {
 }
 ```
 
-Upload both files, then save the row. The gallery lists rows, so a photo only shows up once both files exist. If a step fails, remove what was uploaded so no orphan files are left behind. The one exception is a failed insert: its response can be lost after the row committed, so look the row up by its id first and keep the files unless it's definitely not there:
+Upload both files, then save the row. The gallery lists rows, so a photo only shows up once both files exist. A file whose row never lands is an orphan nobody sees, but a row whose files were deleted is a broken photo. So clean up only when an upload fails, and remove every path you tried, since a failed upload may still have stored its file. Once the insert is sent, keep the files: a lost response can hide a row that committed, or one that's still committing.
 
 ```javascript
 const EXTENSIONS = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' };
@@ -201,37 +201,34 @@ async function uploadPhoto(file, caption) {
   const thumbPath = `${folder}/thumb.jpg`;
   const thumb = await makeThumbnail(file);
   const bucket = volcano.storage.from('photos');
-  const uploaded = [];
-  let inserting = false;
-  try {
-    const original = await bucket.upload(storagePath, file, { contentType: file.type });
-    if (original.error) throw original.error;
-    uploaded.push(storagePath);
-    const small = await bucket.upload(thumbPath, thumb.blob, { contentType: 'image/jpeg' });
-    if (small.error) throw small.error;
-    uploaded.push(thumbPath);
-    inserting = true;
-    const { data, error } = await volcano.insert('photos', {
-      id, storage_path: storagePath, thumb_path: thumbPath,
-      caption: caption.trim().slice(0, 140), width: thumb.width, height: thumb.height,
-    });
-    if (error) throw error;
-    return data[0];
-  } catch (error) {
-    if (inserting) {
-      const saved = await volcano.from('photos')
-        .select('id,user_id,uploader_email,storage_path,thumb_path,caption,width,height,created_at')
-        .eq('id', id).limit(1);
-      if (saved.error) throw error; // can't tell, so keep the files
-      if (saved.data.length) return saved.data[0];
+  const attempted = [];
+
+  async function uploadOrCleanUp(path, body, contentType) {
+    attempted.push(path);
+    const { error } = await bucket.upload(path, body, { contentType });
+    if (error) {
+      await bucket.remove(attempted); // paths that were never stored come back 404
+      throw error;
     }
-    if (uploaded.length) await bucket.remove(uploaded);
-    throw error;
   }
+
+  await uploadOrCleanUp(storagePath, file, file.type);
+  await uploadOrCleanUp(thumbPath, thumb.blob, 'image/jpeg');
+  const { data, error } = await volcano.insert('photos', {
+    id, storage_path: storagePath, thumb_path: thumbPath,
+    caption: caption.trim().slice(0, 140), width: thumb.width, height: thumb.height,
+  });
+  if (!error) return data[0];
+  // The row may have committed anyway; if so, carry on as if the insert succeeded.
+  const saved = await volcano.from('photos')
+    .select('id,user_id,uploader_email,storage_path,thumb_path,caption,width,height,created_at')
+    .eq('id', id).limit(1);
+  if (saved.data?.length) return saved.data[0];
+  throw error;
 }
 ```
 
-`volcano.insert()` resolves to `{ data, error }` with the created rows, including the `user_id` and `uploader_email` the database filled in. Put the returned row at the top of the gallery.
+`volcano.insert()` resolves to `{ data, error }` with the created rows, including the `user_id` and `uploader_email` the database filled in. Put the returned row at the top of the gallery. If orphan files ever add up, a signed-in user can `list()` their own folder and remove the paths that have no row.
 
 ### Show the gallery
 
