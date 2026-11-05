@@ -38,16 +38,47 @@
     flex-direction: row;
   }
 
-  .home-card-row--primary {
-    height: var(--layout-feature-card-height);
-  }
-
   .home-card-row--tutorials {
     height: 372px;
   }
 
   /* Divider between adjacent cards within a row. */
   .home-card-row > .feature-card:not(:last-child) {
+    border-right: var(--border-divider);
+    border-bottom: none;
+  }
+
+  /* Five primary cards are too narrow side by side until 80rem, so they sit
+     in two columns under a full-width Quick start card. */
+  .home-card-row--primary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .home-card-row--primary > .feature-card:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .home-card-row--primary > .feature-card:nth-child(odd) {
+    border-right: none;
+  }
+
+  .home-card-row--primary > .feature-card:nth-last-child(n + 3) {
+    border-bottom: var(--border-divider);
+  }
+}
+
+@media (width >= 80rem) {
+  .home-card-row--primary {
+    height: var(--layout-feature-card-height);
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .home-card-row--primary > .feature-card:first-child {
+    grid-column: auto;
+  }
+
+  .home-card-row--primary > .feature-card:not(:last-child) {
     border-right: var(--border-divider);
     border-bottom: none;
   }

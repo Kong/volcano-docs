@@ -1,0 +1,21 @@
+/* ══════════════════════════════════════════
+   MCP setup section: intro, token export, and a tab per coding agent with its
+   MCP config. Content keeps to reading width inside the full-bleed band.
+   ══════════════════════════════════════════ */
+
+.mcp-setup {
+  --cmp-padding-block: var(--spacing-card);
+  --cmp-padding-inline: var(--spacing-page);
+  --cmp-width: var(--layout-reading-width);
+  display: flex;
+  width: 100%;
+  border-bottom: var(--border-divider);
+  background: var(--surface-background);
+  padding: var(--cmp-padding-block) var(--cmp-padding-inline);
+}
+
+.mcp-setup-body {
+  width: 100%;
+  min-width: 0;
+  max-width: var(--cmp-width);
+}

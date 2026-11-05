@@ -56,6 +56,49 @@ export function BotIcon(props: IconProps) {
   );
 }
 
+// Lucide `braces` and `plug` in their native 24x24 space, with the viewBox
+// cropped to the glyph like the Figma exports above. A 0.75 stroke is the
+// Figma exports' 1px stroke before their 4/3 scale, so the weights match.
+export function BracesIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="2.625 2.625 18.75 18.75"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={0.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+      {...props}
+    >
+      <path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5c0 1.1.9 2 2 2h1" />
+      <path d="M16 21h1a2 2 0 0 0 2-2v-5c0-1.1.9-2 2-2a2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1" />
+    </svg>
+  );
+}
+
+export function PlugIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="5.625 1.625 12.75 20.75"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={0.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+      {...props}
+    >
+      <path d="M12 22v-5" />
+      <path d="M15 8V2" />
+      <path d="M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z" />
+      <path d="M9 8V2" />
+    </svg>
+  );
+}
+
 export function SearchIcon(props: IconProps) {
   return (
     <svg
