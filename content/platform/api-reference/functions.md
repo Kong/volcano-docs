@@ -143,6 +143,8 @@ For direct API uploads, Volcano generates `.volcano/function-build.json` automat
 - `python3.10`, `python3.11`, `python3.12`, `python3.13`, `python3.14`
 - `ruby3.3`, `ruby3.4`, `ruby4.0`
 
+`python3.10` is deprecated: Python 3.10 reached end of life in October 2026. It still deploys, and Volcano will remove it before 2027-08-31. Move functions to a newer Python runtime.
+
 **Response:** 201 Created
 
 If a function with the same name already exists, the same endpoint updates that

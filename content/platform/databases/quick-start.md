@@ -38,7 +38,7 @@ const volcano = new VolcanoAuth({
   anonKey: 'your-anon-key',
 });
 
-// Set your database name (get from Volcano dashboard)
+// Set your database name (list them with `volcano cloud databases list`)
 volcano.database('notes_db');
 ```
 
@@ -319,7 +319,7 @@ You now have a fully functional database with automatic security.
 
 ### Step 1: Create a Database
 
-Same as REST API - create via API or dashboard.
+Same as REST API: create it with `volcano cloud databases create`, the API, or the dashboard.
 
 ### Step 2: Create a Function
 

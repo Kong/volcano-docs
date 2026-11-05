@@ -45,7 +45,7 @@ a session. Existing emails receive the same acknowledgement.
 
 - `400` - Invalid email/password format
 - `401` - Invalid, tampered, revoked, or wrong-project anon key
-- `403` - Signups disabled, email domain not in `allowed_email_domains`, or anon key lacks `auth.signup` permission. `anonymous.volcano.internal` is reserved for anonymous accounts and is always refused
+- `403` - Signups disabled, email domain not in `allowed_email_domains`, or anon key lacks `auth.signup` permission. `anonymous.volcano.internal` and `volcano.local` are reserved for the anonymous and Builder debug accounts Volcano creates, and are always refused
 - `429` - Rate limit exceeded
 
 ---
@@ -75,10 +75,11 @@ request uses eligible cookie session storage.
 
 - `400` - Missing email/password
 - `401` - Invalid credentials, invalid/tampered/revoked anon key, or account banned/deleted
-- `403` - Anon key lacks `auth.signin` permission, or the email domain is not in
+- `403` - Anon key lacks `auth.signin` permission, email/password is turned off
+  for the project (`enable_email_password: false`), or the email domain is not in
   `allowed_email_domains` while `allowed_email_domains_mode` is
-  `signup_and_signin`. The domain is taken from the account's canonical email —
-  its primary identity — which is not necessarily the address you sign in with
+  `signup_and_signin`. Both the account's canonical email — its primary
+  identity — and the email you sign in with must be on the list
 - `429` - Rate limit exceeded
 
 ---
@@ -116,7 +117,8 @@ Authorization: Bearer <anon_key>
 **Errors:**
 
 - `401` - Invalid/expired refresh token, session timeout, invalid/tampered/revoked anon key
-- `403` - Anon key lacks `auth.refresh` permission, or the email domain is not in
+- `403` - Anon key lacks `auth.refresh` permission, or the account's canonical
+  email or the email of the identity the session signed in with is not in
   `allowed_email_domains` while `allowed_email_domains_mode` is
   `signup_and_signin`
 
@@ -286,7 +288,7 @@ Content-Type: application/json
 **Errors:**
 
 - `401` - Missing/invalid anon key
-- `403` - Password reset disabled or CORS blocked
+- `403` - Password reset or email/password turned off, or CORS blocked
 
 ---
 
@@ -325,7 +327,7 @@ Content-Type: application/json
 
 - `400` - Password doesn't meet requirements or in password history
 - `401` - Invalid/expired token
-- `403` - Password reset disabled
+- `403` - Password reset or email/password turned off
 
 ---
 
@@ -419,6 +421,7 @@ Merging is shallow: a nested object replaces the stored value for that top-level
 **Errors:**
 
 - `400` - Password doesn't meet requirements or in password history
+- `403` - A non-empty `password` sent while email/password is turned off; nothing is updated
 
 ---
 
@@ -463,7 +466,7 @@ triggers a confirmation email.
 **Errors:**
 
 - `400` - User is already authenticated (not anonymous)
-- `403` - Email domain not in `allowed_email_domains`
+- `403` - Email domain not in `allowed_email_domains`, or reserved (`anonymous.volcano.internal`, `volcano.local`)
 - `409` - Email already in use
 
 ---
@@ -770,8 +773,9 @@ Authorization: Bearer <platform_token>
   on SUPERAGENT only — a downgrade parks it without discarding it. See
   [Email Domain Allowlist](../authentication/configuration/email-domain-allowlist.md).
 - `allowed_email_domains_mode` must be `disabled`, `signup` (default), or
-  `signup_and_signin`. `signup_and_signin` also blocks sign-in for accounts
-  outside the list and deletes their sessions when the config is saved.
+  `signup_and_signin`. `signup_and_signin` also blocks sessions whose account
+  email or sign-in identity's email is outside the list, and deletes them when
+  the config is saved.
 - `device_verification_url`, when set, must be a valid http/https URL. It overrides
   where device-code (CLI) logins send users to approve; the `user_code` is appended
   automatically. Unlike the redirect URLs it is **not** tied to `allowed_redirect_urls`.

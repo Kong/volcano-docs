@@ -317,6 +317,7 @@ counts statements that complete, however they reach the database:
 | The role and user-context setup Volcano runs for user access                   | Free                                                        |
 | A statement that fails                                                         | Free                                                        |
 | An empty query, such as a driver's connection ping                             | Free                                                        |
+| A statement a [migration run](../guides/migrations.md) executes                | Free                                                        |
 
 A query string holding several statements, such as `INSERT ...; UPDATE ...`, is
 [refused](connection-strings.md#one-statement-per-query). Send them one at a
