@@ -76,6 +76,36 @@ try {
   fs.unlinkSync(path.join(content, "sdk", "README.md"));
   fs.unlinkSync(guide);
 
+  const imagePage = path.join(content, "sdk", "images.md");
+  const assets = path.join(content, "sdk", "assets");
+  const frontmatter = '---\ntitle: Images\ndescription: Image fixture.\n---\n\n';
+  fs.mkdirSync(assets);
+  fs.writeFileSync(path.join(assets, "run.png"), "image fixture");
+  fs.writeFileSync(path.join(assets, "data.yaml"), "a: 1\n");
+  fs.mkdirSync(path.join(assets, "folder.png"));
+  fs.writeFileSync(imagePage, `${frontmatter}![Run](./assets/run.png)\n`);
+  assert.match(run("check-links.mjs", content, publicDir), /links OK/);
+  fs.writeFileSync(imagePage, `${frontmatter}![Missing](./assets/missing.png)\n`);
+  assert.throws(
+    () => run("check-links.mjs", content, publicDir),
+    (error) => error.status === 1 && error.stderr.includes("./assets/missing.png  (target does not exist)"),
+  );
+  fs.writeFileSync(
+    imagePage,
+    `${frontmatter}![Data](./assets/data.yaml)\n![Folder](./assets/folder.png)\n[Run](./assets/run.png)\n![Run][run]\n\n[run]: assets/run.png\n`,
+  );
+  assert.throws(
+    () => run("check-links.mjs", content, publicDir),
+    (error) =>
+      error.status === 1 &&
+      error.stderr.includes("./assets/data.yaml  (links to an unserved file, not a page)") &&
+      error.stderr.includes("./assets/folder.png  (links to an unserved file, not a page)") &&
+      error.stderr.includes("./assets/run.png  (links to an unserved file, not a page)") &&
+      error.stderr.includes("->  assets/run.png  (links to an unserved file, not a page)"),
+  );
+  fs.rmSync(assets, { recursive: true });
+  fs.unlinkSync(imagePage);
+
   const coverPost = path.join(content, "cover-post.md");
   fs.writeFileSync(path.join(publicDir, "cover.png"), "image fixture");
   fs.writeFileSync(coverPost, '---\ntitle: Cover\ndescription: Cover fixture.\ncover: /cover.png\n---\n');

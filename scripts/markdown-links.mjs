@@ -19,7 +19,8 @@ export function markdownLinks(text) {
     if (node.type === "linkReference" || node.type === "imageReference") {
       url = definitions.get(node.identifier);
     }
-    if (url) links.push({ url, line: node.position?.start.line || 1 });
+    // Only inline images: remarkImage bundles those, not reference-style ones.
+    if (url) links.push({ url, line: node.position?.start.line || 1, image: node.type === "image" });
   });
   return links;
 }
