@@ -9,9 +9,9 @@ const MCP_GUIDE_HREF = "/platform/interfaces/mcp";
 
 const EXPORT_TOKEN = "export VOLCANO_PROJECT_TOKEN=pt-your-project-access-token";
 
-// One snippet per client, matching the per-client sections of the MCP guide.
-// Each reads the token from VOLCANO_PROJECT_TOKEN, so none puts a secret in a
-// file someone might commit.
+// One snippet per client. Keep them in step with the per-client sections of
+// the MCP guide, which volcano-hosting's docs/public/interfaces/mcp.md owns.
+// Every snippet reads the token from the VOLCANO_PROJECT_TOKEN export above.
 const CLIENTS = [
   {
     name: "Claude Code",
@@ -43,7 +43,7 @@ const CLIENTS = [
   },
   {
     name: "OpenCode",
-    title: "opencode.json",
+    title: "~/.config/opencode/opencode.json",
     lang: "json",
     code: `{
   "$schema": "https://opencode.ai/config.json",
@@ -120,6 +120,13 @@ export function McpSetup() {
           , export it, and add the server to your client.
         </p>
         <ServerCodeBlock code={EXPORT_TOKEN} lang="bash" />
+        <p>
+          Start your agent from that shell. Editors such as Cursor and VS Code
+          read the variable from the environment they were launched in, so quit
+          the editor fully and reopen it from the shell, for example with{" "}
+          <code>cursor .</code> or <code>code .</code>. Exporting it in the
+          editor&apos;s own terminal is not enough.
+        </p>
         <Tabs items={CLIENT_NAMES}>
           {CLIENTS.map(function renderClient(client) {
             return (
