@@ -76,7 +76,7 @@ for (const file of mdFiles) {
     if (fs.existsSync(path.join(target, "index.md"))) continue; // dir -> index
     if (!url.endsWith(".md") && fs.existsSync(target + ".md")) continue; // extensionless page
     // fumadocs-mdx bundles a relative inline image (remarkImage), so the site serves it.
-    if (link.image && IMAGE_FILE.test(url) && fs.existsSync(target)) continue;
+    if (link.image && IMAGE_FILE.test(url) && fs.statSync(target, { throwIfNoEntry: false })?.isFile()) continue;
     if (fs.existsSync(target)) {
       errors.push(`${routeOf(file)}  ->  ${link.url}  (links to an unserved file, not a page)`);
     } else {
