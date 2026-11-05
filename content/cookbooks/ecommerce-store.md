@@ -256,8 +256,8 @@ exports.handler = async (event) => {
 
     const total = items.reduce((sum, item) => sum + item.price_cents * item.quantity, 0);
 
-    // A payment provider would plug in here: charge `total` (or create a
-    // payment intent) before COMMIT, and roll back if the charge fails.
+    // No payment is taken. A charge can't be rolled back with this
+    // transaction, so a payment provider goes after COMMIT (see below).
     const { rows: [order] } = await client.query(
       `INSERT INTO public.orders (user_id, total_cents) VALUES ($1, $2)
        RETURNING id, total_cents, status, created_at`,
@@ -270,7 +270,12 @@ exports.handler = async (event) => {
          FROM jsonb_to_recordset($3::jsonb) AS i(id text, name text, price_cents int, quantity int)`,
       [order.id, auth.user_id, JSON.stringify(items)],
     );
-    await client.query('DELETE FROM public.cart_items WHERE user_id = $1', [auth.user_id]);
+    // Remove only what was bought: a row another tab added after the cart was
+    // read isn't locked or priced, so it stays for the next order.
+    await client.query(
+      'DELETE FROM public.cart_items WHERE user_id = $1 AND product_id = ANY($2::text[])',
+      [auth.user_id, cart.map((line) => line.product_id)],
+    );
     await client.query('COMMIT');
 
     return reply(201, {
@@ -361,12 +366,20 @@ Each write is a round trip of a few hundred milliseconds, so update the page str
 Read the order history with the shopper's own token. RLS returns only their rows:
 
 ```javascript
-const orders = await volcano.from('orders').select('id,total_cents,status,created_at')
-  .order('created_at', { ascending: false }).limit(20);
-if (orders.error) throw orders.error;
-const items = await volcano.from('order_items')
-  .select('order_id,product_id,product_name,unit_price_cents,quantity')
-  .in('order_id', orders.data.map((order) => order.id));
+async function loadOrders() {
+  const orders = await volcano.from('orders').select('id,total_cents,status,created_at')
+    .order('created_at', { ascending: false }).limit(20);
+  if (orders.error) throw orders.error;
+  if (orders.data.length === 0) return [];
+  const items = await volcano.from('order_items')
+    .select('order_id,product_id,product_name,unit_price_cents,quantity')
+    .in('order_id', orders.data.map((order) => order.id));
+  if (items.error) throw items.error;
+  return orders.data.map((order) => ({
+    ...order,
+    items: items.data.filter((item) => item.order_id === order.id),
+  }));
+}
 ```
 
 The cart page can show a subtotal from the catalog prices, but label it as an estimate. The total that counts is the one `place-order` returns.
@@ -429,7 +442,7 @@ volcano cloud deploy --env-file volcano/cloud.env --with-migrations -d shop
 
 It saves the variables, runs the migrations, deploys the functions, builds the frontend and applies the manifest, then prints the frontend URL. The deploy creates the functions as `private`, and the manifest then sets their visibility and mode and adds the route, so everything works once the command finishes. Add the frontend's HTTPS origin to `auth.cors.allowed_origins` and run the same command again. See [CORS configuration](/platform/authentication/configuration/cors).
 
-`npm run dev` serves the app without the route. To browse locally, forward the path to the deployed site in `web/next.config.mjs`, and set `CATALOG_ORIGIN` to the frontend URL in `web/.env.local`:
+`npm run dev` serves the app without the route. To browse locally, add a `web/next.config.mjs` that forwards the path to the deployed site (`volcano init nextjs` doesn't create one), and set `CATALOG_ORIGIN` to the frontend URL in `web/.env.local`:
 
 ```javascript
 const nextConfig = {
@@ -480,8 +493,8 @@ A forged price or total sent with the order is simply ignored, because the funct
 
 - **The server prices the order.** `place-order` reads the cart and the prices from the database inside the transaction, so the total depends only on what's stored. The browser's subtotal is a preview. The payload carries nothing the function reads, so there's nothing to forge.
 - **One transaction, one statement per product.** `UPDATE … SET stock = stock - $2 WHERE stock >= $2` checks and takes the stock in one step, and the row lock makes a second order for the same product wait until the first commits. It then matches no row, the function rolls back and answers `409`. Locking rows in product id order means two orders for overlapping items can't deadlock. `CHECK (stock >= 0)` backs this up if other code ever writes stock.
-- **The cart is in the database, not the request.** The function buys exactly what's saved, and emptying the cart in the same transaction makes a double-click or a retried request harmless: the second call finds an empty cart and gets `400`. Carts also follow the shopper across devices.
+- **The cart is in the database, not the request.** The function buys exactly the rows it locked, and removing them in the same transaction makes a double-click or a retried request harmless: the second call finds an empty cart and gets `400`. A product added from another tab while the order is being placed isn't locked or priced, so it stays in the cart for next time. In testing, an item added while checkout was held up by a locked product row was still in the cart afterwards. Carts also follow the shopper across devices.
 - **A full-access connection in the function, RLS for the browser.** The browser and the functions reach the same tables, and any grant the function had through RLS, the browser would have too. So the function uses the full-access connection string, and the `authenticated` role gets only what a shopper needs: their own cart, and read-only orders. The connection string is scoped to the two functions, and neither the frontend nor the browser ever sees it.
 - **Browsing through a function route.** The database API refuses requests that only carry the anon key, so signed-out browsing needs a server-side reader. A `public` function that returns only active products keeps the products table closed to everyone else. Serving it through a Frontend Function route keeps the browser key auth-only: invoking a function with the anon key would need `functions.invoke`, while the route needs no credential. Anyone can call the route, so it does nothing but read.
-- **Where a payment provider goes.** To take money, create the payment (for example a Stripe PaymentIntent for `total`) inside `place-order` before `COMMIT`, and roll back if it fails. For payment flows that confirm later, record the order as `pending`, keep the stock reserved, and mark it paid from a webhook handled by a `public` function in [HTTP mode](/platform/functions/invoking-functions) that checks the provider's signature. Add a scheduled function that releases stock from orders that are never paid. Keep the provider's secret key in a variable scoped to those functions only.
+- **Where a payment provider goes.** A charge can't be rolled back with a database transaction, so don't charge inside one. Instead, let `place-order` commit the order as `pending` with the stock reserved (add `pending`, `paid` and `cancelled` to the `status` check). After the commit, create the payment, for example a Stripe PaymentIntent for the stored total, with the order id as its idempotency key and in its metadata, so a retry can't charge twice. Mark the order `paid` only from the provider's webhook, handled by a `public` function in [HTTP mode](/platform/functions/invoking-functions) that checks the provider's signature and updates the order by that id. A [scheduled function](/platform/functions/scheduled-invocations) cancels orders that stay `pending` too long and returns their stock, after checking with the provider that nothing was paid. Keep the provider's secret key in a variable scoped to those functions only.
 - **No admin, refunds or cancellations.** Products are managed with SQL, orders can't be cancelled from the app, and stock only goes down. Add an admin role and functions for restocking, cancelling (which returns the stock in the same transaction) and refunds before running a real shop.
