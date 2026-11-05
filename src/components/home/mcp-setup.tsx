@@ -17,7 +17,7 @@ const CLIENTS = [
     name: "Claude Code",
     lang: "bash",
     code: `claude mcp add --transport http volcano https://api.volcano.dev/mcp \\
-  --header "Authorization: Bearer $VOLCANO_PROJECT_TOKEN"`,
+  --header 'Authorization: Bearer \${VOLCANO_PROJECT_TOKEN}'`,
   },
   {
     name: "Cursor",
