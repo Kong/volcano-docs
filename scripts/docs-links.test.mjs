@@ -82,20 +82,24 @@ try {
   fs.mkdirSync(assets);
   fs.writeFileSync(path.join(assets, "run.png"), "image fixture");
   fs.writeFileSync(path.join(assets, "data.yaml"), "a: 1\n");
-  fs.writeFileSync(imagePage, `${frontmatter}![Run](./assets/run.png)\n![Run][run]\n\n[run]: assets/run.png\n`);
+  fs.writeFileSync(imagePage, `${frontmatter}![Run](./assets/run.png)\n`);
   assert.match(run("check-links.mjs", content, publicDir), /links OK/);
   fs.writeFileSync(imagePage, `${frontmatter}![Missing](./assets/missing.png)\n`);
   assert.throws(
     () => run("check-links.mjs", content, publicDir),
     (error) => error.status === 1 && error.stderr.includes("./assets/missing.png  (target does not exist)"),
   );
-  fs.writeFileSync(imagePage, `${frontmatter}![Data](./assets/data.yaml)\n[Run](./assets/run.png)\n`);
+  fs.writeFileSync(
+    imagePage,
+    `${frontmatter}![Data](./assets/data.yaml)\n[Run](./assets/run.png)\n![Run][run]\n\n[run]: assets/run.png\n`,
+  );
   assert.throws(
     () => run("check-links.mjs", content, publicDir),
     (error) =>
       error.status === 1 &&
       error.stderr.includes("./assets/data.yaml  (links to an unserved file, not a page)") &&
-      error.stderr.includes("./assets/run.png  (links to an unserved file, not a page)"),
+      error.stderr.includes("./assets/run.png  (links to an unserved file, not a page)") &&
+      error.stderr.includes("->  assets/run.png  (links to an unserved file, not a page)"),
   );
   fs.rmSync(assets, { recursive: true });
   fs.unlinkSync(imagePage);
