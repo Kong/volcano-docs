@@ -160,3 +160,11 @@ drivers do not retry it:
 ERROR:  Not available in your region.
 SQLSTATE: 28000
 ```
+
+## Temporarily unavailable Sandbox regions
+
+A new Sandbox session or one-shot execution in a temporarily unavailable region
+answers `400` with code `sandbox_region_unavailable`. This is not the
+`region_unavailable` embargo response: choose another region from
+`GET /sandboxes/presets` and retry. See
+[Temporarily unavailable regions](sandboxes.md#temporarily-unavailable-regions).

@@ -19,8 +19,8 @@ Where they are turned off after use, only creating or starting a session,
 template, execution, or deployment, and listing presets, answer that `404`, so
 sessions and templates you already have can still be read and deleted.
 
-A `503` means the Sandbox service is temporarily unavailable; retry later. In
-local mode it means the local Sandbox service is not running, see
+A `503` means the Sandbox service is temporarily unavailable. For commands, follow
+the retry rules below. In local mode it means the local Sandbox service is not running, see
 [Run locally](#run-locally).
 
 ## Run a command
@@ -53,11 +53,101 @@ Discover published presets and regions with `GET /sandboxes/presets`.
 Use the returned preset IDs when creating templates, sessions, or one-shot executions.
 An empty catalog means no verified preset has been published yet.
 
+If startup fails or times out before the command is sent, one-shot execution returns
+code `sandbox_start_failed`. The HTTP status is `422` for a startup hook timeout on a custom deployment,
+`429` for exhausted allowance or expired allowance retention, and `503` for other
+or unknown startup reasons, including hook timeouts on managed presets. The command did not run. Reusing the same
+`Idempotency-Key` replays that failure. The `error` message includes the recorded
+reason when known, including on replay:
+
+```json
+{
+  "error": "sandbox failed to start; command was not executed; reason: sandbox_run_hook_timeout",
+  "code": "sandbox_start_failed"
+}
+```
+
+Investigate the reason before using a new key for another attempt. Confirmed
+running time is billed, including when a VM boots late before cleanup stops it. For repeated startup or run-hook timeouts, check the template's
+startup configuration and logs; a timeout alone does not establish a template fault.
+For `sandbox_allowance_exhausted`, restore the runtime allowance or credits first.
+The message is diagnostic text and may change; use the response `code` for stable
+programmatic error handling. If no reason was recorded, the message remains generic.
+Startup timeout also requests termination; background cleanup continues after the request ends.
+Wait or back off before using a fresh key: cleanup can still hold capacity after a
+failure response. Every fresh-key refusal is also retained, so an immediate retry
+can consume another key without starting a VM.
+`sandbox_start_timeout` means the startup wait expired; `sandbox_session_expired`
+means the requested session lifetime ended first. Increase the lifetime for the
+latter. Caller cancellation or a caller deadline during admission or startup returns `504` if
+the connection can still deliver a response. The outcome stays unknown; reuse the
+original key.
+
+One-shot admission can also refuse a command before it runs:
+
+| Response code                  | HTTP status | Next step                                                   |
+| ------------------------------ | ----------- | ----------------------------------------------------------- |
+| `sandbox_capacity_unavailable` | 429         | Wait for capacity or reduce the requested resources.        |
+| `sandbox_allowance_exhausted`  | 429         | Restore the runtime allowance or credits.                   |
+| `sandbox_plan_limit_exceeded`  | 403         | Reduce the requested resources or free concurrent sessions. |
+
+For these explicit response `code` values, the original key continues to replay
+the refusal after the limit is resolved. Use a new key for a new attempt. A
+403 or 429 without one of these codes or `sandbox_start_failed` does not establish
+that the command was never sent.
+
+A command on an existing session that is not ready, is stopping, or has expired
+returns `409` with code `sandbox_session_not_running`. The command was not sent.
+Wait for a running session and use a new key for a new attempt. The original key
+continues to replay the refusal even after the session resumes.
+
+For other errors or a lost response, reuse the original key. An unknown outcome
+returns `409`; do not switch keys to repeat a command with side effects.
+
+`GET /sandbox-sessions/{sessionId}` includes `last_error_code` for the last recorded
+lifecycle reason. Observations without a new reason preserve it, including after
+termination or recovery. This is historical information, not a current error;
+use `state` to determine the session's current state. The field is omitted when
+no reason is known.
+
+| Code                                    | Meaning                                               |
+| --------------------------------------- | ----------------------------------------------------- |
+| `sandbox_run_hook_timeout`              | The startup hook timed out.                           |
+| `sandbox_start_rejected`                | The runtime rejected the start.                       |
+| `sandbox_authority_or_expiry`           | Session authority ended or its lifetime expired.      |
+| `sandbox_allowance_exhausted`           | The runtime allowance was exhausted.                  |
+| `sandbox_allowance_retention_expired`   | Retention after allowance exhaustion expired.         |
+| `project_deleting`                      | The project is being deleted.                         |
+| `sandbox_cleanup_retry_requested`       | Cleanup was explicitly requested again.               |
+| `sandbox_session_retries_exhausted`     | Lifecycle reconciliation exhausted its retries.       |
+| `sandbox_operator_confirmed_no_live_vm` | Operator recovery confirmed no live runtime remained. |
+
+Additional codes may be introduced; accept unknown values. A recorded reason alone
+does not establish whether a command ran or authorize a retry. Use the execution
+response's code and the retry rules above.
+
 Use a region returned for the selected preset and memory size; region availability
 can differ between presets. Sandbox availability is independent of where the API
 request is served. For a custom template, use a region in its verified deployment.
 New regions appear after their deployment is ready and the corresponding images
 have passed verification.
+
+### Temporarily unavailable regions
+
+`us-west-2` is temporarily unavailable for Sandboxes. The catalog omits it, and
+a new session or one-shot execution there answers `400`:
+
+```json
+{
+  "error": "this region is temporarily unavailable for Sandboxes; choose another region from GET /sandboxes/presets",
+  "code": "sandbox_region_unavailable"
+}
+```
+
+Choose another region from the catalog. Sessions already in `us-west-2` stay
+readable and can be terminated, and templates and deployments are unchanged. A
+custom template deployed while the region is unavailable builds no image there;
+redeploy it once the region returns to start sessions there.
 
 ## Keep a session alive
 
@@ -104,6 +194,20 @@ to the session. The command can return before the service starts listening.
 Poll a read-only health endpoint with a timeout before sending application traffic;
 a request made before the port is listening can return `502`. Do not restart the
 command or retry a write request just to wait for readiness.
+
+A cloud session runs at most 64 commands at once and has no limit on how many it
+runs in total. A command holds its slot until it exits and every background
+process it started has exited too, so a service started with `&` keeps its slot
+while it runs. With every slot in use, `exec` returns `429` with code
+`sandbox_command_capacity` and starts nothing; retry with the same
+`Idempotency-Key` once a command finishes. Sessions on a custom template built
+before guest version `hosting-4` instead refuse every command after their 64th
+with `409`; rebuild the template to lift that limit.
+
+File requests on a terminated session return `404`. On a session that is still
+starting or is suspended they return `503`; wait for `running`. An `exec` request
+on a session that is not running returns `409 sandbox_session_not_running` and
+retains its refusal; after recovery, use a new key for a new command attempt.
 
 Suspending retains the session's state; terminating destroys it.
 
@@ -168,6 +272,9 @@ that invalid request returns `400` again and never runs a command.
 A completed command returns its stored result. Changed intent returns `409`.
 An in-progress command or lost result returns `409` with
 `sandbox execution outcome is unknown; the command will not be repeated`.
+A guest capacity refusal (`429 sandbox_command_capacity`) leaves its key
+unused, so retrying the same key can run it once capacity frees. This differs
+from `sandbox_session_not_running`, which retains the refusal for that key.
 Do not use a new key unless you intend to run the command again.
 
 ## Read and write files
@@ -274,6 +381,8 @@ active connections; clients must obtain fresh access and reconnect after expiry.
 
 Include the authorization, content type, and idempotency headers shown above.
 Use the returned ID as `sandbox_id` in later session or execution requests.
+A named Sandbox keeps the preset image it was created with. To move to a
+later preset update, delete it and create it again with a new idempotency key.
 `PATCH /projects/{id}/sandboxes/{sandboxId}` changes its name. `DELETE` stops
 new sessions and requests termination of its existing sessions. You can reuse
 the name with a new idempotency key. Replaying the deleted Sandbox’s creation
@@ -438,7 +547,11 @@ templates are not enabled, a deployment request returns `404` with code
 `feature_unavailable`.
 
 Place a `Dockerfile` fragment and its files in a directory. Volcano supplies the
-base image and supervisor. Use `RUN`, `COPY`, `ENV`, `WORKDIR` within `/workspace`,
+base image and supervisor. The base image is Amazon Linux 2023 on arm64 in the
+cloud; local mode uses your machine's architecture. Compile binaries in a `RUN`
+step so they match either one. A binary built elsewhere and copied in must target
+`linux/arm64` for the cloud and your machine's architecture for local mode.
+Use `RUN`, `COPY`, `ENV`, `WORKDIR` within `/workspace`,
 and `CMD`; omit `FROM`, `ENTRYPOINT`, and `USER`.
 Use JSON-array `CMD` to pass arguments literally, without shell expansion.
 Shell-form `CMD` explicitly runs a shell and supports expansion and pipelines.
@@ -487,6 +600,27 @@ operator recovery, so a new Git deployment fails immediately instead of waiting.
 
 Create sessions with `sandbox_id` after activation. Sessions retain the exact
 image they started with even when a later deployment activates.
+
+In the cloud, Volcano starts your `CMD` service once while it builds the
+template, then starts every session from a saved copy of that running service,
+memory included. Anything the service creates at startup is the same in many
+sessions: random tokens, keys, IDs, and random generators seeded at startup.
+Create those values when a session first needs them, and read randomness from
+the operating system at that point, for example with Python `secrets` or Go
+`crypto/rand`. Local mode starts `CMD` separately in each session.
+
+When a session starts, Volcano reseeds the operating system's random generator,
+so reads from it differ between sessions. A custom template or named Sandbox
+keeps the image it was saved with: redeploy the template, or delete and
+recreate the named Sandbox, to pick this up. A process that was already running when the copy was saved keeps its
+own in-memory generator, such as OpenSSL's or a language's seeded random
+module, and can return the same values in many sessions. Start such processes
+after the session starts, or reseed them then.
+
+Don't build secrets into a template. Its files, `ENV` values, and startup
+memory are shared by every session. Pass a secret after the session starts,
+in the `environment` field of an exec request or as a file written with
+[the files API](#read-and-write-files).
 
 Read build logs with
 `GET /projects/{id}/sandboxes/{sandboxId}/deployments/{deploymentId}/logs?region=aws-us-east-1`.

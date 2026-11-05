@@ -120,12 +120,21 @@ OAuth provider calls this endpoint after user authorization.
 
 - `400` - Missing/invalid code or state
 - `400` - State parameter expired (10 min timeout)
+- `400` - `OAuth provider is disabled`: the provider was turned off after the
+  sign-in or link started (re-checked at callback time)
 - `400` - the redirect URL stored with this flow is no longer registered in
   `allowed_redirect_urls` (re-checked at callback time, in case the allowlist
   changed after authorization started)
+- `404` - `OAuth provider not configured`: the provider's configuration was
+  removed after the sign-in or link started
+- `404` - `user not found`: the account a link started from was deleted before
+  the callback
 - `403` - the provider's email domain is not in `allowed_email_domains`. Creating
   an account is refused under `signup` and `signup_and_signin`; signing in an
-  already-linked account is refused under `signup_and_signin`. See
+  already-linked account is refused under `signup_and_signin`, as it is when the
+  account's canonical email is outside the list. A new account at a reserved
+  domain (`anonymous.volcano.internal`, `volcano.local`) is refused in every
+  project. See
   [Email Domain Allowlist](../authentication/configuration/email-domain-allowlist.md)
 - `409` - Email already exists (requires linking)
 
@@ -163,7 +172,7 @@ GET /auth/oauth/providers
 Authorization: Bearer {access_token}
 ```
 
-Get list of OAuth providers linked to current user.
+Get list of OAuth providers linked to current user, with the user's own account ID at each provider.
 
 **Headers:**
 
@@ -176,17 +185,25 @@ Get list of OAuth providers linked to current user.
   "providers": [
     {
       "provider": "google",
+      "provider_user_id": "108123456789012345678",
       "linked_at": "2026-01-03T10:00:00Z",
       "updated_at": "2026-01-03T10:00:00Z"
     },
     {
       "provider": "github",
+      "provider_user_id": "583231",
+      "provider_login": "octocat",
       "linked_at": "2026-01-05T14:30:00Z",
       "updated_at": "2026-01-05T14:30:00Z"
     }
   ]
 }
 ```
+
+| Field              | Description                                                                                                                                                                   |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `provider_user_id` | The user's account ID at the provider. It never changes, so match on it. For GitHub it's the numeric user ID, as in a webhook's `sender.id`.                                  |
+| `provider_login`   | The login when the account was linked, such as a GitHub username. It isn't updated after a rename, so display it but don't match on it. Omitted for providers without logins. |
 
 **Errors:**
 
@@ -261,7 +278,7 @@ Remove OAuth provider from user's account.
 - `404` - Provider not linked
 - `400` - Cannot unlink last authentication method
 
-**Security:** Users cannot remove their only authentication method. They must have a password OR another OAuth provider.
+**Security:** Users cannot remove their last way to sign in. They must keep another linked OAuth provider that's enabled for the project, or a password while email/password is on for the project (`enable_email_password`). See [Last authentication method](#last-authentication-method).
 
 ---
 
@@ -523,12 +540,12 @@ If OAuth email already exists:
 
 ### Last authentication method
 
-Users cannot remove their only authentication method:
+An unlink that would leave the account no way to sign in is refused with `400`. What counts as a way to sign in:
 
-- If user has ONLY OAuth (no password) → cannot unlink
-- If user has password AND OAuth → can unlink OAuth
-- If user has multiple OAuth → can unlink any single one
-- Prevents account lockout
+- Another linked OAuth provider that's enabled for the project
+- A password, while email/password is on for the project (`enable_email_password`)
+
+A guest (anonymous) login doesn't count. To unlink a user's only provider, link another provider first, or set a password while email/password is on.
 
 ## Provider differences
 

@@ -65,9 +65,12 @@ curl https://api.volcano.dev/projects/$PROJECT_ID/databases/main_db/backups \
 }
 ```
 
-Backups come back newest first. `source` tells apart the ones you asked for from
-the ones your schedule produced — only `manual` backups count against your
-plan's allowance. `restore_window` is the span a point-in-time restore can
+Backups come back newest first. `source` tells apart the ones you asked for
+(`manual`), the ones your schedule produced (`scheduled`), and the one a
+[migration run](../guides/migrations.md#what-a-run-does) takes before it applies
+files to the database (`migration`). Volcano applies the files only once that
+backup is ready to restore. Only `manual`
+backups count against your plan's allowance. `restore_window` is the span a point-in-time restore can
 target right now; it is absent on a plan without point-in-time restore, and for
 a short while after an upgrade to one, until the window is in place at the
 storage provider. Read it rather than assuming your plan's full window: it is
@@ -200,6 +203,24 @@ the database has branch work in flight, since a branch being provisioned or rese
 forks from the data the restore is about to replace. Wait for the branch to settle
 and retry.
 
+A [migration run](../guides/migrations.md#what-a-run-does) in its `backup` or
+`apply` phase also refuses a restore, since the restore would discard what the
+run writes. The refusal names the run:
+
+```json
+{
+  "error": "migration run 7f3a1c2e-5d4b-4a91-8c6f-2b1e9d0a4c73 is applying to this database; restore once it ends, within the run's time limit",
+  "code": "migration_run_in_progress",
+  "run_id": "7f3a1c2e-5d4b-4a91-8c6f-2b1e9d0a4c73"
+}
+```
+
+The refusal lasts until the run ends, including while it waits to retry. A run
+starts no phase after its 1-hour limit, and the apply it last started can take
+15 minutes more, plus a minute or two to finish, so the wait is at most about
+1 hour 17 minutes from the run's `started_at`. Poll the run named by `run_id`,
+then retry.
+
 Wait for the restore to report `completed` and retry. Volcano retries a failed
 attempt on its own, and the restore reads `pending` between tries; `failed` or
 `exhausted` means it gave up, and the database is left `failed` rather than
@@ -287,6 +308,14 @@ charged as a full copy of the database as it was at that moment — not as the
 difference from the database today. Two backups of a 2 GB database are 4 GB of
 backup storage, whether or not you have written a byte since.
 
+A migration backup is charged the same way: a full copy of the database as it
+was before the run applied its files. Volcano keeps up to 20 per database, and
+20 migration backups of a 5 GB database are 100 GB of backup storage. Migration
+backups do not count against your backup allowance. Taking a 21st deletes the
+oldest, even before its `expires_at`. To keep the state from before a migration
+for its full retention, take a backup yourself before the run as well: later
+runs never delete it.
+
 Scheduled backups are cheaper than that after the first. The first snapshot a
 schedule takes is a full copy; each one after it is charged only the storage it
 adds on top of the previous one. A daily schedule on a database that barely
@@ -343,13 +372,18 @@ Backups, scheduled backups, and point-in-time restore are all SUPERAGENT. A HOBB
 project gets `403` from every endpoint here, with nothing to configure and
 nothing to turn on.
 
-The allowance counts only the backups you took; scheduled ones are free of it.
-Taking one over the allowance returns `403` — delete one first. Backups are
-rate-limited to one per minute per database, so a retried create that timed out
-cannot silently consume two slots.
+The allowance counts only the backups you took; scheduled and migration backups
+are free of it. Taking one over the allowance returns `403` — delete one first.
+Backups are rate-limited to one per minute per database, so a retried create
+that timed out cannot silently consume two slots. A migration backup is not
+rate-limited and does not block one you take.
 
 Retention is applied when a backup is taken: `expires_at` is when it will be
-deleted for you.
+deleted for you. Volcano also keeps at most the 20 most recent migration backups
+of a database: before a migration run takes its backup, and when the run ends,
+older migration backups are deleted, whatever their `expires_at`. Only backups
+a migration run took are deleted this way. If that cleanup fails, the run is
+unaffected, and the next run that takes a backup tries again.
 
 Backup, schedule, and restore requests return `503` with
 `"subscription pricing temporarily unavailable"` when Volcano cannot read your
@@ -357,8 +391,8 @@ subscription pricing. Retry later; the refused request starts no backup or
 restore.
 
 Downgrading to HOBBY deletes the backups you took, turns off any schedule, and
-closes the point-in-time window. Backups your schedule had already taken are left
-to expire on their own retention — you cannot list, restore, or delete them
+closes the point-in-time window. Backups your schedule or a migration had already
+taken are left to expire on their own retention — you cannot list, restore, or delete them
 meanwhile, and they are not charged to you. Backup storage stops counting toward
 your database's storage with the downgrade itself, so a database whose data fits
 HOBBY is not held over backups you can no longer reach. Upgrading gives the capability
@@ -373,7 +407,13 @@ up to 63 characters, starting with a letter or number, and unique within the
 database. An uppercase letter is rejected rather than folded. Names beginning with
 `volcano-` are reserved: Volcano takes its own snapshots during a point-in-time
 restore, and they are neither listed as your backups nor counted against your
-allowance.
+allowance. Names beginning with `before-migration-` are reserved for migration
+backups, which are listed as yours, kept for your plan's retention (at most
+the 20 most recent), and restorable like any other. What makes a backup a
+migration backup is that a migration run took it, not its name. A backup you
+named with that prefix before it was reserved, whatever follows the prefix,
+stays yours: it is listed as `manual`, counts against your allowance, and is
+never deleted to make room for migration backups.
 
 Reading, deleting, or restoring a backup accepts any name a backup can have, not
 just the ones you can create, because a schedule names its own backups.

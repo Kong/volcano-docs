@@ -537,7 +537,7 @@ const { error } = await volcano.auth.unlinkOAuthProvider('google');
 
 if (error) {
   if (error.message.includes('cannot unlink last authentication method')) {
-    alert('You need to set a password before unlinking Google');
+    alert('Link another way to sign in before unlinking Google');
   } else if (error.message.includes('provider not linked')) {
     alert('Google is not linked to your account');
   }

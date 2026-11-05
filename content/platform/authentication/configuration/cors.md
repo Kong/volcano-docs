@@ -76,6 +76,39 @@ cookies and other credentials. If an existing project has both settings
 configured, replace the wildcard with exact origins or disable credentials in
 the same update before changing other auth settings.
 
+## Frontend previews
+
+**Setting:** `cors_allow_frontend_previews`  
+**Default:** false
+
+Each [frontend preview](../../frontends/previews.md) is served at its own
+origin, such as `https://<preview-id>.frontends.volcano.run`. Turn this on to
+let the project's own live previews call its auth, storage, database, function,
+realtime and log endpoints from those origins, without listing them:
+
+```json
+{
+  "cors_enabled": true,
+  "cors_allow_frontend_previews": true
+}
+```
+
+- Only previews of this project's frontends are allowed. Other projects'
+  previews and every other `*.frontends` host are refused.
+- Each preview origin is an exact origin, so it works with
+  `cors_allow_credentials: true`.
+- A preview's origin is allowed once it is ready. It stops being allowed within
+  a few seconds of the preview being deleted or reaching its `--ttl`, with no
+  configuration change. A promoted preview stays allowed while it is served. An
+  open realtime connection is not closed when its origin stops being allowed.
+- `GET /projects/{id}/auth/config` lists the origins currently allowed this way
+  in `frontend_preview_origins`.
+- At most 500 live previews per project are allowed this way. Past that, the
+  500 most recently created are allowed, and older ones are refused until some
+  are deleted or expire.
+- Previews sign in with tokens. Cookie sessions are not offered to preview
+  origins.
+
 ## How It Works
 
 Request from allowed origin:
@@ -155,6 +188,8 @@ curl -X PUT https://api.volcano.dev/projects/PROJECT_ID/auth/config \
 **Error: "origin not allowed by CORS policy"**
 
 - Add your domain to `cors_allowed_origins`
+- For a frontend preview, set `cors_allow_frontend_previews` and check that the
+  preview is listed in `frontend_preview_origins`
 - Check protocol (HTTP vs HTTPS)
 - Check for typos
 - Configure an origin only; paths, query strings, and fragments are rejected
