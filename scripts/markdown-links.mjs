@@ -19,7 +19,10 @@ export function markdownLinks(text) {
     if (node.type === "linkReference" || node.type === "imageReference") {
       url = definitions.get(node.identifier);
     }
-    if (url) links.push({ url, line: node.position?.start.line || 1 });
+    if (url) {
+      const image = node.type === "image" || node.type === "imageReference";
+      links.push({ url, line: node.position?.start.line || 1, image });
+    }
   });
   return links;
 }

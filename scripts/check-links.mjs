@@ -39,6 +39,8 @@ const publicAssets = new Set(
   walk(publicDir).map((f) => "/" + path.relative(publicDir, f).replace(/\\/g, "/")),
 );
 
+const IMAGE_FILE = /\.(png|jpe?g|gif|webp|avif)$/i;
+
 const errors = [];
 
 for (const file of mdFiles) {
@@ -73,6 +75,8 @@ for (const file of mdFiles) {
     if (fs.existsSync(target) && target.endsWith(".md")) continue; // served page
     if (fs.existsSync(path.join(target, "index.md"))) continue; // dir -> index
     if (!url.endsWith(".md") && fs.existsSync(target + ".md")) continue; // extensionless page
+    // fumadocs-mdx bundles a relative image it can import (remarkImage), so the site serves it.
+    if (link.image && IMAGE_FILE.test(url) && fs.existsSync(target)) continue;
     if (fs.existsSync(target)) {
       errors.push(`${routeOf(file)}  ->  ${link.url}  (links to an unserved file, not a page)`);
     } else {
