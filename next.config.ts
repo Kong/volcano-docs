@@ -1,6 +1,8 @@
 import { createMDX } from "fumadocs-mdx/next";
 import type { NextConfig } from "next";
 
+import { markdownRewrite } from "./src/lib/markdown-rewrite.mjs";
+
 const withMDX = createMDX();
 
 // The social card reads its logo from public/ when it renders (see
@@ -18,7 +20,7 @@ const config: NextConfig = {
     return [
       // /<slug>.md serves the page's markdown for agents (see the alternate
       // link in each page's head).
-      { source: "/:path(.+)\\.md", destination: "/api/llm/:path" },
+      markdownRewrite,
     ];
   },
 };
