@@ -1,5 +1,8 @@
 // Run: node src/lib/page-markdown.test.mjs
 import assert from "node:assert/strict";
+import pathToRegexp from "next/dist/compiled/path-to-regexp/index.js";
+
+import { markdownRewrite } from "./markdown-rewrite.mjs";
 import {
   canonicalLinkHeader,
   mapTreeUrls,
@@ -148,6 +151,26 @@ assert.equal(markdownPath("/cli/installation"), "/cli/installation.md");
 assert.equal(markdownPath("/sdk"), "/sdk.md");
 assert.equal(markdownPath("/sdk/"), "/sdk.md");
 assert.equal(markdownPath("/"), "/index.md");
+
+// Every .md path, nested ones included, reaches the markdown route. Resolve the
+// rewrite the way OpenNext does on Volcano: it validates the destination, so a
+// single-segment parameter holding "/" throws and the page answers 500.
+const { compile, match } = pathToRegexp;
+function markdownRoute(pathname) {
+  const matched = match(markdownRewrite.source)(pathname);
+  return matched ? compile(markdownRewrite.destination)(matched.params) : null;
+}
+assert.equal(
+  markdownRoute(markdownPath("/platform/guides/lavaflow")),
+  "/api/llm/platform/guides/lavaflow",
+);
+assert.equal(
+  markdownRoute("/platform/authentication/configuration/email-smtp.md"),
+  "/api/llm/platform/authentication/configuration/email-smtp",
+);
+assert.equal(markdownRoute(markdownPath("/platform")), "/api/llm/platform");
+assert.equal(markdownRoute(markdownPath("/")), "/api/llm/index");
+assert.equal(markdownRoute("/platform/guides/lavaflow"), null);
 
 // A page's markdown names its HTML page as canonical, root included.
 assert.equal(
