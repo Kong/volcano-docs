@@ -32,6 +32,7 @@ Some errors also carry a stable `code` naming a specific recovery path. Match on
 - `404 Not Found` - Resource doesn't exist
 - `409 Conflict` - Resource state conflicts with the request (for example, a duplicate resource or deletion already in progress)
 - `410 Gone` - The resource existed but no longer takes the request (for example, a durable callback token whose wait timed out)
+- `415 Unsupported Media Type` - The request body, or a multipart form field, is YAML, which no endpoint accepts
 - `429 Too Many Requests` - Rate limit exceeded
 
 **5xx Server Errors:**
@@ -322,6 +323,16 @@ The message always starts with `invalid request`. Some failures carry no
 detail, such as a path ID that is not a UUID, and then the message is just
 `invalid request`. Read the rest to fix the request; don't parse it.
 
+**415 - YAML request body:**
+
+```json
+{ "error": "unsupported media type: YAML request bodies are not accepted" }
+```
+
+A body or multipart form field sent as `application/yaml` or
+`application/x-yaml` gets this error. Send the body as JSON and form fields as
+plain text. Uploaded files are read as bytes, whatever their type.
+
 ### Resource Errors
 
 **404 - Not Found:**
@@ -389,12 +400,12 @@ has accrued answers `400`.
 Changing [LavaFlow settings](../guides/lavaflow.md#settings) refuses a
 full-scope
 [project access token](../authentication/security/project-access-tokens.md)
-with `403` and code `person_required`. The project's owner makes the change
-with a platform token:
+with `403` and code `person_required`, except for turning Code Quality off.
+The project's owner makes the change with a platform token:
 
 ```json
 {
-  "error": "project access tokens cannot change LavaFlow settings; the project's owner changes them with a platform token",
+  "error": "project access tokens can change LavaFlow settings only to turn Code Quality off, with PATCH /lavaflow/settings; the project's owner changes the rest with a platform token",
   "code": "person_required"
 }
 ```
@@ -408,6 +419,50 @@ Turning on LavaFlow merging, or another change
 `volcano login` sign-in, an owner whose GitHub account can't push to the
 project's repository, or a project with no repository. The `error` says what to
 do.
+
+[Starting a LavaFlow run](../guides/lavaflow.md#start-a-run) answers
+`person_required` to a full-scope project access token, a request made through
+MCP, a platform token that never expires, and a `volcano login` token whose
+sign-in ended. Start one with a platform token that expires, or
+`volcano login`:
+
+```json
+{
+  "error": "project access tokens cannot start LavaFlow runs; the project's owner starts them with a platform token",
+  "code": "person_required"
+}
+```
+
+### LavaFlow run start errors
+
+`POST /lavaflow/runs` answers a start that doesn't run with a stable code.
+Branch on `code`:
+
+```json
+{
+  "error": "the issue already has a LavaFlow run in progress",
+  "code": "lavaflow_run_in_progress"
+}
+```
+
+- `feature_unavailable` (`400`) — the issue is a Code Quality issue, and Code
+  Quality is not available. `lavaflow.code_quality` in `GET /capabilities` says
+  when it is.
+- `plan_required` (`403`) — the issue is a Code Quality issue, and the owner's
+  plan doesn't include Code Quality.
+- `issue_not_found` (`404`) — the project has no issue with that ID. Another
+  project's issue answers the same.
+- `lavaflow_disabled` (`409`) — LavaFlow is off for the project, or, for a Code
+  Quality issue, Code Quality is. Turn it on.
+- `repository_required` (`409`) — the project no longer links the repository
+  LavaFlow was turned on for. Link it again, or turn LavaFlow on again.
+- `repository_changed` (`409`) — the project links another repository than
+  LavaFlow was turned on for. Turn LavaFlow on again.
+- `lavaflow_run_in_progress` (`409`) — the issue has a run in progress.
+- `issue_run_limit_reached` (`429`) — the issue started 5 runs in the last 24
+  hours. Try again after `Retry-After`.
+- `project_run_limit_reached` (`429`) — the project started 200 runs in the
+  last 24 hours. Try again after `Retry-After`.
 
 ### Durable execution errors
 

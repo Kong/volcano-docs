@@ -29,6 +29,7 @@ curl "https://api.volcano.dev/projects/$PROJECT_ID/issues?status=open" \
       "error_type": "TypeError",
       "culprit": "chargeCustomer (src/payments.js)",
       "status": "open",
+      "source": "runtime",
       "exception": true,
       "event_count": 42,
       "first_seen_at": "2026-10-13T09:12:04Z",
@@ -68,7 +69,11 @@ Volcano groups errors by:
   its stack, is grouped by its type and the frames in your own code. Line
   numbers and frames in dependencies and the runtime are ignored, so an edit
   or an upgrade that shifts them does not split an issue. A Python function's
-  dependencies deploy beside your code, so their frames count as yours.
+  dependencies deploy beside your code, so their frames count as yours. Stack
+  frames come only from the stack: the frames the runtime writes for the
+  error, up to the first line that isn't a frame. A chained Python
+  traceback groups by the traceback of the exception it reports, apart from
+  that traceback printed alone.
 - **Message.** Without a stack, the message is the key. Values that change on
   every occurrence, such as quoted values, IDs, numbers, timestamps, emails,
   IP addresses, and URLs, are replaced with placeholders like `<str>`,
@@ -79,22 +84,33 @@ Volcano groups errors by:
   `console.error(JSON.stringify(entry))`, is read for its error. An `err` or
   `error` object with a stack groups by it and is named by its type and
   message, whether pino and bunyan serialized the `Error` (`stack`) or
-  `console.error({ err })` did (`stackTrace`). Otherwise the `message`,
-  `msg`, `error`, or `err` string, or that object's `message`, is the message,
-  and a top-level `stack` groups it. Other fields are ignored. An object with
-  none of these groups by its JSON text, with its quoted strings, keys
-  included, and its numbers replaced, so objects of the same shape are one
-  issue. A line whose own `level` is below error, such as pino's `40`,
-  `"warn"`, or winston's `"verbose"`, is not an issue. An error you log this
-  way is a separate issue from the same error thrown.
+  `console.error({ err })` did (`stackTrace`). Otherwise the message is the
+  first of `message`, `msg`, `error`, `err`, and `errorMessage` that is a
+  string, or an object with a `message`, and it groups as the same text
+  would. A top-level `stack` or `stack_trace` groups it by its frames. The
+  error type is the first of `error_type`, `errorType`, the `error` or `err`
+  object's `name` or `type`, `name`, and `type` that ends in `Error` or
+  `Exception`, such as `CardError`. Other fields are ignored. An object with
+  no message or stack groups by its top-level field names, with each value
+  replaced: `{"event":"sync","count":3,"job":{"id":"j_1"}}` is titled
+  `{"event":<str>,"count":<n>,"job":{...}}`, and an object with other
+  top-level fields is another issue. A line whose own `level` is below
+  error, such as pino's `40`, `"warn"`, or winston's `"verbose"`, is not an
+  issue. An error you log this way is a separate issue from the same error
+  thrown.
 - **Printed tracebacks.** A Python traceback you log as text, such as
   `traceback.format_exc()`, groups by its type and frames. Like a structured
   log, it is a separate issue from the same error raised.
 
 `exception` is `true` when an issue holds an exception: one your code threw, or
-one it logged with `console.error(err)` or Python's `logger.exception()`. It is
-`false` for an issue grouped only from messages, structured logs, or printed
-tracebacks, and once `true`, it stays `true`.
+one it logged with `console.error(err)` or Python's `logger.exception()`. In a
+Node.js function, an uncaught exception or an unhandled promise rejection that
+crashes the runtime counts as one, grouped with the same error thrown. On
+Node.js 24, that needs a handler named `file.export`, where `file` is a `.js`,
+`.mjs`, or `.cjs` file; any other handler's crash appears only as the lines
+Node prints. It is `false` for an issue grouped only from messages, structured
+logs, or printed tracebacks, and for every `code_quality` issue. Once `true`, it
+stays `true`.
 
 In local mode, output a function writes to stderr without a level of its own is
 at `error` level, so only an exception becomes an issue: one your code threw or
@@ -132,9 +148,15 @@ can, renames some of them, and their errors start a new issue.
 Issues are kept per function or frontend: the same error in two functions is
 two issues.
 
-A project keeps at most 1,000 open issues. Past that, errors that would start
-a new issue are not recorded, while existing issues keep counting. Resolve or
-ignore issues to make room.
+A project keeps at most 1,000 open issues, and each function or frontend at
+most 250 of them. A function or frontend also opens at most 50 new issues an
+hour. Past any of these bounds, errors that would start a new issue are not
+recorded, while existing issues keep counting, and a resolved issue whose error
+returns reopens even past a bound. Resolve or ignore issues to make room under
+the open-issue bounds; the hourly bound counts every issue opened in the hour,
+resolved or not, and makes room as the hour passes. `code_quality` issues never
+count toward these bounds, so they never take the place of an error or a
+reported problem.
 
 The `title` is that normalized message, prefixed with the error type. The raw
 log line stays in your logs; `sample_event_id` and `sample_event_at` point to
@@ -142,6 +164,33 @@ the latest occurrence while your logs retain it. See [Logs](../functions/logs.md
 
 `event_count` can overcount: an error that Volcano has to deliver twice is
 counted twice, and the count stays that way.
+
+`source` is `runtime` for these issues, and `report` for a problem reported for
+the project, such as through Slack. With [Code Quality](lavaflow.md#code-quality)
+on, LavaFlow also files the problems it finds in code a deploy changed as
+issues with `source: "code_quality"`. Their `error_type` is the finding's rule,
+their `culprit` the enclosing function and file, and their `event_count` the
+scans that found them. Each carries its `finding`:
+
+```json
+{
+  "source": "code_quality",
+  "finding": {
+    "rule": "null-dereference",
+    "severity": "major",
+    "commit_sha": "4f2c9e1b7d3a5c8e0f6b2d4a9c1e3f5a7b9d0c2e",
+    "path": "src/checkout.js",
+    "start_line": 42,
+    "end_line": 44,
+    "explanation": "cart is undefined when the session has expired, so cart.items throws."
+  }
+}
+```
+
+The lines are in `commit_sha`, the deployed commit the scan found the problem
+in. When an explanation may contain a credential, LavaFlow withholds it whole,
+and `explanation` reads `LavaFlow left this explanation out because it may
+contain a credential`. A `runtime` issue has no `finding`.
 
 ## Find issues
 
@@ -196,13 +245,19 @@ The response is the whole issue; it is shortened here.
 | `ignored`  | Not worth fixing. Keeps counting, never reopens |
 
 An issue resolved at `resolved_at` that is seen again after that moment
-reopens as `open`, and `regressed_at` records when. Set `status` back to
-`open` yourself to reopen it.
+reopens as `open`, and `regressed_at` records when. A reported problem has no
+errors to watch, so it resolves when its LavaFlow fix merges. When Volcano
+deletes a report before any fix merged, it ignores the report's issue; a fix
+that merges later still resolves it. Set `status` back to `open` yourself to
+reopen an issue.
 
 When a [LavaFlow](lavaflow.md#after-a-fix-merges) fix merges and goes live,
-LavaFlow resolves the issue for you. With LavaFlow on, an issue with
+LavaFlow resolves the issue for you, unless the deployment's
+[reported commit](deployment-source.md#commit) has `verification: repository`;
+resolve that one yourself. With LavaFlow on, an issue with
 `exception: true` that reopens because the error happens again starts a new
-LavaFlow run. Reopening an issue yourself doesn't start one.
+LavaFlow run. Reopening an issue yourself doesn't start one;
+[start a run](lavaflow.md#start-a-run) on any issue yourself instead.
 
 ## Credentials
 

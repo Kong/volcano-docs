@@ -213,6 +213,11 @@ LavaFlow is in preview. During the preview, it needs the SUPERAGENT plan.
 | ----------------------- | ----------- | ---------- | ----------- |
 | [LavaFlow](lavaflow.md) | Unavailable | Available  | Per project |
 
+No plan includes [Code Quality](lavaflow.md#code-quality) yet. Where it is
+offered, the project's `lavaflow.code_quality` capability reads `unavailable`
+with code `plan_required`. Its allowances, findings per scan, new findings a
+day and open pull requests, are listed here once a plan includes them.
+
 ## Scheduling and logs
 
 | Limit                 | HOBBY       | SUPERAGENT | Scope                     |
@@ -241,16 +246,16 @@ exhausted; upgrading or a new cycle requires an explicit resume.
 These stay in the database, stop taking effect on HOBBY, and take effect again the
 moment you upgrade. You do not have to set them up twice.
 
-| Setting                                                                             | On HOBBY                                                                           |
-| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| [Email domain allowlist](../authentication/configuration/email-domain-allowlist.md) | Kept, not enforced: anyone can sign up and sign in again                           |
-| Custom email templates                                                              | Kept; the default templates are sent                                               |
-| Custom managed auth pages                                                           | Kept; the built-in pages are served, with Volcano branding                         |
-| Scheduled functions                                                                 | Kept; they stop running, and their next run time keeps advancing                   |
-| Database query logs                                                                 | Kept; new queries stop being recorded, and query insights stop being readable      |
-| Database compute size                                                               | Shrunk to the HOBBY size, and restored when you upgrade. No downtime, no data loss |
-| [Custom domains](../frontends/overview.md#custom-domains) past one per frontend     | Kept; only one serves                                                              |
-| [LavaFlow](lavaflow.md) settings                                                    | Kept; no run starts, and a fix waiting to merge stops and is left to you           |
+| Setting                                                                             | On HOBBY                                                                                      |
+| ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| [Email domain allowlist](../authentication/configuration/email-domain-allowlist.md) | Kept, not enforced: anyone can sign up and sign in again                                      |
+| Custom email templates                                                              | Kept; the default templates are sent                                                          |
+| Custom managed auth pages                                                           | Kept; the built-in pages are served, with Volcano branding                                    |
+| Scheduled functions                                                                 | Kept; they stop running, and their next run time keeps advancing                              |
+| Database query logs                                                                 | Kept; new queries stop being recorded, and query insights stop being readable                 |
+| Database compute size                                                               | Shrunk to the HOBBY size, and restored when you upgrade. No downtime, no data loss            |
+| [Custom domains](../frontends/overview.md#custom-domains) past one per frontend     | Kept; only one serves                                                                         |
+| [LavaFlow](lavaflow.md) settings                                                    | Kept; no run or Code Quality scan starts, and a fix waiting to merge stops and is left to you |
 
 A frontend with more custom domains than HOBBY allows keeps all of them, with
 their certificates and redirects. Its oldest active domain that serves the

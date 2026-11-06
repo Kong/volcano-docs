@@ -725,17 +725,27 @@ push started with
 backup once the run starts taking it; a run that ended in its `backup` phase
 may name one that was never created. Each file's `outcome` is `pending`, `already_applied`,
 `applied`, `failed`, `not_run`, or `unknown`. A `failed` file's own SQL failed,
-and its transaction rolled back. `not_run` covers files after one that failed
-or lost its `COMMIT`, and a file rolled back by a lost connection or by
-Volcano's own statements around it.
+and its transaction rolled back. A
+[marked file](../guides/migrations.md#run-a-statement-outside-a-transaction)
+runs outside a transaction, so nothing rolls back what it did before failing,
+such as the invalid index a failed `CREATE INDEX CONCURRENTLY` leaves.
+`not_run` covers files after one that failed or lost its `COMMIT`, and a file
+rolled back by a lost connection or by Volcano's own statements around it.
 A file another session applied or baselined after the run planned ends
 `already_applied`. `unknown` means the run ended in `apply` before it confirmed
-whether the file ran, for example because it used every attempt or the file's
-`COMMIT` failed or was cut short. The file may have committed; the database's
-history says, and the next run applies the file only if the history does not
-record it. Each attempt reads the history again before it runs a file, so while
+whether the file ran, for example because it used every attempt, the file's
+`COMMIT` failed or was cut short, or a marked file ran and then the connection
+was lost or Volcano's own statements after it failed. The file may have
+committed. A file that runs in a transaction commits with its history record,
+so the history says whether it ran; a marked file's record commits after it,
+so the history can lack a marked file that ran. The next run applies a file
+only if the history does not record it. Each attempt reads the history again before it runs a file, so while
 a run retries, the files it has not applied read `pending` again, or
-`already_applied` if the history now holds them. A failed file's
+`already_applied` if the history now holds them. A marked file is `unknown`
+from just before Volcano sends it until Volcano confirms what became of it. If
+it may have run, it stays `unknown` until an attempt applies it or the history
+records it, and a later attempt that fails it leaves its `error` on the
+`unknown` file. A failed file's
 `error.message` is the database's own message and can quote values from your
 file or data. Volcano keeps at most 8 KiB of it; a longer message is cut and
 ends with ` … [truncated]`. Volcano reads each reply the database sends about a
