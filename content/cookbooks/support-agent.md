@@ -84,7 +84,7 @@ volcano cloud databases create agent --region us-east-1 --pg-version 16
 
 ### Tables and row-level security
 
-Four tables: `profiles`, `orders`, `help_articles` and `tickets`. Volcano runs each migration file as one query, so every statement below goes in its own numbered file, from `001_create_profiles.sql` to `031_help_articles_seed.sql`. Each one is safe to re-run: `IF NOT EXISTS`, `CREATE OR REPLACE`, a `DROP … IF EXISTS` file before each `CREATE POLICY` or `CREATE TRIGGER` file, and `ON CONFLICT DO NOTHING` for seeds.
+Four tables: `profiles`, `orders`, `help_articles` and `tickets`. Volcano runs each migration file as one query, so every statement below goes in its own numbered file, from `001_create_profiles.sql` to `035_ticket_limit_trigger_create.sql`. Each one is safe to re-run: `IF NOT EXISTS`, `CREATE OR REPLACE`, a `DROP … IF EXISTS` file before each `CREATE POLICY` or `CREATE TRIGGER` file, and `ON CONFLICT DO NOTHING` for seeds.
 
 ```sql
 CREATE TABLE IF NOT EXISTS public.profiles (
@@ -156,16 +156,29 @@ CREATE POLICY tickets_read_own ON public.tickets FOR SELECT TO authenticated
   USING (user_id = auth.uid());
 DROP POLICY IF EXISTS tickets_insert_own ON public.tickets;
 CREATE POLICY tickets_insert_own ON public.tickets FOR INSERT TO authenticated
-  WITH CHECK (
-    user_id = auth.uid()
-    AND (SELECT count(*) FROM public.tickets t
-          WHERE t.user_id = auth.uid() AND t.created_at > now() - interval '1 day') < 20
-  );
+  WITH CHECK (user_id = auth.uid());
+CREATE OR REPLACE FUNCTION public.enforce_ticket_limit() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $
+BEGIN
+  -- One customer's inserts wait for each other here, so two at once can't both
+  -- see 19 earlier tickets and both pass.
+  PERFORM pg_advisory_xact_lock(hashtextextended(NEW.user_id::text, 0));
+  IF (SELECT count(*) FROM public.tickets
+       WHERE user_id = NEW.user_id AND created_at > now() - interval '1 day') >= 20 THEN
+    RAISE EXCEPTION 'daily ticket limit reached' USING ERRCODE = 'P0001';
+  END IF;
+  RETURN NEW;
+END
+$;
+REVOKE ALL ON FUNCTION public.enforce_ticket_limit() FROM PUBLIC, anon, authenticated;
+DROP TRIGGER IF EXISTS tickets_daily_limit ON public.tickets;
+CREATE TRIGGER tickets_daily_limit BEFORE INSERT ON public.tickets
+  FOR EACH ROW EXECUTE FUNCTION public.enforce_ticket_limit();
 ```
 
 What a signed-in customer can do through the database API:
 
-- **Tickets:** read their own and file new ones with a subject and body. The column grants leave out everything the agent writes, so a customer can't set their own category, status or reply. The insert policy refuses a 21st ticket in 24 hours, which caps what one account can spend on the model.
+- **Tickets:** read their own and file new ones with a subject and body. The column grants leave out everything the agent writes, so a customer can't set their own category, status or reply. A trigger refuses a 21st ticket in 24 hours, which caps what one account can spend on the model. It takes a lock per customer before counting. A count in the insert policy alone let two to four of four simultaneous inserts through at 19 tickets, and the lock lets exactly one.
 - **Orders:** read their own, and nothing else.
 - **Help articles:** read them all.
 - **Profile:** create and read their own.
@@ -238,12 +251,12 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const adminPool = new Pool({ connectionString: databaseConnectionString(process.env.DATABASE_URL), max: 2 });
 const userPools = new Map();
 
+// One pool per customer: { userId } makes every connection act as that
+// customer (volcano_user_access), so row-level security applies.
 function userPool(userId) {
   let pool = userPools.get(userId);
   if (!pool) {
-    const url = new URL(databaseConnectionString(process.env.DATABASE_URL));
-    url.searchParams.set('application_name', `volcano_user_access:${userId}`);
-    pool = new Pool({ connectionString: url.toString(), max: 2 });
+    pool = new Pool({ connectionString: databaseConnectionString(process.env.DATABASE_URL, { userId }), max: 2 });
     userPools.set(userId, pool);
   }
   return pool;
@@ -470,7 +483,7 @@ const TOOL_DEFINITIONS = [
 ];
 ```
 
-The lookup has no `WHERE user_id = …`. It doesn't need one: it runs on the connection whose `application_name` is `volcano_user_access:<user_id>`, so Postgres applies the customer's row-level security, and `auth.uid()` is the customer. Whatever order number the model passes, it only ever gets the customer's own rows:
+The lookup has no `WHERE user_id = …`. It doesn't need one: it runs on a connection made with `databaseConnectionString(DATABASE_URL, { userId })`, which sets `application_name` to `volcano_user_access:<user_id>`, so Postgres applies the customer's row-level security, and `auth.uid()` is the customer. Whatever order number the model passes, it only ever gets the customer's own rows:
 
 ```javascript
 async function lookupMyOrders(db, input) {
@@ -590,9 +603,76 @@ function isRetryable(error) {
 }
 ```
 
+With the key empty, `createModel()` returns a scripted stand-in with the same response shape. On its first turn it asks for `lookup_my_orders` and `search_help_articles`. On its second it picks a category from keywords, builds a reply from the tool results and calls `submit_triage`. It reports `fake-model` and zero tokens on the ticket, so nobody mistakes it for Claude. The rest of `model.js`:
+
+```javascript
+
+const KEYWORDS = [
+  ['account', /password|sign ?in|log ?in|account|email/],
+  ['billing', /charg|refund|invoice|card|billing|paid|payment/],
+  ['returns', /return|exchange|send (it )?back/],
+  ['product', /damag|broken|crack|defect|wrong (item|size)/],
+  ['shipping', /late|arriv|tracking|ship|deliver|where is|hasn'?t (come|moved)/],
+];
+
+function fakeModel() {
+  return {
+    name: 'fake-model',
+    async create({ messages }) {
+      const ticket = String(messages[0].content);
+      const turn = messages.filter((message) => message.role === 'assistant').length + 1;
+      if (turn === 1) {
+        const orderNumber = (ticket.match(/VO-\d{4}/i) || [''])[0].toUpperCase();
+        return toolTurn([
+          { name: 'lookup_my_orders', input: { order_number: orderNumber } },
+          { name: 'search_help_articles', input: { query: ticket.slice(0, 200) } },
+        ], turn);
+      }
+      return toolTurn([{ name: 'submit_triage', input: draftTriage(ticket, messages) }], turn);
+    },
+  };
+}
+
+function toolTurn(calls, turn) {
+  return {
+    content: calls.map((call, index) => ({ type: 'tool_use', id: `toolu_fake_${turn}_${index}`, ...call })),
+    stop_reason: 'tool_use',
+    usage: { input_tokens: 0, output_tokens: 0 },
+    model: 'fake-model',
+  };
+}
+
+function draftTriage(ticket, messages) {
+  const text = ticket.toLowerCase();
+  const category = (KEYWORDS.find(([, pattern]) => pattern.test(text)) || ['other'])[0];
+  const results = messages
+    .filter((message) => message.role === 'user' && Array.isArray(message.content))
+    .flatMap((message) => message.content)
+    .map((block) => JSON.parse(block.content));
+  const orders = results.find((result) => result.orders)?.orders || [];
+  const article = results.find((result) => result.articles)?.articles?.[0];
+  const name = (ticket.match(/^Customer: (.+)$/m) || [, 'there'])[1];
+
+  const lines = [`Hi ${name}, thanks for getting in touch.`];
+  const order = orders.find((o) => text.includes(o.order_number.toLowerCase())) || orders[0];
+  if (order) lines.push(`Your order ${order.order_number} (${order.item}) is ${order.status}.`);
+  if (article) lines.push(article.body.split('. ')[0] + '.');
+  lines.push('A member of the team will follow up if anything else is needed.');
+  return {
+    category,
+    priority: /urgent|asap|twice|immediately/.test(text) ? 'high' : 'normal',
+    summary: `Scripted triage of a ${category} ticket.`,
+    reply: lines.join(' '),
+    needs_human: category === 'other' || category === 'billing',
+  };
+}
+
+module.exports = { createModel, isRetryable, MODEL };
+```
+
 The loop appends each response's `content` unchanged, thinking blocks included, and never edits earlier turns. That's what the API expects when a conversation continues across tool calls. Each step's result is stored as JSON and replayed exactly, so a resumed execution sends Claude the same history.
 
-With the key empty, `createModel()` returns a scripted stand-in with the same response shape. On its first turn it asks for `lookup_my_orders` and `search_help_articles`. On its second it picks a category from keywords, builds a reply from the tool results and calls `submit_triage`. It's about 60 lines in `model.js`, and it reports `fake-model` and zero tokens on the ticket, so nobody mistakes it for Claude. Everything around the model, from the steps and retries to the tools, the saved result and the live progress, runs the same code either way.
+Everything around the model, from the steps and retries to the tools, the saved result and the live progress, runs the same code either way.
 
 ### The browser key
 
@@ -601,7 +681,8 @@ The page signs customers in and follows the agent's progress over Realtime, so t
 The CLI only makes auth-only keys, so create this one in the [dashboard's anonymous keys page](https://volcano.dev/dashboard/keys), or through the [anon key API](/platform/authentication/security/anon-keys) with a short-lived project access token:
 
 ```bash
-volcano cloud access-tokens create key-setup --expires-at 2026-11-06T18:00:00Z --json
+PROJECT_ID=<your project id, from volcano projects list>
+ACCESS_TOKEN=$(volcano cloud access-tokens create key-setup --expires-at <RFC3339 time about an hour from now> --json | jq -r .token)
 ```
 
 ```bash
@@ -785,7 +866,7 @@ PASS a prompt-injection ticket gets nothing of B's — needs_human
 PASS a customer can't write the agent's fields — Query failed: ERROR: permission denied for table tickets (SQLSTATE 42501)
 PASS a customer can't file a ticket with a reply — Query failed: ERROR: permission denied for table tickets (SQLSTATE 42501)
 PASS a customer can't add orders — Query failed: ERROR: permission denied for table orders (SQLSTATE 42501)
-PASS the 21st ticket in a day is refused — Query failed: ERROR: new row violates row-level security policy for table "tickets" (SQLSTATE 42501)
+PASS three tickets at once with 19 filed: only the 20th is accepted — 1 accepted; Query failed: ERROR: daily ticket limit reached (SQLSTATE P0001)
 PASS the site's HTML and scripts hold no Claude key or database URL — 8 scripts
 PASS nothing the customer can read holds the key
 PASS the browser key can only sign in and follow runs — auth.signup, auth.signin, auth.refresh, auth.logout, realtime.connect, realtime.subscribe
@@ -799,7 +880,7 @@ The retry and failure checks use the `[test:model-busy]` and `[test:model-down]`
 ## Cost and safety
 
 - **What a ticket costs.** Each ticket is one durable execution and about 15 durable operations: the execution, the run id, the claim, two model steps, two tool steps, the save, four progress messages and the three operations of the messages session that the first publish opens. SUPERAGENT includes 10,000 executions and 200,000 operations a month. The Claude calls are billed by Anthropic. A typical ticket sends two requests of roughly 1,000 to 3,000 input tokens each, mostly the system prompt, tool definitions and tool results, and gets back a few hundred output tokens. At Claude Opus 5.5's $4 and $20 per million tokens, that's an estimated 2 or 3 cents. That's an estimate: no ticket in this recipe's tests reached Claude. The tickets table records the model and token counts for each run, so you can measure it.
-- **What bounds the worst case.** A run stops after 6 model turns, each answer is capped at 4,096 tokens, each customer can file 20 tickets a day, and a ticket body is at most 2,000 characters. A run that hits every limit costs well under a dollar. Lower `max_tokens`, `MAX_TURNS` or the daily limit to tighten it, or set `ANTHROPIC_MODEL` to a cheaper model.
+- **What bounds the worst case.** A run stops after 6 model turns, each answer is capped at 4,096 tokens, each customer can file 20 tickets a day, and a ticket body is at most 2,000 characters. A run that hits every limit costs just under a dollar at those prices, about 85 cents, most of it output. Lower `max_tokens`, `MAX_TURNS` or the daily limit to tighten it, or set `ANTHROPIC_MODEL` to a cheaper model.
 - **The model sees only the customer's data.** The tools connect as the customer, so a prompt injection, a confused model or a bug in a tool can't read another customer's orders: Postgres refuses. The tools also read only. The two writes the agent makes, the claim and the result, are fixed SQL in the function, not tools the model can call.
 - **The key never leaves the function.** `ANTHROPIC_API_KEY` is scoped to `triage-ticket` alone, so the frontend build can't read it. When the agent fails, the handler logs the error with `ctx.log` and shows the customer a fixed message. The customer who started a run can read its result, so keep secrets out of anything the handler returns or throws.
 - **A person stays in charge.** The agent drafts replies and never sends them, and the system prompt tells it to set `needs_human` for refunds, replacements and address changes. Before the desk talks to real customers, add a staff view that reviews `needs_human` tickets, and turn `AGENT_TEST_HOOKS` off.
@@ -807,7 +888,7 @@ The retry and failure checks use the `[test:model-busy]` and `[test:model-down]`
 ## Why it's built this way
 
 - **A durable function, not a standard one.** An agent run makes several slow calls to an outside API, and any of them can fail. In a durable function each call is a step: a failure retries that step with backoff, and a crash resumes from the last finished step instead of calling the model again for answers it already has. The run also keeps going after the customer closes the tab. A standard function would need its own queue and retry bookkeeping to do the same.
-- **Retries at two levels.** The Anthropic SDK retries a failed request twice within a few seconds. The step's retry policy covers longer outages, up to about 35 seconds of backoff, and only for errors that waiting can fix. After that, the catch hands the ticket to a person. A step that fails for good doesn't leave the ticket stuck at `working`.
+- **Retries at two levels.** The Anthropic SDK retries a failed request twice within a few seconds. The step's retry policy covers longer outages, up to about 35 seconds of backoff, and only for errors that waiting can fix. After that, the catch hands the ticket to a person, so a model or tool step that fails for good doesn't leave the ticket stuck at `working`. The claim and the save are outside that catch and only talk to your own database. If it stays unreachable through their default retries, about two minutes, the execution fails and the ticket stays `working`, so a staff view should also list tickets that have been `working` for more than a few minutes.
 - **Tools under row-level security.** Writing `WHERE user_id = $1` into every tool works until one tool forgets it. Running every tool on a `volcano_user_access` connection makes the database enforce it, with the same policies that protect the page. The function holds the full-access connection only for the claim and the save.
 - **The ticket row is the record, the messages are the live view.** Progress messages reach the page within a second, and a reload or another device catches up from the run's message list. The saved row holds the answer and the steps, so the page doesn't depend on the run's 30-day retention. Saving before announcing `done` means the page never reads a stale row.
 - **One run per ticket.** The browser starts the run under the name `ticket-<id>`, so a retried start finds the run that exists. The claim's run id stops a second execution under any other name, including one another customer starts with a ticket id they guessed.
