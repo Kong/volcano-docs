@@ -84,7 +84,7 @@ volcano cloud databases create agent --region us-east-1 --pg-version 16
 
 ### Tables and row-level security
 
-Four tables: `profiles`, `orders`, `help_articles` and `tickets`. Volcano runs each migration file as one query, so every statement below goes in its own numbered file, from `001_create_profiles.sql` to `035_ticket_limit_trigger_create.sql`. Each one is safe to re-run: `IF NOT EXISTS`, `CREATE OR REPLACE`, a `DROP … IF EXISTS` file before each `CREATE POLICY` or `CREATE TRIGGER` file, and `ON CONFLICT DO NOTHING` for seeds.
+Four tables: `profiles`, `orders`, `help_articles` and `tickets`. Volcano runs each migration file as one query, so every statement on this page goes in its own numbered file, in the order shown, from `001_create_profiles.sql` to the help-article seed, 35 files in all. Each one is safe to re-run: `IF NOT EXISTS`, `CREATE OR REPLACE`, a `DROP … IF EXISTS` file before each `CREATE POLICY` or `CREATE TRIGGER` file, and `ON CONFLICT DO NOTHING` for seeds.
 
 ```sql
 CREATE TABLE IF NOT EXISTS public.profiles (
@@ -158,7 +158,7 @@ DROP POLICY IF EXISTS tickets_insert_own ON public.tickets;
 CREATE POLICY tickets_insert_own ON public.tickets FOR INSERT TO authenticated
   WITH CHECK (user_id = auth.uid());
 CREATE OR REPLACE FUNCTION public.enforce_ticket_limit() RETURNS trigger
-LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 BEGIN
   -- One customer's inserts wait for each other here, so two at once can't both
   -- see 19 earlier tickets and both pass.
@@ -169,7 +169,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END
-$;
+$$;
 REVOKE ALL ON FUNCTION public.enforce_ticket_limit() FROM PUBLIC, anon, authenticated;
 DROP TRIGGER IF EXISTS tickets_daily_limit ON public.tickets;
 CREATE TRIGGER tickets_daily_limit BEFORE INSERT ON public.tickets
