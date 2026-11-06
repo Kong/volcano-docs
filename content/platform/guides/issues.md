@@ -68,7 +68,11 @@ Volcano groups errors by:
   its stack, is grouped by its type and the frames in your own code. Line
   numbers and frames in dependencies and the runtime are ignored, so an edit
   or an upgrade that shifts them does not split an issue. A Python function's
-  dependencies deploy beside your code, so their frames count as yours.
+  dependencies deploy beside your code, so their frames count as yours. Stack
+  frames come only from the stack: the frames the runtime writes for the
+  error, up to the first line that isn't a frame. A chained Python
+  traceback groups by the traceback of the exception it reports, apart from
+  that traceback printed alone.
 - **Message.** Without a stack, the message is the key. Values that change on
   every occurrence, such as quoted values, IDs, numbers, timestamps, emails,
   IP addresses, and URLs, are replaced with placeholders like `<str>`,
@@ -132,9 +136,13 @@ can, renames some of them, and their errors start a new issue.
 Issues are kept per function or frontend: the same error in two functions is
 two issues.
 
-A project keeps at most 1,000 open issues. Past that, errors that would start
-a new issue are not recorded, while existing issues keep counting. Resolve or
-ignore issues to make room.
+A project keeps at most 1,000 open issues, and each function or frontend at
+most 250 of them. A function or frontend also opens at most 50 new issues an
+hour. Past any of these bounds, errors that would start a new issue are not
+recorded, while existing issues keep counting, and a resolved issue whose error
+returns reopens even past a bound. Resolve or ignore issues to make room under
+the open-issue bounds; the hourly bound counts every issue opened in the hour,
+resolved or not, and makes room as the hour passes.
 
 The `title` is that normalized message, prefixed with the error type. The raw
 log line stays in your logs; `sample_event_id` and `sample_event_at` point to
@@ -196,11 +204,16 @@ The response is the whole issue; it is shortened here.
 | `ignored`  | Not worth fixing. Keeps counting, never reopens |
 
 An issue resolved at `resolved_at` that is seen again after that moment
-reopens as `open`, and `regressed_at` records when. Set `status` back to
-`open` yourself to reopen it.
+reopens as `open`, and `regressed_at` records when. A reported problem has no
+errors to watch, so it resolves when its LavaFlow fix merges. When Volcano
+deletes a report before any fix merged, it ignores the report's issue; a fix
+that merges later still resolves it. Set `status` back to `open` yourself to
+reopen an issue.
 
 When a [LavaFlow](lavaflow.md#after-a-fix-merges) fix merges and goes live,
-LavaFlow resolves the issue for you. With LavaFlow on, an issue with
+LavaFlow resolves the issue for you, unless the deployment's
+[reported commit](deployment-source.md#commit) has `verification: repository`;
+resolve that one yourself. With LavaFlow on, an issue with
 `exception: true` that reopens because the error happens again starts a new
 LavaFlow run. Reopening an issue yourself doesn't start one.
 

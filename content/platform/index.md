@@ -139,6 +139,16 @@ Next.js, static or server-rendered, served from the edge. A failed build never r
 | [Deploy a frontend](frontends/deploy.md)   | Deploy a Next.js site with the CLI                       |
 | [Frontend previews](frontends/previews.md) | Deploy a build to its own URL, then promote or roll back |
 
+### LavaFlow
+
+[LavaFlow](guides/lavaflow.md) turns production errors into reviewed fixes: it diagnoses the issue, opens a pull request with the fix, and, when you allow it, merges it. In preview on SUPERAGENT.
+
+| Guide                          | Description                                                         |
+| ------------------------------ | ------------------------------------------------------------------- |
+| [LavaFlow](guides/lavaflow.md) | Turn it on, follow its runs, and let it merge fixes                 |
+| [Issues](guides/issues.md)     | Runtime errors grouped into the issues LavaFlow diagnoses and fixes |
+| [CLI](/cli/lavaflow)           | Turn LavaFlow on and follow its runs from a terminal                |
+
 ### Security
 
 | Guide                                                                     | Description                                                |
@@ -191,7 +201,7 @@ Step-by-step guides for common tasks.
 | [Deployment performance](guides/deployment-performance.md) | Deployment latency objectives, phases, and telemetry                                |
 | [Sandboxes](guides/sandboxes.md)                           | Run commands and HTTP services in isolated sessions with plan-based runtime pricing |
 | [Issues](guides/issues.md)                                 | See runtime errors grouped into issues, and resolve or ignore them                  |
-| [LavaFlow](guides/lavaflow.md)                             | Have AI diagnose your issues, open pull requests that fix them, and merge them      |
+| [LavaFlow](guides/lavaflow.md)                             | Turn production errors into reviewed fixes, from diagnosis to pull request to merge |
 
 ## Examples
 

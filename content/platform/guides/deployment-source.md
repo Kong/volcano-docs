@@ -82,7 +82,17 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/frontends" \
 
 `repository`, `sha`, and `dirty` are required. Fields Volcano doesn't know are ignored. An empty `commit` field, `null`, or `""` reports no commit. A malformed commit, or a repository not on GitHub, answers `400` and deploys nothing.
 
-Volcano then checks a frontend's commit through the project's [GitHub connection](../projects/git-deploy.md). It is `verified` when:
+Volcano then checks the commit through the project's [GitHub connection](../projects/git-deploy.md) and records what it confirmed as `verification`:
+
+| `verification` | What Volcano confirmed                                                                                                                                                                                                                                      |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `files`        | The commit is the connected repository's, on its production branch, and every uploaded file is the commit's. Only a frontend upload is checked this far.                                                                                                    |
+| `repository`   | The commit is the connected repository's and on its production branch. A function or durable function upload holds build output, not the repository's layout, so its files aren't compared. Only a function commit reported with `dirty: false` is checked. |
+| `none`         | Nothing.                                                                                                                                                                                                                                                    |
+
+`verified` is `true` only for `files`. A `repository` commit says which commit on the production branch the deploy client built from, not that the deployed code is that commit's: anyone who can deploy to the project can report any commit on that branch, an older one included. [LavaFlow](lavaflow.md) reads the repository at a function deployment's `repository` commit, never the uploaded files, and only while the project's repository link is unchanged since Volcano checked the commit. Relinking, reinstalling the GitHub App, renaming the repository, or changing the production branch or root directory ends it; see [Code LavaFlow reads](lavaflow.md#code-lavaflow-reads).
+
+A frontend's commit is `files` when:
 
 - `repository` is the project's connected repository, matched by repository ID so a rename still matches;
 - `sha` is on its production branch;
@@ -91,7 +101,9 @@ Volcano then checks a frontend's commit through the project's [GitHub connection
 
 `root` must be the project's root directory, a directory inside it, or one of its parents. An upload from a parent must name an app inside the project's root directory by its path from `root`: in `app_root`, or else on the first line of a `.volcano/frontend-app-path` file at the archive root, which the CLI writes when it uploads a monorepo app from the workspace root. An uploaded file in the project's root directory that the commit doesn't hold sets `dirty: true`, even when another file can't be checked. A file under a symlink or submodule, a file whose owner execute bit doesn't match the commit's file mode, a file outside the project's root directory that the commit doesn't hold, or one whose match depends on an attribute or attribute pattern Volcano doesn't read leaves the commit unverified without setting `dirty`.
 
-A commit Volcano can't verify is still recorded with `verified: false`, and the deploy goes ahead. That covers a commit from another branch or repository, an upload without `root`, a `root` or archive path longer than 4,096 bytes or 128 directories deep, an upload with no file to compare, an upload that leaves out another file, symlink, or submodule the commit holds under `root`, an upload from a parent without a `package.json` at its archive root whose only top-level directory, counting dot-directories, has one, a project with no connection, an archive whose global header sets anything but a comment, an archive entry behind more than one extended header, an extended or long-name header with anything but NULs after its data, a directory entry with a `.` or `..` segment, a directory entry the commit holds no file under, a sparse or pre-POSIX archive entry, a tar header with a number that isn't plain octal digits or with a name prefix outside a POSIX ustar header, and a check GitHub doesn't answer in time. Volcano doesn't check a commit reported with `dirty: true`; it's recorded with `verified: false`. Function and durable function deployments record their commit with `verified: false`.
+A commit Volcano can't verify is still recorded, with `verification: none`, and the deploy goes ahead. That covers a commit from another branch or repository, an upload without `root`, a `root` or archive path longer than 4,096 bytes or 128 directories deep, an upload with no file to compare, an upload that leaves out another file, symlink, or submodule the commit holds under `root`, an upload from a parent without a `package.json` at its archive root whose only top-level directory, counting dot-directories, has one, a project with no connection, an archive whose global header sets anything but a comment, an archive entry behind more than one extended header, an extended or long-name header with anything but NULs after its data, a directory entry with a `.` or `..` segment, a directory entry the commit holds no file under, a sparse or pre-POSIX archive entry, a tar header with a number that isn't plain octal digits or with a name prefix outside a POSIX ustar header, and a check GitHub doesn't answer in time. Volcano doesn't check a commit reported with `dirty: true`; it's recorded with `verification: none`.
+
+A function or durable function commit is `repository` when `repository` is the project's connected repository, matched by repository ID, `sha` is on its production branch, and the commit is reported with `dirty: false`. Any other function commit, and one Volcano can't check in time, is `none`.
 
 Function and frontend deployment listings return the commit:
 
@@ -111,7 +123,8 @@ curl -H "Authorization: Bearer $VOLCANO_TOKEN" \
         "repository": "acme/app",
         "sha": "4f1c2b7d9e0a8b3c6d5e4f3a2b1c0d9e8f7a6b5c",
         "dirty": false,
-        "verified": true
+        "verified": true,
+        "verification": "files"
       }
     }
   ]

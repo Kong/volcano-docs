@@ -147,7 +147,7 @@ Errors:
 
 - `400`: `code: source_deployment_same_frontend`, the deployment is this frontend's own; redeploy instead.
 - `404`: the frontend isn't in the project, or `code: source_deployment_not_found`.
-- `409`: `code: build_variables_differ` names the build-time variables whose values differ; `source_deployment_not_active`; `source_build_unavailable` when Volcano no longer keeps the build or the deployment predates kept builds, so redeploy the source and deploy from its new deployment; `frontend_incompatible` for a different framework or app root. Without a code, the frontend's deletion is queued or running, or the project's source is managed by Git, where deploys come from a push to the production branch.
+- `409`: `code: build_variables_differ` names the build-time variables whose values differ; `source_deployment_not_active`; `source_served_by_candidate` when a promoted preview serves the source frontend, so roll it back to its own build first; `source_build_unavailable` when Volcano no longer keeps the build or the deployment predates kept builds, so redeploy the source and deploy from its new deployment; `frontend_incompatible` for a different framework or app root; `frontend_served_by_candidate` when a promoted preview serves this frontend, so roll it back to its own build first. Without a code, the frontend's deletion is queued or running, or the project's source is managed by Git, where deploys come from a push to the production branch.
 - `429`: the monthly build-minutes allowance is used up.
 - `501`: `code: build_reuse_unavailable` in local development.
 - `503`: the build-minutes check is temporarily unavailable; retry later.

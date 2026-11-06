@@ -196,6 +196,8 @@ curl "https://api.volcano.dev/capabilities"
     { "id": "sandboxes", "status": "available" },
     { "id": "sandboxes.sessions", "status": "available" },
     { "id": "sandboxes.custom_templates", "status": "unavailable" },
+    { "id": "sandboxes.network_isolation", "status": "available" },
+    { "id": "sandboxes.output_not_kept", "status": "available" },
     { "id": "issues", "status": "available" },
     { "id": "lavaflow", "status": "unavailable" },
     { "id": "lavaflow.merge", "status": "unavailable" },
@@ -212,6 +214,8 @@ curl "https://api.volcano.dev/capabilities"
 | `sandboxes`                    | The Sandbox API: presets, templates, sessions, and executions                                                                                                                                                               |
 | `sandboxes.sessions`           | Starting and resuming sessions, and one-shot executions                                                                                                                                                                     |
 | `sandboxes.custom_templates`   | Deploying a custom template; its validation waits while `sandboxes.sessions` is unavailable                                                                                                                                 |
+| `sandboxes.network_isolation`  | Creating [sessions with no outbound network](../guides/sandboxes.md#turn-off-outbound-network); existing ones work either way                                                                                               |
+| `sandboxes.output_not_kept`    | [Commands that keep no output](../guides/sandboxes.md#keep-no-command-output); commands that keep output work either way                                                                                                    |
 | `issues`                       | The Issues API: listing, reading, and updating grouped runtime errors                                                                                                                                                       |
 | `lavaflow`                     | LavaFlow, which diagnoses a project's issues, opens pull requests that fix them, and can merge them. This list says only whether it's released in the environment; a project's list says whether that project has it        |
 | `lavaflow.merge`               | Letting LavaFlow [merge its fixes](../guides/lavaflow.md#merge-fixes): `autonomy: merge` and changing `merge_policy`; reading merges works either way                                                                       |
@@ -385,17 +389,18 @@ Issues are in preview. See [Issues](../guides/issues.md).
 
 ### LavaFlow
 
-| Method | Endpoint                  | Description                                                  |
-| ------ | ------------------------- | ------------------------------------------------------------ |
-| `GET`  | `/lavaflow/settings`      | Get a project's LavaFlow settings                            |
-| `PUT`  | `/lavaflow/settings`      | Change a project's LavaFlow settings; the owner only         |
-| `GET`  | `/lavaflow/stats`         | Count issues LavaFlow took on and pull requests it opened    |
-| `GET`  | `/lavaflow/resources`     | List each resource's LavaFlow activity and anomalies         |
-| `GET`  | `/lavaflow/runs`          | List LavaFlow runs; filter with `status` and `resource_id`   |
-| `GET`  | `/lavaflow/runs/{run_id}` | Get a run with its diagnosis, diff, review, and pull request |
+| Method  | Endpoint                  | Description                                                  |
+| ------- | ------------------------- | ------------------------------------------------------------ |
+| `GET`   | `/lavaflow/settings`      | Get a project's LavaFlow settings                            |
+| `PATCH` | `/lavaflow/settings`      | Change a project's LavaFlow settings; the owner only         |
+| `PUT`   | `/lavaflow/settings`      | Deprecated; does what `PATCH` does                           |
+| `GET`   | `/lavaflow/stats`         | Count issues LavaFlow took on and pull requests it opened    |
+| `GET`   | `/lavaflow/resources`     | List each resource's LavaFlow activity and anomalies         |
+| `GET`   | `/lavaflow/runs`          | List LavaFlow runs; filter with `status` and `resource_id`   |
+| `GET`   | `/lavaflow/runs/{run_id}` | Get a run with its diagnosis, diff, review, and pull request |
 
 Each endpoint names one project with `project_id`: a query parameter on reads,
-a body field on `PUT`. LavaFlow is in preview and needs the SUPERAGENT plan.
+a body field on `PATCH`. LavaFlow is in preview and needs the SUPERAGENT plan.
 See [LavaFlow](../guides/lavaflow.md).
 
 ### Notifications

@@ -102,6 +102,8 @@ receives no traffic.
 
 While a preview is promoted, deploying the frontend itself is refused with `409`
 and `code: frontend_served_by_candidate`, and a Git push does not deploy it.
+Deploying one of its deployments to another frontend is refused with `409` and
+`code: source_served_by_candidate`, since that build is not what it serves.
 Run `volcano cloud frontends rollback web --to-production` first; a plain rollback
 may return to another preview. A preview the frontend serves cannot be deleted or deployed to. After a
 promotion, the preview the frontend served before is kept for a rollback and

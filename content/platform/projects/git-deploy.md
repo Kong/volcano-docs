@@ -664,7 +664,11 @@ than deploying with its settings silently dropped: malformed YAML, an empty
 file, an unsupported `version`, a function entry with no `name` or a duplicate
 one, a function `variables` key with no value, such as a bare `variables:` or
 `variables: null`, a file over 4 MiB, or a link rather than a regular file.
-`volcano cloud config deploy` rejects the same file.
+`volcano cloud config deploy` rejects the same file. A push also fails without
+retrying when Volcano can't read its `volcano-config.yaml`: YAML with a mapping
+key that isn't a scalar, such as a list or an alias used as a key, with the
+same key twice in one mapping, or with a `%TAG` directive, or YAML that takes
+more to read than its size allows.
 
 ## Apply migrations on push
 

@@ -7,8 +7,8 @@ Cloud Sandbox runtime is included in HOBBY and SUPERAGENT plans, with additional
 runtime billed on SUPERAGENT. See [Pricing and usage](#pricing-and-usage) for
 allowances, charges, and exemptions. Check whether Sandboxes are available with
 [`GET /capabilities`](../api-reference/overview.md#capabilities): the
-`sandboxes`, `sandboxes.sessions`, and `sandboxes.custom_templates` entries
-report each part. Where Sandboxes are not available, every Sandbox endpoint
+`sandboxes`, `sandboxes.sessions`, `sandboxes.custom_templates`,
+`sandboxes.network_isolation`, and `sandboxes.output_not_kept` entries report each part. Where Sandboxes are not available, every Sandbox endpoint
 answers `404` with error code `feature_unavailable`:
 
 ```json
@@ -45,9 +45,13 @@ curl "$VOLCANO_API_URL/projects/$PROJECT_ID/sandbox-executions" \
   "exit_code": 0,
   "stdout_truncated": false,
   "stderr_truncated": false,
-  "timed_out": false
+  "timed_out": false,
+  "output_kept": true
 }
 ```
+
+`stdout` and `stderr` each hold the first 1 MiB (1,048,576 bytes) the command
+wrote. `stdout_truncated` or `stderr_truncated` is `true` when it wrote more.
 
 Discover published presets and regions with `GET /sandboxes/presets`.
 Use the returned preset IDs when creating templates, sessions, or one-shot executions.
@@ -121,6 +125,8 @@ no reason is known.
 | `sandbox_cleanup_retry_requested`       | Cleanup was explicitly requested again.               |
 | `sandbox_session_retries_exhausted`     | Lifecycle reconciliation exhausted its retries.       |
 | `sandbox_operator_confirmed_no_live_vm` | Operator recovery confirmed no live runtime remained. |
+| `sandbox_network_untrusted`             | A `deny_all` session was observed out of policy.      |
+| `sandbox_image_outdated`                | The template's image predates what the session needs. |
 
 Additional codes may be introduced; accept unknown values. A recorded reason alone
 does not establish whether a command ran or authorize a retry. Use the execution
@@ -171,7 +177,9 @@ curl "$VOLCANO_API_URL/projects/$PROJECT_ID/sandbox-sessions" \
   "state": "starting",
   "desired_state": "running",
   "created_at": "2026-09-23T12:00:00Z",
-  "expires_at": "2026-09-23T13:00:00Z"
+  "expires_at": "2026-09-23T13:00:00Z",
+  "network": { "egress": "default", "applied": "unknown" },
+  "executions": { "keep_output": true }
 }
 ```
 
@@ -222,6 +230,83 @@ records the requested outcome. Once termination is requested, public reads repor
 `terminating` until the session is `terminated`, unless its state is `unknown`
 and requires operator recovery. Closing new-session admission does not prevent
 termination or grant revocation.
+
+## Turn off outbound network
+
+Set `network.egress` to `deny_all` to create a session with no outbound network
+for its whole lifetime:
+
+```bash
+curl "$VOLCANO_API_URL/projects/$PROJECT_ID/sandbox-sessions" \
+  -H "Authorization: Bearer $SERVICE_KEY" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Content-Type: application/json" \
+  -d '{"preset":"python3.12","region":"us-east-1","network":{"egress":"deny_all"}}'
+```
+
+In a `deny_all` session:
+
+- DNS lookups fail.
+- Connections to internet addresses over IPv4 and IPv6 fail, and so do
+  link-local addresses such as `169.254.169.254` and `fe80::/10`.
+- Nothing can connect back out through the path Volcano uses to reach the
+  session.
+- Loopback works: a process can serve files on `127.0.0.1` or `::1` to another
+  process in the same session.
+- Commands, files, suspend, and resume work as usual.
+- [Port access](#connect-to-an-http-service) answers `400` with code
+  `sandbox_network_isolated`.
+
+Check that `GET /capabilities` lists `sandboxes.network_isolation` as
+`available` before you depend on `deny_all`. Where it is unavailable, a request
+for `deny_all` answers `400` with code `feature_unavailable`, and sessions you
+already created with it keep their policy.
+
+The policy is fixed when the session is created. Suspend and resume keep it, and
+no request changes it; create another session for a different policy.
+`POST /projects/{id}/sandbox-executions` takes the same `network` field. Omitting
+`network` is the same as `{"egress":"default"}`, which keeps the region's
+standard outbound internet access. A retry with the same `Idempotency-Key` must
+send the same policy; a different one returns `409`.
+
+Every session reads back its policy:
+
+```json
+{ "network": { "egress": "deny_all", "applied": "deny_all" } }
+```
+
+`egress` is the policy you requested. `applied` is what Volcano last observed on
+the session itself, never the request alone:
+
+| `applied`  | Meaning                                                                                                                |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `default`  | The session has the region's outbound internet access.                                                                 |
+| `deny_all` | The session has no outbound network.                                                                                   |
+| `unknown`  | Not observed yet, not observed since a suspend or resume, or what Volcano observed doesn't match the requested policy. |
+
+A session first reports `running` only after its network has been observed. If
+you depend on `deny_all`, wait for `state` to be `running`, read
+`network.applied`, and terminate the session unless it is `deny_all`. Act on
+`applied` only while the session is `running`: a terminated session keeps what
+Volcano last observed.
+
+After that, `applied` reads `unknown` in two expected windows: from a suspend or
+resume request until Volcano observes the session again, and briefly while
+Volcano rolls out an update. Act on a later `unknown` only while the session's
+`desired_state` is `running`: then stop sending it work and terminate it.
+
+If Volcano observes a `deny_all` session with outbound network access, or in a
+state that doesn't match its policy, it refuses the session's commands and
+file calls and terminates it at once: `desired_state` reads `terminated`,
+`last_error_code` reads `sandbox_network_untrusted`, and the session doesn't
+start again. Its `applied` keeps what Volcano last observed, so it can read
+`default`.
+
+Local mode applies the same policy and readback. In a `deny_all` container, only
+loopback is up, with no route out. `::1` works where the Docker host's kernel
+has IPv6. A local `deny_all` session from a custom template needs a template
+deployed on this version of Volcano or later: one deployed earlier ends with
+`sandbox_image_outdated` (`409` for one-shot execution) until you redeploy it.
 
 ## Choose lifetime and memory
 
@@ -277,6 +362,91 @@ unused, so retrying the same key can run it once capacity frees. This differs
 from `sandbox_session_not_running`, which retains the refusal for that key.
 Do not use a new key unless you intend to run the command again.
 
+## Keep no command output
+
+By default Volcano stores each command's result, so a retry with the same
+`Idempotency-Key` returns its output. When output can hold secrets, set
+`keep_output` to `false`. The command's `stdout` and `stderr` are returned once,
+in the response to the request that ran it. Volcano's control plane never
+stores them in the execution journal, database, logs or traces. Volcano still
+records the exit code, timings and a keyed digest of the request, so a retry
+with the same key returns the exit code with empty streams and never runs the
+command again:
+
+```bash
+curl "$VOLCANO_API_URL/sandbox-sessions/$SESSION_ID/exec" \
+  -H "Authorization: Bearer $SERVICE_KEY" \
+  -H "Idempotency-Key: $REQUEST_ID" \
+  -H "Content-Type: application/json" \
+  -d '{"command":"./print-token.sh","keep_output":false}'
+```
+
+```json
+{
+  "stdout": "tok_example\n",
+  "stderr": "",
+  "exit_code": 0,
+  "stdout_truncated": false,
+  "stderr_truncated": false,
+  "timed_out": false,
+  "output_kept": false
+}
+```
+
+The same request retried with `$REQUEST_ID` returns:
+
+```json
+{
+  "stdout": "",
+  "stderr": "",
+  "exit_code": 0,
+  "stdout_truncated": false,
+  "stderr_truncated": false,
+  "timed_out": false,
+  "output_kept": false
+}
+```
+
+The first response uses the same 1 MiB (1,048,576 bytes) cap per stream and
+the same truncation flags as any other command. One-shot executions accept
+`keep_output` too.
+
+This does not cover the Sandbox itself: the Sandbox's memory and a suspended
+session's snapshot can still hold what the command wrote.
+
+To make every command in a session keep no output, create it with
+`executions.keep_output` set to `false`:
+
+```bash
+curl "$VOLCANO_API_URL/projects/$PROJECT_ID/sandbox-sessions" \
+  -H "Authorization: Bearer $SERVICE_KEY" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Content-Type: application/json" \
+  -d '{"preset":"python3.12","region":"us-east-1","executions":{"keep_output":false}}'
+```
+
+The setting is fixed for the session's lifetime, and session reads return it
+as `executions.keep_output`. Commands in the session inherit it. A command that
+sets `keep_output` to `true` there is refused before it runs:
+
+```json
+{
+  "error": "this session keeps no command output; omit keep_output or set it to false",
+  "code": "sandbox_session_keeps_no_output"
+}
+```
+
+Output a command redirects to a file stays in the session's workspace like any
+other file. Delete it, or terminate the session, when you are done.
+
+Check the `sandboxes.output_not_kept` entry in
+[`GET /capabilities`](../api-reference/overview.md#capabilities) before you
+rely on this. While it is `unavailable`, `keep_output: false`,
+`executions.keep_output: false`, and commands in a session created with it
+answer `400` with code `feature_unavailable`. A retry of a command that already
+ran still returns its exit code. Commands that keep output work either way, and
+the session can still be read and terminated.
+
 ## Read and write files
 
 Files are scoped to the session workspace. Content uses base64 and is limited
@@ -301,6 +471,233 @@ curl "$VOLCANO_API_URL/sandbox-sessions/$SESSION_ID/files/read" \
 
 Writing returns `204`; reading returns `{"data":"aGVsbG8K"}`. Files survive
 suspend/resume and are removed with the session.
+
+### Upload a directory as a tar archive
+
+Create a file archive to write a whole tree in one request. Send
+`multipart/form-data` with `project_id`, `session_id` and `path`, in any order,
+then the tar archive as the `archive` part. Volcano extracts it into the
+directory `path` names, creating it when missing. `path` must name a directory
+below the workspace root: a path that resolves to the root or to `/`, such as
+`.`, `./`, `/`, `/workspace` or `/workspace/.`, answers `sandbox_archive_invalid`.
+The archive may be gzip-compressed; Volcano detects compression itself.
+
+```bash
+tar -C ./repo -czf repo.tgz .
+curl "$VOLCANO_API_URL/sandbox-file-archives" \
+  -H "Authorization: Bearer $SERVICE_KEY" \
+  -F "project_id=$PROJECT_ID" \
+  -F "session_id=$SESSION_ID" \
+  -F "path=repo" \
+  -F "archive=@repo.tgz"
+```
+
+```json
+{
+  "project_id": "5b1e…",
+  "session_id": "0f6c…",
+  "path": "repo",
+  "files": 42,
+  "bytes": 183020
+}
+```
+
+Each request accepts at most 32 MiB of archive, 10,000 files and directories,
+and 256 MiB uncompressed, and has 2 minutes to send its archive; a slower
+request fails and writes nothing. Split a larger tree into several archives and
+send them one after another.
+
+The archive may hold only regular files and directories. A symbolic link, hard
+link, sparse file, device, absolute name, or `..` component refuses the whole
+archive.
+Permission bits are kept; setuid, setgid, and sticky bits are dropped. Volcano
+checks and stages the whole archive before the workspace changes, so a refused
+archive writes nothing, and it undoes one that fails part way. If a session
+process moves or removes a directory while the archive is written, the
+request answers `409`, a file the archive replaced there is kept in a
+`.sandbox-archive-*` directory at the workspace root, and files the archive
+already placed can stay. Volcano never follows a symbolic link already in the
+workspace. Read-only directories the session user owns still take later
+archives and file parts, and keep their modes.
+
+| Code                        | Status | Meaning                                                                                                                 |
+| --------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------- |
+| `sandbox_archive_invalid`   | 400    | The form or archive is malformed, or holds an entry that is not allowed                                                 |
+| `sandbox_archive_too_large` | 413    | The archive exceeds a per-request limit                                                                                 |
+| `sandbox_path_conflict`     | 409    | A symbolic link or file is where a directory belongs, the reverse, or the session user cannot write a directory         |
+| `sandbox_disk_full`         | 409    | The session's disk has no room; free space and retry                                                                    |
+| `sandbox_image_outdated`    | 409    | The session's image predates archive writes; start a new session from a current preset, or redeploy the custom template |
+
+A session outside `project_id` answers `404`, like an unknown session.
+
+### Write a file larger than 8 MiB
+
+Create file parts to write a file of up to 1 GiB, at most 8 MiB per part. Each
+part names its `offset`, the whole file's `size`, and its lowercase hex
+`sha256`:
+
+```bash
+curl "$VOLCANO_API_URL/sandbox-file-parts" \
+  -H "Authorization: Bearer $SERVICE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"project_id":"'"$PROJECT_ID"'","session_id":"'"$SESSION_ID"'","path":"cache/pkg.tgz","offset":0,"size":20971520,"sha256":"<sha256 of the whole file>","data":"<first 8 MiB, base64>"}'
+```
+
+```json
+{
+  "project_id": "5b1e…",
+  "session_id": "0f6c…",
+  "path": "cache/pkg.tgz",
+  "offset": 0,
+  "size": 20971520,
+  "received": 8388608,
+  "complete": false
+}
+```
+
+Send the next part with `"offset":8388608`, and so on. Nothing appears at
+`path` until the part that ends at `size` arrives; that part checks the whole
+file's size and SHA-256, then moves it into place in one step, and answers
+`"complete": true`. Missing parent directories are created. The finished file
+is readable and writable only by the session user.
+
+To recover from a failed request, resend that part: a part may start anywhere
+up to the bytes already received. A part at offset 0 starts the file again.
+Resending the part that finished the file answers the same completion while the
+file at `path` still matches `size` and `sha256`.
+
+| Code                             | Status | Meaning                                                                                                                        |
+| -------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `sandbox_file_part_out_of_order` | 409    | The part starts past the bytes received; resend from the last successful part                                                  |
+| `sandbox_file_part_mismatch`     | 409    | The finished file does not match `size` or `sha256`; start again at offset 0                                                   |
+| `sandbox_path_conflict`          | 409    | A directory is at `path`, a file or symbolic link is where a directory belongs, or the session user cannot write the directory |
+| `sandbox_disk_full`              | 409    | The session's disk has no room; free space and retry                                                                           |
+| `sandbox_image_outdated`         | 409    | The session's image predates parted writes; start a new session from a current preset, or redeploy the custom template         |
+
+Parts collect in a hidden file beside `path` that starts with `.sandbox-part-`.
+It stays until the file completes, a part at offset 0 restarts it, or the
+session ends.
+
+## List files
+
+List a workspace directory with each entry's type, size, and permission bits,
+and optionally a SHA-256 digest of each file. Compare two listings to see what
+a command changed.
+
+```bash
+curl -G "$VOLCANO_API_URL/sandbox-session-files" \
+  -H "Authorization: Bearer $SERVICE_KEY" \
+  --data-urlencode "project_id=$PROJECT_ID" \
+  --data-urlencode "session_id=$SESSION_ID" \
+  --data-urlencode "path=/workspace" \
+  --data-urlencode "include_sha256=true"
+```
+
+```json
+{
+  "project_id": "5f0c3a52-8d1e-4b7a-9a43-2f6d1c0e7b19",
+  "session_id": "0b8f6a1e-3c2d-4e5f-8a9b-7c6d5e4f3a2b",
+  "entries": [
+    { "path": "cache", "type": "directory", "size": 0, "mode": 0, "unreadable": true },
+    {
+      "path": "hello.txt",
+      "type": "file",
+      "size": 6,
+      "mode": 420,
+      "sha256": "5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03"
+    },
+    { "path": "latest", "type": "symlink", "size": 0, "mode": 511 },
+    { "path": "logs", "type": "directory", "size": 0, "mode": 493 },
+    { "path": "logs/app.log", "type": "file", "size": 4096, "mode": 420, "sha256_skipped": "changing" },
+    { "path": "src", "type": "directory", "size": 0, "mode": 448 },
+    {
+      "path": "src/main.py",
+      "type": "file",
+      "size": 21,
+      "mode": 493,
+      "sha256": "2d543015627a771436b30ea79fd0ecda8df8bcd77b3d55661caf5a0d6e809886"
+    }
+  ],
+  "next_cursor": "Xww6Uo0eS3qaQy9tHA57GQuPah48LU5fipt8bV5POitzcmMvbWFpbi5weQ"
+}
+```
+
+| Parameter        | Default        | Meaning                                                                 |
+| ---------------- | -------------- | ----------------------------------------------------------------------- |
+| `project_id`     | required       | The session's project                                                   |
+| `session_id`     | required       | The session to list                                                     |
+| `path`           | workspace root | Directory to list: `src`, `/workspace/src`, `.`, or `/workspace`        |
+| `recursive`      | `true`         | List everything below `path`; `false` lists only its direct entries     |
+| `include_sha256` | `false`        | Add each regular file's SHA-256 digest                                  |
+| `limit`          | `10000`        | Most entries per page, from 1 to 10000                                  |
+| `cursor`         | none           | The previous page's `next_cursor`; send the same `path` and `recursive` |
+
+Each entry has:
+
+- `path`: relative to the workspace root, ready for the read and write routes.
+- `type`: `file`, `directory`, `symlink`, or `other` (a FIFO, socket, or
+  device). The listing never follows a symlink, so a symlink's target is never
+  listed or hashed.
+- `size`: bytes for a regular file, `0` for every other type.
+- `mode`: permission bits as a decimal number, including setuid, setgid, and
+  sticky. `420` is `0644`, and `493` is `0755`.
+- `sha256`: with `include_sha256`, the digest of a regular file's content.
+- `sha256_skipped`: with `include_sha256`, why a regular file has no digest.
+  Treat that file as unverified.
+- `unreadable`: `true` on a directory the session user can't list. The
+  listing doesn't enter it and goes on past it.
+- `unsupported_names`: in a recursive listing, how many names directly inside
+  a directory no entry can carry.
+
+| `sha256_skipped` | Meaning                                                                                                        |
+| ---------------- | -------------------------------------------------------------------------------------------------------------- |
+| `budget`         | The file is over 256 MiB                                                                                       |
+| `changing`       | The file changed while it was hashed, or kept changing; list it again later                                    |
+| `unreadable`     | The session user doesn't own the file, its owner-read bit (`0400`) is clear, or it has more than one hard link |
+
+A directory is `unreadable` when the session user's permission bits on it lack
+read or execute: the owner bits when the user owns it, the group bits when it
+belongs to the user's group, and the other bits otherwise.
+
+A name that isn't UTF-8, or whose path would pass 4096 bytes, can't be listed.
+The listing skips it and everything below it, and counts it in
+`unsupported_names`: on the directory's entry, or at the top of every page for
+`path` itself. The field is absent when there are none. A listing with any
+`unsupported_names` or `unreadable` directory is incomplete.
+
+A file written in the last 100 milliseconds is hashed once it has gone that
+long unchanged, so a listing right after a write can take a moment longer.
+
+The listing detects a change from the file's timestamps. A file that changes
+while it is hashed without its timestamps moving can get a digest of neither the
+old nor the new content. Two cases cause this: a single write still in progress
+100 milliseconds after it began, which a heavily loaded session can cause, and
+a process writing through a shared memory mapping (`mmap`). When a digest must
+match finished content, list after the processes writing the file have
+finished.
+
+Entries are sorted by path, comparing one path element at a time by bytes, so a
+directory comes right before its contents. A page ends early when it reaches
+the limit, about 8 MiB of entries, or 256 MiB of hashed file content. Keep
+requesting with `cursor` until the response has no `next_cursor`. A cursor is
+valid only for the project and session it came from. A listing is not a
+snapshot: a file that changes while it runs can appear before or after the
+change.
+
+A project your credential cannot read answers `404` exactly like one that does
+not exist, and a session outside `project_id` answers like an unknown session.
+A credential for the project that lacks the `sandboxes.files.read` permission
+answers `403`.
+
+| Status | Code                         | Meaning                                                                 |
+| ------ | ---------------------------- | ----------------------------------------------------------------------- |
+| `400`  | `sandbox_path_not_directory` | `path` is missing, is not a directory, or passes through a symlink      |
+| `400`  | `sandbox_path_unreadable`    | The session user can't list `path` or pass through a directory above it |
+| `409`  | `sandbox_image_outdated`     | The session's image predates file listing                               |
+
+Sessions started on an image built before file listing shipped cannot list
+files. Start a new session; for a custom template, redeploy it first. This
+holds in local mode too.
 
 ## Grant a signed-in user access
 

@@ -32,6 +32,7 @@ Some errors also carry a stable `code` naming a specific recovery path. Match on
 - `404 Not Found` - Resource doesn't exist
 - `409 Conflict` - Resource state conflicts with the request (for example, a duplicate resource or deletion already in progress)
 - `410 Gone` - The resource existed but no longer takes the request (for example, a durable callback token whose wait timed out)
+- `415 Unsupported Media Type` - The request body, or a multipart form field, is YAML, which no endpoint accepts
 - `429 Too Many Requests` - Rate limit exceeded
 
 **5xx Server Errors:**
@@ -321,6 +322,16 @@ can:
 The message always starts with `invalid request`. Some failures carry no
 detail, such as a path ID that is not a UUID, and then the message is just
 `invalid request`. Read the rest to fix the request; don't parse it.
+
+**415 - YAML request body:**
+
+```json
+{ "error": "unsupported media type: YAML request bodies are not accepted" }
+```
+
+A body or multipart form field sent as `application/yaml` or
+`application/x-yaml` gets this error. Send the body as JSON and form fields as
+plain text. Uploaded files are read as bytes, whatever their type.
 
 ### Resource Errors
 
