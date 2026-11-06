@@ -132,7 +132,7 @@ it ended on.
 | `plan`     | Compares the files with the database's history. Files the history holds are `already_applied`. With nothing pending, the run succeeds here and takes no backup.                    |
 | `rehearse` | Applies the pending files to a short-lived [branch](../databases/branching.md) of the database, then deletes the branch. A file that fails here never touches the database.        |
 | `backup`   | Takes a [backup](../databases/backups.md) named `before-migration-<run id>`, listed with `source: migration`. You can restore it like any other. Volcano keeps the 20 most recent. |
-| `apply`    | Applies the pending files to the database, in name order, each in its own transaction with its history record.                                                                     |
+| `apply`    | Applies the pending files to the database, in name order, each in its own transaction with its history record, except [marked files](#run-a-statement-outside-a-transaction).      |
 
 If a file fails while it is applied to the database, its transaction rolls
 back and the run stops there. The files before it stay applied and recorded,
@@ -145,14 +145,23 @@ If the connection drops while a file runs, or one of Volcano's own statements
 around the file fails, the file's transaction rolls back too, but the file did
 not fail. The run retries it, and the file reads `pending` meanwhile. If the
 run ends without applying it, the file is `not_run`, and the run's code is
-`connection_failed` or `internal_error`.
+`connection_failed` or `internal_error`. A
+[marked file](#run-a-statement-outside-a-transaction) has no transaction to
+roll back, so if the connection drops while it runs, or a statement of
+Volcano's fails after it, the file reads `unknown` from then on. It stays
+`unknown` even if a later attempt stops before the file or fails it, until an
+attempt applies it or the history records it. A later attempt that fails it
+leaves its `error` on the `unknown` file. A marked file also reads `unknown`
+while Volcano runs it.
 
 A run can end in `apply` before it confirms whether a file ran: it used every
 attempt (`attempts_exhausted`), Volcano ended it (`operator_failed`), or the
 file's `COMMIT` failed or was cut short.
 That file's `outcome` is `unknown`, and it may have committed. Each file commits
 with its history record, so [the history](#read-the-history) says whether it
-ran, and the next run applies it only if the history does not record it. While
+ran, and the next run applies it only if the history does not record it. A
+marked file's record commits after it, so the history may lack a marked file
+that ran. While
 a run retries, the files it has not applied read `pending` again, or
 `already_applied` if the history now holds them.
 
@@ -210,10 +219,8 @@ your-project/
   commit together or not at all. A file cannot `COMMIT`, `ROLLBACK`, or use
   savepoints, and cannot `COPY` from the client; use `INSERT`. Such a file
   fails with `migration_failed`, and its error says why.
-- **No statements that need to run outside a transaction.** Tracked runs do
-  not support statements such as `CREATE INDEX CONCURRENTLY` yet; a file with
-  one fails the same way. Run those separately over a
-  [direct connection](../databases/direct-connection.md).
+- **Statements that cannot run in a transaction** go alone in a marked
+  file. See [Run a statement outside a transaction](#run-a-statement-outside-a-transaction).
 - **Never edit an applied file.** The history keeps each file's checksum, and
   a run that finds an applied file changed fails with `checksum_mismatch`
   before anything runs. Add a new file instead. Converting line endings
@@ -221,6 +228,63 @@ your-project/
   as a change.
 - **Limits.** Up to 1,000 files in a request, each up to 1 MiB, and 4 MiB in
   all. The history may hold up to 1,000 files too.
+
+### Run a statement outside a transaction
+
+Some statements refuse to run inside a transaction, such as
+`CREATE INDEX CONCURRENTLY`, which builds an index without blocking writes to
+the table. Put the statement alone in a file whose first line is
+`-- volcano:no-transaction`:
+
+```sql
+-- volcano:no-transaction
+CREATE INDEX CONCURRENTLY IF NOT EXISTS notes_created_at_idx ON notes (created_at);
+```
+
+Volcano runs the file outside a transaction, then records it in the history.
+Nothing rolls the file back, so:
+
+- **One statement per file.** Postgres runs statements sent together as one
+  transaction, where these statements fail with `migration_failed`.
+- **Make it safe to run again.** If the statement succeeds but its history
+  record does not commit, the file reads `unknown` and the run's next attempt
+  runs it again. Use `IF NOT EXISTS` and `IF EXISTS`.
+- **Name the index.** A failed `CREATE INDEX CONCURRENTLY` leaves its index
+  behind, marked invalid. Before the file runs again, Volcano drops an invalid
+  index with the file's index name on its table, and after the file runs it
+  checks that the index is valid. Another session's build of that index is
+  invalid until it finishes, so Volcano drops the index only while it holds the
+  table lock every build holds, and only if the index is still invalid. The
+  drop takes a brief `ACCESS EXCLUSIVE` lock on the table, bounded by the lock
+  limit. If another session holds the table past the lock limit, is still
+  finishing its build, or renames the index while Volcano drops it, the
+  attempt fails with `locked`, nothing is dropped,
+  and the run tries again. Volcano cannot take that lock on a materialized
+  view, so an invalid index on one fails the file with `migration_failed` and
+  the `DROP INDEX CONCURRENTLY` statement to run before you try again. A run
+  refuses a file that builds an unnamed index with `invalid_file`.
+- **First line only.** A run refuses a file with the marker on any other line
+  with `invalid_file`.
+- **No `COPY`.** `COPY` can run inside a transaction, so leave a `COPY` file
+  unmarked, and use `INSERT` for data from the client. A run refuses a marked
+  file that starts with `COPY` with `invalid_file`.
+
+A [baseline](#adopt-an-existing-database-with-a-baseline) runs no file, so it
+records marked files without these checks.
+
+The file's statement has no 5-minute file limit: the 15-minute
+[phase limit](#time-limits) bounds it. Its lock waits still time out after 10
+seconds, except in a `CREATE INDEX CONCURRENTLY`. That statement waits,
+without blocking reads or writes, for transactions writing to its table, and
+then for every older transaction anywhere in the database, so only the phase
+limit bounds its waits. One long transaction elsewhere, such as a session left
+`idle in transaction`, can hold the build until the phase limit ends the run.
+Only `CREATE INDEX CONCURRENTLY` is
+exempt: a marked `REINDEX ... CONCURRENTLY` or `DROP INDEX CONCURRENTLY` keeps
+the 10-second limit, and so does Volcano's drop of a failed build's index, which
+waits for queries on the table. A failed `REINDEX ... CONCURRENTLY` can leave an invalid
+index named `<name>_ccnew`, which Volcano does not drop; drop it yourself with
+`DROP INDEX CONCURRENTLY`.
 
 ### Several databases in one project
 
@@ -253,12 +317,12 @@ level of directories is the most a request accepts.
 These are starting values and may change as Volcano learns how long real
 migrations take.
 
-| Limit            | Value      | What it bounds                        |
-| ---------------- | ---------- | ------------------------------------- |
-| Lock wait        | 10 seconds | Each wait for a lock (`lock_timeout`) |
-| File             | 5 minutes  | Each file, all of its statements      |
-| Rehearsal, apply | 15 minutes | All of a phase's files together       |
-| Run              | 1 hour     | The whole run, from when it starts    |
+| Limit            | Value      | What it bounds                                                                                  |
+| ---------------- | ---------- | ----------------------------------------------------------------------------------------------- |
+| Lock wait        | 10 seconds | Each wait for a lock (`lock_timeout`), except in a marked `CREATE INDEX CONCURRENTLY`           |
+| File             | 5 minutes  | Each file, all of its statements, except [marked files](#run-a-statement-outside-a-transaction) |
+| Rehearsal, apply | 15 minutes | All of a phase's files together                                                                 |
+| Run              | 1 hour     | The whole run, from when it starts                                                              |
 
 A file can set its own lock wait with `SET LOCAL lock_timeout`. A file that
 waits too long for a lock is retried later; meanwhile the run stays `running`.
@@ -380,32 +444,33 @@ out runs again.
 
 A failed run's `error.code` says why:
 
-| Code                    | Meaning                                                                                                |
-| ----------------------- | ------------------------------------------------------------------------------------------------------ |
-| `migration_failed`      | A file failed. In `rehearse`, the database is untouched. In `apply`, the files before it stay applied. |
-| `checksum_mismatch`     | An applied file changed.                                                                               |
-| `history_missing`       | The history table is gone. [Recover it](#recover-a-lost-history) with a baseline.                      |
-| `history_too_large`     | The history has more than the [1,000 entries](#read-the-history) Volcano reads.                        |
-| `invalid_file`          | A file Volcano refuses to run. Starting a run usually refuses it first, with `400` and this code.      |
-| `invalid_layout`        | File paths that do not map to the database.                                                            |
-| `plan_changed`          | The history changed between the rehearsal and the apply. Nothing was applied; start the run again.     |
-| `branch_limit`          | The rehearsal branch would exceed the branch allowance.                                                |
-| `rehearsal_unavailable` | Volcano could not prepare the rehearsal branch.                                                        |
-| `backup_failed`         | Volcano could not take the backup.                                                                     |
-| `restore_in_progress`   | A restore holds the database.                                                                          |
-| `database_unavailable`  | The database is not active, or is gone.                                                                |
-| `owner_not_active`      | The project owner's account was not `active`. Applied files stay applied; start a run once it is.      |
-| `locked`                | Another session held the migration lock, or a file waited too long for a lock on every attempt.        |
-| `connection_failed`     | Volcano could not reach the database, or lost its connection, including while a file ran.              |
-| `timeout`               | A phase or the run exceeded its time limit.                                                            |
-| `attempts_exhausted`    | The run used every attempt.                                                                            |
-| `internal_error`        | Volcano failed for a reason of its own, such as one of its own statements around a file.               |
-| `operator_failed`       | Volcano ended a run that stopped making progress. Check the history, then start a new run.             |
+| Code                    | Meaning                                                                                                                                       |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `migration_failed`      | A file failed. In `rehearse`, the database is untouched. In `apply`, the files before it stay applied.                                        |
+| `checksum_mismatch`     | An applied file changed.                                                                                                                      |
+| `history_missing`       | The history table is gone. [Recover it](#recover-a-lost-history) with a baseline.                                                             |
+| `history_too_large`     | The history has more than the [1,000 entries](#read-the-history) Volcano reads.                                                               |
+| `invalid_file`          | A file Volcano refuses to run. Starting a run usually refuses it first, with `400` and this code.                                             |
+| `invalid_layout`        | File paths that do not map to the database.                                                                                                   |
+| `plan_changed`          | The history changed between the rehearsal and the apply. Nothing was applied; start the run again.                                            |
+| `branch_limit`          | The rehearsal branch would exceed the branch allowance.                                                                                       |
+| `rehearsal_unavailable` | Volcano could not prepare the rehearsal branch.                                                                                               |
+| `backup_failed`         | Volcano could not take the backup.                                                                                                            |
+| `restore_in_progress`   | A restore holds the database.                                                                                                                 |
+| `database_unavailable`  | The database is not active, or is gone.                                                                                                       |
+| `owner_not_active`      | The project owner's account was not `active`. Applied files stay applied; start a run once it is.                                             |
+| `locked`                | Another session held the migration lock, or a file, or Volcano's drop of a failed build's index, waited too long for a lock on every attempt. |
+| `connection_failed`     | Volcano could not reach the database, or lost its connection, including while a file ran.                                                     |
+| `timeout`               | A phase or the run exceeded its time limit.                                                                                                   |
+| `attempts_exhausted`    | The run used every attempt.                                                                                                                   |
+| `internal_error`        | Volcano failed for a reason of its own, such as one of its own statements around a file.                                                      |
+| `operator_failed`       | Volcano ended a run that stopped making progress. Check the history, then start a new run.                                                    |
 
 A run that has not ended can carry `error` too: why its last attempt failed
 while it waits to retry, or `operator_failed` while Volcano ends it.
 
-The failed file carries the database's own error, with its SQLSTATE and line.
+The failed file carries the database's own error, with its SQLSTATE and line,
+as does an `unknown` marked file that a later attempt failed.
 That message can quote values from your file or your data, so anyone who can
 read the project's migration runs can see it.
 

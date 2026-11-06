@@ -17,7 +17,8 @@ POST https://api.volcano.dev/mcp
 The agent operates the project that token belongs to, and only that one. No tool
 takes a project argument, so an agent cannot point a call at a project its
 credential does not cover. Configuration for [Claude Code](#claude-code),
-[Cursor](#cursor), and [Codex](#codex) is below.
+[Cursor](#cursor), [Codex](#codex), [OpenCode](#opencode), [Pi](#pi),
+[GitHub Copilot](#github-copilot), and [Gemini CLI](#gemini-cli) is below.
 
 ## Configure your client
 
@@ -37,11 +38,13 @@ export VOLCANO_PROJECT_TOKEN=pt-your-project-access-token
 
 ### Claude Code
 
-Add it from the command line:
+Add it from the command line. The single quotes keep `${VOLCANO_PROJECT_TOKEN}`
+a reference, so Claude Code reads the variable when it connects instead of
+saving the token:
 
 ```bash
 claude mcp add --transport http volcano https://api.volcano.dev/mcp \
-  --header "Authorization: Bearer $VOLCANO_PROJECT_TOKEN"
+  --header 'Authorization: Bearer ${VOLCANO_PROJECT_TOKEN}'
 ```
 
 Or commit the server (not the token) to `.mcp.json` in your project root:
@@ -115,6 +118,111 @@ Check what was saved with `codex mcp get volcano --json`. The output should show
 the variable name under `bearer_token_env_var` — if a real token appears there or
 in the URL, remove the entry and add it again.
 
+### OpenCode
+
+Put this in `opencode.json` in your project root, or
+`~/.config/opencode/opencode.json` to use it everywhere:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "volcano": {
+      "type": "remote",
+      "url": "https://api.volcano.dev/mcp",
+      "oauth": false,
+      "headers": {
+        "Authorization": "Bearer {env:VOLCANO_PROJECT_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+OpenCode writes variables as `{env:NAME}`, without a `$`. Set `oauth` to `false`:
+otherwise a `401` from an unset variable makes OpenCode start an OAuth flow this
+endpoint does not offer. `opencode mcp list` shows the server and its status.
+
+### Pi
+
+Pi has MCP support built in from version 0.99. Add the server from the command
+line. Like Codex, Pi takes the variable's name:
+
+```bash
+pi mcp add volcano \
+  --url https://api.volcano.dev/mcp \
+  --bearer-token-env-var VOLCANO_PROJECT_TOKEN
+```
+
+That writes `~/.pi/agent/mcp.json`. Add `--local` to write the project's
+`.pi/mcp.json` instead, or edit either file directly:
+
+```json
+{
+  "mcpServers": {
+    "volcano": {
+      "url": "https://api.volcano.dev/mcp",
+      "headers": {
+        "Authorization": "Bearer ${VOLCANO_PROJECT_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+`pi mcp list` connects to the server and lists its tools. Run `/reload` in a
+session that was already open.
+
+### GitHub Copilot
+
+Copilot in VS Code and the Copilot CLI read the same user file,
+`~/.copilot/mcp-config.json`:
+
+```json
+{
+  "mcpServers": {
+    "volcano": {
+      "type": "http",
+      "url": "https://api.volcano.dev/mcp",
+      "headers": {
+        "Authorization": "Bearer ${VOLCANO_PROJECT_TOKEN}"
+      },
+      "tools": ["*"]
+    }
+  }
+}
+```
+
+Use the braced `${NAME}` form: VS Code sends a bare `$NAME` through as text. As
+with Cursor, VS Code reads the variable from the environment it was launched
+from, so start it from the shell where you exported the token. To share the
+server with a team, put the same entry in a `.mcp.json` at the workspace root.
+VS Code's older `.vscode/mcp.json` format uses `servers` and `${env:NAME}`
+instead.
+
+### Gemini CLI
+
+Put this in `.gemini/settings.json` in your project, or `~/.gemini/settings.json`
+to use it everywhere:
+
+```json
+{
+  "mcpServers": {
+    "volcano": {
+      "httpUrl": "https://api.volcano.dev/mcp",
+      "headers": {
+        "Authorization": "Bearer ${VOLCANO_PROJECT_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+`httpUrl` selects the streamable HTTP transport; `url` would select SSE, which
+this endpoint does not serve. If the variable is not set where Gemini CLI
+starts, requests fail with `401`. `gemini mcp list` shows whether the server
+connected.
+
 ## Create a token for the agent
 
 The MCP endpoint takes the same credential as the REST API: a project access token (`pt-`). Create one with your platform token, and start with `read_only`:
@@ -160,40 +268,41 @@ Each tool calls its endpoint for the token's project: as `{id}` in the path, or
 as `project_id` on the top-level LavaFlow endpoints. A tool never takes the
 project as an argument.
 
-| Tool                          | Scope       | What it does                                                                                                         | Endpoint                                                                                   |
-| ----------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `get_project`                 | `read_only` | Returns the project's name, status, plan, and region                                                                 | `GET /projects/{id}`                                                                       |
-| `get_project_usage`           | `read_only` | Reads project totals and time series, including Sandbox runtime, suspended time, and uncertain usage                 | `GET /projects/{id}/usage`                                                                 |
-| `list_functions`              | `read_only` | Lists the project's standard functions, with runtime, status, and visibility                                         | `GET /projects/{id}/functions`                                                             |
-| `list_frontends`              | `read_only` | Lists the project's frontends, with status, live URLs, and function routes                                           | `GET /projects/{id}/frontends`                                                             |
-| `list_frontend_domains`       | `read_only` | Lists a frontend's custom domains, with status, pending DNS records, and redirect                                    | `GET /projects/{id}/frontends/{frontendId}/domains`                                        |
-| `list_deployments`            | `read_only` | Lists recent deployments, newest first                                                                               | `GET /projects/{id}/deployments`                                                           |
-| `search_logs`                 | `read_only` | Searches the project's logs                                                                                          | `POST /projects/{id}/logs/search`                                                          |
-| `list_durable_approvals`      | `read_only` | Lists the approvals durable workflows are waiting on or have had decided, newest first                               | `GET /projects/{id}/durable-approvals`                                                     |
-| `get_durable_approval_stats`  | `read_only` | Counts durable approvals by outcome, workflow, and day, with the approval rate and time to decision                  | `GET /projects/{id}/durable-approvals/stats`                                               |
-| `list_durable_functions`      | `read_only` | Lists the project's durable functions, which `list_functions` leaves out                                             | `GET /projects/{id}/durable-functions`                                                     |
-| `list_durable_executions`     | `read_only` | Lists a durable function's executions, newest first                                                                  | `GET /projects/{id}/durable-functions/{functionId}/executions`                             |
-| `get_durable_execution`       | `read_only` | Returns one execution's status, result or error, and timing                                                          | `GET /projects/{id}/durable-functions/{functionId}/executions/{executionId}`               |
-| `list_durable_messages`       | `read_only` | Lists the messages sent to an execution and published by it, oldest first                                            | `GET /projects/{id}/durable-functions/{functionId}/executions/{executionId}/messages`      |
-| `list_durable_message_waits`  | `read_only` | Lists the message names an execution is waiting on                                                                   | `GET /projects/{id}/durable-functions/{functionId}/executions/{executionId}/message-waits` |
-| `list_issues`                 | `read_only` | Lists runtime errors grouped into issues, most recently seen first                                                   | `GET /projects/{id}/issues`                                                                |
-| `get_issue`                   | `read_only` | Returns one issue with its resource, error, counts, and status                                                       | `GET /projects/{id}/issues/{issueId}`                                                      |
-| `get_lavaflow_settings`       | `read_only` | Returns whether LavaFlow is on, its autonomy, its merge policy, `allow_ungated_workflows`, and its context           | `GET /lavaflow/settings`                                                                   |
-| `get_lavaflow_stats`          | `read_only` | Counts the issues LavaFlow took on and the pull requests it opened per UTC day                                       | `GET /lavaflow/stats`                                                                      |
-| `list_lavaflow_resources`     | `read_only` | Lists each resource's LavaFlow activity and anomalies                                                                | `GET /lavaflow/resources`                                                                  |
-| `list_lavaflow_runs`          | `read_only` | Lists LavaFlow runs, newest first, with each one's merge and hold reasons                                            | `GET /lavaflow/runs`                                                                       |
-| `get_lavaflow_run`            | `read_only` | Returns one LavaFlow run with its diagnosis, review, pull request, ungated workflows it opened past, and merge state | `GET /lavaflow/runs/{run_id}`                                                              |
-| `get_git_owner_push`          | `read_only` | Checks whether the project owner can push to the connected repository, and why not                                   | `GET /projects/{id}/git-connection/owner-push`                                             |
-| `list_schedulers`             | `read_only` | Lists the project's function schedulers with their schedule, next run, and health                                    | `GET /projects/{id}/schedulers`                                                            |
-| `list_capabilities`           | `read_only` | Lists which capabilities, such as Sandboxes, accept new work in this environment                                     | `GET /capabilities`                                                                        |
-| `list_project_capabilities`   | `read_only` | Lists which capabilities accept new work for this project, including ones offered to some projects only              | `GET /projects/{id}/capabilities`                                                          |
-| `list_variable_environments`  | `read_only` | Lists the project's variable Environments                                                                            | `GET /projects/{id}/variable-environments`                                                 |
-| `list_git_deployment_runs`    | `read_only` | Lists the runs Git pushes started, newest first, with each one's migration runs and error                            | `GET /projects/{id}/git-deployment-runs`                                                   |
-| `get_git_deployment_run`      | `read_only` | Returns one Git deployment run                                                                                       | `GET /projects/{id}/git-deployment-runs/{runId}`                                           |
-| `list_databases`              | `full`      | Lists the project's databases. Returns connection strings                                                            | `GET /projects/{id}/databases`                                                             |
-| `set_variable`                | `full`      | Creates or updates an environment variable                                                                           | `POST /projects/{id}/variables`                                                            |
-| `create_variable_environment` | `full`      | Creates a custom variable Environment                                                                                | `POST /projects/{id}/variable-environments`                                                |
-| `send_durable_message`        | `full`      | Sends a named message to a running durable execution                                                                 | `POST /projects/{id}/durable-functions/{functionId}/executions/{executionId}/messages`     |
+| Tool                          | Scope       | What it does                                                                                                                                       | Endpoint                                                                                   |
+| ----------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `get_project`                 | `read_only` | Returns the project's name, status, plan, and region                                                                                               | `GET /projects/{id}`                                                                       |
+| `get_project_usage`           | `read_only` | Reads project totals and time series, including Sandbox runtime, suspended time, and uncertain usage                                               | `GET /projects/{id}/usage`                                                                 |
+| `list_functions`              | `read_only` | Lists the project's standard functions, with runtime, status, and visibility                                                                       | `GET /projects/{id}/functions`                                                             |
+| `list_frontends`              | `read_only` | Lists the project's frontends, with status, live URLs, and function routes                                                                         | `GET /projects/{id}/frontends`                                                             |
+| `list_frontend_domains`       | `read_only` | Lists a frontend's custom domains, with status, pending DNS records, and redirect                                                                  | `GET /projects/{id}/frontends/{frontendId}/domains`                                        |
+| `list_deployments`            | `read_only` | Lists recent deployments, newest first                                                                                                             | `GET /projects/{id}/deployments`                                                           |
+| `search_logs`                 | `read_only` | Searches the project's logs                                                                                                                        | `POST /projects/{id}/logs/search`                                                          |
+| `list_durable_approvals`      | `read_only` | Lists the approvals durable workflows are waiting on or have had decided, newest first                                                             | `GET /projects/{id}/durable-approvals`                                                     |
+| `get_durable_approval_stats`  | `read_only` | Counts durable approvals by outcome, workflow, and day, with the approval rate and time to decision                                                | `GET /projects/{id}/durable-approvals/stats`                                               |
+| `list_durable_functions`      | `read_only` | Lists the project's durable functions, which `list_functions` leaves out                                                                           | `GET /projects/{id}/durable-functions`                                                     |
+| `list_durable_executions`     | `read_only` | Lists a durable function's executions, newest first                                                                                                | `GET /projects/{id}/durable-functions/{functionId}/executions`                             |
+| `get_durable_execution`       | `read_only` | Returns one execution's status, result or error, and timing                                                                                        | `GET /projects/{id}/durable-functions/{functionId}/executions/{executionId}`               |
+| `list_durable_messages`       | `read_only` | Lists the messages sent to an execution and published by it, oldest first                                                                          | `GET /projects/{id}/durable-functions/{functionId}/executions/{executionId}/messages`      |
+| `list_durable_message_waits`  | `read_only` | Lists the message names an execution is waiting on                                                                                                 | `GET /projects/{id}/durable-functions/{functionId}/executions/{executionId}/message-waits` |
+| `list_issues`                 | `read_only` | Lists runtime errors, Code Quality findings and reported problems as issues, most recently seen first                                              | `GET /projects/{id}/issues`                                                                |
+| `get_issue`                   | `read_only` | Returns one issue with its source, resource, error, counts, and status, and a Code Quality finding                                                 | `GET /projects/{id}/issues/{issueId}`                                                      |
+| `get_lavaflow_settings`       | `read_only` | Returns whether LavaFlow and Code Quality are on, its autonomy, its merge policy, `allow_ungated_workflows`, and its context                       | `GET /lavaflow/settings`                                                                   |
+| `get_lavaflow_stats`          | `read_only` | Counts the issues LavaFlow took on and the pull requests it opened per UTC day                                                                     | `GET /lavaflow/stats`                                                                      |
+| `list_lavaflow_resources`     | `read_only` | Lists each resource's LavaFlow activity and anomalies                                                                                              | `GET /lavaflow/resources`                                                                  |
+| `list_lavaflow_runs`          | `read_only` | Lists LavaFlow runs with their categories, issues, resources, merges, hold reasons, skip reasons, and counts                                       | `GET /lavaflow/runs`                                                                       |
+| `get_lavaflow_run`            | `read_only` | Returns one LavaFlow run with its source commit, diagnosis, changed files, review, pull request, ungated workflows it opened past, and merge state | `GET /lavaflow/runs/{run_id}`                                                              |
+| `list_lavaflow_scans`         | `read_only` | Lists Code Quality scans, the waiting one first, with their counts and billed findings                                                             | `GET /lavaflow/scans`                                                                      |
+| `get_git_owner_push`          | `read_only` | Checks whether the project owner can push to the connected repository, and why not                                                                 | `GET /projects/{id}/git-connection/owner-push`                                             |
+| `list_schedulers`             | `read_only` | Lists the project's function schedulers with their schedule, next run, and health                                                                  | `GET /projects/{id}/schedulers`                                                            |
+| `list_capabilities`           | `read_only` | Lists which capabilities, such as Sandboxes, accept new work in this environment                                                                   | `GET /capabilities`                                                                        |
+| `list_project_capabilities`   | `read_only` | Lists which capabilities accept new work for this project, including ones offered to some projects only                                            | `GET /projects/{id}/capabilities`                                                          |
+| `list_variable_environments`  | `read_only` | Lists the project's variable Environments                                                                                                          | `GET /projects/{id}/variable-environments`                                                 |
+| `list_git_deployment_runs`    | `read_only` | Lists the runs Git pushes started, newest first, with each one's migration runs and error                                                          | `GET /projects/{id}/git-deployment-runs`                                                   |
+| `get_git_deployment_run`      | `read_only` | Returns one Git deployment run                                                                                                                     | `GET /projects/{id}/git-deployment-runs/{runId}`                                           |
+| `list_databases`              | `full`      | Lists the project's databases. Returns connection strings                                                                                          | `GET /projects/{id}/databases`                                                             |
+| `set_variable`                | `full`      | Creates or updates an environment variable                                                                                                         | `POST /projects/{id}/variables`                                                            |
+| `create_variable_environment` | `full`      | Creates a custom variable Environment                                                                                                              | `POST /projects/{id}/variable-environments`                                                |
+| `send_durable_message`        | `full`      | Sends a named message to a running durable execution                                                                                               | `POST /projects/{id}/durable-functions/{functionId}/executions/{executionId}/messages`     |
 
 Arguments are not listed here, because they are not defined here. Each tool's
 input schema is generated from the API's OpenAPI specification for the endpoint
@@ -226,7 +335,7 @@ must belong to the token's project, including on routes without a project ID.
 | `list_sandboxes`, `get_sandbox`                                                     | `read_only` | Inspect project templates                          |
 | `list_sandbox_deployments`, `get_sandbox_deployment`, `get_sandbox_deployment_logs` | `read_only` | Inspect deployment history, status, and build logs |
 | `list_sandbox_sessions`, `get_sandbox_session`                                      | `read_only` | Inspect session state                              |
-| `read_sandbox_file`                                                                 | `read_only` | Read session files                                 |
+| `read_sandbox_file`, `list_sandbox_files`                                           | `read_only` | Read and list session files                        |
 | `create_sandbox`, `update_sandbox`                                                  | `full`      | Create or rename a template                        |
 | `create_sandbox_session`                                                            | `full`      | Start a session from a preset or template          |
 | `execute_sandbox`                                                                   | `full`      | Execute once with automatic cleanup                |
@@ -332,7 +441,9 @@ Results are capped at 64 KiB. Past that the text ends with a note saying it was 
 
 `list_durable_messages` stays valid JSON instead: it leaves out the data of the largest messages until the page fits, sets `data_omitted: true` on each and its `data` to `null`, and says how many in the note. Every `seq` and `has_more` survive, so a message too large to show never blocks the next page. A page still over the cap without its data is truncated like any other result; lower `limit`.
 
-`get_lavaflow_run` does the same with a run's `diff`, then its `diagnosis`: each one left out is `null` with `diff_omitted` or `diagnosis_omitted` set, and the run's status, review, and pull request survive. When the run opened a pull request, it has the full change.
+`get_lavaflow_run` does the same with a run's `diff`, then its `changed_files`, then its `resources`, then its `diagnosis`, then its `held_workflows`: each one left out is `null` with `diff_omitted`, `changed_files_omitted`, `resources_omitted`, `diagnosis_omitted`, or `held_workflows_omitted` set, and the run's status, review, and pull request survive. When the run opened a pull request, it has the full change. A change to code every function shares involves every function, so a run's `resources` alone can be too large.
+
+`list_lavaflow_runs` leaves out the `resources` of the runs that list the most, largest first, until the page fits, and sets `resources_omitted: true` on each. `get_lavaflow_run` reads one run's resources. A page still over the cap without them comes back with fewer runs: the tool asks again with a lower `limit` and sets `limit_reduced: true`, and the page's `next_cursor` continues after its last run. Only a page that cannot be shortened to fit, such as one whose first run is over the cap on its own, is truncated like any other result; lower `limit`.
 
 `send_durable_message` echoes the message it sent. When that echo is over the cap, it leaves out the message's data the same way, so its `id`, `seq` and `status` still say how the send went.
 
@@ -346,7 +457,7 @@ The rest of the boundary comes from the credential itself, and is the same over 
 
 Nor can it approve or deny a durable approval. An agent can list what workflows are waiting on, but a decision takes a person, in the dashboard or with a platform token, and the approve and deny endpoints refuse a project access token. See [Durable approvals](../functions/durable-approvals.md#who-can-decide). `send_durable_message` does not get around this: a message only resumes a workflow waiting for a message, never one waiting for an approval. See [Durable messages](../functions/durable-messages.md#messages-approvals-or-callbacks).
 
-Nor can it change [LavaFlow's settings](../guides/lavaflow.md#settings), so it can't turn LavaFlow on or [turn merging on](../guides/lavaflow.md#turn-merging-on). Those are the project owner's decisions, and the settings endpoint refuses a full-scope project access token with `403` and code `person_required`.
+Nor can it change [LavaFlow's settings](../guides/lavaflow.md#settings) or [start a LavaFlow run](../guides/lavaflow.md#start-a-run), so it can't turn LavaFlow on, [turn merging on](../guides/lavaflow.md#turn-merging-on), or have LavaFlow work on an issue it wouldn't start on by itself. Those are the project owner's decisions, and both endpoints refuse a full-scope project access token with `403` and code `person_required`.
 
 ## Revoke access
 

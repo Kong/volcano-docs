@@ -336,6 +336,13 @@ curl -X PUT "https://api.volcano.dev/projects/$PROJECT_ID/git-connection" \
 Several projects may bind the same repository. Binding never creates or deletes
 anything on GitHub; `DELETE` on the same path only unbinds the project.
 
+If [LavaFlow](../guides/lavaflow.md) is on for a project that had no repository
+when it was turned on, the first repository you bind is the one LavaFlow fixes
+issues in, unless LavaFlow's `fix_blocker` asks you to turn it on again after
+the link. Binding another later, or unbinding it, pauses LavaFlow until the
+owner turns it on again with `volcano cloud lavaflow enable`. Binding that
+repository again resumes LavaFlow with no new turn-on.
+
 **A person chooses the repository.** Binding or changing it needs a platform
 token or the dashboard. A [project access
 token](../api-reference/using-the-api.md) gets `403`:
@@ -664,7 +671,11 @@ than deploying with its settings silently dropped: malformed YAML, an empty
 file, an unsupported `version`, a function entry with no `name` or a duplicate
 one, a function `variables` key with no value, such as a bare `variables:` or
 `variables: null`, a file over 4 MiB, or a link rather than a regular file.
-`volcano cloud config deploy` rejects the same file.
+`volcano cloud config deploy` rejects the same file. A push also fails without
+retrying when Volcano can't read its `volcano-config.yaml`: YAML with a mapping
+key that isn't a scalar, such as a list or an alias used as a key, with the
+same key twice in one mapping, or with a `%TAG` directive, or YAML that takes
+more to read than its size allows.
 
 ## Apply migrations on push
 

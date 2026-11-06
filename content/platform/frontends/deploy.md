@@ -176,8 +176,11 @@ variable changed while it was queued fails the deployment without a retry: its
 | `source_deployment_not_found`     | 404    | The deployment is not in this project.                                     |
 | `source_deployment_same_frontend` | 400    | The deployment is the target's own; redeploy it instead.                   |
 | `source_deployment_not_active`    | 409    | The deployment is not `active` or `degraded`.                              |
+| `source_deployment_is_preview`    | 409    | The deployment is a preview's; deploy from a frontend's own deployment.    |
+| `source_served_by_candidate`      | 409    | A promoted preview serves the source; roll it back to its own build.       |
 | `source_build_unavailable`        | 409    | Volcano no longer keeps the build, or the deployment predates kept builds. |
 | `frontend_incompatible`           | 409    | The frontends use a different framework or app root.                       |
+| `frontend_served_by_candidate`    | 409    | A promoted preview serves the target; roll it back to its own build.       |
 | `build_variables_differ`          | 409    | A build-time variable differs, as above.                                   |
 
 A project whose source is [managed by Git](../projects/git-deploy.md) deploys
@@ -299,6 +302,13 @@ no pnpm lockfile found and ALLOW_UNLOCKED_INSTALLS=false
 
 The build log names the manager and version that were selected, so check there
 first when a build installed something you did not expect.
+
+A Vercel project import reads the Next.js version from the lockfile. A
+`pnpm-lock.yaml` larger than 16 MiB, or one with too many entries to read,
+can't be used to verify it; a typical lockfile has too many entries from about
+12 to 15 MiB. Nor can one that repeats a key in a mapping, uses a `%TAG`
+directive, or takes more to read than its size allows. The import then reports
+the blocking finding `volcano.nextjs_version_unverified`.
 
 ### Regional runtime repair
 

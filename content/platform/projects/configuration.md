@@ -472,7 +472,7 @@ section applies as if the section were absent: the dry run and the apply list
 it as `unchanged` with a notice to remove it, and export never writes it. That
 includes `autonomy: merge` and `merge_policy`: letting LavaFlow merge is the
 project owner's decision, made with
-[`PUT /lavaflow/settings`](../guides/lavaflow.md#merge-fixes).
+[`PATCH /lavaflow/settings`](../guides/lavaflow.md#merge-fixes).
 
 ## Notification settings
 
