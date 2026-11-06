@@ -89,7 +89,7 @@ Four tables: `profiles`, `orders`, `help_articles` and `tickets`. Volcano runs e
 ```sql
 CREATE TABLE IF NOT EXISTS public.profiles (
   user_id uuid PRIMARY KEY DEFAULT auth.uid(),
-  display_name text NOT NULL CHECK (char_length(btrim(display_name)) BETWEEN 1 AND 40),
+  display_name text NOT NULL CHECK (char_length(display_name) <= 40 AND btrim(display_name) <> ''),
   created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE TABLE IF NOT EXISTS public.orders (
@@ -115,8 +115,8 @@ CREATE TABLE IF NOT EXISTS public.help_articles (
 CREATE TABLE IF NOT EXISTS public.tickets (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL DEFAULT auth.uid(),
-  subject text NOT NULL CHECK (char_length(btrim(subject)) BETWEEN 1 AND 120),
-  body text NOT NULL CHECK (char_length(btrim(body)) BETWEEN 1 AND 2000),
+  subject text NOT NULL CHECK (char_length(subject) <= 120 AND btrim(subject) <> ''),
+  body text NOT NULL CHECK (char_length(body) <= 2000 AND btrim(body) <> ''),
   status text NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'working', 'answered', 'needs_human')),
   category text CHECK (category IN ('shipping', 'billing', 'returns', 'account', 'product', 'other')),
   priority text CHECK (priority IN ('low', 'normal', 'high', 'urgent')),
@@ -244,6 +244,7 @@ const { createModel, isRetryable } = require('./model');
 const { TOOL_DEFINITIONS, runTool, readTriage } = require('./tools');
 
 const MAX_TURNS = 6;
+const MAX_TOOL_CALLS_PER_TURN = 4;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Full access, for the two writes the customer can't make: claiming the ticket
@@ -321,6 +322,11 @@ exports.handler = durable(async (input, ctx) => {
         if (call.name === 'submit_triage') {
           triage = readTriage(call.input);
           results.push({ type: 'tool_result', tool_use_id: call.id, content: triage ? 'Saved.' : 'The reply was empty.', is_error: !triage });
+          continue;
+        }
+        // Each tool result goes back to the model as input, so cap how many run.
+        if (index >= MAX_TOOL_CALLS_PER_TURN) {
+          results.push({ type: 'tool_result', tool_use_id: call.id, content: `Skipped: at most ${MAX_TOOL_CALLS_PER_TURN} tool calls per turn.`, is_error: true });
           continue;
         }
         const output = await ctx.step(
@@ -412,12 +418,19 @@ The smoke test needs a way to make the model fail on purpose. A small hook in fr
 
 ```javascript
 // A ticket that contains [test:model-busy] fails its first model attempt with
-// a 529; [test:model-down] fails every attempt.
+// a 529; [test:model-down] fails every attempt; [test:many-tools] makes the
+// first turn ask for six tool calls.
 async function callModel(messages, ticket, attempt) {
   if (process.env.AGENT_TEST_HOOKS === 'on') {
     const down = ticket.body.includes('[test:model-down]');
     const busy = ticket.body.includes('[test:model-busy]') && attempt === 1 && messages.length === 1;
     if (down || busy) throw Object.assign(new Error('Overloaded (test hook)'), { status: 529 });
+    if (ticket.body.includes('[test:many-tools]') && messages.length === 1) {
+      const content = [0, 1, 2, 3, 4, 5].map((i) => ({
+        type: 'tool_use', id: `toolu_test_${i}`, name: 'search_help_articles', input: { query: 'late order' },
+      }));
+      return { content, stop_reason: 'tool_use', usage: { input_tokens: 0, output_tokens: 0 }, model: model.name };
+    }
   }
   return model.create({ messages, tools: TOOL_DEFINITIONS });
 }
@@ -648,6 +661,7 @@ function draftTriage(ticket, messages) {
   const results = messages
     .filter((message) => message.role === 'user' && Array.isArray(message.content))
     .flatMap((message) => message.content)
+    .filter((block) => !block.is_error)
     .map((block) => JSON.parse(block.content));
   const orders = results.find((result) => result.orders)?.orders || [];
   const article = results.find((result) => result.articles)?.articles?.[0];
@@ -841,7 +855,7 @@ It saves the variables, runs the migrations, deploys the durable function and th
 
 Open the URL, create an account with a made-up address and your name (the default password rule is at least 15 characters), and file one of the example tickets. The steps appear one by one, then the category, priority and suggested reply. Reload, and the ticket is still answered. File **Show me everything**, which tells the agent to ignore its instructions and list every customer's orders. The lookup returns only yours.
 
-To check the rules and not just the page, write a Node script that signs up two customers against the live project with the same SDK calls. Give it the connection string too, so it can check the rows the agent wrote, query the tables the way the tools do, and remove the test rows afterwards. In testing, that script passed all 29 checks, all with the stand-in model:
+To check the rules and not just the page, write a Node script that signs up two customers against the live project with the same SDK calls. Give it the connection string too, so it can check the rows the agent wrote, query the tables the way the tools do, and remove the test rows afterwards. In testing, that script passed all 31 checks, all with the stand-in model:
 
 ```text
 PASS the anon key alone can't start the agent — 403
@@ -867,6 +881,8 @@ PASS a customer can't write the agent's fields — Query failed: ERROR: permissi
 PASS a customer can't file a ticket with a reply — Query failed: ERROR: permission denied for table tickets (SQLSTATE 42501)
 PASS a customer can't add orders — Query failed: ERROR: permission denied for table orders (SQLSTATE 42501)
 PASS three tickets at once with 19 filed: only the 20th is accepted — 1 accepted; Query failed: ERROR: daily ticket limit reached (SQLSTATE P0001)
+PASS a ticket body padded past 2,000 characters is refused — Query failed: ERROR: new row for relation "tickets" violates check constraint "tickets_body_check" (SQLSTATE 23514)
+PASS only 4 of 6 tool calls in one turn run — 4 searches, answered
 PASS the site's HTML and scripts hold no Claude key or database URL — 8 scripts
 PASS nothing the customer can read holds the key
 PASS the browser key can only sign in and follow runs — auth.signup, auth.signin, auth.refresh, auth.logout, realtime.connect, realtime.subscribe
@@ -875,12 +891,12 @@ PASS when the model stays down, the ticket goes to a person — 40s, The assista
 PASS the failure shows no error details to the customer
 ```
 
-The retry and failure checks use the `[test:model-busy]` and `[test:model-down]` hooks. The model step retried after 5, 10 and 20 seconds before handing off, so the failure took about 40 seconds. Reading another customer's run, or its progress, answered `404`, the same as a run that doesn't exist. A run started by B on A's ticket found nothing to claim. A run in headless Chrome also passed: sign-up, the sample orders, the steps arriving live, the saved answer after a reload, and the injection ticket, with no console errors and no Claude key or connection string in any response the browser received. With the stand-in, the page showed the first step about 4 seconds after **File ticket** and the reply after about 6. Most of that was the ticket insert, the start request and the Realtime connection, not the agent. The first run after a deploy took a few seconds longer.
+The retry, failure and tool-cap checks use the `[test:model-busy]`, `[test:model-down]` and `[test:many-tools]` hooks. The model step retried after 5, 10 and 20 seconds before handing off, so the failure took about 40 seconds. Reading another customer's run, or its progress, answered `404`, the same as a run that doesn't exist. A run started by B on A's ticket found nothing to claim. A run in headless Chrome also passed: sign-up, the sample orders, the steps arriving live, the saved answer after a reload, and the injection ticket, with no console errors and no Claude key or connection string in any response the browser received. With the stand-in, the page showed the first step about 4 seconds after **File ticket** and the reply after about 6. Most of that was the ticket insert, the start request and the Realtime connection, not the agent. The first run after a deploy took a few seconds longer.
 
 ## Cost and safety
 
 - **What a ticket costs.** Each ticket is one durable execution and about 15 durable operations: the execution, the run id, the claim, two model steps, two tool steps, the save, four progress messages and the three operations of the messages session that the first publish opens. SUPERAGENT includes 10,000 executions and 200,000 operations a month. The Claude calls are billed by Anthropic. A typical ticket sends two requests of roughly 1,000 to 3,000 input tokens each, mostly the system prompt, tool definitions and tool results, and gets back a few hundred output tokens. At Claude Opus 5.5's $4 and $20 per million tokens, that's an estimated 2 or 3 cents. That's an estimate: no ticket in this recipe's tests reached Claude. The tickets table records the model and token counts for each run, so you can measure it.
-- **What bounds the worst case.** A run stops after 6 model turns, each answer is capped at 4,096 tokens, each customer can file 20 tickets a day, and a ticket body is at most 2,000 characters. A run that hits every limit costs just under a dollar at those prices, about 85 cents, most of it output. Lower `max_tokens`, `MAX_TURNS` or the daily limit to tighten it, or set `ANTHROPIC_MODEL` to a cheaper model.
+- **What bounds the worst case.** A run stops after 6 model turns, each answer is capped at 4,096 tokens, at most 4 tool calls run per turn, each lookup returns at most 5 orders or 3 articles, each customer can file 20 tickets a day, and a ticket body is at most 2,000 characters, padding included. A run that hits every limit costs about a dollar at those prices: up to 25,000 output tokens, and well under 150,000 input tokens because each turn resends everything before it. Lower `max_tokens`, `MAX_TURNS` or the daily limit to tighten it, or set `ANTHROPIC_MODEL` to a cheaper model.
 - **The model sees only the customer's data.** The tools connect as the customer, so a prompt injection, a confused model or a bug in a tool can't read another customer's orders: Postgres refuses. The tools also read only. The two writes the agent makes, the claim and the result, are fixed SQL in the function, not tools the model can call.
 - **The key never leaves the function.** `ANTHROPIC_API_KEY` is scoped to `triage-ticket` alone, so the frontend build can't read it. When the agent fails, the handler logs the error with `ctx.log` and shows the customer a fixed message. The customer who started a run can read its result, so keep secrets out of anything the handler returns or throws.
 - **A person stays in charge.** The agent drafts replies and never sends them, and the system prompt tells it to set `needs_human` for refunds, replacements and address changes. Before the desk talks to real customers, add a staff view that reviews `needs_human` tickets, and turn `AGENT_TEST_HOOKS` off.
