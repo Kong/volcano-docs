@@ -154,9 +154,11 @@ Export is a one-time transition:
    ordinary Git deployment and changes the mode to `git_pending`.
 4. After a complete production deployment succeeds, the mode becomes `git`.
 
-The project stays locked if the deployment fails, or if a function holds only
-TypeScript, which [isn't deployed](git-deploy.md). Fix the
-repository and push the production branch again. The latest complete successful deployment
+The project stays locked if the deployment fails, or if a function's
+TypeScript has no entry Volcano compiles, such as a directory with only
+`src/index.ts` or a `.tsx` file, which
+[isn't deployed](git-deploy.md#repository-layout). Fix the repository and push
+the production branch again. The latest complete successful deployment
 finishes the transition; the exported root commit does not need to deploy if a
 newer push supersedes it.
 

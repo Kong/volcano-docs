@@ -367,9 +367,15 @@ Every runtime log line has one of the levels `trace`, `debug`, `info`, `warn`,
 - **Other lines.** A line written straight to standard output otherwise takes
   the level of its first level word: `fatal`; `error`, `errored`, `fail`,
   `failed`, `failing`, or `failure` for `error`; `warn`, `warned`, or `warning`
-  for `warn`; `debug`; or `trace`. So `warning: request failed` is `warn`. A
-  line with none of these is `info`, or `error` when it was written to
-  standard error in local mode.
+  for `warn`; `debug`; or `trace`. So `warning: request failed` is `warn`.
+  Outside local mode, a line that starts with an error's heading, as Node.js
+  and Python print an uncaught error, is `error`. The heading is a type ending
+  in `Error` or `Exception` whose name, after any module path, starts with a
+  capital, such as `TypeError` or `json.decoder.JSONDecodeError`, optionally a
+  bracketed tag such as `[ERR_INVALID_ARG_TYPE]`, then `: ` or the line's end.
+  So `TypeError: Cannot read properties of null (reading 'debug')` is
+  `error`. A line with none of these is `info`, or `error` when it was written
+  to standard error in local mode.
 
 A JSON line's `level` maps to a stored level, with the same names the `level`
 search field accepts:

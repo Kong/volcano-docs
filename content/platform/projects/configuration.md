@@ -19,8 +19,9 @@ The manifest applies to the currently selected project (`volcano use <name>` /
 `VOLCANO_PROJECT_ID`). Creating or selecting a project is not part of the
 manifest.
 
-[GitHub auto-deploy](git-deploy.md) reads the same file from your repository,
-but applies only the `functions[]` settings that belong to the code a push
+[GitHub auto-deploy](git-deploy.md) reads `volcano-config.yaml` relative to the configured build root,
+falling back to `volcano/volcano-config.yaml` only when the outer file is absent.
+If both exist, the outer file wins; their contents are not merged. It applies only the `functions[]` settings that belong to the code a push
 deploys: `visibility`, `invocation_mode`, `http_auth_mode`, `openapi_spec`,
 `variable_scope`, and `variables`. Every other section still needs `volcano
 cloud config deploy`.

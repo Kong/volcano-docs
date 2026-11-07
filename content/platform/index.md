@@ -143,11 +143,12 @@ Next.js, static or server-rendered, served from the edge. A failed build never r
 
 [LavaFlow](guides/lavaflow.md) turns production errors into reviewed fixes: it diagnoses the issue, opens a pull request with the fix, and, when you allow it, merges it. In preview on SUPERAGENT.
 
-| Guide                          | Description                                                         |
-| ------------------------------ | ------------------------------------------------------------------- |
-| [LavaFlow](guides/lavaflow.md) | Turn it on, follow its runs, and let it merge fixes                 |
-| [Issues](guides/issues.md)     | Runtime errors grouped into the issues LavaFlow diagnoses and fixes |
-| [CLI](/cli/lavaflow)           | Turn LavaFlow on and follow its runs from a terminal                |
+| Guide                                                  | Description                                                           |
+| ------------------------------------------------------ | --------------------------------------------------------------------- |
+| [LavaFlow](guides/lavaflow.md)                         | Turn it on, follow its runs, and let it merge fixes                   |
+| [Report problems from Slack](guides/lavaflow-slack.md) | Mention Volcano in Slack to have LavaFlow diagnose a reported problem |
+| [Issues](guides/issues.md)                             | Runtime errors grouped into the issues LavaFlow diagnoses and fixes   |
+| [CLI](/cli/lavaflow)                                   | Turn LavaFlow on and follow its runs from a terminal                  |
 
 ### Security
 
@@ -165,6 +166,7 @@ Next.js, static or server-rendered, served from the edge. A failed build never r
 | ---------------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | [Deploy from GitHub](projects/git-deploy.md)               | Connect a repo and deploy on every push to the production branch                     |
 | [Export your source to GitHub](projects/export-to-git.md)  | Initialize an empty repository with a project's stored source and deploy it from Git |
+| [Sharing and forking](projects/sharing.md)                 | Publish a project so anyone can deploy their own copy                                |
 | [Configuration manifest](projects/configuration.md)        | Declarative `volcano-config.yaml` reference (config deploy/pull)                     |
 | [Variable Environments](projects/variable-environments.md) | Create and manage Project variable Environments                                      |
 | [Project health](projects/health.md)                       | Check project health and review operation failures and blocked storage use           |
@@ -202,6 +204,7 @@ Step-by-step guides for common tasks.
 | [Sandboxes](guides/sandboxes.md)                           | Run commands and HTTP services in isolated sessions with plan-based runtime pricing |
 | [Issues](guides/issues.md)                                 | See runtime errors grouped into issues, and resolve or ignore them                  |
 | [LavaFlow](guides/lavaflow.md)                             | Turn production errors into reviewed fixes, from diagnosis to pull request to merge |
+| [Report problems from Slack](guides/lavaflow-slack.md)     | Mention Volcano in Slack to have LavaFlow diagnose a reported problem               |
 
 ## Examples
 

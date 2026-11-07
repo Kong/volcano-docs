@@ -300,7 +300,9 @@ state that doesn't match its policy, it refuses the session's commands and
 file calls and terminates it at once: `desired_state` reads `terminated`,
 `last_error_code` reads `sandbox_network_untrusted`, and the session doesn't
 start again. Its `applied` keeps what Volcano last observed, so it can read
-`default`.
+`default`. A `deny_all` session whose final observation shows outbound network
+access also reads `sandbox_network_untrusted`, even when Volcano first
+observes it after it has ended.
 
 Local mode applies the same policy and readback. In a `deny_all` container, only
 loopback is up, with no route out. `::1` works where the Docker host's kernel
@@ -345,6 +347,68 @@ A one-shot command timeout returns `504`; retrying its key returns `409`
 because no completed result was stored. A session command reaching its command
 timeout returns execution data with `timed_out: true`. If the VM lifetime expires
 first, the command returns `504` instead.
+
+## Cap CPU and disk
+
+Add `limits` when creating a session to bound the CPU and disk its commands and
+template service use together. Supply at least one cap:
+
+```bash
+curl "$VOLCANO_API_URL/projects/$PROJECT_ID/sandbox-sessions" \
+  -H "Authorization: Bearer $SERVICE_KEY" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Content-Type: application/json" \
+  -d '{"preset":"python3.12","region":"us-east-1","memory_mb":2048,"limits":{"vcpus":2,"disk_mib":4096}}'
+```
+
+| Field      | Range   | Behavior                                                                                                                                                                                                                                                 |
+| ---------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `vcpus`    | 1–4     | CPU time the session's processes share. A 1024 MB session has 2 vCPUs and a 2048 MB session has 4.                                                                                                                                                       |
+| `disk_mib` | 64–6144 | Space processes can write beyond the image's contents, across every writable path, including `/workspace`, `/tmp`, and `/var/tmp`. A write past it fails with `ENOSPC`; a file write, archive, or file part returns `409` with code `sandbox_disk_full`. |
+
+Memory-backed (tmpfs) filesystems count against the session's memory, not
+`disk_mib`. `/dev/shm` is one, and holds at most 64 MiB in every session.
+Omit `limits` to let a session's processes use all of its vCPUs and disk.
+
+The session applies the caps before it runs any command, then reports what it
+enforces. Until then, `limits.applied` is `unknown` and the session stays
+`starting`:
+
+```json
+{
+  "id": "7cdbb4e3-0419-574e-8017-705734ae8d76",
+  "state": "starting",
+  "limits": { "applied": "unknown" }
+}
+```
+
+Once the session is `running`, check `limits.applied`:
+
+| `applied`      | Meaning                                                                                                                                        |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `enforced`     | Every requested cap is enforced. `vcpus` and `disk_mib` are the enforced values, never higher than requested; lower when the session has less. |
+| `not_enforced` | The session could not enforce them. Terminate it if you rely on the caps.                                                                      |
+
+```json
+{ "state": "running", "limits": { "applied": "enforced", "vcpus": 2, "disk_mib": 4096 } }
+```
+
+Caps bound what code inside the session uses. The session's size is the hard
+limit on what it can use and what it costs: runtime is charged on `memory_mb`
+whatever the caps.
+
+| Code                            | Status | Cause                                                                                                                                                                                                                                                                                                                                                                             |
+| ------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sandbox_limits_exceed_session` | `400`  | `limits.vcpus` is more than the session has. Use a larger preset size or template, or lower `limits.vcpus`.                                                                                                                                                                                                                                                                       |
+| `sandbox_limits_unsupported`    | `400`  | The selected image predates `limits`. Redeploy the template or recreate the named Sandbox, or retry once the preset is updated.                                                                                                                                                                                                                                                   |
+| `sandbox_disk_full`             | `409`  | A file write, archive, or file part did not fit on the session's disk, or the disk had no room to record a command, which then started nothing. Delete files in the session. A session started with `limits.disk_mib` can also be replaced by one with a larger cap; without it, the session already has the whole disk. Retry a refused command with the same `Idempotency-Key`. |
+
+In local mode, Docker enforces the caps. A `vcpus` cap above 2 enforces 2.
+`disk_mib` bounds what `/workspace` and `/tmp` can take beyond the template's
+workspace contents, up to their local sizes of 512 MiB and 128 MiB. Both are
+memory-backed, so their contents count against `memory_mb`. When the template's
+workspace contents leave less memory than that, the session enforces, and
+reports, a lower `disk_mib`.
 
 ## Retry without repeating a command
 
@@ -469,8 +533,13 @@ curl "$VOLCANO_API_URL/sandbox-sessions/$SESSION_ID/files/read" \
   -d '{"path":"hello.txt"}'
 ```
 
-Writing returns `204`; reading returns `{"data":"aGVsbG8K"}`. Files survive
-suspend/resume and are removed with the session.
+Writing returns `204`; reading returns `{"data":"aGVsbG8K"}`. The written file
+belongs to the session user, the user commands run as, and only that user can
+read or write it. A write that does not fit on the session's disk returns `409`
+with code `sandbox_disk_full`. In a cloud session with `limits.disk_mib`, writes
+run as the session user, so a write into a directory that user cannot write returns
+`409` with code `sandbox_path_conflict`. Files survive suspend/resume and are removed with
+the session.
 
 ### Upload a directory as a tar archive
 
@@ -510,7 +579,9 @@ send them one after another.
 The archive may hold only regular files and directories. A symbolic link, hard
 link, sparse file, device, absolute name, or `..` component refuses the whole
 archive.
-Permission bits are kept; setuid, setgid, and sticky bits are dropped. Volcano
+Every file and directory the archive writes, including `path` when Volcano
+creates it, belongs to the session user. Permission bits are kept; setuid,
+setgid, and sticky bits are dropped. Volcano
 checks and stages the whole archive before the workspace changes, so a refused
 archive writes nothing, and it undoes one that fails part way. If a session
 process moves or removes a directory while the archive is written, the
@@ -559,7 +630,8 @@ Send the next part with `"offset":8388608`, and so on. Nothing appears at
 `path` until the part that ends at `size` arrives; that part checks the whole
 file's size and SHA-256, then moves it into place in one step, and answers
 `"complete": true`. Missing parent directories are created. The finished file
-is readable and writable only by the session user.
+and the directories created for it belong to the session user, and only that
+user can read or write the file.
 
 To recover from a failed request, resend that part: a part may start anywhere
 up to the bytes already received. A part at offset 0 starts the file again.

@@ -37,6 +37,60 @@ exports.handler = async (event) => {
 };
 ```
 
+### TypeScript
+
+Write a Node.js function in TypeScript by putting its handler in `index.ts`,
+`index.mts`, or `index.cts`. Volcano compiles it to JavaScript during the build,
+after it installs dependencies.
+
+```typescript
+// index.ts
+type Event = { name?: string };
+
+export const handler = async (event: Event) => ({
+  statusCode: 200,
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ message: `Hello, ${event.name ?? 'TypeScript'}!` }),
+});
+```
+
+How the build compiles it:
+
+- It removes types without checking them, so a type error doesn't fail the
+  deploy. Run `tsc --noEmit` in your own CI to catch type errors.
+- It bundles the files the handler imports, including imports through `paths`
+  in a `tsconfig.json` deployed with the function. Packages from `package.json`
+  aren't bundled; they load from the dependencies the build installs.
+- `.mts` compiles to an ES module and `.cts` to CommonJS. `.ts` follows Node.js:
+  an ES module when the nearest `package.json`, looking up to the one the
+  function's dependencies install from, sets `"type": "module"`, CommonJS
+  otherwise. Top-level `await` and `import.meta` need an ES module.
+- JavaScript wins. With the [upload API](./upload-api.md), when Node.js can
+  load the handler without compiling, the function deploys that and its
+  TypeScript isn't compiled: an `index.js`, `index.mjs`, or `index.cjs` file, an
+  extensionless `index` file, an `index/` directory holding a `package.json`
+  or an `index.js`, `index.json`, or `index.node`, an installed package named
+  `index`, or an `index` module in a `NODE_PATH` directory inside the function.
+  Any `package.json` counts, whatever its `main` names. An empty `index/`
+  directory, or one with none of these, doesn't count, and neither does a
+  `NODE_PATH` directory outside the function. Commit compiled JavaScript when
+  you need a compiler feature the build skips, such as decorator metadata.
+- [Git deploy](../projects/git-deploy.md#repository-layout) reads only `index.js`
+  or `index.mjs` as a JavaScript entry beside `index.ts`. A shipped `index.cjs`,
+  extensionless `index` file or `index/` directory that counts beside it
+  deploys neither, and the push fails with `typescript_not_compiled`.
+- Keep one of `index.ts`, `index.mts` and `index.cts`. A function with more
+  than one fails to deploy.
+- TypeScript never changes what a function directory already deploys in
+  [Git deploy](../projects/git-deploy.md#repository-layout): a JavaScript file,
+  `main.py` or `main.rb` beside `index.ts` stays the entry, with its runtime.
+- `.tsx` files aren't compiled.
+
+[Git deploy](../projects/git-deploy.md) and the
+[upload API](./upload-api.md) compile TypeScript, in the cloud and in local
+mode. The CLI doesn't find `.ts` files yet, so compile a function to JavaScript
+before you deploy it with the CLI.
+
 ### Python
 
 ```python

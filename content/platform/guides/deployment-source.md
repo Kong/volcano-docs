@@ -105,7 +105,7 @@ A commit Volcano can't verify is still recorded, with `verification: none`, and 
 
 A function or durable function commit is `repository` when `repository` is the project's connected repository, matched by repository ID, `sha` is on its production branch, and the commit is reported with `dirty: false`. Any other function commit, and one Volcano can't check in time, is `none`.
 
-Function and frontend deployment listings return the commit:
+Function and frontend deployment listings, the project deployment feed, and `GET /deployments` return the commit. A deployment whose client reported none has no `commit`:
 
 ```bash
 curl -H "Authorization: Bearer $VOLCANO_TOKEN" \

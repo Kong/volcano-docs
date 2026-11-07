@@ -35,6 +35,11 @@ installs as `authenticated` in the current template versions, because their
 pages call it as a signed-in user. In any other version it installs as
 `private`, like any new function.
 
+Template source reads one [configuration manifest](configuration.md), either
+`volcano-config.yaml` or `volcano/volcano-config.yaml`, relative to its build root.
+The build-root file takes precedence when both exist; an invalid selected file
+fails installation without falling back to the other location.
+
 ## Wait for installation
 
 A successful creation response means installation was accepted, not that the
@@ -57,6 +62,41 @@ Do not combine `template_id` with `initialPrompt`.
 If installation fails after acceptance, the project remains available for
 inspection or deletion. Delete it before starting over if you do not want to
 retain its resources. Closing the page does not cancel an accepted installation.
+
+### Failed installs
+
+A failed installation has `status` `failed` and a `failure_code` that says why:
+
+```json
+{
+  "template_installation": {
+    "status": "failed",
+    "phase": "deploy",
+    "failure_code": "frontend_quota_exceeded"
+  }
+}
+```
+
+| `failure_code`                    | Meaning                                                                                                                                                          |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `source_withdrawn`                | The share was switched off or deleted, its project is being deleted, its owner's account no longer allows traffic, or it is a copy that may no longer be shared. |
+| `source_invalid`                  | The source failed Volcano's checks, such as a release archive whose digest is wrong.                                                                             |
+| `source_access_lost`              | Volcano can no longer read the source repository.                                                                                                                |
+| `invalid_source_configuration`    | The source's `volcano-config.yaml` is invalid, or a required variable had no value.                                                                              |
+| `nothing_to_deploy`               | The source has no function or frontend.                                                                                                                          |
+| `database_not_supported`          | The source ships database SQL, which installs do not run yet.                                                                                                    |
+| `function_deploy_refused`         | A function in the source cannot be deployed as defined.                                                                                                          |
+| `function_quota_exceeded`         | The plan allows no more functions.                                                                                                                               |
+| `durable_function_quota_exceeded` | The plan allows no more durable functions.                                                                                                                       |
+| `frontend_quota_exceeded`         | The plan allows no more frontends.                                                                                                                               |
+| `frontend_deploy_limit`           | The plan allows no more frontend deploys for now.                                                                                                                |
+| `build_minutes_exceeded`          | The plan's build minutes are used up.                                                                                                                            |
+| `build_failed`                    | A function or frontend from the source failed to build or deploy. Its deployment's build logs say why.                                                           |
+| `retry_budget_exhausted`          | The installation kept failing and Volcano stopped retrying.                                                                                                      |
+| `internal_error`                  | Volcano failed for a reason of its own.                                                                                                                          |
+
+New codes can be added, so treat an unknown one as a generic failure. An
+installation that failed before Volcano recorded reasons has no `failure_code`.
 
 Templates are cloud-only. An environment without a configured database template
 returns HTTP `503` and refuses installation. The Trellini starter's attachment bucket initially permits

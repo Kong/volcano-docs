@@ -303,6 +303,15 @@ no pnpm lockfile found and ALLOW_UNLOCKED_INSTALLS=false
 The build log names the manager and version that were selected, so check there
 first when a build installed something you did not expect.
 
+Keep pnpm's `store-dir` and `virtual-store-dir` at their defaults or inside
+your project. The build reads the installed Next.js, React and React DOM
+versions from your project and the build's package store, and stops when one
+resolves anywhere else:
+
+```text
+installed next resolves outside the project and the build's package store; keep pnpm's store-dir and virtual-store-dir at their defaults
+```
+
 A Vercel project import reads the Next.js version from the lockfile. A
 `pnpm-lock.yaml` larger than 16 MiB, or one with too many entries to read,
 can't be used to verify it; a typical lockfile has too many entries from about

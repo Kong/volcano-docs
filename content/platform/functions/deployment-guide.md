@@ -92,12 +92,14 @@ Use tools like esbuild to minimize package size:
 # Install esbuild
 npm install -D esbuild
 
-# Bundle your code
+# Bundle your code. --keep-names keeps your function and class names, so
+# errors stay readable and keep their issues across deploys.
 npx esbuild index.js \
   --bundle \
   --platform=node \
   --target=node22 \
   --minify \
+  --keep-names \
   --outfile=dist/index.js
 
 # Package the bundle
