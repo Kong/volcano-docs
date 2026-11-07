@@ -25,6 +25,7 @@ Discover the presets you can use with `volcano cloud sandboxes presets` or `GET 
 | One-shot commands   | Run one command in a temporary Sandbox that Volcano terminates when the command finishes                                                    |
 | Sessions            | Keep a workspace, background processes, and HTTP services across many commands                                                              |
 | Suspend and resume  | Pause a session with its processes and files intact; suspended time uses no runtime allowance                                               |
+| CPU and disk caps   | Bound a session's vCPUs and writable disk; the session reports the caps it enforces                                                         |
 | Files               | Read, write, and list files in `/workspace`: 8 MiB per call, tar archives of a tree, or 1 GiB in parts                                      |
 | HTTP access         | Reach a session port over HTTP, WebSocket, SSE, or gRPC with short-lived, per-port credentials                                              |
 | No outbound network | Create a session with `deny_all` egress: no DNS, internet, or link-local access for its whole lifetime, with a readback of what was applied |

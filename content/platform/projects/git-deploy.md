@@ -48,24 +48,48 @@ my-repo/
 **Functions** are the entries directly under `volcano/functions/` in your build
 root:
 
-| Entry       | Function name | Entry file                                                                                                        |
-| ----------- | ------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `hello.js`  | `hello`       | the file itself                                                                                                   |
-| `checkout/` | `checkout`    | `index.*`, else the runtime's handler file (`index.js`, `main.py`, `main.rb`), else the first source file by name |
+| Entry       | Function name | Entry file                                                                                                                                                                                     |
+| ----------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `hello.js`  | `hello`       | the file itself                                                                                                                                                                                |
+| `checkout/` | `checkout`    | a non-TypeScript `index.*`, else the runtime's handler file (`index.js`, `main.py`, `main.rb`), else the first non-TypeScript source file by name, else `index.ts`, `index.mts` or `index.cts` |
 
-Node.js functions deploy `.js` and `.mjs` files. Volcano doesn't compile
-TypeScript yet, so compile it first and commit the output, such as
-`checkout/index.mjs`. A function that holds only TypeScript, such as a
-`checkout.ts` file or a `checkout/` directory with no `.js` or `.mjs` file at its
-top, isn't deployed; the push deploys everything else. Commit its compiled
-JavaScript to deploy it. Keep shared TypeScript that isn't a function under a
-`_`-prefixed name, such as `_lib/`, so it isn't taken for one.
+Node.js functions deploy `.js` and `.mjs` files, and TypeScript in `.ts`, `.mts`,
+and `.cts` files, which Volcano compiles during the build. See
+[TypeScript](../functions/creating-functions.md#typescript). JavaScript wins
+over TypeScript: `hello.js` beside `hello.ts`, or `checkout/index.js` beside
+`checkout/index.ts`, deploys the JavaScript. Across entries of one name, a
+function whose entry isn't TypeScript wins too: `hello.mjs` or `hello.py`
+beside a `hello/` directory holding only `index.ts` deploys the file. Of two
+TypeScript entries, a `hello/` directory wins over `hello.ts`. Keep shared
+TypeScript that isn't a function under a `_`-prefixed name, such as `_lib/`, so
+it isn't taken for one.
+
+Inside a function directory, TypeScript is the entry only as `index.ts`,
+`index.mts`, or `index.cts`, and only when no other file can be. TypeScript
+never changes what a directory already deploys: `main.py` or `main.rb` beside
+`index.ts` stays a Python or Ruby function, and a JavaScript file beside it
+stays the entry. A directory whose entry is TypeScript must hold only one of
+`index.ts`, `index.mts`, and `index.cts`; more than one fails the push with
+`source_invalid`.
+
+A function whose TypeScript has no entry Volcano compiles isn't deployed: a
+`checkout/` directory with only `src/index.ts` and tool configs such as
+`vitest.config.ts` at its top, a `checkout/handler.ts`, or a `widget.tsx` file.
+Neither is `checkout/index.ts` beside a shipped `index.cjs`, an extensionless
+`index` file, or an `index/` directory holding a `package.json`, `index.js`,
+`index.json`, or `index.node`: Git deploy reads only `.js` and `.mjs` as a
+JavaScript entry, and the build wouldn't compile `index.ts` beside a module
+Node.js already loads. An empty `index/` directory, or one with none of these,
+doesn't stop the compile. The push deploys everything else and fails with
+`typescript_not_compiled`. Move the handler to `checkout/index.ts`, remove the
+shipped module beside it, or commit `index.js`.
 
 Names must be DNS-safe: lowercase letters, digits, and internal hyphens, 1–63
 characters. `batch`, `invocations`, and `logs` are reserved. Other entries that
 do not qualify — an unsupported file type, a hidden entry, a name Volcano cannot
 deploy — are **skipped silently** so one stray file cannot fail the whole push.
-Two entries resolving to the same name (`foo.js` and `foo/`) fail the run.
+Two entries resolving to the same name (`foo.js` and `foo/`) fail the run,
+unless one is TypeScript and gives way as described above.
 
 **Shared code** is any `_`-prefixed file or directory under `volcano/` or
 `volcano/functions/`. Each one is copied into every function archive under its
@@ -481,7 +505,7 @@ curl -X PUT "https://api.volcano.dev/projects/$PROJECT_ID/git-deploy-settings" \
 | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `auto_deploy_enabled` | Master switch, on from the first connect. A push that arrives while this is off is never deployed, and turning it on later does not deploy that push retroactively. Once you save settings here they are never defaulted over again — rebinding, disconnecting and reconnecting all leave them as you set them. |
 | `deploy_functions`    | Deploy every function discovered under `volcano/functions/`.                                                                                                                                                                                                                                                    |
-| `frontend_name`       | Frontend to deploy. Omit or leave empty to deploy no frontend. The frontend does not have to exist yet — it is created on the first deploy.                                                                                                                                                                     |
+| `frontend_name`       | Legacy frontend to deploy. In Git mode, explicitly send an empty string to stop deploying it; omission cannot clear an existing selection. In platform mode, omit or empty to deploy no frontend. The frontend does not have to exist yet — it is created on the first deploy.                                  |
 | `frontend_app_root`   | App root the frontend builds from, relative to `root_directory`. Requires `frontend_name`; omit for the build root itself.                                                                                                                                                                                      |
 | `apply_migrations`    | Apply the commit's pending migrations before anything deploys. Off until you turn it on. Omitting it keeps the saved value. See [Apply migrations on push](#apply-migrations-on-push).                                                                                                                          |
 
@@ -562,21 +586,21 @@ runs, including read-only ones.
 Other runs have no `error`. A failed run's `error.code` is one of the
 following. The four migration codes stop the push before anything deploys.
 
-| Code                       | Cause                                                                                                                                                                                                                                                                                                                                                       |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `migration_failed`         | A migration run failed for any reason, such as a file or `connection_failed`, or refused the commit's files. `message` names the run, its database, and its own code, or the refused file.                                                                                                                                                                  |
-| `migration_invalid_layout` | `volcano/migrations/` does not map onto the project's databases. `message` names the directory or file.                                                                                                                                                                                                                                                     |
-| `migration_timeout`        | The commit's migrations had not finished two hours after the push arrived.                                                                                                                                                                                                                                                                                  |
-| `feature_unavailable`      | The run applies migrations where they are not available. Turn `apply_migrations` off to deploy without them.                                                                                                                                                                                                                                                |
-| `source_invalid`           | Volcano refused the commit's source or `volcano-config.yaml`, such as a repository over a [limit](#limits). `message` says what to fix. Pushing the same commit again fails the same way.                                                                                                                                                                   |
-| `child_deploy_failed`      | A function, frontend, or Sandbox deployment failed. The deployment feed has a function's or frontend's error; `GET /projects/{id}/sandboxes/{sandboxId}/deployments` has a Sandbox's.                                                                                                                                                                       |
-| `child_deploy_not_started` | A function or frontend deploy failed before it recorded a deployment, such as a frontend whose previous deployment was still in progress, or a first deploy that failed and removed what it created. `message` names it and, when Volcano has one, the reason. Push again to retry.                                                                         |
-| `deploy_refused`           | Volcano refused to deploy the commit for a reason a retry cannot fix, such as a function or frontend over a plan limit, a function whose kind changed, invocation settings a function cannot have, or a Sandbox it cannot run. `message` names the function, frontend, or Sandbox and the reason when Volcano has them. Push again once the cause is fixed. |
-| `typescript_not_compiled`  | A function holds only TypeScript, which Volcano doesn't compile. The rest of the push deployed. `message` names the functions; commit their compiled JavaScript and push again. When a deployment also failed, the run reports `child_deploy_failed` instead.                                                                                               |
-| `deploy_failed`            | A temporary failure outlasted Volcano's retries, or Volcano could not deploy the commit for a reason of its own. Push again to retry.                                                                                                                                                                                                                       |
-| `max_attempts_exhausted`   | The deployment failed after repeated attempts. Push again to retry.                                                                                                                                                                                                                                                                                         |
-| `owner_not_active`         | The project owner's account can't deploy right now, so nothing new from the push deployed. No new deploy or migration run started; what an earlier attempt already deployed or migrated stays, so the schema can be ahead of the deployed code. Reactivating the owner's account restores deployment eligibility; push again to deploy.                     |
-| `project_deleting`         | The project is being deleted, so nothing new from the push deployed. What an earlier attempt deployed or migrated stays until the deletion removes it.                                                                                                                                                                                                      |
+| Code                       | Cause                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `migration_failed`         | A migration run failed for any reason, such as a file or `connection_failed`, or refused the commit's files. `message` names the run, its database, and its own code, or the refused file.                                                                                                                                                                                                                                     |
+| `migration_invalid_layout` | `volcano/migrations/` does not map onto the project's databases. `message` names the directory or file.                                                                                                                                                                                                                                                                                                                        |
+| `migration_timeout`        | The commit's migrations had not finished two hours after the push arrived.                                                                                                                                                                                                                                                                                                                                                     |
+| `feature_unavailable`      | The run applies migrations where they are not available. Turn `apply_migrations` off to deploy without them.                                                                                                                                                                                                                                                                                                                   |
+| `source_invalid`           | Volcano refused the commit's source or `volcano-config.yaml`, such as a repository over a [limit](#limits). `message` says what to fix. Pushing the same commit again fails the same way.                                                                                                                                                                                                                                      |
+| `child_deploy_failed`      | A function, frontend, or Sandbox deployment failed. The deployment feed has a function's or frontend's error; `GET /projects/{id}/sandboxes/{sandboxId}/deployments` has a Sandbox's.                                                                                                                                                                                                                                          |
+| `child_deploy_not_started` | A function or frontend deploy failed before it recorded a deployment, such as a frontend whose previous deployment was still in progress, or a first deploy that failed and removed what it created. `message` names it and, when Volcano has one, the reason. Push again to retry.                                                                                                                                            |
+| `deploy_refused`           | Volcano refused to deploy the commit for a reason a retry cannot fix, such as a function or frontend over a plan limit, a function whose kind changed, invocation settings a function cannot have, or a Sandbox it cannot run. `message` names the function, frontend, or Sandbox and the reason when Volcano has them. Push again once the cause is fixed.                                                                    |
+| `typescript_not_compiled`  | A function holds TypeScript but no entry Volcano can compile, such as a `checkout/` directory with only `src/index.ts`. The rest of the push deployed. `message` names the functions; put each handler in `index.ts` at the top of its directory, or remove a shipped `index.cjs`, `index` file or `index/` directory beside it, and push again. When a deployment also failed, the run reports `child_deploy_failed` instead. |
+| `deploy_failed`            | A temporary failure outlasted Volcano's retries, or Volcano could not deploy the commit for a reason of its own. Push again to retry.                                                                                                                                                                                                                                                                                          |
+| `max_attempts_exhausted`   | The deployment failed after repeated attempts. Push again to retry.                                                                                                                                                                                                                                                                                                                                                            |
+| `owner_not_active`         | The project owner's account can't deploy right now, so nothing new from the push deployed. No new deploy or migration run started; what an earlier attempt already deployed or migrated stays, so the schema can be ahead of the deployed code. Reactivating the owner's account restores deployment eligibility; push again to deploy.                                                                                        |
+| `project_deleting`         | The project is being deleted, so nothing new from the push deployed. What an earlier attempt deployed or migrated stays until the deletion removes it.                                                                                                                                                                                                                                                                         |
 
 A Vercel project import that fails reports its deployment run's code as its own `error_code`.
 
@@ -607,9 +631,10 @@ retrying. Define the variable or shrink the environment, then push the commit ag
 
 ### volcano-config.yaml
 
-If your repository has a `volcano-config.yaml` at the build root, auto-deploy
-reads it and applies the per-resource settings that belong to the resources it
-deploys: function kind, visibility, invocation/auth modes, and OpenAPI metadata:
+Auto-deploy reads `volcano-config.yaml` relative to the build root, falling back
+to `volcano/volcano-config.yaml` (the `volcano init` location) only when the outer
+file is absent. It applies the settings
+that belong to the resources it deploys: function kind, visibility, invocation/auth modes, and OpenAPI metadata:
 
 ```yaml
 version: 1
@@ -636,7 +661,11 @@ A function's kind is fixed when it is created. The declared kind therefore
 applies on the push that creates the function, and on every later push it is
 checked rather than applied — a manifest that changes `kind` for a function that
 already exists fails the run instead of silently deploying the wrong kind. To
-change a kind, delete the function and let the next push create it again.
+change a kind, migrate to a new function name.
+
+If your repository has only `volcano/volcano-config.yaml`, check its `kind` values
+against your deployed functions before pushing. Kind conflicts are checked before
+migrations and resource dispatch; the deploy path still rechecks concurrent changes.
 
 An unrecognised `kind` fails the run without retrying, the same as any other
 unusable manifest. That is deliberate: defaulting it would create a resource
@@ -663,8 +692,12 @@ Every other section of the manifest is ignored by auto-deploy and still requires
 absent from the file are deleted) and can carry secrets, which is not something
 a `git push` should do implicitly.
 
-`volcano-config.yaml` must be a regular file at the build root. Symbolic and
-hard links are not followed.
+If both files exist, the build-root file wins and the nested file is ignored;
+their contents are not merged. An invalid or unreadable selected file fails with
+`source_invalid` without falling back. Only the selected manifest must be a
+regular file without linked parent directories. An unused nested manifest or
+linked `volcano/` directory does not invalidate an outer manifest; source and
+migration link checks still apply independently.
 
 A manifest that is present but unusable fails the run without retrying, rather
 than deploying with its settings silently dropped: malformed YAML, an empty
@@ -676,6 +709,16 @@ retrying when Volcano can't read its `volcano-config.yaml`: YAML with a mapping
 key that isn't a scalar, such as a list or an alias used as a key, with the
 same key twice in one mapping, or with a `%TAG` directive, or YAML that takes
 more to read than its size allows.
+
+### Stop deploying a legacy frontend
+
+Run `volcano git frontend --none`, or send the saved settings with
+`frontend_name` explicitly set to `""` and omit
+`frontend_app_root`. Keep auto-deploy and function deployment enabled in Git mode.
+This stops future legacy frontend deployments without deleting the serving
+frontend or changing the project's Git mode. Delete the frontend separately if
+it should stop serving. Frontends declared in `.volcano/source-layout.json` are
+selected by that file independently; remove their mappings to stop deploying them.
 
 ## Apply migrations on push
 
@@ -691,9 +734,10 @@ Before you turn it on,
 and require pull request reviews, so every migration is reviewed before it
 reaches that branch.
 
-The settings `PUT` is a full replace, except `apply_migrations`: a field you
-leave out is cleared, so leaving out `frontend_name` stops the frontend from
-deploying. Read the saved settings first:
+The settings `PUT` is a full replace, except `apply_migrations`. In platform
+mode, omitting `frontend_name` clears it. In Git mode, stopping the selected
+legacy frontend requires an explicit `"frontend_name": ""`; omission is refused.
+Read the saved settings first:
 
 ```bash
 curl "https://api.volcano.dev/projects/$PROJECT_ID/git-deploy-settings" \
@@ -869,7 +913,9 @@ same way, with code `project_deleting`.
 **Runs are skipped, not failed,** when there is nothing to do: auto-deploy is
 off, the project was disconnected or its binding changed before execution, the
 project was deleted, or the commit contains no deployable resource, no
-migrations to apply, and no function that holds only TypeScript.
+migrations to apply, and no TypeScript function without an entry, with no required
+frontend source missing. A configured frontend that cannot be found fails with
+`source_invalid` before anything deploys.
 
 ## Deploying directly while connected
 
@@ -993,14 +1039,17 @@ again.
 **A function is missing.** It is probably being skipped by discovery. Confirm it
 sits directly under `volcano/functions/` inside `root_directory`, that its name
 is DNS-safe and not reserved, and that a directory function contains at least one
-supported source file. A function that holds only TypeScript isn't deployed;
-commit its compiled JavaScript.
+supported source file at its top. A TypeScript function directory needs its
+handler in `index.ts`, `index.mts`, or `index.cts` at its top.
 
 **The frontend did not deploy.** `frontend_name` must be set, and
 `root_directory` + `frontend_app_root` must contain a `package.json`, or the
 nearest `package.json` above it must build it with `next build <dir>`. A
 `volcano init nextjs` project with `frontend_app_root: web` works this way. A
-configured frontend that is not found in the source is skipped, not failed.
+configured frontend that is not found fails the run with `source_invalid`
+before migrations, configuration updates, or resource deployments start.
+Correct the paths and push again. With `.volcano/source-layout.json`, each
+frontend uses its declared workspace and app root instead.
 
 **Signed-in users or anon keys get `404` from a function you deployed.** New
 functions are `private`, which admits only service keys and schedulers and

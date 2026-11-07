@@ -108,9 +108,10 @@ Node.js function, an uncaught exception or an unhandled promise rejection that
 crashes the runtime counts as one, grouped with the same error thrown. On
 Node.js 24, that needs a handler named `file.export`, where `file` is a `.js`,
 `.mjs`, or `.cjs` file; any other handler's crash appears only as the lines
-Node prints. It is `false` for an issue grouped only from messages, structured
-logs, or printed tracebacks, and for every `code_quality` issue. Once `true`, it
-stays `true`.
+Node prints, and their heading, such as `TypeError: Cannot read properties of
+undefined`, is an issue grouped by its message. It is `false` for an issue
+grouped only from messages, structured logs, or printed tracebacks, and for
+every `code_quality` issue. Once `true`, it stays `true`.
 
 In local mode, output a function writes to stderr without a level of its own is
 at `error` level, so only an exception becomes an issue: one your code threw or
@@ -144,6 +145,24 @@ routes from chunks too, so its errors group by chunk the same way. webpack and
 Turbopack chunks keep their names across deploys, so they keep routes in
 different chunks apart. A deploy that regroups chunks, as one that adds a route
 can, renames some of them, and their errors start a new issue.
+
+A function you bundle and minify yourself, as `esbuild --minify` does, also
+gets new names for its functions and classes on every build. When a stack runs
+through a JavaScript file with a name a minifier writes, one or two characters
+such as `k4` or `$9`, Volcano groups that file's frames by the file alone, and
+a class with such a name counts as one renamed type, so a redeploy does not
+split an issue. The `culprit` names the file. As in a frontend's build, the
+message counts only in a shape JavaScript itself writes, so every other message
+of a renamed class, or of one built-in type, merges into one issue per
+function. To keep them apart and get readable titles, build with esbuild's
+`--keep-names` or your bundler's equivalent, which keeps your functions' and
+classes' names.
+
+When this grouping first applies, each existing issue of a minified function
+moves once to a new issue: it gets a new ID, alerts once as new, and starts a
+fresh LavaFlow run budget. After that, redeploys keep it. A function or project
+at its open-issue bound records the moved errors only once it has room; resolve
+the old issues to make room.
 
 Issues are kept per function or frontend: the same error in two functions is
 two issues.

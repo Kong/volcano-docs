@@ -171,6 +171,7 @@ When you delete a project, Volcano:
 | -------------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | [Creating projects](creating-projects.md)                | Detailed project creation guide                                                      |
 | [Export your source to GitHub](export-to-git.md)         | Initialize an empty repository with a project's stored source and deploy it from Git |
+| [Sharing and forking](sharing.md)                        | Publish a project so anyone can deploy their own copy                                |
 | [Functions overview](../functions/overview.md)           | Deploy functions                                                                     |
 | [Databases overview](../databases/overview.md)           | Provision PostgreSQL databases                                                       |
 | [Authentication overview](../authentication/overview.md) | Add user authentication                                                              |

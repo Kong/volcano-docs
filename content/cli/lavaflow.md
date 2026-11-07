@@ -193,8 +193,11 @@ A setting you don't pass keeps its value. `settings` shows both in full.
 
 ### Merge fixes
 
-At autonomy `merge`, LavaFlow can merge its fix pull requests. A fix it holds
-or stops is yours to review and merge on GitHub.
+At autonomy `merge`, LavaFlow can merge its fix pull requests. A fix built on
+a commit the deploy reported, at either
+[verification level](deploy.md#verification), is always held for a person.
+Only a fix on a commit that a push to the repository deployed is free of that
+hold. A fix it holds or stops is yours to review and merge on GitHub.
 
 ```bash
 volcano cloud lavaflow settings set --autonomy merge
@@ -405,13 +408,40 @@ status the CLI doesn't know prints as the API gives it.
 and its diagnosis and root cause with the evidence behind them. A run that
 failed says why.
 
+A run with a fix has a `Checks:` line. LavaFlow doesn't run your repository's
+tests before it opens the pull request, so the line says they didn't run. Your
+repository's CI may still run on the pull request after it opens.
+
+The line reads
+`LavaFlow didn't run the repository's tests before opening this pull request.`
+for a run that opened one, and `LavaFlow didn't run the repository's tests.`
+for a run that didn't.
+
+When the review ends without passing the fix, a `Review stopped:` line says
+why, in the words of the API's `review.stopped`:
+
+| `review.stopped` | `Review stopped:` |
+| --- | --- |
+| `rounds` | The last review round still found problems. |
+| `no_revision` | LavaFlow gave no revised fix. |
+| `budget_exhausted` | The run used its token budget before LavaFlow could revise the fix, not the daily spend limit. |
+| `context_limit` | The fix's conversation grew too long for LavaFlow before it could revise it. |
+| `timed_out` | The run's time for review ran out. |
+| `reviewers_failed` | No reviewer of the last round finished. |
+| `too_few_reviewers` | Fewer reviewers could run than a round needs to pass the fix. |
+| `unreadable` | A retried run couldn't read the review saved with its fix, so a person must review it. |
+
+A reason your CLI doesn't know shows as `Other` with its code. When no
+reviewer could run, the review reads `Review: error; no reviewer could run`,
+followed by `Review stopped:` with the reason.
+
 The `Source:` line gives the commit's short SHA and where it came from:
 
 | Shown | Meaning |
 | --- | --- |
 | `deployed from a push` | A push to the project's connected repository deployed it. |
 | `reported by the deploy; deployed files match` | The deploy reported it, and Volcano matched the deployed files against it. |
-| `reported by the deploy; found on the production branch` | The deploy reported it, and Volcano confirmed only that the production branch holds it. A function upload is build output, so its files aren't matched. A fix on such a commit opens only while the production branch still holds it. |
+| `reported by the deploy; found on the production branch` | The deploy reported it, and Volcano confirmed only that the production branch holds it: the [`repository` level](deploy.md#verification) function and durable function deploys get. Volcano doesn't compare the deployed files with it. A fix on such a commit opens only while the production branch still holds it. |
 | `production branch; may not be deployed` | A reported problem's run read the production branch at a commit it pinned. |
 
 A run recorded before Volcano kept the origin, or with an origin your CLI
@@ -444,6 +474,7 @@ Issue: 5b2d8e1c-3f4a-4c6b-9d7e-8a1f2b3c4d5e
 Source: commit 4f1c2b3 (deployed from a push)
 Started: 2026-10-30 09:00
 Review: passed after 2 round(s)
+Checks: LavaFlow didn't run the repository's tests before opening this pull request.
 Fix:
   Pull request: #42 https://github.com/acme/shop/pull/42
   State: open
