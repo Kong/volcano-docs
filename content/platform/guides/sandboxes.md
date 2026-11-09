@@ -58,9 +58,12 @@ Use the returned preset IDs when creating templates, sessions, or one-shot execu
 An empty catalog means no verified preset has been published yet.
 
 If startup fails or times out before the command is sent, one-shot execution returns
-code `sandbox_start_failed`. The HTTP status is `422` for a startup hook timeout on a custom deployment,
-`429` for exhausted allowance or expired allowance retention, and `503` for other
-or unknown startup reasons, including hook timeouts on managed presets. The command did not run. Reusing the same
+code `sandbox_start_failed`. The HTTP status follows the recorded reason: `422` for
+`sandbox_run_hook_timeout` on a custom deployment, `429` for exhausted allowance or
+expired allowance retention, and `503` for other or unknown startup reasons,
+including hook timeouts on managed presets and `sandbox_network_untrusted`. A
+`deny_all` startup whose final observation shows outbound network access records
+`sandbox_network_untrusted`, even if its hook also timed out. The command did not run. Reusing the same
 `Idempotency-Key` replays that failure. The `error` message includes the recorded
 reason when known, including on replay:
 
@@ -83,7 +86,10 @@ failure response. Every fresh-key refusal is also retained, so an immediate retr
 can consume another key without starting a VM.
 `sandbox_start_timeout` means the startup wait expired; `sandbox_session_expired`
 means the requested session lifetime ended first. Increase the lifetime for the
-latter. Caller cancellation or a caller deadline during admission or startup returns `504` if
+latter. Rarely, startup fails with `sandbox_launch_outcome_unknown`. The session
+isn't billed. Its startup command may already have started and can run until the
+session would have expired; Volcano can't reach it. Start a new session with a
+new key. Caller cancellation or a caller deadline during admission or startup returns `504` if
 the connection can still deliver a response. The outcome stays unknown; reuse the
 original key.
 
@@ -127,6 +133,13 @@ no reason is known.
 | `sandbox_operator_confirmed_no_live_vm` | Operator recovery confirmed no live runtime remained. |
 | `sandbox_network_untrusted`             | A `deny_all` session was observed out of policy.      |
 | `sandbox_image_outdated`                | The template's image predates what the session needs. |
+| `sandbox_launch_outcome_unknown`        | The session failed to start; see below.               |
+
+`sandbox_launch_outcome_unknown`: the session isn't billed. Its startup command
+may already have started and can run until the session would have expired;
+Volcano can't reach it. Start a new session. A session whose launch outcome was
+unknown when it ended for an earlier reason, such as `project_deleting`, keeps
+that reason's code, with the same caveat.
 
 Additional codes may be introduced; accept unknown values. A recorded reason alone
 does not establish whether a command ran or authorize a retry. Use the execution
@@ -228,7 +241,12 @@ Suspending retains the session's state; terminating destroys it.
 These operations return `202`. Poll `state` for completion. `desired_state`
 records the requested outcome. Once termination is requested, public reads report
 `terminating` until the session is `terminated`, unless its state is `unknown`
-and requires operator recovery. Closing new-session admission does not prevent
+and requires operator recovery. A session whose launch outcome was unknown when
+it ended reads `terminated` with `last_error_code`
+`sandbox_launch_outcome_unknown`, or with the earlier reason it was already
+ending for, without confirming that its VM stopped. The session isn't billed.
+Its startup command may already have started and can run until the session
+would have expired; Volcano can't reach it. Closing new-session admission does not prevent
 termination or grant revocation.
 
 ## Turn off outbound network
@@ -302,7 +320,13 @@ file calls and terminates it at once: `desired_state` reads `terminated`,
 start again. Its `applied` keeps what Volcano last observed, so it can read
 `default`. A `deny_all` session whose final observation shows outbound network
 access also reads `sandbox_network_untrusted`, even when Volcano first
-observes it after it has ended.
+observes it after it has ended or its startup hook timed out. A session that is
+already terminating when Volcano observes a mismatch keeps the
+`last_error_code` it had, which can be empty, unless its final observation
+shows outbound network access, which reads `sandbox_network_untrusted`, or a
+startup-hook timeout, which reads `sandbox_run_hook_timeout`. Once a session
+reads `sandbox_network_untrusted`, no later change replaces it. Volcano
+still terminates it.
 
 Local mode applies the same policy and readback. In a `deny_all` container, only
 loopback is up, with no route out. `::1` works where the Docker host's kernel

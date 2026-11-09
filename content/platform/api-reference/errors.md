@@ -420,7 +420,7 @@ way. A skill of another project answers `404`, as an unknown one does:
 
 ```json
 {
-  "error": "project access tokens cannot change LavaFlow skills; the project's owner changes them with a sign-in session, a live `volcano login` token, or a platform token that expires",
+  "error": "project access tokens cannot change LavaFlow skills; the project's owner changes them with a `volcano login` token whose sign-in is live, or a platform token with an expiry",
   "code": "person_required"
 }
 ```
