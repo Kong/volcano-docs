@@ -47,6 +47,21 @@ curl -X PATCH "https://api.volcano.dev/projects/$PROJECT_ID/functions/$FUNC_ID" 
 an OpenAPI 3.0 or 3.1 JSON document and limits it to 256 KiB; it does not use the
 document to route or validate runtime requests.
 
+### Test an HTTP function locally
+
+Local mode serves HTTP-mode functions too, so you can send a webhook to your
+receiver at the same paths it serves in the cloud. Read the function's
+`invoke_url` from the local API; it has the form
+`http://FUNCTION_ID.functions.localhost:8000/`:
+
+```bash
+INVOKE_URL=$(curl -s "http://localhost:8000/projects/$PROJECT_ID/functions/$FUNC_ID" | jq -r '.invoke_url')
+
+curl -X POST "${INVOKE_URL}webhooks/payments" \
+  -H "Content-Type: application/json" \
+  -d '{"event":"ping"}'
+```
+
 ### Roll back HTTP mode
 
 Invocation metadata is control-plane configuration, so switching back does not
