@@ -3,9 +3,10 @@ import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
 // The card every docs link falls back to when it has no image of its own.
-// A blog post with a `cover` overrides it with that image (see the blog's
-// generateMetadata), so this is what the guides, the CLI reference and the
-// landing page show when someone pastes a link.
+// A blog post or cookbook recipe with a `cover` overrides it with that image
+// (see the blog's and the cookbooks' generateMetadata), so this is what the
+// guides, the CLI reference and the landing page show when someone pastes a
+// link.
 
 export const socialCardSize = { width: 1200, height: 630 };
 export const socialCardAlt = "Volcano docs";

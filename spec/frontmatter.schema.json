@@ -26,7 +26,7 @@
     "cover": {
       "type": "string",
       "pattern": "^/[^/]",
-      "description": "Blog card cover image, as a site-absolute path under public/."
+      "description": "Card cover image for a blog post or cookbook, as a site-absolute path under public/."
     },
     "published": {
       "type": "string",
