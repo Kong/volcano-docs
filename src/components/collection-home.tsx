@@ -2,10 +2,9 @@ import { BookOpen } from "lucide-react";
 import Image from "next/image";
 import type { ReactNode } from "react";
 import { getSectionPages, type ContentSection } from "@/lib/sections";
-import { MarkdownContent, type ContentPage } from "@/components/markdown-content";
+import type { ContentPage } from "@/components/markdown-content";
 import { Hero } from "@/components/home/hero";
 import { FeatureCard } from "@/components/home/feature-card";
-import { SectionHeading } from "@/components/home/section-heading";
 import { Footer } from "@/components/home/footer";
 import { BlogHome } from "@/components/blog-home";
 import "@/components/home/index.css";
@@ -25,15 +24,8 @@ export function CollectionHome({ section, page }: CollectionHomeProps) {
 
   return (
     <div data-slot="collection-home" className="home-page collection-home">
-      <Hero
-        title={page.data.title}
-        description={page.data.description}
-        actionHref={pages[0]?.url ?? "/get-started"}
-        actionLabel="Start building"
-      >
-        <MarkdownContent page={page} />
-      </Hero>
-      <SectionHeading>Recipes</SectionHeading>
+      {/* Title only, the same header as the blog listing. */}
+      <Hero title={page.data.title} description={null} actionHref={null}>{null}</Hero>
       <div className="collection-home-cards">
         {pages.map(function renderCard(entry) {
           // A recipe with a cover shows it the way a blog post card does; one
