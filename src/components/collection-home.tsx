@@ -1,4 +1,6 @@
 import { BookOpen } from "lucide-react";
+import Image from "next/image";
+import type { ReactNode } from "react";
 import { getSectionPages, type ContentSection } from "@/lib/sections";
 import { MarkdownContent, type ContentPage } from "@/components/markdown-content";
 import { Hero } from "@/components/home/hero";
@@ -34,14 +36,28 @@ export function CollectionHome({ section, page }: CollectionHomeProps) {
       <SectionHeading>Recipes</SectionHeading>
       <div className="collection-home-cards">
         {pages.map(function renderCard(entry) {
+          // A recipe with a cover shows it the way a blog post card does; one
+          // without keeps the icon.
+          let icon: ReactNode = <BookOpen className="feature-card-glyph" />;
+          let image: ReactNode;
+          if (entry.data.cover) {
+            icon = undefined;
+            image = <Image src={entry.data.cover} alt="" width={2400} height={1260} sizes="(min-width: 1024px) 33vw, 100vw" />;
+          }
           return (
             <FeatureCard
               key={entry.url}
-              icon={<BookOpen className="feature-card-glyph" />}
+              variant="cover"
+              icon={icon}
+              image={image}
               title={entry.data.title}
               description={entry.data.description ?? ""}
               href={entry.url}
-            />
+            >
+              <div className="blog-post-footer">
+                <span className="blog-post-action">View recipe <span aria-hidden="true">→</span></span>
+              </div>
+            </FeatureCard>
           );
         })}
       </div>

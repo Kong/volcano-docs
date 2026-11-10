@@ -41,6 +41,10 @@ export async function generateMetadata({ params }: CookbooksPageProps): Promise<
   const { slug = [] } = await params;
   const page = source.getPage(["cookbooks", ...slug]);
   if (!page) notFound();
+  // A recipe's cover is its social card; one without falls back to the
+  // generated card, as blog posts do.
+  const images = [];
+  if (page.data.cover) images.push({ url: page.data.cover, alt: page.data.title });
   return {
     title: page.data.title,
     description: page.data.description,
@@ -48,6 +52,6 @@ export async function generateMetadata({ params }: CookbooksPageProps): Promise<
       canonical: page.url,
       types: { "text/markdown": markdownUrl(page.url) },
     },
-    ...socialMetadata({ url: page.url }),
+    ...socialMetadata({ url: page.url, images }),
   };
 }

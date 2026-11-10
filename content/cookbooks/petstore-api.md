@@ -9,6 +9,7 @@ tags:
   - auth
   - row-level-security
   - insomnia
+cover: /cookbooks/petstore-api-cover.png
 ---
 
 Tested on Volcano CLI 0.54.0, Node 24.9.0, pg 8.23.1; last verified 2026-10-30 on CLI 0.54.0.

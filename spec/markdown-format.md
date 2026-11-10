@@ -33,7 +33,7 @@ order: 3
 | `tags` | string[] | no | Topical grouping / filtering. |
 | `category` | string | no | Blog category — exactly one per post, from the fixed set `product`, `engineering`, `research`, `company`. Each has its own page at `/blog/category/<slug>`. |
 | `author` | string | no | Author byline for a blog post. |
-| `cover` | string | no | Blog card image, using a site-absolute path to an asset in `public/` (for example `/blog/sandbox-cover.png`). |
+| `cover` | string | no | Card image for a blog post or cookbook, also used as its social card, using a site-absolute path to an asset in `public/` (for example `/blog/sandbox-cover.png`). |
 | `published` | date (`YYYY-MM-DD`) | no | Blog publication date; quote the value in YAML. |
 | `keywords` | string[] | no | Extra search synonyms not in the prose. |
 | `draft` | boolean | no | `true` hides the page, navigation entry, search results, and sitemap entry in production. Visible in local development for preview. |
