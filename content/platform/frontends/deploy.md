@@ -70,6 +70,9 @@ ready:
 volcano cloud frontends redeploy my-site
 ```
 
+Volcano retries temporary routing lookup timeouts within a bounded request
+budget. If routing still cannot be resolved, the request returns `502`.
+
 ### First deploy with `volcano-config.yaml`
 
 `volcano cloud config deploy` configures frontends but never creates one. An entry

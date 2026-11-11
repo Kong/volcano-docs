@@ -813,6 +813,9 @@ reached — and 14 ms on the database.
 - **Operators:** See supported operators table above
 - **Filters:** Combined with AND (OR not yet supported)
 - **UPDATE/DELETE:** Requires at least one filter for safety
+- **Query time:** A query must finish within 60 seconds. Volcano cancels one
+  that runs longer and answers `500 Internal Server Error` with
+  `"error": "Query failed"`.
 
 ---
 

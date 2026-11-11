@@ -890,9 +890,15 @@ supersedes it — the older run is marked `superseded` and never deploys a commi
 you have already moved past. A run that is already executing is allowed to
 finish.
 
+**Queued runs belong to one connection.** Changing the repository, production
+branch, or root directory invalidates runs waiting to execute. Switching away
+and back to the same repository still invalidates them. Push again to deploy
+from the current connection.
+
 **Same commit, once.** Re-delivering the same webhook, or pushing the same
-commit while a run for it is still pending or running, does not create a second
-deployment. Pushing that commit again after the earlier run reached a terminal
+commit while a run for the same connection is still pending or running, does not
+create a second deployment. Changing the connection allows a fresh run of that
+commit. Pushing that commit again after the earlier run reached a terminal
 state does deploy again, so you can retry a failed deploy by re-pushing.
 
 **Every configured resource redeploys on every push.** There is no per-file
