@@ -164,6 +164,19 @@ fresh LavaFlow run budget. After that, redeploys keep it. A function or project
 at its open-issue bound records the moved errors only once it has room; resolve
 the old issues to make room.
 
+A function written in
+[TypeScript](../functions/creating-functions.md#typescript) groups by the
+frames of its `.ts` files, which its stack traces name through source maps.
+A TypeScript function built before Volcano wrote source maps named its compiled
+`index.cjs` or `index.mjs` instead, so its first redeploy since moves each of
+its existing issues once to a new issue, as above. The old issues, named by
+the compiled module, stay open and count toward the open-issue bounds until
+you resolve them, so resolve them after that redeploy. A TypeScript function that
+[compiles without a source map](../functions/creating-functions.md#typescript),
+or that sets `NODE_OPTIONS=--no-enable-source-maps`, groups by its compiled
+module, so a change that switches it between the two moves its issues the same
+way.
+
 Issues are kept per function or frontend: the same error in two functions is
 two issues.
 

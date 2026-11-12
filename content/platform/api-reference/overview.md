@@ -202,7 +202,9 @@ curl "https://api.volcano.dev/capabilities"
     { "id": "lavaflow", "status": "unavailable" },
     { "id": "lavaflow.merge", "status": "unavailable" },
     { "id": "lavaflow.lineage", "status": "unavailable" },
+    { "id": "lavaflow.open_pr_ci_start", "status": "unavailable" },
     { "id": "lavaflow.slack", "status": "unavailable" },
+    { "id": "lavaflow.aikido", "status": "unavailable" },
     { "id": "lavaflow.skills", "status": "unavailable" },
     { "id": "functions.response_streaming", "status": "available" },
     { "id": "frontend_routes", "status": "available" },
@@ -213,24 +215,27 @@ curl "https://api.volcano.dev/capabilities"
 }
 ```
 
-| ID                             | Covers                                                                                                                                                                                                                                      |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sandboxes`                    | The Sandbox API: presets, templates, sessions, and executions                                                                                                                                                                               |
-| `sandboxes.sessions`           | Starting and resuming sessions, and one-shot executions                                                                                                                                                                                     |
-| `sandboxes.custom_templates`   | Deploying a custom template; its validation waits while `sandboxes.sessions` is unavailable                                                                                                                                                 |
-| `sandboxes.network_isolation`  | Creating [sessions with no outbound network](../guides/sandboxes.md#turn-off-outbound-network); existing ones work either way                                                                                                               |
-| `sandboxes.output_not_kept`    | [Commands that keep no output](../guides/sandboxes.md#keep-no-command-output); commands that keep output work either way                                                                                                                    |
-| `issues`                       | The Issues API: listing, reading, and updating grouped runtime errors                                                                                                                                                                       |
-| `lavaflow`                     | LavaFlow, which diagnoses a project's issues, opens pull requests that fix them, and can merge them. This list says only whether it's released in the environment; a project's list says whether that project has it                        |
-| `lavaflow.merge`               | Letting LavaFlow [merge its fixes](../guides/lavaflow.md#merge-fixes): `autonomy: merge` and changing `merge_policy`; reading merges works either way                                                                                       |
-| `lavaflow.lineage`             | LavaFlow [following up its fixes](../guides/lavaflow.md#fix-lineage): follow-up runs and the lineage holds; lineage fields already stored read either way                                                                                   |
-| `lavaflow.slack`               | [Reporting problems from Slack](../guides/lavaflow-slack.md): installing Volcano's Slack app, connecting Slack accounts, the channel picker, and binding channels; reading and removing connections and bindings work either way            |
-| `lavaflow.skills`              | [Learned skills](../guides/lavaflow.md#learned-skills): changing a skill other than retiring it, turning `skill_learning` up, and Volcano's global skills; reading, retiring and deleting skills, and turning learning off, work either way |
-| `functions.response_streaming` | [Streaming a response](../functions/invoking-functions.md#stream-a-response) on a function's own URL                                                                                                                                        |
-| `frontend_routes`              | Creating and changing [Frontend routes](../frontends/frontend-routes.md); listing, deleting, and serving existing ones work either way                                                                                                      |
-| `frontends.candidates`         | Creating, deploying to, promoting and rolling back to [frontend previews](../frontends/previews.md); listing, reading and deleting them, and rolling back to the frontend's own build, work either way                                      |
-| `databases.migrations`         | Starting [migration runs](../guides/migrations.md), recording a baseline, and turning on `apply_migrations` for [Git deploy](../projects/git-deploy.md#apply-migrations-on-push); reading history and runs works either way                 |
-| `shares`                       | [Sharing and forking](../projects/sharing.md): sharing a project and forking a share; listing, reading, switching off, deleting, and counting existing shares work either way                                                               |
+| ID                             | Covers                                                                                                                                                                                                                                                                    |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sandboxes`                    | The Sandbox API: presets, templates, sessions, and executions                                                                                                                                                                                                             |
+| `sandboxes.sessions`           | Starting and resuming sessions, and one-shot executions                                                                                                                                                                                                                   |
+| `sandboxes.custom_templates`   | Deploying a custom template; its validation waits while `sandboxes.sessions` is unavailable                                                                                                                                                                               |
+| `sandboxes.network_isolation`  | Creating [sessions with no outbound network](../guides/sandboxes.md#turn-off-outbound-network); existing ones work either way                                                                                                                                             |
+| `sandboxes.output_not_kept`    | [Commands that keep no output](../guides/sandboxes.md#keep-no-command-output); commands that keep output work either way                                                                                                                                                  |
+| `issues`                       | The Issues API: listing, reading, and updating grouped runtime errors                                                                                                                                                                                                     |
+| `lavaflow`                     | LavaFlow, which diagnoses a project's issues, opens pull requests that fix them, and can merge them. This list says only whether it's released in the environment; a project's list says whether that project has it                                                      |
+| `lavaflow.merge`               | Letting LavaFlow [merge its fixes](../guides/lavaflow.md#merge-fixes): `autonomy: merge` and changing `merge_policy`; reading merges works either way                                                                                                                     |
+| `lavaflow.lineage`             | LavaFlow [following up its fixes](../guides/lavaflow.md#fix-lineage): follow-up runs and the lineage holds; lineage fields already stored read either way                                                                                                                 |
+| `lavaflow.open_pr_ci_start`    | A fix you [review and merge yourself](../guides/lavaflow.md#review-and-merge-fixes-yourself) opening ready for review, with LavaFlow running its CI once unless your repository may run CI outside GitHub Actions; unavailable, it opens as a draft whose commit skips CI |
+| `lavaflow.slack`               | [Reporting problems from Slack](../guides/lavaflow-slack.md): installing Volcano's Slack app, connecting Slack accounts, the channel picker, and binding channels; reading and removing connections and bindings work either way                                          |
+| `lavaflow.aikido`              | [Fixing Aikido issues](../guides/lavaflow-aikido.md): connecting an Aikido workspace and binding projects to it; reading and removing connectors and bindings work either way                                                                                             |
+| `lavaflow.skills`              | [Learned skills](../guides/lavaflow.md#learned-skills): changing a skill other than retiring it, turning `skill_learning` up, and Volcano's global skills; reading, retiring and deleting skills, and turning learning off, work either way                               |
+| `functions.response_streaming` | [Streaming a response](../functions/invoking-functions.md#stream-a-response) on a function's own URL                                                                                                                                                                      |
+| `frontend_routes`              | Creating and changing [Frontend routes](../frontends/frontend-routes.md); listing, deleting, and serving existing ones work either way                                                                                                                                    |
+| `frontends.candidates`         | Creating, deploying to, promoting and rolling back to [frontend previews](../frontends/previews.md); listing, reading and deleting them, and rolling back to the frontend's own build, work either way                                                                    |
+| `functions.candidates`         | Creating, deploying to, promoting and rolling back to [function previews](../functions/previews.md); listing, reading and deleting them, and rolling back to the function's own build, work either way                                                                    |
+| `databases.migrations`         | Starting [migration runs](../guides/migrations.md), recording a baseline, and turning on `apply_migrations` for [Git deploy](../projects/git-deploy.md#apply-migrations-on-push); reading history and runs works either way                                               |
+| `shares`                       | [Sharing and forking](../projects/sharing.md): sharing a project and forking a share; listing, reading, switching off, deleting, and counting existing shares work either way                                                                                             |
 
 The endpoint needs no token, and every caller in an environment gets the same
 answer. While a capability is `unavailable`, requests that start new work
@@ -282,9 +287,13 @@ says what the project can still do:
 
 `lavaflow.merge` is `available` when `lavaflow` is and LavaFlow may merge
 fixes in the environment. `lavaflow.lineage` is `available` when `lavaflow` is
-and fix lineage is released in the environment. `lavaflow.slack` is
+and fix lineage is released in the environment. `lavaflow.open_pr_ci_start`
+is `available` when `lavaflow` is and the one CI start for fixes you merge is
+released in the environment. `lavaflow.slack` is
 `available` when `lavaflow` is and reporting problems from Slack is available
 in the environment, which is rolling out environment by environment.
+`lavaflow.aikido` is `available` when `lavaflow` is and Aikido reports have
+launched in the environment.
 `lavaflow.skills` is `available` when `lavaflow` is and learned skills are
 released in the environment. `read_only` appears only in a project's list, and
 has no `code`. On an
@@ -407,7 +416,7 @@ Issues are in preview. See [Issues](../guides/issues.md).
 | `GET`    | `/lavaflow/settings`          | Get a project's LavaFlow settings                                                                                                                                                            |
 | `PATCH`  | `/lavaflow/settings`          | Change a project's LavaFlow settings; the owner only, except that a full-scope project access token may turn Code Quality or skill learning off                                              |
 | `PUT`    | `/lavaflow/settings`          | Deprecated; does what `PATCH` does for a person, and refuses every project access token                                                                                                      |
-| `GET`    | `/lavaflow/stats`             | Count issues LavaFlow took on and pull requests it opened; filter with `category`                                                                                                            |
+| `GET`    | `/lavaflow/stats`             | Count issues LavaFlow took on and pull requests it opened, and its confirmed outcomes; filter with `category`                                                                                |
 | `GET`    | `/lavaflow/resources`         | List each resource's LavaFlow activity and anomalies; filter with `category`                                                                                                                 |
 | `GET`    | `/lavaflow/runs`              | List LavaFlow runs; filter with `status`, `category`, `resource_id`, `involved_resource_id`, `issue_id`, `pull_request_state` and `days`, sort with `order`, and count with `include=counts` |
 | `POST`   | `/lavaflow/runs`              | Start a run on an issue; the owner only                                                                                                                                                      |

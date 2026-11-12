@@ -33,9 +33,9 @@ my-repo/
 │   ├── functions/
 │   │   ├── hello.js              # single-file function -> "hello"
 │   │   ├── checkout/             # directory function   -> "checkout"
-│   │   │   ├── index.mjs
+│   │   │   ├── index.mjs         # imports ./_shared/db.js, not ../_shared/db.js
 │   │   │   └── tax.mjs
-│   │   └── _shared/              # shared code, packaged into every function
+│   │   └── _shared/              # shared code, deployed beside each entry file
 │   │       └── db.js
 │   └── migrations/               # applied first when apply_migrations is on
 │       └── 001_create_orders.sql
@@ -92,8 +92,18 @@ Two entries resolving to the same name (`foo.js` and `foo/`) fail the run,
 unless one is TypeScript and gives way as described above.
 
 **Shared code** is any `_`-prefixed file or directory under `volcano/` or
-`volcano/functions/`. Each one is copied into every function archive under its
-own name, so `volcano/functions/_shared/db.js` is importable as `_shared/db.js`.
+`volcano/functions/`. Each one is copied into every function under its own
+name, next to the function's entry file. So every function imports
+`volcano/functions/_shared/db.js` as `./_shared/db.js`, including a directory
+function such as `checkout/`. `../_shared/db.js` works in your repository but
+fails once deployed with `Cannot find module`. The same goes for a single-file
+function and shared code under `volcano/`: `hello.js` imports
+`volcano/_shared/db.js` as `./_shared/db.js`, not `../_shared/db.js`. When a
+function imports shared code through a parent directory like this, its
+[build log](../functions/logs.md#deployment-logs) warns, naming the file, the
+line, and the import to use instead. See
+[Shared code](../functions/creating-functions.md#shared-code) to make your tests
+resolve the same imports.
 
 **Dependency manifests** (`package.json`, `requirements.txt`, `Gemfile`, and
 their lockfiles) are taken from the function's own directory when it has any,

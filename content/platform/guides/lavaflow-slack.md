@@ -82,8 +82,13 @@ its limit of open issues is refused in the thread, and so is one that has used
 its LavaFlow runs for the day; that reply says when to mention Volcano again.
 
 While LavaFlow is paused, it keeps a report for up to 10 days after it arrives,
-and picks it up if LavaFlow resumes in that time. A reporter who may report for
-no project is refused even while LavaFlow is paused.
+and picks it up if LavaFlow resumes in that time. A reporter without an
+authorized project can still be refused during a run-execution pause. During a
+publication maintenance pause, outgoing notices also wait, including pause and
+refusal notices; the pause does not use the report's retry allowance.
+Authorization and retention still apply. A capped or unauthorized report ends
+without a channel notice. Its text is cleared unless it was already kept as a
+clarification; previously clarified text keeps its existing retention period.
 
 Answers and fix pull request links are posted in the channel, where everyone
 in it can see them.

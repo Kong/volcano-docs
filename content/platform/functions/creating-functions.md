@@ -86,10 +86,40 @@ How the build compiles it:
   `main.py` or `main.rb` beside `index.ts` stays the entry, with its runtime.
 - `.tsx` files aren't compiled.
 
-[Git deploy](../projects/git-deploy.md) and the
-[upload API](./upload-api.md) compile TypeScript, in the cloud and in local
-mode. The CLI doesn't find `.ts` files yet, so compile a function to JavaScript
-before you deploy it with the CLI.
+Errors name your TypeScript. The build writes a source map beside the compiled
+handler and turns on Node.js source maps before the handler loads, so a stack
+trace in your function's logs, in [Issues](../guides/issues.md), and in your
+own `error.stack` names the `.ts` file and line, such as `lib/billing.ts:4`,
+by its path under the function's root. Frames in installed packages stay as
+the package ships them.
+
+- The compiled handler is `index.cjs` or `index.mjs`, and it loads
+  `index.bundle.cjs` or `index.bundle.mjs`, which holds your code. Your code's
+  `__dirname` and `import.meta.url` stay the directory `index.ts` is in.
+- Source maps cost CPU when a stack trace is read; a stack nothing reads costs
+  nothing. The first one in each running instance parses the map, and later
+  ones cost about three times an unmapped stack. Measured on Node.js 24 with a
+  98 KiB map, the first stack took about 0.6 s at 128 MB of memory and 0.05 s
+  at 1024 MB, and the parsed map used about 12 to 17 MB more memory. The cost
+  grows with the map, so a map over 256 KiB isn't
+  written; a map at that limit costs about 1 s at 128 MB, extrapolated from
+  measurements of 98 KiB and 1.9 MiB maps.
+- Set `NODE_OPTIONS=--no-enable-source-maps` to turn source maps off, or
+  `NODE_OPTIONS=--enable-source-maps` to turn them on for installed packages
+  too; Volcano leaves your setting as it is.
+- A handler compiles without a source map, so its frames name `index.cjs` or
+  `index.mjs`, when its map would pass 256 KiB, when a file in the function
+  already has the bundle's or the
+  map's name, when it bundles a file from outside the function's directory or
+  a JavaScript file whose own source map points outside it or to a URL, or
+  when an ES module handler re-exports everything from an installed package,
+  as `export * from "package"` does. The build log says which.
+
+Volcano compiles TypeScript deployed with [Git deploy](../projects/git-deploy.md),
+the [upload API](./upload-api.md) or the [CLI](/cli/functions), in the cloud and
+in local mode. The CLI uploads TypeScript handlers from version 0.76.0; older
+versions skip `.ts` files, so upgrade first. See
+[CLI project layout](#cli-project-layout) for the TypeScript files it finds.
 
 ### Python
 
@@ -146,6 +176,7 @@ These are the simplest option. The filename becomes the function name.
 
 ```text
 volcano/functions/hello.js
+volcano/functions/greet.ts
 volcano/functions/notes.py
 volcano/functions/worker.rb
 ```
@@ -153,6 +184,7 @@ volcano/functions/worker.rb
 Examples:
 
 - `volcano/functions/hello.js` -> function name `hello`
+- `volcano/functions/greet.ts` -> function name `greet` (also `.mts` and `.cts`)
 - `volcano/functions/notes.py` -> function name `notes`
 - `volcano/functions/worker.rb` -> function name `worker`
 
@@ -162,6 +194,7 @@ Use a directory when a function needs multiple files.
 
 ```text
 volcano/functions/api/index.js
+volcano/functions/checkout/index.ts
 volcano/functions/jobs/main.py
 volcano/functions/reports/main.rb
 ```
@@ -170,13 +203,23 @@ The directory name becomes the function name.
 
 Discovery rules:
 
-- The CLI first looks for `index.*` inside the directory.
-- If no `index.*` file exists, it falls back to the first supported runtime file it finds.
+- The entry is the runtime's handler file at the top of the directory:
+  `index.js`, `main.py` or `main.rb`. A directory with none of them, and no
+  TypeScript index, isn't a function.
+- A TypeScript directory function needs its handler at the top of the
+  directory as `index.ts`, `index.mts` or `index.cts`. An `index.js`, `main.py`
+  or `main.rb` beside it deploys instead; other files, such as `helpers.js`,
+  don't.
 
 Examples:
 
 - `volcano/functions/api/index.js` -> function name `api`
+- `volcano/functions/checkout/index.ts` -> function name `checkout`
 - `volcano/functions/jobs/main.py` -> function name `jobs`
+
+TypeScript needs CLI 0.76.0 or later. The CLI doesn't find `.tsx` files or
+declaration files such as `types.d.ts`. It doesn't find a handler nested below
+the function's directory, such as `volcano/functions/checkout/src/index.ts`.
 
 ### Shared code
 
@@ -191,6 +234,45 @@ volcano/functions/_helpers/
 ```
 
 This is useful for shared utilities without requiring each function to duplicate them.
+
+Once deployed, shared code sits next to the function's entry file under its own
+name, whether it came from `volcano/` or `volcano/functions/`. Import it from
+there in every function, including directory functions. From the entry file:
+
+| Runtime | Import `volcano/functions/_helpers/db.*` as             |
+| ------- | ------------------------------------------------------- |
+| Node.js | `require('./_helpers/db')` or `from './_helpers/db.js'` |
+| Python  | `from _helpers.db import connect`                       |
+| Ruby    | `require_relative '_helpers/db'`                        |
+
+A file in a subdirectory of a directory function, such as
+`volcano/functions/api/lib/orders.js`, adds one `../` per level in Node.js and
+Ruby: `require('../_helpers/db')`. Python's import is the same from any file.
+
+A directory function's entry file that imports `../_helpers/db` works in your
+repository but fails once deployed, in Node.js with `Cannot find module`. A
+[Git deploy](../projects/git-deploy.md) warns about it in the function's
+[build log](logs.md#deployment-logs), with the file, the line, and the import
+to use instead.
+
+The same goes for a single-file function and shared code directly under
+`volcano/`: `volcano/functions/hello.js` imports `volcano/_shared/utils.js` as
+`./_shared/utils`, and `../_shared/utils` fails once deployed. Keep shared code
+under `volcano/functions/` instead, and a single-file function's `./_shared`
+import resolves in your repository too.
+
+To make your tests resolve the same imports in your repository, link the
+shared directory into the function's directory:
+
+```bash
+ln -s ../_helpers volcano/functions/api/_helpers
+```
+
+For shared code directly under `volcano/`, link `../../_name` instead. Node.js
+and Ruby then resolve `./_helpers/db` from `volcano/functions/api/`. Python
+resolves `_helpers.db` once the function's directory is on `sys.path`, as it is
+for a test file in that directory run with pytest or `python`. Deploys skip
+symbolic links, so the function still gets the real `_helpers/`.
 
 ### Dependencies
 

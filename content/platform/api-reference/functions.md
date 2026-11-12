@@ -135,7 +135,7 @@ Direct API clients may upload ZIP or `tar.gz`; the API stores a normalized `tar.
 
 After dependencies are installed and the final image is built, the build rejects an image larger than 4096 MB.
 
-For direct API uploads, Volcano generates `.volcano/function-build.json` automatically. It infers `function_root` from the single runtime entry file (`index.js`/`index.mjs`, `main.py`, or `main.rb`), or from the only top-level directory when the archive has one. A Node.js archive with no JavaScript entry counts `index.ts`, `index.mts` and `index.cts` instead, unless the root found without them already holds the handler as `index.cjs`, an extensionless `index` file or an `index` directory holding a `package.json` or an index file, the `handler` names its own module (such as `src/handler.main`), or the project sets `NODE_PATH`. It selects `install_root` from the closest dependency manifest directory containing the effective handler module, relative to `function_root`. When no manifest contains the module and `function_root` is `.`, the fallback selects the longest nested manifest directory path. With no containing manifest or applicable fallback, installation uses `function_root`. See [direct-upload layout inference](../functions/upload-api.md#direct-upload-layout-inference) for handler resolution and tie-breaking.
+For direct API uploads, Volcano generates `.volcano/function-build.json` automatically. It infers `function_root` from the single runtime entry file (`index.js`/`index.mjs`, `main.py`, or `main.rb`), or from the only top-level directory when the archive has one. A Node.js archive with no JavaScript entry counts `index.ts`, `index.mts` and `index.cts` instead, unless the root found without them already holds the handler as `index.cjs`, an extensionless `index` file or an `index` directory holding a `package.json` or an index file, the `handler` names its own module (such as `src/handler.main`), or the project's `NODE_PATH` names a directory inside the function, where the handler could load from after the install. A `NODE_PATH` that names only directories outside the function doesn't count. It selects `install_root` from the closest dependency manifest directory containing the effective handler module, relative to `function_root`. When no manifest contains the module and `function_root` is `.`, the fallback selects the longest nested manifest directory path. With no containing manifest or applicable fallback, installation uses `function_root`. See [direct-upload layout inference](../functions/upload-api.md#direct-upload-layout-inference) for handler resolution and tie-breaking.
 
 **Runtimes** ([List Runtimes](#list-runtimes) returns the current set):
 
@@ -488,6 +488,35 @@ refused one deploys nothing.
 > forwards requests with no credential, and `http` + `none` serves its DNS
 > endpoint without a token.
 
+## Previews
+
+A preview (the API calls it a Candidate) is a copy of an ordinary function
+built from an uploaded source with the function's variables, run on its own
+runtime and invoked at `https://<candidate id>.<functions domain>` with the
+project's service key only, whatever the function's visibility. See
+[Function previews](../functions/previews.md).
+
+| Method   | Path                                                                         | What it does                                           |
+| -------- | ---------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `GET`    | `/projects/{id}/functions/{functionId}/candidates`                           | List previews with their latest deployment             |
+| `POST`   | `/projects/{id}/functions/{functionId}/candidates`                           | Create a preview from `name`, `code` and `ttl_seconds` |
+| `GET`    | `/projects/{id}/functions/{functionId}/candidates/{candidateId}`             | Read one preview                                       |
+| `DELETE` | `/projects/{id}/functions/{functionId}/candidates/{candidateId}`             | Delete a preview                                       |
+| `GET`    | `/projects/{id}/functions/{functionId}/candidates/{candidateId}/deployments` | List a preview's deployments                           |
+| `POST`   | `/projects/{id}/functions/{functionId}/candidates/{candidateId}/deployments` | Deploy new `code` to a preview                         |
+| `POST`   | `/projects/{id}/functions/{functionId}/candidates/{candidateId}/promote`     | Point the function's traffic at the preview's runtime  |
+| `GET`    | `/projects/{id}/functions/{functionId}/serving`                              | Read what the function runs                            |
+| `POST`   | `/projects/{id}/functions/{functionId}/serving/rollback`                     | Roll back, or with `to_production` return to its build |
+
+Promote and rollback require the `expected_revision` read from `serving` and
+answer `200` once the pointer moved; nothing is deployed. Delete answers `202`
+with no body. Creating, deploying to and promoting answer `404` with code
+`feature_unavailable` while the `functions.candidates` capability is
+unavailable. Refusals answer `409` with the codes listed in the
+[guide](../functions/previews.md#error-codes). Fields that do not apply yet,
+such as a preview's `url` before its first deployment, are absent. A function's
+`serving_candidate_id` is the preview it runs, or null.
+
 ## Function Status
 
 - `provisioning` - Being deployed
@@ -498,6 +527,8 @@ Useful deployment fields in responses:
 
 - `invoke_url` - canonical DNS invoke URL for this function
 - `deployed_regions` - regions where the function is currently deployed
+- `serving_candidate_id` - the promoted preview whose runtime receives the
+  function's traffic, or null while it runs its own build
 
 ## See Also
 

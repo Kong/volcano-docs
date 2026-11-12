@@ -60,9 +60,11 @@ whatever repository is connected when the request arrives.
 
 Export also returns `409` while a function or frontend deployment is queued or
 provisioning. Wait for that deployment to finish, then export again. It returns
-`409` too while a [preview](../frontends/previews.md) is serving any of the
-project's frontends, because the repository would not hold the source that
-frontend serves. Roll each such frontend back to its own build, then export
+`409` too while a promoted preview ([frontend](../frontends/previews.md) or
+[function](../functions/previews.md)) is serving any of the project's frontends
+or functions, because the repository would not hold the source it serves. Roll
+each one back to its own build (for a function,
+`volcano cloud functions rollback <function> --to-production`), then export
 again. Volcano checks both before creating or pushing the root commit.
 
 Volcano does not create the repository. Export refuses any repository that

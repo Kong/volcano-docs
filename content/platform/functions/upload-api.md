@@ -223,7 +223,7 @@ When you upload directly to the API, Volcano generates `.volcano/function-build.
 
 Volcano infers build roots deterministically:
 
-- `function_root` is the directory containing the single runtime entry file when exactly one is found: `index.js` or `index.mjs` for Node.js, `main.py` for Python, or `main.rb` for Ruby. Git deploy uses the same entry names. A Node.js archive with no JavaScript entry counts `index.ts`, `index.mts` and `index.cts` instead, unless the root found without them already holds the handler as `index.cjs`, an extensionless `index` file or an `index` directory holding a `package.json` or an index file, the `handler` names its own module (such as `src/handler.main`), or the project sets `NODE_PATH`. So an archive holding `src/index.ts` and its compiled `dist/index.js` gets `dist`, and one holding `index.cjs` beside `src/index.ts` keeps `.`.
+- `function_root` is the directory containing the single runtime entry file when exactly one is found: `index.js` or `index.mjs` for Node.js, `main.py` for Python, or `main.rb` for Ruby. Git deploy uses the same entry names. A Node.js archive with no JavaScript entry counts `index.ts`, `index.mts` and `index.cts` instead, unless the root found without them already holds the handler as `index.cjs`, an extensionless `index` file or an `index` directory holding a `package.json` or an index file, the `handler` names its own module (such as `src/handler.main`), or the project's `NODE_PATH` names a directory inside the function, where the handler could load from after the install. A `NODE_PATH` that names only directories outside the function doesn't count. So an archive holding `src/index.ts` and its compiled `dist/index.js` gets `dist`, and one holding `index.cjs` beside `src/index.ts` keeps `.`.
 - If there is no root-level file and all files are under one top-level directory, that top-level directory becomes `function_root`.
 - Otherwise, `function_root` is the archive root (`.`).
 - `install_root` prefers the closest dependency manifest directory containing the runtime handler module, resolved relative to `function_root`.
@@ -297,7 +297,7 @@ Your source archive exceeds the 256 MB limit. Common solutions:
 
 ### "project variables changed during the upload; retry"
 
-The project's `NODE_PATH` variable was created or deleted while Volcano processed the upload. `function_root` depends on whether the project sets `NODE_PATH`, so the request returns `409 Conflict` and deploys nothing. Send the same request again.
+The project's `NODE_PATH` variable was created, changed or deleted while Volcano processed the upload. `function_root` depends on the directories `NODE_PATH` names, so the request returns `409 Conflict` and deploys nothing. Send the same request again.
 
 ### Function image too large
 
