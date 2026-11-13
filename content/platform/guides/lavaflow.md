@@ -1750,8 +1750,7 @@ LavaFlow checks each text a run serves for secrets: its `title`, `fix_summary`,
 `diagnosis`, review findings and questions, hold reasons, and repository check
 commands and output, in the run and in the runs list. A field that holds one
 of your project's exact secret values, or a secret that
-[gitleaks](https://github.com/gitleaks/gitleaks)' default rules detect, also
-inside base64, hex or percent-encoded text, reads
+[gitleaks](https://github.com/gitleaks/gitleaks)' default rules detect, reads
 `Hidden: this field matched a secret.` in place of its whole text. Nothing
 else is hidden, so text that only looks like a credential, such as a test's
 fixture, stays readable. A path that holds a secret or a control character
