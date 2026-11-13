@@ -417,14 +417,14 @@ Agents connected through the [MCP server](../interfaces/mcp.md) can call
 
 ## Errors
 
-| Status | Code                       | When                                                                                                                                   |
-| ------ | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `400`  |                            | A filter, the `limit`, the `cursor`, or the `status` is invalid                                                                        |
-| `400`  |                            | A written issue's `project_id` isn't a UUID, its `description` or `title` is missing, blank or too long, or the body has another field |
-| `403`  | `person_required`          | Writing an issue with a full-scope project access token, MCP, a platform token that never expires, or a sign-in that ended             |
-| `403`  |                            | Writing an issue with a read-only project access token or a read-only account                                                          |
-| `404`  | `feature_unavailable`      | Issues are not available in this environment                                                                                           |
-| `404`  | `feature_unavailable`      | Writing an issue is not available in this environment                                                                                  |
-| `404`  |                            | The project or issue does not exist, or belongs to someone else                                                                        |
-| `409`  | `open_issue_limit_reached` | The project has 1,000 open issues; resolve or ignore some before writing another                                                       |
-| `413`  |                            | A written issue's body is larger than 64 KiB                                                                                           |
+| Status | Code                       | When                                                                                                                                                        |
+| ------ | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `400`  |                            | A filter, the `limit`, the `cursor`, or the `status` is invalid                                                                                             |
+| `400`  |                            | A written issue's `project_id` isn't a UUID, its `description` is missing, its `description` or `title` is blank or too long, or the body has another field |
+| `403`  | `person_required`          | Writing an issue with a full-scope project access token, MCP, a platform token that never expires, or a sign-in that ended                                  |
+| `403`  |                            | Writing an issue with a read-only project access token or a read-only account                                                                               |
+| `404`  | `feature_unavailable`      | Issues are not available in this environment                                                                                                                |
+| `404`  | `feature_unavailable`      | Writing an issue is not available in this environment                                                                                                       |
+| `404`  |                            | The project or issue does not exist, or belongs to someone else                                                                                             |
+| `409`  | `open_issue_limit_reached` | The project has 1,000 open issues; resolve or ignore some before writing another                                                                            |
+| `413`  |                            | A written issue's body is larger than 64 KiB                                                                                                                |

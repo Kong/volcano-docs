@@ -88,7 +88,7 @@ LavaFlow starts a run on its own when an open [issue](issues.md) with
 `exception: true` happens a second time. An error seen once waits for another
 occurrence. A resolved issue that reopens starts a new run too; see
 [After a fix merges](#after-a-fix-merges). An issue you ignore or resolve
-starts none, and neither does an issue with `exception: false`.
+starts none, and neither does an error issue with `exception: false`.
 
 An issue you [write](issues.md#write-an-issue) starts a run as you write it,
 and only then. The run reads your description as what to change, with no logs,
