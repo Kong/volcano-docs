@@ -93,7 +93,9 @@ starts none, and neither does an error issue with `exception: false`.
 An issue you [write](issues.md#write-an-issue) starts a run as you write it,
 and only then. The run reads your description as what to change, with no logs,
 at the head of the project's production branch, and follows your settings as
-any run does.
+any run does, with one exception: under `autonomy: merge`, LavaFlow doesn't
+merge its fix. The branch head is no push Volcano saw deploy, so the fix waits
+for you to merge it, held under `client_reported_commit`.
 
 A [build issue](issues.md#failed-builds) starts a run the first time a deploy
 fails, since the build fails the same way until the code changes. The run reads
