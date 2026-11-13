@@ -35,3 +35,19 @@ Check the fields your application needs before using them. Error responses keep
 their existing `null` values; missing successful fields are not replaced with
 invented defaults. Public method arguments, generic parameters, aliases, and
 package entrypoints retain their existing signatures.
+
+## Keep OpenAPI consumer types compatible
+
+The exported `OpenAPIComponents`, `OpenAPIOperations`, and `OpenAPIPaths` aliases preserve existing named types when the SDK updates its API snapshot.
+Existing optional fields and enum values keep their published TypeScript shapes; newly introduced names describe the current API.
+Both CommonJS and ESM package entrypoints expose the same contracts.
+
+```typescript
+import type { OpenAPIComponents } from '@volcano.dev/sdk';
+
+const config: OpenAPIComponents['schemas']['ProjectConfig'] = { version: 1 };
+```
+
+These aliases preserve source compatibility for your code.
+The server still determines which operations and values it currently accepts; a retained historical type does not make a removed server capability available.
+Use the [API reference](/platform/api-reference) for current server behavior and the [Git management client](./git.md) for repository source reads.
