@@ -55,9 +55,10 @@ the function's JSON response. Edit `volcano/functions/hello.js`, run
 `volcano deploy` again, and invoke again to iterate — no cloud round-trip.
 
 Add `--with-migrations` once your project has migrations in
-`volcano/migrations`. Migrations aren't tracked, so every file runs again on
-each `--with-migrations` run: write them to be safe to repeat, or leave the
-flag out once they have run.
+`volcano/migrations`. The database records each file it applies, so a file
+runs once however often you deploy. An older CLI, one without
+`volcano databases migration apply`, runs every file again on each
+`--with-migrations` deploy; run `volcano upgrade` first.
 
 ## 5. Deploy to the cloud
 

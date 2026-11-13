@@ -778,12 +778,14 @@ curl -X PUT "https://api.volcano.dev/projects/$PROJECT_ID/git-deploy-settings" \
   }'
 ```
 
-If the database already holds these migrations, applied with the CLI or by
-hand, [record a baseline](../guides/migrations.md#adopt-an-existing-database-with-a-baseline)
-of those files before you turn `apply_migrations` on. The CLI does not track
-the files it runs, so without a baseline the first push treats every file as
-pending: DDL that already ran fails its rehearsal, and a file that succeeds
-again, such as an `INSERT`, applies a second time.
+Pushes read the same migration history as tracked runs from the API or
+`volcano cloud databases migration apply`, so files those applied are skipped.
+If the database holds migrations applied without tracking, by hand, with
+`migration up`, or with `--with-migrations` from a CLI before tracked runs,
+[record a baseline](../guides/migrations.md#adopt-an-existing-database-with-a-baseline)
+of those files before you turn `apply_migrations` on. Without one, the first
+push treats every file as pending: DDL that already ran fails its rehearsal,
+and a file that succeeds again, such as an `INSERT`, applies a second time.
 
 Each push then:
 

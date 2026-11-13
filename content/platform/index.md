@@ -201,7 +201,7 @@ Step-by-step guides for common tasks.
 | ---------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | [Deploy to production](guides/production.md)               | Ship your project to the cloud                                                      |
 | [Plans and limits](guides/plans-and-limits.md)             | HOBBY vs SUPERAGENT limits by resource                                              |
-| [Database migrations](guides/migrations.md)                | Apply schema changes once each, rehearsed and backed up, or with the CLI            |
+| [Database migrations](guides/migrations.md)                | Apply schema changes once each, rehearsed and backed up, from the API, Git, or CLI  |
 | [Deployment performance](guides/deployment-performance.md) | Deployment latency objectives, phases, and telemetry                                |
 | [Sandboxes](guides/sandboxes.md)                           | Run commands and HTTP services in isolated sessions with plan-based runtime pricing |
 | [Issues](guides/issues.md)                                 | See runtime errors grouped into issues, and resolve or ignore them                  |
