@@ -45,7 +45,7 @@ a session. Existing emails receive the same acknowledgement.
 
 - `400` - Invalid email/password format
 - `401` - Invalid, tampered, revoked, or wrong-project anon key
-- `403` - Signups disabled, email domain not in `allowed_email_domains`, or anon key lacks `auth.signup` permission. `anonymous.volcano.internal` and `volcano.local` are reserved for the anonymous and Builder debug accounts Volcano creates, and are always refused
+- `403` - Signups disabled, email domain not in `allowed_email_domains`, or anon key lacks `auth.signup` permission. `anonymous.volcano.internal` and `volcano.local` are reserved for anonymous accounts and for the debug accounts an earlier Builder created (Volcano no longer creates them), and are always refused
 - `429` - Rate limit exceeded
 
 ---
