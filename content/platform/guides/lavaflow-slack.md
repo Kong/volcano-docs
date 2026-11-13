@@ -102,7 +102,9 @@ that answer with the outcome. A run from Slack goes as far as opening a fix
 pull request, even where the project lets LavaFlow merge, and so does a run
 someone starts again on the report's issue: merging a fix someone reported in
 Slack stays a person's step. The outcome is the pull request's link, or a
-fixed reason it opened none, and the run's ID. It never holds the diagnosis:
+fixed reason it opened none, and a link to the run in Volcano. The run link
+opens the report's project in the same environment as the Slack app and still
+requires access to that project. It never holds the diagnosis:
 everyone in the channel reads the answer, including people who can't see the
 project's runs. Read the diagnosis in Volcano, and follow the run like any
 other; see
