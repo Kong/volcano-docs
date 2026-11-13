@@ -12,7 +12,8 @@ const API = "https://api.volcano.dev";
 
 // Function preview operations: creating, listing, deploying and deleting
 // previews, promoting one, and rolling back.
-const PREVIEW_PATH = /^\/projects\/\{id\}\/functions\/\{functionId\}\/(candidates|serving)(\/|$)/;
+const PREVIEW_PATH =
+  /^\/projects\/\{id\}\/functions\/\{functionId\}\/(candidates(\/.*)?|serving\/rollback)$/;
 // The code refusing a variable write because a promoted preview serves the
 // function. Frontend and source previews have codes of their own.
 const SERVED_BY_PREVIEW_CODE = /^function_served_by_candidate$/;
@@ -22,26 +23,51 @@ function codesIn(text) {
   return [...text.matchAll(CODE)].map((m) => m[1] ?? m[2]);
 }
 
-// Every error code the OpenAPI document names for the function preview API.
+// Error codes the OpenAPI document names for the function preview API:
+// operationCodes from the preview operations, and the variable write code.
 export function previewErrorCodes(openapi) {
-  const codes = new Set();
+  const operationCodes = new Set();
+  const writeCodes = new Set();
   for (const [route, operations] of Object.entries(openapi.paths ?? {})) {
     for (const operation of Object.values(operations)) {
       for (const [status, response] of Object.entries(operation?.responses ?? {})) {
         if (!/^4\d\d$/.test(status)) continue;
         for (const code of codesIn(JSON.stringify(response))) {
-          if (PREVIEW_PATH.test(route) || SERVED_BY_PREVIEW_CODE.test(code)) codes.add(code);
+          if (PREVIEW_PATH.test(route)) operationCodes.add(code);
+          else if (SERVED_BY_PREVIEW_CODE.test(code)) writeCodes.add(code);
         }
       }
     }
   }
-  return [...codes].sort();
+  return { operationCodes: [...operationCodes].sort(), writeCodes: [...writeCodes].sort() };
 }
 
-// Codes with no table row in the previews guide.
+function cells(row) {
+  return row
+    .trim()
+    .replace(/^\||\|$/g, "")
+    .split("|")
+    .map((cell) => cell.trim());
+}
+
+// Codes with no row in the Code column of a table in the previews guide.
 export function missingPreviewCodes(previewsPage, codes) {
-  const rows = previewsPage.split("\n").filter((line) => line.startsWith("|"));
-  return codes.filter((code) => !rows.some((row) => row.includes(`| \`${code}\``)));
+  const documented = new Set();
+  let column = -1;
+  for (const line of previewsPage.split("\n")) {
+    if (!line.startsWith("|")) {
+      column = -1;
+      continue;
+    }
+    const row = cells(line);
+    if (column === -1) {
+      column = row.indexOf("Code");
+      continue;
+    }
+    const code = row[column]?.match(/^`([a-z_]+)`$/);
+    if (code) documented.add(code[1]);
+  }
+  return codes.filter((code) => !documented.has(code));
 }
 
 // Runtime IDs a page does not mention.
@@ -55,10 +81,17 @@ function section(page, heading) {
   const start = lines.indexOf(heading);
   if (start === -1) return undefined;
   const level = heading.match(/^#+/)[0].length;
-  const rest = lines.slice(start + 1).join("\n");
-  const end = rest.search(new RegExp(`^#{1,${level}} `, "m"));
-  if (end === -1) return rest;
-  return rest.slice(0, end);
+  const next = new RegExp(`^#{1,${level}} `);
+  let fenced = false;
+  let end = lines.length;
+  for (let i = start + 1; i < lines.length; i++) {
+    if (/^\s*(```|~~~)/.test(lines[i])) fenced = !fenced;
+    else if (!fenced && next.test(lines[i])) {
+      end = i;
+      break;
+    }
+  }
+  return lines.slice(start + 1, end).join("\n");
 }
 
 function sameList(a, b) {
@@ -145,10 +178,14 @@ async function main() {
     for (const problem of problems) failures.push(`${page}: ${problem}`);
   }
 
-  const codes = previewErrorCodes(openapi);
-  if (codes.length === 0) {
-    failures.push("the production OpenAPI document names no function preview error codes");
+  const { operationCodes, writeCodes } = previewErrorCodes(openapi);
+  const codes = [...operationCodes, ...writeCodes];
+  // An empty list means the API moved, not that the pages match it.
+  if (operationCodes.length === 0) {
+    failures.push("the production OpenAPI document names no error codes for the function preview operations");
   }
+  if (runtimes.length === 0) failures.push("GET /functions/runtimes lists no runtimes");
+  if (versions.length === 0) failures.push("GET /databases/postgres-versions lists no versions");
   report(
     "functions/previews.md",
     missingPreviewCodes(read("functions/previews.md"), codes).map(

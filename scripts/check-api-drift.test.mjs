@@ -29,6 +29,9 @@ const openapi = {
     "/projects/{id}/frontends/{frontendId}/candidates": {
       post: { responses: { 409: { description: "`code: frontend_served_by_candidate` - other page." } } },
     },
+    "/projects/{id}/functions/{functionId}/serving": {
+      get: { responses: { 409: { description: "`code: serving_only` - not the rollback." } } },
+    },
     "/projects/{id}/functions/{functionId}": {
       delete: { responses: { 409: { description: "`code: deployment_in_progress` - not a preview." } } },
     },
@@ -36,14 +39,31 @@ const openapi = {
 };
 
 test("collects the codes of the function preview operations", () => {
-  assert.deepEqual(previewErrorCodes(openapi), [
-    "build_minutes_exceeded",
-    "candidate_name_taken",
-    "feature_unavailable",
-    "function_deleting",
-    "function_served_by_candidate",
-    "nothing_to_roll_back",
-  ]);
+  assert.deepEqual(previewErrorCodes(openapi), {
+    operationCodes: [
+      "build_minutes_exceeded",
+      "candidate_name_taken",
+      "feature_unavailable",
+      "function_deleting",
+      "nothing_to_roll_back",
+    ],
+    writeCodes: ["function_served_by_candidate"],
+  });
+});
+
+test("keeps the variable write code apart when no preview route matches", () => {
+  const spec = {
+    paths: {
+      "/projects/{projectId}/functions/{functionId}/candidates": {
+        post: { responses: { 409: { description: "`code: candidate_name_taken` - renamed path." } } },
+      },
+      "/projects/{id}/functions/{functionId}/variables": openapi.paths["/projects/{id}/functions/{functionId}/variables"],
+    },
+  };
+  assert.deepEqual(previewErrorCodes(spec), {
+    operationCodes: [],
+    writeCodes: ["function_served_by_candidate"],
+  });
 });
 
 test("ignores success responses", () => {
@@ -54,18 +74,22 @@ test("ignores success responses", () => {
       },
     },
   };
-  assert.deepEqual(previewErrorCodes(spec), []);
+  assert.deepEqual(previewErrorCodes(spec), { operationCodes: [], writeCodes: [] });
 });
 
-test("finds codes without a table row", () => {
+test("finds codes without a row in the Code column", () => {
   const page = [
     "Prose naming `code: stale_revision` is not a row.",
     "",
     "| Status | Code | Why |",
     "| ------ | ---- | --- |",
     "| `409`  | `candidate_in_use` | In use. |",
+    "| `409`  | `function_deleting` | `already_serving` starts this cell, but is not a code row. |",
   ].join("\n");
-  assert.deepEqual(missingPreviewCodes(page, ["candidate_in_use", "stale_revision"]), ["stale_revision"]);
+  assert.deepEqual(
+    missingPreviewCodes(page, ["already_serving", "candidate_in_use", "function_deleting", "stale_revision"]),
+    ["already_serving", "stale_revision"],
+  );
 });
 
 test("finds runtimes a page does not name", () => {
@@ -119,7 +143,21 @@ test("reports a missing versions section", () => {
 });
 
 function creating(example) {
-  return `## List Available PostgreSQL Versions\n\n\`\`\`json\n${JSON.stringify(example)}\n\`\`\`\n\n## Create a Database\n`;
+  return [
+    "## List Available PostgreSQL Versions",
+    "",
+    "```bash",
+    "# A shell comment is not a heading.",
+    "curl https://api.volcano.dev/databases/postgres-versions",
+    "```",
+    "",
+    "```json",
+    JSON.stringify(example),
+    "```",
+    "",
+    "## Create a Database",
+    "",
+  ].join("\n");
 }
 
 test("accepts an example response that matches", () => {
