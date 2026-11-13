@@ -469,14 +469,9 @@ running. It is `null` for a run with no fix. It describes only what LavaFlow
 ran itself: your CI may still run on the pull request after it opens. A fix whose review didn't pass says at the top of
 its description that your tests haven't run on it.
 
-Commands and their output are your repository's own text, so LavaFlow leaves
-out what may contain a credential. A `command` reads
-`LavaFlow left this command out because it may contain a credential`, and an
-`output` reads `LavaFlow left this output out because it may contain a credential`,
-when the text may contain a credential, holds one of your project's
-[secret values](#read-a-reviews-findings), or is over 4,000 characters. Every
-command and output reads so when the run is held with `possible_credential`.
-`status` and `exit_code` always show.
+Commands and their output are checked for secrets like every text a run
+serves ([Read a review's findings](#read-a-reviews-findings)). `status` and
+`exit_code` always show.
 
 ## Name the project
 
@@ -1715,17 +1710,12 @@ finding. Both the list and one run can also carry these optional fields:
   `major` or `critical` severity. Other issue sources and unknown severities
   omit it; absence does not mean low severity.
 - `pull_request.branch`: the recorded branch name, unchanged. It is omitted
-  when unknown or withheld by the project's text privacy checks.
+  when unknown, when it holds a secret, or when the fix is held with
+  `possible_credential`.
 - `fix_summary`: the saved proposed fix's title, on one line of at most 80
   characters. This describes a proposal, not a verified fix, successful review,
   merge or deployment. It never falls back to the diagnosis and is omitted
-  when no saved patch title is available. The full title passes the project's
-  text privacy checks before it is normalized and shortened, and the resulting
-  text is checked again. A shortened title ends with `…`.
-
-Both text fields are omitted when their full source is over the existing
-4,000-character privacy budget, may contain a credential, holds a project
-secret, or the fix is held with `possible_credential`.
+  when no saved patch title is available. A shortened title ends with `…`.
 
 The list carries no diagnosis, changed files or diff. Get them from
 one run:
@@ -1745,7 +1735,7 @@ why in [`source_unavailable`](#why-lavaflow-read-no-code). A run also adds
 `diagnosis` (its `summary`, `root_cause`, and the `evidence` behind
 it, which cites the log lines and code it relies on; `log_lines` is empty for
 now), `changed_files` (the paths its fix changes, sorted; empty without a fix;
-`""` for a path that may itself hold a credential, and for every path when
+`""` for a path that holds a secret, and for every path when
 `diff` can't tell the fix's files apart), `diff`, `diff_sha256`,
 `diff_truncated`, `diff_withheld`, its `review` (`verdict` is `passed`,
 `changes_requested`, `blocked`, or `error`, with the number of `rounds`,
@@ -1756,17 +1746,17 @@ when LavaFlow ran them on the fix, and the commands they ran), and `failure`
 with a `code` and a fixed `message`. Any credential that can read the project's
 logs can read a run, including a read-only project access token.
 
-A run's `title` and `diagnosis` leave out what may contain a credential, as
-the fix's pull request description does: a diagnosis text reads
-`LavaFlow left this section out because it may contain a credential` (a log
-line's `level` reads `""`), and `title` is `null`, when the text may contain a
-credential, holds a secret value, or is over 4,000 characters. Hold reasons in
-`merge.hold_reasons` do too, in the run and in the runs list: a path reads `""`
-when it would, and a `question` reads
-`LavaFlow left this question out because it may contain a credential` when it
-holds a secret value, a value shaped like a credential, or a path left out, or
-when LavaFlow's reviewers wrote it and it may contain a credential. On a run
-held with `possible_credential`, every `question` reads so.
+LavaFlow checks each text a run serves for secrets: its `title`, `fix_summary`,
+`diagnosis`, review findings and questions, hold reasons, and repository check
+commands and output, in the run and in the runs list. A field that holds one
+of your project's exact secret values, or a secret that
+[gitleaks](https://github.com/gitleaks/gitleaks)' default rules detect, reads
+`Hidden: this field matched a secret.` in place of its whole text. Nothing
+else is hidden, so text that only looks like a credential, such as a test's
+fixture, stays readable. A path that holds a secret reads `""`, and so does a
+log line's `level`. On a run held with `possible_credential`, the fix's
+summary, review text, statements, check commands and output, and hold
+reasons read `Hidden: the fix may add a credential.`
 
 For new fixes, `diff` compares each file before and after all edits as a
 unified diff. Unchanged lines appear as context around the changes.
@@ -1776,38 +1766,15 @@ run with no saved fix. What `diff` leaves out, it says in its own text:
 - A diff cut short past 256 KiB ends with a line starting with
   `[diff truncated`, and `diff_truncated` is `true`. `changed_files` still
   lists every file the fix changes, including those past the cut.
-- When a file's content, before, during or after the fix, or any change to it
-  may hold a credential, every change to that file is left out, with a line
-  such as `# LavaFlow withheld the changes to "config/deploy.sh" because they may contain a credential.`
-- A file too long to check is also withheld: over 64 KiB for any version, or
-  past 256 KiB across the fix's file versions. For newly saved fixes, its line
-  says `because the file is too long to check for a credential.` Older fixes
-  say `because they may contain a credential or were too long to check for one.`
-  Their saved data does not distinguish these reasons.
+- When a file's changes hold a secret, as text fields are checked above,
+  every change to that file is left out, with a line such as
+  `# LavaFlow withheld the changes to "config/deploy.sh" because they matched a secret.`
 - A run held with `possible_credential` leaves out every file.
 - A saved diff LavaFlow can't split by file is left out whole, with one line
   in its place, and `diff_withheld` is `[""]`.
-
-In source files, a credential's name alone does not withhold ordinary code:
-calls, member access, empty values and state checks can show. A value bound
-to that name still withholds the file, including fixed password text in a
-template. Configuration files keep their stricter value checks.
-Incomplete escapes and literal syntax LavaFlow cannot safely read also keep
-the file withheld. A credential field whose dotted value could be literal
-configuration stays withheld, as does fixed credential text after a
-template interpolation.
-
-LavaFlow checks complete file contents before saving the diff. When text in
-a comment or source literal may contain a credential, every change to that
-file stays withheld, including hunks that show none of that text. Quoted,
-raw and multiline strings retain the value checks, and regular-expression
-values and text outside a language's code regions cannot receive code exemptions.
-Java Unicode escapes receive the same text and value checks.
-Ambiguous marker boundaries also keep
-the file withheld. LavaFlow distinguishes marker text inside recognized
-closed strings and line comments from block comments, while checking their
-text for credential values. Files also stay withheld when a source check
-reaches its time or work limit.
+- Older fixes keep the files they were saved with as
+  withheld, with lines that say they may contain a credential or were too
+  long to check.
 
 `diff_withheld` lists every withheld path. When the run opened a pull request,
 each withheld-file marker also says to read its changes in that pull request
@@ -1952,26 +1919,15 @@ holds the fix or when you merge it yourself, and `not_fixed` says where the defe
 private description's **Choices to confirm** and **Not fixed here** do.
 `choices` is absent and `not_fixed` is null when the fix states none.
 
-Findings, questions and observations are the reviewers' own words, and can quote your
-code. An observation LavaFlow leaves out reads like a question it leaves out, with
-`this observation` in place of `this question`, and a choice or `not_fixed` the same
-way with `this statement`.
-LavaFlow leaves out what may contain a credential, and a sentence in its place
-says why:
-
-| An `explanation` or `question` reads                                                                    | When                                                                                                                                                                         |
-| ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `LavaFlow left this explanation out because it may contain a credential`, or `this question`            | The text may contain a credential, or holds a secret value                                                                                                                   |
-| `… because it's too long to check for a credential`                                                     | The text is over 4,000 characters                                                                                                                                            |
-| `… because the fix may add a credential`                                                                | The run is held with `possible_credential`; every explanation and question reads so                                                                                          |
-| `LavaFlow left this explanation out because it withheld the changes to this file`                       | `diff` withholds the changes to the finding's `file`, even past a truncated diff's cut. If the fix opened a pull request, its changes show there                             |
-| `LavaFlow left this explanation out because it withheld this file's path`                               | `file` is `""`: the path itself may contain a credential, holds a secret value, or is over 4,000 characters                                                                  |
-| `LavaFlow left this explanation out because it can't tell whether it withheld the changes to this file` | The finding has a `file`, and `diff` withholds a file it doesn't name, can't tell its files apart, or the run saved no `diff`, as a fix saved before LavaFlow kept diffs did |
+Findings, questions, observations and statements are the reviewers' and the
+fix's own words, and can quote your code. Each is shown whole, or reads
+`Hidden: this field matched a secret.` when it holds a secret, as
+[a run's other text](#follow-runs) does. A finding whose `file`
+holds a secret reads `""` there.
 
 A secret value is the value of one of your project's secret variables, such as
 an `API_KEY`, or a password in a URL variable; either counts at 8 characters or
-longer. LavaFlow matches a finding's file however the reviewer wrote its path,
-such as `./src/cart.ts` or `b/src/cart.ts`.
+longer.
 
 ### How review rounds decide
 
