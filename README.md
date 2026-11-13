@@ -27,10 +27,11 @@ PR that **auto-merges**. Source repos are internal, so the job authenticates as
 the **Volcano GitHub App**. See
 [`.github/workflows/sync-docs.yml`](.github/workflows/sync-docs.yml).
 
-The serving layer is intentionally **not decided yet**. The markdown format
+The site is a standalone [Fumadocs](https://fumadocs.dev) app (see
+[Site](#site-fumadocs)) that Volcano deploys from this repository (see
+[Deployment](#deployment)). The markdown format
 ([`spec/markdown-format.md`](spec/markdown-format.md)) uses neutral frontmatter
-fields so any generator can consume it with a thin adapter — the choice between
-a standalone static site and a route inside `volcano-web` stays open.
+fields so any generator can consume it with a thin adapter.
 
 ## Section → source repo
 
@@ -68,8 +69,7 @@ repository root, to [docs.staging.volcano.dev](https://docs.staging.volcano.dev)
 and [docs.volcano.dev](https://docs.volcano.dev). Each deployment records the
 commit it was built from. The build settings live in each project's **Project
 settings → Git** page in the Volcano dashboard, and `DOCS_SITE_URL` is a project
-variable there. No workflow in this repository or in `volcano-web` deploys the
-site.
+variable there.
 
 ## Rollout
 
