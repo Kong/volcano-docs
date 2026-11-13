@@ -753,7 +753,16 @@ Before you turn it on,
 and require pull request reviews, so every migration is reviewed before it
 reaches that branch.
 
-The settings `PUT` is a full replace, except `apply_migrations`. In platform
+From the CLI, turn it on with:
+
+```bash
+volcano git migrations on
+```
+
+It asks you to confirm; `--yes` skips the prompt, for CI and agents.
+`volcano git migrations off` turns it off, and `volcano git status` shows it.
+
+Over the API, the settings `PUT` is a full replace, except `apply_migrations`. In platform
 mode, omitting `frontend_name` clears it. In Git mode, stopping the selected
 legacy frontend requires an explicit `"frontend_name": ""`; omission is refused.
 Read the saved settings first:

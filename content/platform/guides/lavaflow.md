@@ -1753,8 +1753,9 @@ of your project's exact secret values, or a secret that
 [gitleaks](https://github.com/gitleaks/gitleaks)' default rules detect, reads
 `Hidden: this field matched a secret.` in place of its whole text. Nothing
 else is hidden, so text that only looks like a credential, such as a test's
-fixture, stays readable. A path that holds a secret reads `""`, and so does a
-log line's `level`. On a run held with `possible_credential`, the fix's
+fixture, stays readable. A path that holds a secret or a control character
+reads `""`, and so does a log line's `level`; a hold reason with such a path
+hides its question too. On a run held with `possible_credential`, the fix's
 summary, review text, statements, check commands and output, and hold
 reasons read `Hidden: the fix may add a credential.`
 
@@ -1923,7 +1924,9 @@ Findings, questions, observations and statements are the reviewers' and the
 fix's own words, and can quote your code. Each is shown whole, or reads
 `Hidden: this field matched a secret.` when it holds a secret, as
 [a run's other text](#follow-runs) does. A finding whose `file`
-holds a secret reads `""` there.
+holds a secret or a control character reads `""` there, and its
+`explanation` reads `Hidden: this field matched a secret.`, since it may
+quote that path.
 
 A secret value is the value of one of your project's secret variables, such as
 an `API_KEY`, or a password in a URL variable; either counts at 8 characters or
