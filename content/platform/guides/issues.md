@@ -56,7 +56,11 @@ are not available, every issues endpoint answers `404`:
 { "error": "issues are not available", "code": "feature_unavailable" }
 ```
 
-Issues are always available in local mode.
+Writing an issue rolls out separately: check the `issues.create` entry before
+offering it. Where it's not available, writing an issue answers the same `404`,
+and the issues already written still read and update.
+
+Issues, and writing them, are always available in local mode.
 
 ## What becomes an issue
 
@@ -284,7 +288,7 @@ curl "https://api.volcano.dev/projects/$PROJECT_ID/issues?limit=20" \
 | ------------- | --------------------------------------------------------------------- |
 | `status`      | `open`, `resolved`, or `ignored`                                      |
 | `resource_id` | Only issues from this function or frontend                            |
-| `source`      | `runtime`, `code_quality`, `build`, or `report`                       |
+| `source`      | `runtime`, `code_quality`, `build`, `report`, or `request`            |
 | `limit`       | Issues per page, 1 to 100. Default `10`                               |
 | `cursor`      | The previous page's `next_cursor`. Keep the same filters while paging |
 
@@ -294,6 +298,66 @@ Get one issue:
 curl "https://api.volcano.dev/projects/$PROJECT_ID/issues/$ISSUE_ID" \
   -H "Authorization: Bearer $VOLCANO_TOKEN"
 ```
+
+## Write an issue
+
+Describe something to fix in your own words, and Volcano records it as an
+issue with `source` `request`, on the project itself. Name the project in
+`project_id`:
+
+```bash
+curl -X POST "https://api.volcano.dev/issues" \
+  -H "Authorization: Bearer $VOLCANO_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"project_id": "'"$PROJECT_ID"'", "description": "The cart total ignores coupons.\nApply the coupon before tax."}'
+```
+
+```json
+{
+  "id": "9b1e7c3a-2d4f-4e6a-8c1b-3f5d7e9a0b2c",
+  "project_id": "8d2b5f3e-1a4c-4b6d-9e8f-0c1a2b3c4d5e",
+  "resource": {
+    "type": "project",
+    "id": "8d2b5f3e-1a4c-4b6d-9e8f-0c1a2b3c4d5e",
+    "name": "shop"
+  },
+  "title": "The cart total ignores coupons.",
+  "description": "The cart total ignores coupons.\nApply the coupon before tax.",
+  "status": "open",
+  "source": "request",
+  "exception": false,
+  "event_count": 0,
+  "first_seen_at": "2026-11-13T15:02:10Z",
+  "last_seen_at": "2026-11-13T15:02:10Z",
+  "created_at": "2026-11-13T15:02:10Z",
+  "updated_at": "2026-11-13T15:02:10Z"
+}
+```
+
+| Field         | Description                                                                                                                               |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `project_id`  | Required. The project to write the issue on                                                                                               |
+| `description` | Required. What to fix, up to 4,000 characters, across as many lines as you need. Leading and trailing whitespace is trimmed               |
+| `title`       | Optional. Up to 200 characters, on one line. Without it, the title is the description's first line, cut to 80 characters with an ellipsis |
+
+The response is `201` with the issue. With [LavaFlow](lavaflow.md) on, LavaFlow
+starts a run on it by itself, as it does on a new error: the run follows your
+LavaFlow settings, counts toward the run limits, and reads your description in
+place of logs. The issue resolves when its LavaFlow fix merges.
+
+Follow the run with `GET /lavaflow/runs?project_id=…&issue_id=…`. Where
+none starts, such as while LavaFlow is off for the project, start one yourself
+with [`POST /lavaflow/runs`](lavaflow.md#start-a-run); LavaFlow doesn't start
+one later on its own.
+
+Only the project's owner can write an issue, signed in with `volcano login` or
+with a platform token that expires, as only they can start a run: LavaFlow
+starts one on the issue by itself, which sends its description to an AI
+service with your source and counts toward your run limits. A project access
+token or MCP is refused with `person_required` first, even where writing issues
+isn't available. A written issue counts toward the project's 1,000 open issues.
+
+In local mode, LavaFlow never runs, so your local token writes issues as it is.
 
 ## Resolve or ignore an issue
 
@@ -325,8 +389,9 @@ The response is the whole issue; it is shortened here.
 | `ignored`  | Not worth fixing. Keeps counting, never reopens |
 
 An issue resolved at `resolved_at` that is seen again after that moment
-reopens as `open`, and `regressed_at` records when. A reported problem has no
-errors to watch, so it resolves when its LavaFlow fix merges. When Volcano
+reopens as `open`, and `regressed_at` records when. A reported problem or a
+written issue has no errors to watch, so it resolves when its LavaFlow fix
+merges. When Volcano
 deletes a report before any fix merged, it ignores the report's issue; a fix
 that merges later still resolves it. Set `status` back to `open` yourself to
 reopen an issue.
@@ -343,14 +408,23 @@ LavaFlow run. Reopening an issue yourself doesn't start one;
 
 Platform tokens and project access tokens can list and read issues, including
 read-only project tokens. Changing a status needs a token that can write.
+Writing an issue needs the project's owner as a person: a `volcano login`
+token whose sign-in is live, or a platform token that expires. Project access
+tokens and MCP can't write issues.
 
 Agents connected through the [MCP server](../interfaces/mcp.md) can call
 `list_issues` and `get_issue`.
 
 ## Errors
 
-| Status | Code                  | When                                                            |
-| ------ | --------------------- | --------------------------------------------------------------- |
-| `400`  |                       | A filter, the `limit`, the `cursor`, or the `status` is invalid |
-| `404`  | `feature_unavailable` | Issues are not available in this environment                    |
-| `404`  |                       | The project or issue does not exist, or belongs to someone else |
+| Status | Code                       | When                                                                                                                                   |
+| ------ | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `400`  |                            | A filter, the `limit`, the `cursor`, or the `status` is invalid                                                                        |
+| `400`  |                            | A written issue's `project_id` isn't a UUID, its `description` or `title` is missing, blank or too long, or the body has another field |
+| `403`  | `person_required`          | Writing an issue with a full-scope project access token, MCP, a platform token that never expires, or a sign-in that ended             |
+| `403`  |                            | Writing an issue with a read-only project access token or a read-only account                                                          |
+| `404`  | `feature_unavailable`      | Issues are not available in this environment                                                                                           |
+| `404`  | `feature_unavailable`      | Writing an issue is not available in this environment                                                                                  |
+| `404`  |                            | The project or issue does not exist, or belongs to someone else                                                                        |
+| `409`  | `open_issue_limit_reached` | The project has 1,000 open issues; resolve or ignore some before writing another                                                       |
+| `413`  |                            | A written issue's body is larger than 64 KiB                                                                                           |

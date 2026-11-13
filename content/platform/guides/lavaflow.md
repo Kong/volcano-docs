@@ -90,6 +90,11 @@ occurrence. A resolved issue that reopens starts a new run too; see
 [After a fix merges](#after-a-fix-merges). An issue you ignore or resolve
 starts none, and neither does an issue with `exception: false`.
 
+An issue you [write](issues.md#write-an-issue) starts a run as you write it,
+and only then. The run reads your description as what to change, with no logs,
+at the head of the project's production branch, and follows your settings as
+any run does.
+
 A [build issue](issues.md#failed-builds) starts a run the first time a deploy
 fails, since the build fails the same way until the code changes. The run reads
 the failed commit, the build log around its first error, and the code changed
@@ -824,7 +829,8 @@ and says to read them with `volcano cloud lavaflow show <run-id> --json`.
 
 LavaFlow keeps your logs and runtime values in the run, not in the pull
 request: the description links to the run details instead of quoting log
-lines. Before the models read your logs, issue and report, LavaFlow replaces
+lines. Before the models read your logs, issue, report and a written issue's
+description, LavaFlow replaces
 your project's secret values and anything that looks like a known kind of
 secret, such as an API key or a token, with `[redacted]`. Before a run starts,
 LavaFlow replaces only recognized secrets in the report that its routing,
@@ -1322,7 +1328,8 @@ live, a live Volcano dashboard sign-in, or a platform token that expires,
 starts runs for up to 5, and each of the
 others starts one when it's seen again;
 [When runs start](#when-runs-start) says which. Start a run on any of the
-project's issues yourself, as the project's owner:
+project's issues yourself, as the project's owner, including one you
+[wrote](issues.md#write-an-issue) whose run didn't start:
 
 ```bash
 volcano cloud lavaflow runs start <issue-id>
@@ -1609,10 +1616,10 @@ a failed build's first error, a Code Quality finding's title, or a reported
 problem's title), its `culprit` (the innermost frame of your code; for a failed
 build, its first error's `file:line`; for a Code Quality finding, the symbol and
 file it is in; `null` for an error without a stack and for a reported problem),
-`status`, its [`source`](issues.md) (`runtime`, `build`, `code_quality`, or
-`report`), `event_count` (errors grouped so far; for a failed build, the failed
-deploys; for a Code Quality finding, the scans that saw it; 0 for a reported
-problem),
+`status`, its [`source`](issues.md) (`runtime`, `build`, `code_quality`,
+`report`, or `request`), `event_count` (errors grouped so far; for a failed
+build, the failed deploys; for a Code Quality finding, the scans that saw it; 0
+for a reported problem or a written issue),
 `last_seen_at`, `resolved_at` while it is resolved, `regressed_at` once a
 resolved issue came back, and `run_count`, every LavaFlow run on it.
 
@@ -1728,8 +1735,8 @@ curl "https://api.volcano.dev/lavaflow/runs/$RUN_ID" \
 A run adds `source_commit`, the commit it read the code at (`sha`), and where
 that commit came from (`origin`: `push`, `client_reported` for a
 `verification: files` commit, `client_reported_repository` for a
-`verification: repository` one, or `repository` for a reported problem's
-production branch head). It is `null` when the run read no code, and `origin` is
+`verification: repository` one, or `repository` for a reported problem's or a
+written issue's production branch head). It is `null` when the run read no code, and `origin` is
 `null` for a run recorded before Volcano kept it. A run that read no code says
 why in [`source_unavailable`](#why-lavaflow-read-no-code). A run also adds
 `diagnosis` (its `summary`, `root_cause`, and the `evidence` behind
