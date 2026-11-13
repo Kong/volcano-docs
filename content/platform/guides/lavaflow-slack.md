@@ -5,8 +5,8 @@ description: 'Mention Volcano in Slack to have LavaFlow diagnose a reported prob
 
 Mention `@Volcano` in a Slack thread that describes a problem, and
 [LavaFlow](lavaflow.md) reads the report, picks the project, and runs its
-usual diagnosis, fix, review and pull request. It answers in the thread and
-updates that answer with the outcome. You can also ask it for a change, such
+usual diagnosis, fix, review and pull request. It answers in the thread, and
+answers again with the outcome. You can also ask it for a change, such
 as new content or functionality; see [Request a change](#request-a-change).
 
 Slack reports need the project's `lavaflow.slack` capability. Reporting from
@@ -56,7 +56,7 @@ project:
 - **Several, and your reply names one:** the reply after the mention must be
   exactly one project's Volcano name, such as `@Volcano checkout-api`. Quotes,
   backticks and trailing punctuation are ignored. Anything else gets a question
-  listing the channel's projects.
+  listing the channel's projects, each with a link to its repository.
 - **Several, and you only mention `@Volcano`:** it uses the project whose name
   the original message contains. Otherwise LavaFlow's AI picks one of the
   channel's projects, or asks.
@@ -97,8 +97,9 @@ report. A later mention in the thread starts a new report, which reads the
 thread again: for example, a request for a change after the run's result, or a
 retry after LavaFlow refused the report at a limit.
 
-LavaFlow then answers in the thread with the project it picked, and updates
-that answer with the outcome. A run from Slack goes as far as opening a fix
+LavaFlow then answers in the thread with the project it picked and a link to
+its repository, and posts the outcome as a new reply. It never edits an
+earlier reply, so the thread keeps each step of the report. A run from Slack goes as far as opening a fix
 pull request, even where the project lets LavaFlow merge, and so does a run
 someone starts again on the report's issue: merging a fix someone reported in
 Slack stays a person's step. The outcome is the pull request's link, or a
