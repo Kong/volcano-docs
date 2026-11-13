@@ -95,22 +95,10 @@ exports.handler = async (event) => {
 `application_name` to `volcano_user_access:{user_id}` before connecting, and pgproxy sets the
 session variables Row-Level Security policies read automatically:
 
-```javascript
-const { Pool } = require('pg');
+Save the [bounded per-user pool helper](https://github.com/Kong/volcano-docs/blob/main/content/platform/examples/database-pool-example/user-db-pool.js) as `user-db-pool.js` alongside your function. It retains at most four user pools with one connection each, reclaims idle pools for new users, removes empty pools after failed startup, and preserves active work. Handle its capacity error with backpressure and size all instances within the [shared connection limits](../../databases/direct-connection.md#keep-connection-pools-within-capacity).
 
-// One pool per auth user — the RLS identity is fixed at connection startup.
-// In production, bound this cache (e.g. LRU with idle eviction).
-const poolsByUser = new Map();
-function poolForUser(userId) {
-  let pool = poolsByUser.get(userId);
-  if (!pool) {
-    const url = new URL(process.env.DATABASE_URL);
-    url.searchParams.set('application_name', `volcano_user_access:${userId}`);
-    pool = new Pool({ connectionString: url.toString(), max: 5 });
-    poolsByUser.set(userId, pool);
-  }
-  return pool;
-}
+```javascript
+const { connectForUser } = require('./user-db-pool');
 
 exports.handler = async (event) => {
   if (!event.__volcano_auth) {
@@ -118,7 +106,18 @@ exports.handler = async (event) => {
   }
 
   const { user_id } = event.__volcano_auth;
-  const client = await poolForUser(user_id).connect();
+  let client;
+  try {
+    client = await connectForUser(user_id);
+  } catch (error) {
+    // Log diagnostic codes, never connection strings or error messages.
+    console.error('Database connection failed', { name: error?.name, code: error?.code ?? 'UNKNOWN' });
+    return {
+      statusCode: 503,
+      headers: { 'Retry-After': '1' },
+      body: JSON.stringify({ error: 'Database temporarily unavailable' }),
+    };
+  }
 
   try {
     // RLS policies work automatically — works for both authenticated and anonymous users
@@ -137,21 +136,7 @@ exports.handler = async (event) => {
 ## Complete Example
 
 ```javascript
-const { Pool } = require('pg');
-
-// One pool per auth user — the RLS identity is fixed at connection startup.
-// In production, bound this cache (e.g. LRU with idle eviction).
-const poolsByUser = new Map();
-function poolForUser(userId) {
-  let pool = poolsByUser.get(userId);
-  if (!pool) {
-    const url = new URL(process.env.DATABASE_URL);
-    url.searchParams.set('application_name', `volcano_user_access:${userId}`);
-    pool = new Pool({ connectionString: url.toString(), max: 5 });
-    poolsByUser.set(userId, pool);
-  }
-  return pool;
-}
+const { connectForUser } = require('./user-db-pool');
 
 exports.handler = async (event) => {
   // 1. Verify authentication
@@ -162,7 +147,18 @@ exports.handler = async (event) => {
   const { user_id } = event.__volcano_auth;
 
   // 2. Get a connection from this user's pool — RLS is already in effect
-  const client = await poolForUser(user_id).connect();
+  let client;
+  try {
+    client = await connectForUser(user_id);
+  } catch (error) {
+    // Log diagnostic codes, never connection strings or error messages.
+    console.error('Database connection failed', { name: error?.name, code: error?.code ?? 'UNKNOWN' });
+    return {
+      statusCode: 503,
+      headers: { 'Retry-After': '1' },
+      body: JSON.stringify({ error: 'Database temporarily unavailable' }),
+    };
+  }
 
   try {
     // 3. Handle different actions

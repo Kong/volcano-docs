@@ -1,8 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 
-// Sync renames a section's README.md to index.md. Preserve links in the source
-// repositories and translate only destinations that were actually relocated.
+// Section landings were copied in from product repos as README.md and renamed
+// to index.md. Pages still link the README.md names; translate only
+// destinations that were actually relocated.
 export function relocatedIndexHref(href, file) {
   if (!href || !file || /^([a-z][a-z0-9+.-]*:|\/|#)/i.test(href)) return href;
   const [, destination, suffix] = href.match(/^([^?#]*)(.*)$/);

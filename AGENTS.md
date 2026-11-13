@@ -1,8 +1,8 @@
 # Volcano Docs — Agent Instructions
 
 The Volcano developer docs site: a [Fumadocs](https://fumadocs.dev) app (Next.js
-16, React 19, Tailwind v4) that assembles documentation from across the Volcano
-repos. Styles and conventions **mirror `volcano-web`** so the two stay visually
+16, React 19, Tailwind v4) that holds all of the Volcano developer
+documentation. Styles and conventions **mirror `volcano-web`** so the two stay visually
 and structurally consistent.
 
 ---
@@ -38,18 +38,17 @@ pnpm lint:docs <dir> # validate markdown against spec/markdown-format.md
 
 | Path | Purpose |
 |------|---------|
-| `content/` | The docs tree. `get-started`, `cookbooks`, `blog`, `index.md`, and `sdk/index.md` are authored here. The language subtrees `sdk/{js,python,ruby}`, plus `platform`, `cli`, and `ai`, are **synced** from source repos (`docs.config.yaml`) — do not hand-edit them. |
+| `content/` | The docs tree. Every page is authored here, including `platform`, `cli`, and `sdk/{js,python,ruby}`. Follow [`spec/writing.md`](spec/writing.md) for links, wording, and when to merge a page about a new release. |
 | `src/app/` | App Router: root layout, `(docs)` group, `[[...slug]]` renderer, `api/search`. |
 | `src/lib/` | `source.ts` (Fumadocs loader over `content/`), `layout.shared.tsx`. |
 | `source.config.ts` | Fumadocs MDX config; `.source/` is generated (gitignored). |
 | `spec/` | Docs format contract + JSON schema. |
-| `scripts/` | `lint-docs.mjs`, `migrate-docs.mjs`. |
+| `scripts/` | `lint-docs.mjs`, `check-links.mjs`, and the search-index tooling. |
 | `eslint-rules/` | The `volcano/*` custom rules (copied from volcano-web). |
 
 The SDK landing page is owned by this repository. When an SDK changes its minimum
 runtime or shared capabilities, update `content/sdk/index.md` with the language
-guide and verify the claims against that SDK's package metadata. Sync destinations
-must preserve this landing page; keep them scoped to individual SDK languages.
+guide and verify the claims against that SDK's package metadata.
 
 ---
 
@@ -161,7 +160,7 @@ Conventions are caught by tooling, not reviewers. Config: `eslint.config.mjs`.
 | `no-nested-ternary` / `no-ternary` | nested ternaries (error); any ternary (warn) | error / warn |
 | `react/jsx-no-bind` | inline arrow / `.bind()` in JSX props | warn (ref callbacks exempt) |
 | `jsx-a11y/*` | interactive-element / ARIA problems | warn (`aria-props`/`aria-role` error) |
-| `lint:docs` | markdown format contract | error (source repos' PR CI) |
+| `lint:docs` | markdown format contract | error (PR CI) |
 | commitlint | Conventional Commits | error (husky `commit-msg` hook) |
 
 **The one exception:** `src/app/_og/**` renders social cards through Satori

@@ -50,9 +50,6 @@ curl -X PATCH "https://api.volcano.dev/lavaflow/settings" \
   "code_quality": {
     "enabled": false
   },
-  "skill_learning": "auto",
-  "custom_context": "",
-  "system_prompt": "",
   "allow_ungated_workflows": false,
   "updated_at": "2026-11-02T14:05:11Z",
   "updated_by": "6b1f0c52-3e4d-4a8b-9f2c-7d5e1a0b3c4d",
@@ -73,8 +70,10 @@ This project links `acme/storefront`. A project with no linked repository
 reports `repository_required` in `fix_blocker`; see
 [Link a repository](#link-a-repository).
 
-At the default autonomy, `open_pr`, LavaFlow opens a draft pull request with
-each fix. Send `"autonomy": "diagnose_only"` to stop at the diagnosis.
+At the default autonomy, `open_pr`, LavaFlow opens a pull request with each
+fix and leaves the merge to you; see
+[Review and merge fixes yourself](#review-and-merge-fixes-yourself). Send
+`"autonomy": "diagnose_only"` to stop at the diagnosis.
 
 LavaFlow works on the repository the project points at when you turn it on,
 or, turned on with none, on the first one the project points at afterwards.
@@ -90,6 +89,20 @@ LavaFlow starts a run on its own when an open [issue](issues.md) with
 occurrence. A resolved issue that reopens starts a new run too; see
 [After a fix merges](#after-a-fix-merges). An issue you ignore or resolve
 starts none, and neither does an issue with `exception: false`.
+
+A [build issue](issues.md#failed-builds) starts a run the first time a deploy
+fails, since the build fails the same way until the code changes. The run reads
+the failed commit, the build log around its first error, and the code changed
+since the function or frontend last built. LavaFlow can't run your build, so
+its pull request says so: your repository's CI, or the deploy after you merge,
+is the first build of the fix. A fix that hides the error, such as
+`@ts-ignore`, `ignoreBuildErrors`, `|| true`, or a dependency pinned back only
+to avoid the error, fails LavaFlow's review. If the failed deploy has no commit
+LavaFlow can read, such as one from uncommitted changes, the run ends without a
+fix, and the same failure deployed again starts no new run. Deploy the failing
+code again from a commit LavaFlow can read, by a Git push Volcano builds or
+from a clean, pushed checkout. That deploy fails the same way and becomes the
+issue's latest; then [start a run](#start-a-run).
 
 An open issue with `exception: true` that has no run, such as one seen twice
 while LavaFlow was off, gets a run when it's seen again once LavaFlow has been
@@ -126,6 +139,14 @@ Not every recurring error needs a code change. When the diagnosis finds no
 change that fixes it, for example because the cause is outside your code, the
 run opens no pull request and reports `not_fixable` with its diagnosis; see
 [Runs that open no pull request](#runs-that-open-no-pull-request).
+
+When the code at the commit of the deployment that threw the error can't
+produce it, the deployment runs other code, and the diagnosis suggests
+redeploying instead of changing code. LavaFlow decides this only after it
+traces the failing request through your code. An error message, stack line,
+or version in the logs that differs from your code isn't enough on its own:
+logs span every deployment, a bug can survive a release, and libraries throw
+messages your repository doesn't contain.
 
 ## Match your commit conventions
 
@@ -213,6 +234,16 @@ the files as your repository's conventions, such as how it tests a change. They
 rank below LavaFlow's own rules and can't change them: what a fix may change,
 what LavaFlow redacts, whether its commit skips CI, and whether its pull
 request opens as a draft.
+
+These files are where you tell LavaFlow about your project: how to run its
+tests, its conventions, its domain terms, and areas to treat with care. Coding
+agents such as Claude Code, Codex, Copilot and Cursor read the same files, so
+you write them once. LavaFlow has no project setting for this.
+
+Guidance steers how LavaFlow writes and reviews a fix; it can't make LavaFlow
+hold one. For a rule LavaFlow must enforce, such as a person approving every
+fix that changes a path, use
+[`merge_policy.human_review_paths`](#merge-fixes).
 
 ### Tests and claims
 
@@ -311,7 +342,8 @@ tests that changes no test and gives one of these reasons: it holds the fix
 for you with `no_test` (see [Waiting and held](#waiting-and-held)), and may
 start its CI once as it holds it. A fix of code nothing in your repository
 tests, as in a repository with no tests, merges as before, whatever reason it
-gives. With `open_pr`, every fix opens as a draft, as before.
+gives. LavaFlow holds no fix you merge yourself, such as any under `open_pr`,
+for `no_test`, since it never merges one.
 
 Code nothing in your repository tests needs no test, and LavaFlow doesn't add
 one. The pull request's description says which case applies under **Tests**:
@@ -477,12 +509,12 @@ While `lavaflow` is `available`, every LavaFlow route answers. Where it is not:
   offered to the project, and `403` with code `plan_required` when it is but
   the owner's plan does not include it. The list then gives `lavaflow` the
   `code` `plan_required`.
-- A project with saved settings or runs lists it `read_only`. It keeps its
+- A project with saved settings, runs, or bound Slack channels lists it `read_only`. It keeps its
   reads, and can still turn LavaFlow off with `{"enabled": false}`, Code
-  Quality off with `{"code_quality": {"enabled": false}}`, skill learning off
-  with `{"skill_learning": "off"}`, or several in one save, and
-  `allow_ungated_workflows` off with LavaFlow or skill learning. Every other
-  change is refused the same way.
+  Quality off with `{"code_quality": {"enabled": false}}`, or both in one save,
+  and `allow_ungated_workflows` off with LavaFlow. Every other change is
+  refused the same way. Bound channels remain available to list and remove,
+  even if LavaFlow was never turned on.
 
 While the owner's account is read-only or inactive, LavaFlow starts no runs and
 cancels queued and running runs with failure code `account_held`. Nothing needs
@@ -498,45 +530,37 @@ LavaFlow is not available in local mode.
 | `autonomy`                | `diagnose_only` stops at a diagnosis. `open_pr` may also open a pull request with a fix, and never merges it. `merge` may also merge the fix; see [Merge fixes](#merge-fixes)   | `open_pr` |
 | `merge_policy`            | Fixes LavaFlow never merges with `autonomy: merge`; see [Merge fixes](#merge-fixes)                                                                                             |           |
 | `code_quality`            | `enabled`: whether LavaFlow reviews the code each frontend production deploy changes; see [Code Quality](#code-quality)                                                         | `false`   |
-| `custom_context`          | What LavaFlow should know about the project, such as its architecture. Up to 4000 characters                                                                                    | `""`      |
-| `system_prompt`           | Instructions for LavaFlow's runs. Up to 4000 characters                                                                                                                         | `""`      |
 | `allow_ungated_workflows` | Open a fix's pull request even where a workflow could run it with the repository's secrets before a person approves it. See [Allow ungated workflows](#allow-ungated-workflows) | `false`   |
-| `skill_learning`          | `auto`, `review` or `off`: what LavaFlow does with a skill it learns. See [Learned skills](#learned-skills)                                                                     | `auto`    |
-
-LavaFlow saves `custom_context` and `system_prompt`, but runs do not use them
-yet.
 
 `PATCH` changes only the settings you send; send `project_id` and at least one
 setting. A setting you omit
 keeps its saved value, or its default when the project never saved settings.
-`PUT` takes the same body and answers a person the same way. It is
-deprecated; use `PATCH`. `PUT` refuses every project access token.
 `updated_at` is `null` until the first save. `updated_by` is the person who
 made the last save. It is `null` when no person made it, such as a project
 access token's save.
 
 Only the project's owner changes the settings, signed in with a platform token,
 while their account is active, except that a full-scope project access token
-can turn Code Quality and `skill_learning` off with `PATCH`. `can_update` says
+can turn Code Quality off with `PATCH`. `can_update` says
 whether your credential can change the rest.
 
-| Status | Code                  | Why                                                                                                                                                                                                                                                                                                                                   |
-| ------ | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `400`  |                       | `project_id` is missing or not a UUID, a field is unknown, `autonomy` is not one of its values, a `merge_policy` field is invalid, or a text field is over 4000 characters                                                                                                                                                            |
-| `400`  | `feature_unavailable` | The save sets `autonomy: merge` or changes `merge_policy` while the project's `lavaflow.merge` capability is unavailable, or turns `skill_learning` up while `lavaflow.skills` is unavailable                                                                                                                                         |
-| `400`  | `feature_unavailable` | The save turns `code_quality` on while Code Quality is not available to the project                                                                                                                                                                                                                                                   |
-| `401`  |                       | The request has no valid credential                                                                                                                                                                                                                                                                                                   |
-| `403`  | `person_required`     | A full-scope project access token tried any change but [turning Code Quality off](#turn-code-quality-off) or turning `skill_learning` off, or MCP tried to change the settings                                                                                                                                                        |
-| `403`  | `person_required`     | The save turns on `allow_ungated_workflows` or `code_quality`, turns `skill_learning` up, or changes a setting [Turn merging on](#turn-merging-on) lists, and the owner didn't make it with `volcano login` or a platform token that expires, or their GitHub account can't push to the project's repository, or the project has none |
-| `403`  | `plan_required`       | The owner's plan does not include LavaFlow, or the save turns `code_quality` on and the plan allows no Code Quality findings                                                                                                                                                                                                          |
-| `403`  |                       | A read-only project access token tried to change the settings, or the owner's account is read-only                                                                                                                                                                                                                                    |
-| `403`  |                       | The owner's plan could not be read. Nothing was saved; retry                                                                                                                                                                                                                                                                          |
-| `404`  |                       | The project doesn't exist, you can't read it, or it is being deleted                                                                                                                                                                                                                                                                  |
-| `404`  | `feature_unavailable` | LavaFlow is not available to the project; see [Check availability](#check-availability)                                                                                                                                                                                                                                               |
-| `409`  |                       | The settings, or the project's repository, kept changing while the save checked them. Nothing was saved; send it again                                                                                                                                                                                                                |
-| `413`  |                       | The body is over 128 KiB                                                                                                                                                                                                                                                                                                              |
-| `429`  |                       | The owner's GitHub push access was checked too often this hour. Nothing was saved; retry after `Retry-After`                                                                                                                                                                                                                          |
-| `503`  |                       | The owner's GitHub push access couldn't be checked now. Nothing was saved; retry after `Retry-After`                                                                                                                                                                                                                                  |
+| Status | Code                  | Why                                                                                                                                                                                                                                                                                                        |
+| ------ | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `400`  |                       | `project_id` is missing or not a UUID, a field is unknown, `autonomy` is not one of its values, or a `merge_policy` field is invalid                                                                                                                                                                       |
+| `400`  | `feature_unavailable` | The save sets `autonomy: merge` or changes `merge_policy` while the project's `lavaflow.merge` capability is unavailable                                                                                                                                                                                   |
+| `400`  | `feature_unavailable` | The save turns `code_quality` on while Code Quality is not available to the project                                                                                                                                                                                                                        |
+| `401`  |                       | The request has no valid credential                                                                                                                                                                                                                                                                        |
+| `403`  | `person_required`     | A full-scope project access token tried any change but [turning Code Quality off](#turn-code-quality-off), or MCP tried to change the settings                                                                                                                                                             |
+| `403`  | `person_required`     | The save turns on `allow_ungated_workflows` or `code_quality`, or changes a setting [Turn merging on](#turn-merging-on) lists, and the owner didn't make it with `volcano login` or a platform token that expires, or their GitHub account can't push to the project's repository, or the project has none |
+| `403`  | `plan_required`       | The owner's plan does not include LavaFlow, or the save turns `code_quality` on and the plan allows no Code Quality findings                                                                                                                                                                               |
+| `403`  |                       | A read-only project access token tried to change the settings, or the owner's account is read-only                                                                                                                                                                                                         |
+| `403`  |                       | The owner's plan could not be read. Nothing was saved; retry                                                                                                                                                                                                                                               |
+| `404`  |                       | The project doesn't exist, you can't read it, or it is being deleted                                                                                                                                                                                                                                       |
+| `404`  | `feature_unavailable` | LavaFlow is not available to the project; see [Check availability](#check-availability)                                                                                                                                                                                                                    |
+| `409`  |                       | The settings, or the project's repository, kept changing while the save checked them. Nothing was saved; send it again                                                                                                                                                                                     |
+| `413`  |                       | The body is over 128 KiB                                                                                                                                                                                                                                                                                   |
+| `429`  |                       | The owner's GitHub push access was checked too often this hour. Nothing was saved; retry after `Retry-After`                                                                                                                                                                                               |
+| `503`  |                       | The owner's GitHub push access couldn't be checked now. Nothing was saved; retry after `Retry-After`                                                                                                                                                                                                       |
 
 `volcano-config.yaml` does not configure LavaFlow; see
 [Leave out `lavaflow`](../projects/configuration.md#leave-out-lavaflow).
@@ -607,7 +631,12 @@ seconds, unless Volcano saw it still building after the error. When the error
 came while its region was changing over, either
 deployment may have thrown it, so the run waits for the error to recur. A
 deployment of the same commit as the one before it, such as a redeploy that
-only changes variables, doesn't make the run wait, finished or not.
+only changes variables, doesn't make the run wait, finished or not. Neither
+does a function deployment from a push that left that function's code as it
+was, such as a push that changed only other functions, when Volcano recorded
+both deployments' code: either deployment ran the same code. A deployment made
+before Volcano recorded deployments' code, or a function uploaded with the
+CLI, still makes the run wait.
 
 A run waits at most 10 minutes from its start, and for a recurrence, at most
 10 minutes from the error. If LavaFlow still can't tell which deployment threw
@@ -670,126 +699,150 @@ starts a new run when it's seen again a few minutes after the deploy; see
 ## Read a fix's pull request
 
 On a private repository, the pull request's description holds the diagnosis,
-the suggested fix and the review. On any other repository, the description
-leaves the diagnosis out: read it in the Volcano dashboard, with
-`volcano cloud lavaflow show <run-id>`, or from
+what the fix decides for you to confirm, and the review. The pull request's
+changes are the fix, so the description doesn't repeat a suggested fix. On any
+other repository, the description leaves the diagnosis out: read it in the
+Volcano dashboard, with `volcano cloud lavaflow show <run-id>`, or from
 [`GET /lavaflow/runs/{run_id}`](#follow-runs).
+
+A fix goes after the cause, not just the line that crashed, and restores the
+behavior your code, tests and docs intend. It keeps accepting input your logs,
+docs, or changelog show callers already sending, such as a number sent as a
+string or a time in UTC, with the meaning those callers intend. The test is
+whether your code could serve the request. If it could, the fix keeps serving
+it: a missing optional field gets a sensible default, and a value sent in a
+different but understandable form is normalized. The fix adds no new error,
+validation, or limit for such a request, and drops or skips no records. If your
+code can't serve the request, such as one naming an order that doesn't exist,
+the fix answers with the error that condition calls for, such as not found or
+conflict, in the shape your code already uses. Where the fix must decide behavior your code leaves open, such as a
+response shape, a date, money or validation policy, which records to keep or
+drop, or wording your users read, it picks the option that changes least for
+existing callers and stored data, and lists each decision under
+**Choices to confirm**. A fix that only stops the error, or only restores
+behavior your code, tests, docs, or changelog already define, and that no later
+changelog entry or test removed, has no such section.
+When bad data comes from code the fix doesn't change, such as a function that
+writes records in the wrong shape, **Not fixed here** names that code and why
+the fix leaves it:
+
+```markdown
+**Not fixed here.** The cart writer still stores carts without a total; this fix only guards the reader.
+
+## Choices to confirm
+
+This fix decides behavior beyond stopping the error. A person who merges it confirms each choice first; LavaFlow merges it itself only when its reviewers cleared every choice:
+
+- A cart with no total now reads as an empty cart instead of failing the request.
+```
+
+LavaFlow's reviewers send back a fix that decides behavior without listing it,
+or that adds a capability a narrower change wouldn't need. A fix keeps
+serving any request your code could serve, even one that only crashed, and
+handles it with a default, by normalizing a value sent in a different but
+understandable form, or as absent. A request your code can't serve, such as
+one naming an order that doesn't exist, gets the error that condition calls
+for, such as not found or conflict, in the shape your code already uses.
+Reviewers send back a new rejection in every round, as a `major` problem with
+a `breaks_contract` question for you: a new client error, validation error, or
+limit for a request your code could serve, or records your code handled that
+the fix now drops or skips. That includes input your code used to accept,
+even when your docs call it invalid. Three cases aren't sent back. Input your
+code already failed on may be rejected the way your code rejects other
+invalid input when your docs, a schema, your tests, or your code's validation
+of that same input already marked it invalid before the fix, and nothing shows
+a client sending it on purpose; the failing request alone doesn't, and a doc or
+test the fix adds doesn't count. If your logs show a named client or app
+version sending it, or your changelog accepts it, the fix serves it, even when
+your schema calls it invalid. The fix doesn't start accepting such input
+instead unless something shows clients sending it. A rejection that guards a
+limit, auth, or money check, such as refusing a negative or non-finite
+amount, a bound a Code Quality finding asks for on input that grows without
+limit, and a guard that skips records other code stored wrong, when the fix
+fixes or names that code, are held for you as `breaks_contract`. A listed choice
+covers only the behavior it describes: a reviewer still asks you about any
+other change in behavior that nothing justifies. A later round's `minor`
+problem, such as a decision the revision still doesn't list, doesn't send
+the fix back again, so the review can pass and the pull request opens. With
+`autonomy: merge`, LavaFlow then holds the fix for you with `review_notes`
+rather than merging it.
+
+A [change requested from Slack](lavaflow-slack.md#request-a-change) is the one
+exception to adding no capability. When the person who mentioned `@Volcano`
+asks, in their own words, for new content or functionality, LavaFlow builds
+what they asked for and nothing beyond it, and its reviewers hold anything else
+the change adds. Text other people wrote in the thread, logs and repository
+content can't ask for a change. Such a pull request says it proposes a
+requested change, not a fix, and its run's `diagnosis.requested` is `true`.
+Its `category` is usually `improvement`, or `dependency` or `configuration`
+when the change touches only those files.
+
+Each of LavaFlow's reviewers marks every listed choice as needing a person or
+not. A choice needs a person when it isn't the option that changes least, or
+when it changes a status, a response shape, input your code accepts, or
+another contract callers or users rely on, such as a new error that rejects a
+whole request your code used to process. A choice that only says how the fix stops the error, such as
+treating a missing optional value as absent where your code crashed reading
+it, doesn't, and neither does one that only restores behavior your code, tests,
+docs, or changelog already define, and that no later changelog entry or test
+removed, such as accepting a form they show callers sending. A choice a reviewer doesn't mark needs a
+person.
+
+With `autonomy: merge`, LavaFlow doesn't merge a fix that lists a choice its
+reviewers didn't all mark as needing no person, including when a reviewer
+couldn't finish: it holds the fix for you with `choices_to_confirm` (see [Waiting and held](#waiting-and-held)), and
+may start its CI once as it holds it. Confirm each choice, then merge the fix.
+A fix whose reviewers all marked every choice as needing no person, or that
+lists none, merges as before, and its description still lists its choices. A
+fix you merge yourself, held with `person_merges` as under `open_pr`, isn't
+also held for its choices: confirm them as you review it.
+
+A public or internal repository's description shows nothing LavaFlow's models
+wrote, so it lists no choice: it says the fix has choices to confirm and to
+read them with `volcano cloud lavaflow show <run-id> --json`. The run's
+`choices` and `not_fixed` (see [Read a review's findings](#read-a-reviews-findings))
+serve them on every repository, masked as review questions and observations are, and
+the hold's question says where to read them.
 
 If the review didn't pass, a warning leads the description. On a private
 repository, it counts the open findings by severity and points to **Review**
 below. On a public or internal repository, it gives the command to read the
 review instead. The warning gives the CI steps once; the footer doesn't repeat
-them. The review table counts blocking findings from both reviewers and
-LavaFlow's own test check. **For a person to decide** labels each question with
+them. **Review** says in one sentence how the review went, such as
+"LavaFlow's 2 reviewers checked this fix. The last round had no blocking
+finding." When LavaFlow's own checks found problems in a fix that didn't
+pass, the sentence says what they found, such as a missing test. The description doesn't print the model's
+confidence label: a low-confidence diagnosis opens no pull request, and a
+medium-confidence one adds a caution to check the root cause before you
+merge. **For a person to decide** labels each question with
 what to check, such as its effect on payments or access. If a saved question
-ends mid-sentence, LavaFlow shows only complete sentences and asks you to review
-the change in **Files changed**.
+ends mid-sentence, LavaFlow shows only complete sentences, never cutting
+inside inline code, and asks you to review the change in **Files changed**.
 
-The diagnosis can quote your logs, so LavaFlow checks each field before
-publishing it. When masking would replace a value, the description leaves
-the whole field out and points to the pull request changes and run details.
-If either an evidence item's location or its detail needs masking, the
-whole item is left out. Other readable fields, the review verdict and test
-status stay present. Run details may also withhold credentials.
+A reviewer asks a person to decide only about what merging this fix does,
+compared with your code's behavior before it, and cites the line of the change
+that raises the question. With `autonomy: merge`, every question holds the
+fix. **Reviewer observations** lists what they noticed that doesn't hold the fix,
+such as bad data stored before the fix or a related problem elsewhere. A
+public or internal repository's description shows no observations: it counts them
+and says to read them with `volcano cloud lavaflow show <run-id> --json`.
 
-Prose outside code blocks can show these values as written:
+LavaFlow keeps your logs and runtime values in the run, not in the pull
+request: the description links to the run details instead of quoting log
+lines. Before the models read your logs, issue and report, LavaFlow replaces
+your project's secret values and anything that looks like a known kind of
+secret, such as an API key or a token, with `[redacted]`. Before a run starts,
+LavaFlow replaces only recognized secrets in the report that its routing,
+request-check and assessment models read.
 
-- code, strings and whole numbers that appear whole in a file the fix
-  changes, a file the diagnosis cites, or the fix itself, such as
-  `coupon.expires` or `0`;
-- a random-looking identifier declared at the top level of a complete,
-  parseable JavaScript file (`.js`, `.cjs` or `.mjs`): a named function or
-  class, or a single-name `const`, `let` or `var` declaration. A name found
-  only in a string, comment, call or unsupported syntax stays masked;
-- a line number in one of those files, as in `line 15` or `quote.js:15`;
-- an HTTP status code from `100` to `599` where the words around it say it is
-  one, as in `returns status 500`, `responded with HTTP 403`,
-  `answered HTTP 404`, `HTTP 404`, `status code 503`, `a 500 error`, `404 Not Found` or
-  `res.status(500)`. Any other number in that range, such as an amount, a
-  count or an ID from your logs, stays masked, as in `returns 250 rows`,
-  `responded with 120 items`, `answered with 250 rows`, `312 error responses`
-  or `Status 250 items`.
-
-The suggested fix prints as a code block only when it needs no masking
-and its backticks and tildes pair up. Otherwise the description points to
-the actual fix in **Files changed**. The same rule applies to fields that
-hold code blocks, unpaired backticks or text that reads differently than
-it's spelled, such as fullwidth or invisible characters.
-
-These values prevent the affected field from being shown even when your
-code holds them:
-
-- values that look like credentials or keys, and random-looking tokens and
-  IDs apart from the declared code names above;
-- any value or line number that holds one of your project's secret values,
-  or is part of one. A secret value shorter than four bytes, such as `1`
-  or `us`, masks a value or line number only when it is part of that
-  secret value or holds it as a separate word, which a hyphen or an
-  underscore also ends: `10` masks `1`, `rounds=10` and `pin-10`, but not
-  `1024`. A secret value is any variable whose
-  name may hold a credential, such as `DB_PW`, and any password in a URL;
-- email addresses, URLs, IP addresses, and `localhost`;
-- host names under a public top-level domain in any script, such as
-  `api.example.com`, `myapp.herokuapp.com`, `пример.рф` or `example.भारत`,
-  or under a private name such as `.local`, `.internal`, `.corp`, `.home` or
-  `.lan`;
-- any name in a host's place, as `db` is in `psql -h db`, `mysql -hdb`,
-  `host=db`, `DB_HOST=db` or `hosts: ['db']`, including a list or list items
-  under a host key on later lines, and any value whose line, or one of the
-  two lines before it, mentions a host at all, as `DB_HOST := 'db'` does;
-- UUIDs, dates and times, including a day or year beside a month's name,
-  as in `Nov 7, 2026`, `Nov-7-2026` or `7/Nov/2026`;
-- every part of an IPv6 address, as in `fd00::42`;
-- numbers of six or more digits, decimals, including the digits after a
-  leading dot, as in `.75`, numbers written with a leading zero, and every
-  group of a number in digit groups, such as `4111 1111`.
-
-A credential that looks like ordinary code isn't detected by its shape. So a
-description shows code and strings from your repository only when nothing in
-it names a credential, a host or a command line, even spelled with
-fullwidth or invisible characters, and only when it is plain ASCII apart
-from en and em dashes, which print as hyphens. An accented word such as
-`café`, a word in another alphabet, an emoji or other symbol, or
-punctuation or a space outside ASCII, such as a curly quote or a no-break
-space, masks every value. So does an escaped or encoded character anywhere
-in the description, such as `\u0061`, `%61` or `&#97;`. When anything in the diagnosis, the review or the issue's
-title names a credential, a host or a command line, holds a value the
-description masks as a credential, or holds a CI-skip directive, every value
-in the description stays masked. A command line is any option, such as `-h`, `-w` or `--password`, a
-line that starts with a shell prompt, such as `$`, `>`, `#`, `%` or `PS>`, or
-a code block marked as a shell session, such as `sh`, `bash`, `console` or
-`powershell`. Common words count: a description that mentions a `token` or
-`localhost`, or runs `mkdir -p`, shows none of your code's values. Ordinary
-prose such as `passed an empty collection` does not name a password. Bare
-`pass`, `auth` and names such as `http_auth_mode` still count. A quoted value
-also stays masked when:
-
-- its line, or one of the two lines before it, has a name that may hold a
-  credential, such as `apiKey`, `dbpass`, `PGPASSWORD`, `token`, `dsn`,
-  `sessionId`, `LICENSE`, `SLACK_WEBHOOK_URL`, `accountSid` or `nonce`, or
-  `/p` after `schtasks`, `runas` or `net use`, whatever stands between the
-  name and the value. A code fence's line doesn't count as one of the two, so
-  a name just before a code block covers the block's first lines;
-- a credential was masked on one of those lines;
-- it's in a piece of evidence or a review finding whose location or file
-  names a credential or a host, as `src/auth.js` does, or the other way
-  round;
-- it sits inside a URL or is joined to an address.
-
-A host name with no dot that nothing names as a host, such as `db`, can show.
-On a private repository, the pull request's title and commit message keep
-the same repository values as its description. They mask those values when
-the title itself or the description mentions a credential or host. On other
-repositories, titles and commit messages keep their existing masking.
-
-```text
-The quote handler crashes for a coupon with no expiry, such as `SAVE10`.
-Line 15 calls `coupon.expires.localeCompare(today)` without checking that
-`coupon.expires` exists.
-
-LavaFlow left this section out because it quotes values this description masks.
-Review the pull request changes and the run details.
-```
+Right before LavaFlow publishes a title, description, commit message, review
+or comment, it checks that text once more, along with the fields it was built
+from. If either still holds one of your project's secret values or a
+recognized secret, LavaFlow replaces the whole text: a title becomes `apply a LavaFlow fix` in your repository's commit form,
+and a description or comment becomes a sentence that points to the run
+details. Everything else shows as the model wrote it. LavaFlow catches only
+your secret values as they are stored and secrets it recognizes, so don't
+rely on it to hide a secret written another way.
 
 ## Find LavaFlow's pull requests
 
@@ -813,6 +866,68 @@ only diagnoses opens no pull request. Creating and adding the label fire
 workflows like any other label; see
 [Gate workflows that run a fix](#gate-workflows-that-run-a-fix).
 
+## Review and merge fixes yourself
+
+With `autonomy: open_pr`, LavaFlow never merges a fix: you review and merge
+each one, like any other pull request. So do fixes LavaFlow may not merge in a
+project whose autonomy is `merge`: those that open while merging is
+unavailable (see [Merge fixes](#merge-fixes)), and those from runs that may
+only open a pull request, such as the runs LavaFlow starts on its own for
+logged errors. LavaFlow never adds a fix you merge to a merge queue, or takes
+it out of one you added it to, and the fix stays yours if merging becomes
+available later.
+
+How such a fix opens depends on the project's `lavaflow.open_pr_ci_start`
+capability, which `GET /projects/{id}/capabilities` lists; see
+[Capabilities for one project](../api-reference/overview.md#capabilities-for-one-project). It is rolling out environment
+by environment.
+
+**While `lavaflow.open_pr_ci_start` is unavailable,** every fix you merge
+opens as a draft whose commit skips CI, and LavaFlow runs no CI on it. Push a
+commit to the branch to run your CI, mark the pull request ready for review,
+then review and merge it, and
+[keep the CI skip out of your base branch](#keep-the-ci-skip-out-of-your-base-branch).
+
+**Once it is available,** a fix whose review passed opens ready for review.
+Its commit skips CI at first. About a minute later, LavaFlow's first read of
+the pull request runs your repository's CI on it once, the way it starts CI
+under `merge` (see [Check before CI starts](#check-before-ci-starts)): where
+it can, it replaces its commit with a clean copy that has the same changes and
+no CI-skip directive, so any merge method runs your workflows; otherwise it
+adds a commit on top that runs CI. LavaFlow then comments
+**LavaFlow ran your CI on this fix once; review it and merge it yourself.**,
+and never pushes to the pull request again. The run's `merge` shows `held`
+with the `person_merges` hold reason. A fix whose review didn't pass still
+opens as a draft whose commit skips CI.
+
+A fix you merge also opens as that draft, and LavaFlow runs no CI on it, when
+your repository may run CI or previews outside GitHub Actions: right before
+the fix opens, LavaFlow runs the check it runs before it starts CI (see
+[Check before CI starts](#check-before-ci-starts)), on the fix's changes and
+your base branch, and opens a draft when that check finds any such service,
+or when LavaFlow can't complete it. This way only CI that GitHub Actions gates
+sees the fix as ready for review. Where your repository can't have draft pull
+requests, such as a private repository on a plan without them, the fix opens
+as a regular pull request instead, and LavaFlow still runs no CI on it.
+LavaFlow runs this check on every attempt to open the fix. If an earlier
+attempt already opened it ready for review and a later check finds such a
+service, the pull request stays as it is, and LavaFlow runs no CI on it.
+
+Anything that keeps a held fix's CI from starting keeps this fix's from
+starting too, such as a sensitive path, a reviewer's call for a person, a
+`needs-human-review` label, a change request, or a workflow that could run the
+fix with your secrets before a person approves it; see
+[Waiting and held](#waiting-and-held). The pull request then opens ready with
+a description that says LavaFlow won't run its CI, and LavaFlow's comment
+lists why. Its commit still skips CI: push a commit to the branch to run it,
+and [keep the CI skip out of your base branch](#keep-the-ci-skip-out-of-your-base-branch)
+when you merge.
+
+A fix you merge doesn't hold its [lineage](#fix-lineage) when LavaFlow hands
+it to you, so a later fix of the same issue still opens. Closing it without
+merging holds the lineage, as closing any of the lineage's pull requests
+does.
+
 ## Merge fixes
 
 With `autonomy: merge`, LavaFlow merges a fix's pull request once its
@@ -821,11 +936,10 @@ only into a base branch that requires at least one status check: on any other,
 it holds every fix with `no_required_checks`. See
 [Require a status check before LavaFlow merges](#require-a-status-check-before-lavaflow-merges).
 With
-`open_pr`, LavaFlow opens each fix as a draft pull request, where the
-repository's GitHub plan offers drafts, and never merges it: mark it ready for
-review, then review and merge it like any other. Merging needs the project's `lavaflow.merge` capability. While it
+`open_pr`, LavaFlow never merges a fix; see
+[Review and merge fixes yourself](#review-and-merge-fixes-yourself). Merging needs the project's `lavaflow.merge` capability. While it
 is unavailable, a new fix opens its pull request as under `open_pr`, and
-LavaFlow never merges it. A merge that was already waiting gets `reason`
+LavaFlow never merges it, even once the capability is back. A merge that was already waiting gets `reason`
 `paused`. LavaFlow takes a queued fix out of the merge queue, so it shows
 `waiting_for_checks`, and queues it again when the capability is back.
 
@@ -833,7 +947,8 @@ Turning on merge lets LavaFlow's fixes, including those from runs it starts on
 its own, run your CI with the secrets your pull request workflows get. To
 start that CI, LavaFlow may force-update the fix's branch while it still holds
 only LavaFlow's commits; see [Check before CI starts](#check-before-ci-starts).
-Under `open_pr`, a fix's commits skip CI.
+Under `open_pr`, with `lavaflow.open_pr_ci_start` available, LavaFlow starts a
+fix's CI at most once, the same way, and never merges it.
 
 ```bash
 curl -X PATCH "https://api.volcano.dev/lavaflow/settings" \
@@ -907,13 +1022,8 @@ the fix's review passes and nothing holds it, LavaFlow starts its CI; see
 
 Merging lets LavaFlow change your repository with no one else looking. Only
 the project's owner can change `autonomy` to `merge`, turn `enabled` on while
-`autonomy` stays `merge`, or change `merge_policy`, `custom_context` or
-`system_prompt`, to any value, while `autonomy` is or becomes `merge`. Under
-settings saved with automatic runs off before this API, the runs LavaFlow
-starts on its own stop at a draft pull request. Sending `enabled: true` or
-`"autonomy": "merge"` again, while LavaFlow is on and `autonomy` is `merge`,
-lets them merge, so it needs the check too. Anyone who can save can turn
-LavaFlow off.
+`autonomy` stays `merge`, or change `merge_policy`, to any value, while
+`autonomy` is or becomes `merge`. Anyone who can save can turn LavaFlow off.
 
 With the [CLI](/cli/lavaflow), run this for the current project. It says what
 merging allows, then asks before it saves:
@@ -971,6 +1081,10 @@ its checks, and its hold comment says whether it did. Those reasons are:
 - `rules_bypass`
 - `commit_convention`
 - `no_test`
+- `choices_to_confirm`
+- `risky_change`
+- `review_notes`
+- `person_merges`
 - `unchecked_rules`, when every such rule governs only what merges: required
   signatures, resolved review threads, commit message and author or committer
   email patterns, and file path, extension, path length and file size limits
@@ -999,15 +1113,19 @@ LavaFlow holds a fix for these reasons:
 | `repository_requires_approval` | The repository requires an approving review                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `person_commits`               | Someone other than LavaFlow pushed to the fix's branch                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `rules_bypass`                 | The Volcano GitHub App can bypass a ruleset on the base branch                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `unchecked_rules`              | The base branch has a rule LavaFlow doesn't check, such as required signatures                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `unchecked_rules`              | The base branch has a rule LavaFlow doesn't check, such as required signatures. On a fix you merge, it names only rules that kept LavaFlow from starting its CI, such as `code_scanning` or `workflows`, or says LavaFlow couldn't read the rules                                                                                                                                                                                                                                                                                                                   |
 | `ungated_workflows`            | The fix opened past workflows that can run it with the repository's secrets before a person approves it, as the project's owner allowed, or LavaFlow couldn't check its workflows; see [Allow ungated workflows](#allow-ungated-workflows). Or, when LavaFlow was about to start its CI or add it to a merge queue, a workflow could run it with those secrets, or LavaFlow couldn't read one; see [Check before CI starts](#check-before-ci-starts). Or another reason held the fix before its CI started, and that check found such a workflow or couldn't finish |
 | `ci_outside_actions`           | When LavaFlow was about to start its CI, the repository could run CI or previews outside GitHub Actions; see [Check before CI starts](#check-before-ci-starts)                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `commit_convention`            | LavaFlow can't write a title that meets your repository's [commit convention](#match-your-commit-conventions)                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `lineage_undoes_parent`        | The fix follows up an earlier LavaFlow fix and deletes or changes lines that fix added; see [Fix lineage](#fix-lineage)                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `lineage_cap`                  | The fix's lineage opened as many pull requests as it may; see [Fix lineage](#fix-lineage)                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `lineage_held`                 | An earlier pull request in the fix's lineage was held, stopped or closed; see [Fix lineage](#fix-lineage)                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `lineage_held`                 | An earlier pull request in the fix's lineage was held, stopped or closed (one you merge holds it only when closed); see [Fix lineage](#fix-lineage)                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `recent_regressions`           | Fixes LavaFlow merged in the project recently caused new errors; see [Fix lineage](#fix-lineage)                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `no_test`                      | LavaFlow added no test, because testing the change needs test infrastructure your repository doesn't have or the change has no effect a test can observe, though your repository tests the code it changes. Check whether a test could cover the change; merge if the reason holds. See [Tests and claims](#tests-and-claims)                                                                                                                                                                                                                                       |
+| `choices_to_confirm`           | The fix decides behavior beyond stopping the error, such as a response shape or a validation policy, and LavaFlow's reviewers didn't all mark each decision as needing no person. A private repository's description lists each decision under **Choices to confirm**; on any repository, the run's `choices` lists them. Confirm each one, then merge                                                                                                                                                                                                              |
+| `risky_change`                 | The fix adds or removes a line that converts a value, such as with `float()` or `parseInt()`, in a file that names a rate limit or quota, authentication or authorization, or money; see below                                                                                                                                                                                                                                                                                                                                                                      |
+| `review_notes`                 | LavaFlow's reviewers passed the fix, but its review's last round left notes: `minor` problems a later round no longer sends back, such as a decision the fix makes without listing it. Read the run's review findings, then merge                                                                                                                                                                                                                                                                                                                                   |
+| `person_merges`                | You review and merge the fix: the project's autonomy is `open_pr`, merging was unavailable when it opened, or its run may only open a pull request. LavaFlow ran the fix's CI once first, unless another reason or the check before CI starts stopped it; see [Review and merge fixes yourself](#review-and-merge-fixes-yourself)                                                                                                                                                                                                                                   |
 | Any other code                 | One of LavaFlow's reviewers raised a concern, or its review was cut short; the code names it                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 
 Volcano always holds a fix that changes deploy or infrastructure configuration
@@ -1037,6 +1155,33 @@ It holds a fix that changes any of these with `sensitive_path`:
 - A dependency manifest or lockfile, or a `package.json` change to what installs
   or to its install scripts
 - Runtime, container or other configuration files
+
+LavaFlow holds a fix with `risky_change` when it adds or removes a line that
+converts a value in a file that names a rate limit or quota, authentication
+or authorization, or money. A conversion can let a value such as `NaN`,
+`Infinity` or a negative number reach a comparison that then lets everything
+through: `float("nan") > limit` is always false, so a limit compared that way
+never trips. Its question names the first such line, and `paths` names the
+files. LavaFlow reads Python, JavaScript, TypeScript and Go source, and not
+tests:
+
+- A conversion is a numeric parse or cast, such as `int()`, `float()` and
+  `Decimal()`; `Number()`, `parseInt()`, `parseFloat()`, unary `+`,
+  `as number` and Zod's `coerce.number()`; or `strconv.ParseFloat` and a Go
+  numeric cast.
+- A file names a control by the words of its identifiers: `limit`, `quota`,
+  `rate` or `throttle`, or `auth`, `authenticate`, `authorize` or
+  `permission`, before or after the fix; `money`, `price`, `amount` or
+  `balance` only before the fix, or after it for a file the fix adds, since a
+  fix often names its own converted value `amount`. `rateLimit`, `RATE_LIMIT`
+  and `rate_limiter` all count.
+- The rule reads text, not code: a conversion or a name in a comment or a
+  string counts too.
+- A file's leading comment, such as a license header, doesn't name a control.
+- LavaFlow holds rather than skips a source file it can't read.
+
+LavaFlow's reviewers passing the fix doesn't release this hold. Check that the
+values the fix now lets through can't get past the check, then merge it.
 
 LavaFlow never merges a fix whose title can't meet your repository's commit
 convention. When nothing else holds such a fix, LavaFlow keeps it on the run
@@ -1086,30 +1231,30 @@ stopped merge leaves the pull request open for you, and LavaFlow never merges,
 pushes to, rebases or dequeues it again. Unless the table says otherwise,
 review the change, then merge or close the pull request yourself.
 
-| `reason`                   | Why LavaFlow stopped, and what to do                                                                                                                                                                                                                                                                                                                             |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `handed_off`               | Someone drafted or closed the pull request, or moved it to another branch, so LavaFlow stopped. Nothing to do                                                                                                                                                                                                                                                    |
-| `review_unresolved`        | LavaFlow's review didn't pass the fix; the run's [`review`](#why-a-review-stopped) says why. Finish the fix yourself, or close the pull request                                                                                                                                                                                                                  |
-| `settings_changed`         | The project's settings no longer let LavaFlow merge: LavaFlow was turned off, `autonomy` is no longer `merge`, the owner's plan no longer includes LavaFlow, or the project is being deleted. Turning merging back on doesn't resume this fix                                                                                                                    |
-| `checks_failed`            | A check on the fix failed. Its details are on the pull request                                                                                                                                                                                                                                                                                                   |
-| `checks_timed_out`         | The checks didn't all finish within 24 hours. A required check pinned to a GitHub App counts only as that App's check run                                                                                                                                                                                                                                        |
-| `blocked_by_rules`         | A rule of the repository that LavaFlow can't satisfy blocks the merge                                                                                                                                                                                                                                                                                            |
-| `not_mergeable`            | GitHub can't merge the pull request, for example because it conflicts with its base branch. Resolve the conflict first                                                                                                                                                                                                                                           |
-| `branch_behind`            | The base branch requires pull requests to be up to date with it and has no merge queue. LavaFlow doesn't update fix branches, so update the branch first                                                                                                                                                                                                         |
-| `removed_from_queue`       | The fix isn't in the merge queue, and LavaFlow can't tell why: its checks may have failed there, or someone removed it                                                                                                                                                                                                                                           |
-| `reads_failed`             | LavaFlow failed to read the pull request for about an hour while the fix may have been in the merge queue, so it took the fix out of the queue, or failed to read the project's settings or repository for about a day while merging was paused. When it couldn't reach the pull request to take it out, its comment says the fix may still merge from the queue |
-| `unreadable`               | The pull request has more checks, reviews, labels or commits than LavaFlow reads, so it can't judge the fix                                                                                                                                                                                                                                                      |
-| `permission_missing`       | The Volcano GitHub App, or the owner's GitHub account, lacks a permission the merge needs. Grant the App's requested permissions; the owner must be able to push                                                                                                                                                                                                 |
-| `repository_changed`       | The project now deploys from another repository                                                                                                                                                                                                                                                                                                                  |
-| `paused_too_long`          | Merging stayed paused for more than 7 days                                                                                                                                                                                                                                                                                                                       |
-| `cancelled`                | The project is being deleted, so LavaFlow stopped waiting on the merge. Nothing to do                                                                                                                                                                                                                                                                            |
-| `request_rejected`         | GitHub refused LavaFlow's request to start the fix's checks. Push a commit to the branch to run your CI                                                                                                                                                                                                                                                          |
-| `ci_start_commit_mismatch` | GitHub reports a different commit from the one LavaFlow made to start the checks, so LavaFlow didn't move the branch. Push a commit to the branch to run your CI                                                                                                                                                                                                 |
-| `branch_refused`           | LavaFlow didn't start the fix's checks because the pull request was no longer open, or its branch isn't a LavaFlow branch of a pull request LavaFlow opened. LavaFlow never starts checks on the default or production branch                                                                                                                                    |
-| `head_unverified`          | GitHub doesn't report the fix's head as the signed commit LavaFlow pushed, so LavaFlow didn't start its checks. Check who pushed to the branch                                                                                                                                                                                                                   |
-| `checks_not_started`       | LavaFlow couldn't give the fix a commit message that runs CI. Push a commit to the branch to run your CI                                                                                                                                                                                                                                                         |
-| `queue_carries_ci_skip`    | The repository's merge queue could carry an instruction to skip checks, from the fix's commits or its pull request's title or description, into the base branch. Reword LavaFlow's commit to drop it and force-push, and take any such instruction out of the title and description, before you queue the fix                                                    |
-| `merge_carries_ci_skip`    | A commit under the fix's head skips checks, and merging would carry that into the base branch, for example because the repository allows no squash merge. Reword LavaFlow's commit to drop it and force-push before you merge                                                                                                                                    |
+| `reason`                   | Why LavaFlow stopped, and what to do                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `handed_off`               | Someone drafted or closed the pull request, or moved it to another branch, so LavaFlow stopped. Nothing to do                                                                                                                                                                                                                                                                                                                                                         |
+| `review_unresolved`        | LavaFlow's review didn't pass the fix; the run's [`review`](#why-a-review-stopped) says why. Finish the fix yourself, or close the pull request                                                                                                                                                                                                                                                                                                                       |
+| `settings_changed`         | The project's settings no longer let LavaFlow merge, or start the CI of a fix you merge: LavaFlow was turned off, `autonomy` is no longer `merge` (no longer `open_pr` or `merge` for a fix you merge), the owner's plan no longer includes LavaFlow, or the project is being deleted. Turning merging back on doesn't resume this fix                                                                                                                                |
+| `checks_failed`            | A check on the fix failed. Its details are on the pull request                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `checks_timed_out`         | The checks didn't all finish within 24 hours. A required check pinned to a GitHub App counts only as that App's check run                                                                                                                                                                                                                                                                                                                                             |
+| `blocked_by_rules`         | A rule of the repository that LavaFlow can't satisfy blocks the merge                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `not_mergeable`            | GitHub can't merge the pull request, for example because it conflicts with its base branch. Resolve the conflict first                                                                                                                                                                                                                                                                                                                                                |
+| `branch_behind`            | The base branch requires pull requests to be up to date with it and has no merge queue. LavaFlow doesn't update fix branches, so update the branch first                                                                                                                                                                                                                                                                                                              |
+| `removed_from_queue`       | The fix isn't in the merge queue, and LavaFlow can't tell why: its checks may have failed there, or someone removed it                                                                                                                                                                                                                                                                                                                                                |
+| `reads_failed`             | LavaFlow failed to read the pull request for about an hour while the fix may have been in the merge queue, so it took the fix out of the queue, or failed to read the project's settings or repository for about a day while merging was paused. When it couldn't reach the pull request to take it out, its comment says the fix may still merge from the queue. For a fix you merge, which LavaFlow never queues, only the latter applies, with its CI start paused |
+| `unreadable`               | The pull request has more checks, reviews, labels or commits than LavaFlow reads, so it can't judge the fix                                                                                                                                                                                                                                                                                                                                                           |
+| `permission_missing`       | The Volcano GitHub App, or the owner's GitHub account, lacks a permission the merge needs. Grant the App's requested permissions; the owner must be able to push                                                                                                                                                                                                                                                                                                      |
+| `repository_changed`       | The project now deploys from another repository                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `paused_too_long`          | Merging stayed paused for more than 7 days, or, for a fix you merge, LavaFlow's CI start for such fixes did                                                                                                                                                                                                                                                                                                                                                           |
+| `cancelled`                | The project is being deleted, so LavaFlow stopped waiting on the merge. Nothing to do                                                                                                                                                                                                                                                                                                                                                                                 |
+| `request_rejected`         | GitHub refused LavaFlow's request to start the fix's checks. Push a commit to the branch to run your CI                                                                                                                                                                                                                                                                                                                                                               |
+| `ci_start_commit_mismatch` | GitHub reports a different commit from the one LavaFlow made to start the checks, so LavaFlow didn't move the branch. Push a commit to the branch to run your CI                                                                                                                                                                                                                                                                                                      |
+| `branch_refused`           | LavaFlow didn't start the fix's checks because the pull request was no longer open, or its branch isn't a LavaFlow branch of a pull request LavaFlow opened. LavaFlow never starts checks on the default or production branch                                                                                                                                                                                                                                         |
+| `head_unverified`          | GitHub doesn't report the fix's head as the signed commit LavaFlow pushed, so LavaFlow didn't start its checks. Check who pushed to the branch                                                                                                                                                                                                                                                                                                                        |
+| `checks_not_started`       | LavaFlow couldn't give the fix a commit message that runs CI. Push a commit to the branch to run your CI                                                                                                                                                                                                                                                                                                                                                              |
+| `queue_carries_ci_skip`    | The repository's merge queue could carry an instruction to skip checks, from the fix's commits or its pull request's title or description, into the base branch. Reword LavaFlow's commit to drop it and force-push, and take any such instruction out of the title and description, before you queue the fix                                                                                                                                                         |
+| `merge_carries_ci_skip`    | A commit under the fix's head skips checks, and merging would carry that into the base branch, for example because the repository allows no squash merge. Reword LavaFlow's commit to drop it and force-push before you merge                                                                                                                                                                                                                                         |
 
 New reasons may appear.
 
@@ -1124,7 +1269,8 @@ LavaFlow doesn't bill merges.
 ### Keep the CI skip out of your base branch
 
 LavaFlow's commit on a fix branch can carry a CI-skip directive, so your CI
-doesn't run code a model wrote before a person looks at it. When LavaFlow
+doesn't run code a model wrote until LavaFlow's review and checks clear it or
+a person looks at it. When LavaFlow
 [starts the fix's CI](#check-before-ci-starts), it force-updates its own fix
 branch where it can, replacing its commits with one that has the same changes
 and no directive. Otherwise it adds a commit on top, and the directive stays
@@ -1150,8 +1296,10 @@ in your repository's Actions tab.
 ## After a fix merges
 
 Once a fix's pull request merges, by you or by LavaFlow, LavaFlow watches the
-resource's deployments from the repository for a week. When one that includes
-the merge goes live, LavaFlow records the moment as the run's
+resource's deployments from the repository, including deployments more than a
+week later. Verification has bounded retries for each deployment; another
+deployment starts fresh attempts. When LavaFlow verifies that a live deployment
+includes the merge, it records the recurrence cutoff as the run's
 `pull_request.deployed_at` and resolves the [issue](issues.md) as of that
 moment, unless the error was seen after it. Where
 [fix lineage](#fix-lineage) is available, LavaFlow waits 2 minutes and resolves
@@ -1249,174 +1397,6 @@ hours. A start that doesn't run answers a code:
 | `429`  | `issue_run_limit_reached`   | The issue started 5 runs in the last 24 hours                                        | Try again after `Retry-After`                          |
 | `429`  | `project_run_limit_reached` | The project started 200 runs in the last 24 hours                                    | Try again after `Retry-After`                          |
 
-## Learned skills
-
-A skill is a short note on how this project wants something done, with
-citations of the code it rests on. Skills are in preview: they need the
-project's `lavaflow.skills` capability.
-
-This release stores a project's skills and gives you the API to read, edit,
-retire and delete them. It saves the `skill_learning` setting, and checks
-every change to a skill before saving it. These come in a later release:
-
-- Learning a skill when a writer of the repository corrects one of
-  LavaFlow's fixes, by a commit, a review or a comment on its pull request
-- Loading the skills that apply into later runs on the project
-- Expiring proposals no one acts on, and retiring a skill on its own when the
-  fixes that used it were corrected or closed more often than they merged,
-  when no writer renewed it for 90 days, or when its citations stop holding
-
-Until LavaFlow learns skills, a project has none.
-
-`skill_learning` decides what LavaFlow does with a skill it learns. You can
-set it now, and it applies once learning ships:
-
-| Value    | What happens                                                                                        |
-| -------- | --------------------------------------------------------------------------------------------------- |
-| `auto`   | The skill is active at once                                                                         |
-| `review` | The skill waits as `proposed` until you activate it                                                 |
-| `off`    | LavaFlow learns nothing and runs load no project skill. Existing skills stay readable and deletable |
-
-Once LavaFlow learns, a writer of the repository can steer it through what it
-learns, and a skill lives outside the repository's history, branch protection
-and code owners. Use `review` if the repository protects its guidance that
-way, or if it relays CI output, such as bot comments, through an account with
-write access.
-
-Turning learning on is the owner's decision: from `off` to `review` or
-`auto`, or from `review` to `auto`. The owner makes it signed in as a person,
-with a `volcano login` token whose sign-in is live, or a platform token that
-expires, and their GitHub account must
-be able to push to the project's repository. Anything else gets `403` with
-code `person_required`, and nothing is saved. Turning learning down or off, or
-sending the saved value again, needs no check. Any credential that can change
-the settings can turn it off, including a full-scope project access token,
-which may send only this, or this with
-[`code_quality` turned off](#turn-code-quality-off) too:
-
-```bash
-curl -X PATCH "https://api.volcano.dev/lavaflow/settings" \
-  -H "Authorization: Bearer $VOLCANO_PROJECT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"project_id": "'"$PROJECT_ID"'", "skill_learning": "off"}'
-```
-
-A token's save that sends any other field, even `null`, answers `403` with
-code `person_required`.
-
-### Review skills
-
-List the project's skills, filtered by `status` (`proposed`, `active` or
-`retired`):
-
-```bash
-curl "https://api.volcano.dev/lavaflow/skills?project_id=$PROJECT_ID&status=active" \
-  -H "Authorization: Bearer $VOLCANO_TOKEN"
-```
-
-```json
-{
-  "data": [
-    {
-      "id": "7a1c3e5b-9d2f-4b6a-8c0e-1f3a5b7d9c2e",
-      "project_id": "5c2e8f14-7a3b-4d9e-b1f6-0a8c3e5d7b92",
-      "scope": "project",
-      "name": "guard-empty-cart",
-      "status": "active",
-      "retired_reason": null,
-      "version": 1,
-      "description": "When a checkout handler reads the cart total",
-      "body": "Return early when the cart is empty; `cart.total` is undefined then.",
-      "applies_to": { "resource_ids": [], "paths": ["src/checkout/**"] },
-      "citations": [{ "path": "src/checkout/charge.ts", "anchor": "cart.total" }],
-      "content_sha256": "3b8f0c1d2e4a6b7c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c",
-      "source": {
-        "kind": "run",
-        "run_id": "0d6e9b1a-2f4c-4e8d-9a7b-3c5d1e2f4a6b",
-        "pull_request": 42,
-        "act": "review",
-        "user_id": null
-      },
-      "counts": { "helpful": 0, "harmful": 0, "used": 0 },
-      "last_used_at": null,
-      "last_renewed_at": "2026-11-02T14:20:05Z",
-      "retired_at": null,
-      "created_at": "2026-11-02T14:20:05Z",
-      "updated_at": "2026-11-02T14:20:05Z"
-    }
-  ]
-}
-```
-
-Read one with `GET /lavaflow/skills/{skill_id}`, and its earlier versions with
-`GET /lavaflow/skill-versions?project_id=…&skill_id=…`. Any credential that can
-read the project reads skills, including a read-only project access token.
-`GET /lavaflow/global-skills?project_id=…` lists the skills Volcano wrote for
-every project; they hold no customer content.
-
-When the project points at another repository, or none, its skills retire
-with `retired_reason: repository_changed`, since their citations name the old
-one.
-You can restore one. The reasons `harmful`, `unused`, `stale` and `gate` are
-reserved for retiring on its own, which comes in a later release.
-
-### Change, retire and delete skills
-
-Only the project's owner changes a skill, signed in as a person: with a
-`volcano login` token whose sign-in is live, or a platform token that expires.
-Every change but retiring also needs the
-owner's GitHub account to be able to push to the project's repository. A
-change applies only the fields you send. Edit its `description`, `body` or
-`applies_to`, or set `status` to `active` to activate a proposed skill or
-restore a retired one:
-
-```bash
-curl -X PATCH "https://api.volcano.dev/lavaflow/skills/$SKILL_ID" \
-  -H "Authorization: Bearer $VOLCANO_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"body": "Return early when the cart is empty."}'
-```
-
-`applies_to` changes member by member. Send `paths` alone and the skill keeps
-its `resource_ids`, and the reverse. A list you send replaces the saved one,
-so `[]` clears it:
-
-```bash
-curl -X PATCH "https://api.volcano.dev/lavaflow/skills/$SKILL_ID" \
-  -H "Authorization: Bearer $VOLCANO_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"applies_to": {"paths": ["src/checkout/**", "src/cart/**"]}}'
-```
-
-Send `{"status": "retired"}` to retire it, or delete it with
-`DELETE /lavaflow/skills/{skill_id}`. Both work while `lavaflow.skills` is
-unavailable, and for a project with no repository or whose owner can't push to
-it; every other change answers `400` with code `feature_unavailable` while
-`lavaflow.skills` is unavailable. A project keeps its 200 most recently retired skills: retiring another
-deletes the oldest retired skill and its versions.
-
-Each change but retiring passes the skill check. Only a change to the text
-adds a version; activating or restoring doesn't. A skill keeps its 20 newest
-versions and its active one, and the 1 MiB cap counts the text of every
-version the project keeps. A change is refused, saving nothing and keeping
-none of its text, when it holds a credential, the value of a project variable
-whose name marks it as a credential, such as `STRIPE_SECRET_KEY` or
-`DB_PASSWORD`, an email address, a link or host name the skill doesn't cite,
-an invisible or control character, or an instruction to skip CI or weaken
-tests, CI or LavaFlow's rules.
-
-| Status | Code                  | Why                                                                                                                                                                                                                                                                                                                                  |
-| ------ | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `400`  | `skill_refused`       | The check refused the text; `rules` names which rules it failed                                                                                                                                                                                                                                                                      |
-| `400`  | `feature_unavailable` | The change does more than retire the skill while `lavaflow.skills` is unavailable                                                                                                                                                                                                                                                    |
-| `403`  | `person_required`     | A full-scope project access token, MCP, or a credential that isn't the owner signed in made the request, such as a platform token that never expires or a `volcano login` token whose sign-in ended. For a change but retiring, also when the owner's GitHub account can't push to the project's repository, or the project has none |
-| `403`  |                       | A read-only project access token made the request, or the owner's account is read-only                                                                                                                                                                                                                                               |
-| `409`  | `skill_limit_reached` | The change would pass a cap: 100 active or 50 proposed skills, or 1 MiB of skill text                                                                                                                                                                                                                                                |
-| `409`  |                       | Another change to the skill landed first, or the project now points at another repository; read it and send yours again                                                                                                                                                                                                              |
-| `429`  |                       | More than 10 skill changes in a minute, the day's 200 checks are used, or the owner's GitHub push access was checked too often. Retry after `Retry-After`                                                                                                                                                                            |
-| `503`  | `scan_unavailable`    | The check couldn't run. Nothing was saved; retry after `Retry-After`                                                                                                                                                                                                                                                                 |
-| `503`  |                       | The owner's GitHub push access couldn't be checked. Nothing was saved; retry after `Retry-After`                                                                                                                                                                                                                                     |
-
 ## Follow runs
 
 List the project's runs, newest first. Each run names its category, the issue
@@ -1483,6 +1463,7 @@ curl "https://api.volcano.dev/lavaflow/runs?project_id=$PROJECT_ID&category=bug&
         "title": "TypeError: Cannot read properties of undefined (reading 'total')",
         "culprit": "chargeCustomer (src/cart.ts)",
         "status": "open",
+        "source": "runtime",
         "event_count": 18,
         "last_seen_at": "2026-11-02T14:09:51Z",
         "resolved_at": null,
@@ -1602,15 +1583,15 @@ every file the fix changes is a dependency manifest or lockfile, or a
 configuration file. New categories
 may appear; treat one you don't know as uncategorized.
 
-| `category`      | The problem                                                      |
-| --------------- | ---------------------------------------------------------------- |
-| `bug`           | The project's code is wrong                                      |
-| `performance`   | The code is too slow or uses too much                            |
-| `security`      | The code exposes data or access it shouldn't                     |
-| `improvement`   | The code mishandles an edge case or an outside failure           |
-| `configuration` | A setting, variable, or manifest value is wrong or missing       |
-| `dependency`    | A package, or its version, causes the error                      |
-| `external`      | A service outside the project fails, and no code change is right |
+| `category`      | The problem                                                                                                                                            |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `bug`           | The project's code is wrong                                                                                                                            |
+| `performance`   | The code is too slow or uses too much                                                                                                                  |
+| `security`      | The code exposes data or access it shouldn't                                                                                                           |
+| `improvement`   | The code mishandles an edge case or an outside failure, or a [Slack request](lavaflow-slack.md#request-a-change) asks for new content or functionality |
+| `configuration` | A setting, variable, or manifest value is wrong or missing                                                                                             |
+| `dependency`    | A package, or its version, causes the error                                                                                                            |
+| `external`      | A service outside the project fails, and no code change is right                                                                                       |
 
 `resources` lists every resource the run involves, the issue's first, then by
 name. Its `roles` say how: `issue` (the issue came from it), `cause` (the issue
@@ -1627,11 +1608,14 @@ involved through shared code or the build root's dependency files. A resource
 missing from such a run's list may still be involved.
 
 `issue` is the issue as it stands now: its `title` (the error type and message,
-a Code Quality finding's title, or a reported problem's title), its `culprit`
-(the innermost frame of your code; for a Code Quality finding, the symbol and
+a failed build's first error, a Code Quality finding's title, or a reported
+problem's title), its `culprit` (the innermost frame of your code; for a failed
+build, its first error's `file:line`; for a Code Quality finding, the symbol and
 file it is in; `null` for an error without a stack and for a reported problem),
-`status`, `event_count` (errors grouped so far; for a Code Quality finding, the
-scans that saw it; 0 for a reported problem),
+`status`, its [`source`](issues.md) (`runtime`, `build`, `code_quality`, or
+`report`), `event_count` (errors grouped so far; for a failed build, the failed
+deploys; for a Code Quality finding, the scans that saw it; 0 for a reported
+problem),
 `last_seen_at`, `resolved_at` while it is resolved, `regressed_at` once a
 resolved issue came back, and `run_count`, every LavaFlow run on it.
 
@@ -1650,11 +1634,11 @@ LavaFlow, and is `null` for one opened before LavaFlow recorded it. A draft
 waits for a person to mark it ready; `draft_reason` says why it is one, and is
 `null` otherwise.
 
-| `draft_reason`       | Why the pull request is a draft                                                                                                                                                                                                                                                                                                              |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `open_pr`            | LavaFlow doesn't merge the fix: autonomy is `open_pr`, merging was unavailable when it opened, LavaFlow started the run on its own under settings saved with automatic runs off before this API (send `"autonomy": "merge"` again as the owner to lift that), or it was already a draft when the run took it on. Review it and mark it ready |
-| `review_unresolved`  | LavaFlow's review didn't pass the fix, so LavaFlow never merges it. Decide whether to finish it                                                                                                                                                                                                                                              |
-| `converted_to_draft` | LavaFlow opened it ready for review, and someone made it a draft since                                                                                                                                                                                                                                                                       |
+| `draft_reason`       | Why the pull request is a draft                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `open_pr`            | LavaFlow doesn't merge the fix, because autonomy is `open_pr`, merging was unavailable when it opened, or the run may only open a pull request, and its review didn't pass, LavaFlow's CI start for fixes you merge wasn't available, or your repository may run CI or previews outside GitHub Actions (or LavaFlow couldn't check; see [Review and merge fixes yourself](#review-and-merge-fixes-yourself)); or it was already a draft when the run took it on. Review it and mark it ready |
+| `review_unresolved`  | LavaFlow's review didn't pass the fix, so LavaFlow never merges it. Decide whether to finish it                                                                                                                                                                                                                                                                                                                                                                                              |
+| `converted_to_draft` | LavaFlow opened it ready for review, and someone made it a draft since                                                                                                                                                                                                                                                                                                                                                                                                                       |
 
 ### Runs that open no pull request
 
@@ -1668,8 +1652,8 @@ cancelled. Match on the code.
 | `diagnose_only`            | `autonomy` was `diagnose_only` when the run was queued, or became it before a pull request opened. Read the diagnosis. For later runs to open pull requests, run `volcano cloud lavaflow settings set --autonomy open_pr`, or send `"autonomy": "open_pr"` to `PATCH /lavaflow/settings`                                                                                                                                                                  |
 | `not_fixable`              | The diagnosis found no change in the code that fixes the error, for example because the cause is outside it. Read the diagnosis                                                                                                                                                                                                                                                                                                                           |
 | `low_confidence`           | The diagnosis isn't confident enough to propose a fix. Read the diagnosis                                                                                                                                                                                                                                                                                                                                                                                 |
-| `no_patch`                 | LavaFlow proposed no change. Read the diagnosis                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `possible_credential`      | The fix or its description held what looks like a credential or a project secret, so LavaFlow pushed nothing. Apply the fix yourself from the diagnosis                                                                                                                                                                                                                                                                                                   |
+| `no_patch`                 | LavaFlow proposed no change, or its reviewed fix changes no file. Read the diagnosis                                                                                                                                                                                                                                                                                                                                                                      |
+| `possible_credential`      | The fix held what looks like a credential or a project secret, so LavaFlow pushed nothing. Apply the fix yourself from the diagnosis                                                                                                                                                                                                                                                                                                                      |
 | `possible_personal_data`   | The fix adds an email address the repository lacks, and the repository isn't private, so LavaFlow pushed nothing. Apply the fix yourself                                                                                                                                                                                                                                                                                                                  |
 | `ungated_workflows`        | A workflow could run the fix with the repository's secrets before a person approves it. The run's `held_workflows` lists every such job. See [Gate workflows that run a fix](#gate-workflows-that-run-a-fix), or [open the fix yourself](#open-a-held-fix-yourself)                                                                                                                                                                                       |
 | `convention_unsatisfiable` | LavaFlow would merge the fix, but no title can meet your repository's [commit convention](#match-your-commit-conventions), so it kept the fix on the run. Apply the fix yourself, or relax the convention                                                                                                                                                                                                                                                 |
@@ -1679,7 +1663,7 @@ cancelled. Match on the code.
 | `repository_changed`       | The project no longer deploys from the repository the run read. A new run uses the current one                                                                                                                                                                                                                                                                                                                                                            |
 | `publish_failed`           | Opening the pull request failed. A new run tries again                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `lineage_cap`              | LavaFlow opened as many pull requests in this fix's lineage as it may. Review the lineage's pull requests and fix the rest yourself                                                                                                                                                                                                                                                                                                                       |
-| `lineage_held`             | An earlier pull request in this fix's lineage was held, stopped or closed, so LavaFlow opens no more in it. Apply the fix yourself from the diagnosis                                                                                                                                                                                                                                                                                                     |
+| `lineage_held`             | An earlier pull request in this fix's lineage was held, stopped or closed (one you merge holds it only when closed), so LavaFlow opens no more in it. Apply the fix yourself from the diagnosis                                                                                                                                                                                                                                                           |
 | `review_unresolved`        | LavaFlow's review didn't pass a [Code Quality](#code-quality) fix. Read the diagnosis                                                                                                                                                                                                                                                                                                                                                                     |
 | `duplicate_in_repository`  | When the run checked, another project on the repository already had the Code Quality pull request for the same finding. Review that pull request in the repository                                                                                                                                                                                                                                                                                        |
 | `security_finding`         | The Code Quality finding has security impact and the repository isn't private, so the fix would disclose it. Fix it yourself                                                                                                                                                                                                                                                                                                                              |
@@ -1878,16 +1862,16 @@ in log messages or stack locations do not establish what code a deployment or
 commit added, removed, or changed; that needs a comparison of source versions
 or commit diffs.
 
-| `reason`                          | Why, and what to do                                                                                                                                                                                                                                                                                                                                                             |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `no_repository`                   | LavaFlow is on for no repository. [Link one](#link-a-repository)                                                                                                                                                                                                                                                                                                                |
-| `no_commit`                       | The deployment recorded no commit, or no deployment was serving when the error happened. [Deploy code LavaFlow can read](#deploy-code-lavaflow-can-read)                                                                                                                                                                                                                        |
-| `uncommitted_changes`             | The deployment's files differ from its commit, as when the checkout had uncommitted changes. Commit and push them, then deploy from the clean checkout                                                                                                                                                                                                                          |
-| `unverified_commit`               | Volcano couldn't verify the deployment's commit against the linked repository. Push the commit to the production branch, then deploy it again                                                                                                                                                                                                                                   |
-| `other_repository`                | The commit LavaFlow would read is from a repository other than the one LavaFlow is on for, Volcano checked it under an earlier repository link, or the project no longer links that repository. For a deployment, deploy again from the linked one. For a reported problem or a Code Quality finding, start a new run while the project links the repository LavaFlow is on for |
-| `repository_unreadable`           | LavaFlow couldn't read the repository at the commit, for example because the Volcano GitHub App lost access to it. Check the project's repository link and the App's access                                                                                                                                                                                                     |
-| `commit_not_on_production_branch` | The production branch no longer holds the commit the fix is on, so LavaFlow opened no pull request. Deploy from the production branch                                                                                                                                                                                                                                           |
-| `deployment_unattributed`         | A newer deployment was going live when the error happened, so LavaFlow couldn't tell which one threw it. If the error happens again, LavaFlow starts a new run once; if that run also ends `deployment_unattributed`, the next waits for a new deploy. A `deployment_unattributed` run right after another one, even one a deploy started, gets no such run                     |
+| `reason`                          | Why, and what to do                                                                                                                                                                                                                                                                                                                                                                        |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `no_repository`                   | LavaFlow is on for no repository. [Link one](#link-a-repository)                                                                                                                                                                                                                                                                                                                           |
+| `no_commit`                       | The deployment recorded no commit, or no deployment was serving when the error happened. [Deploy code LavaFlow can read](#deploy-code-lavaflow-can-read)                                                                                                                                                                                                                                   |
+| `uncommitted_changes`             | The deployment's files differ from its commit, as when the checkout had uncommitted changes. Commit and push them, then deploy from the clean checkout                                                                                                                                                                                                                                     |
+| `unverified_commit`               | Volcano couldn't verify the deployment's commit against the linked repository. Push the commit to the production branch, then deploy it again                                                                                                                                                                                                                                              |
+| `other_repository`                | The commit LavaFlow would read is from a repository other than the one LavaFlow is on for, Volcano checked it under an earlier repository link, or the project no longer links that repository. For a deployment, deploy again from the linked one. For a reported problem or a Code Quality finding, start a new run while the project links the repository LavaFlow is on for            |
+| `repository_unreadable`           | LavaFlow couldn't read the repository at the commit, for example because the Volcano GitHub App lost access to it. Check the project's repository link and the App's access                                                                                                                                                                                                                |
+| `commit_not_on_production_branch` | The production branch no longer holds the commit the fix is on, so LavaFlow opened no pull request. Deploy from the production branch                                                                                                                                                                                                                                                      |
+| `deployment_unattributed`         | A newer deployment that may have changed the code was going live when the error happened, so LavaFlow couldn't tell which one threw it. If the error happens again, LavaFlow starts a new run once; if that run also ends `deployment_unattributed`, the next waits for a new deploy. A `deployment_unattributed` run right after another one, even one a deploy started, gets no such run |
 
 `deployment_id` names a deployment of the run's `resource` for `no_commit`,
 `uncommitted_changes`, `unverified_commit`, and `other_repository`, and is
@@ -1941,7 +1925,8 @@ run's `review` says what it found. Read it from the run, or with
         "kind": "billing",
         "question": "The fix skips the charge for an empty cart. Is that intended?"
       }
-    ]
+    ],
+    "observations": ["Carts stored before this fix may still lack a total."]
   }
 }
 ```
@@ -1949,14 +1934,26 @@ run's `review` says what it found. Read it from the run, or with
 `open_findings` lists the findings the last round left open, as the fix's pull
 request lists them: the `severity` (`nit`, `minor`, `major`, or `critical`),
 the `file` and `line` the finding is about (`null` when it's about no file or
-no one line), and the reviewer's `explanation`. It's absent once the review
-passes the fix. `person_reasons` lists each decision the reviewers leave to a
+no one line), and the reviewer's `explanation`. Once the review passes the
+fix, it lists the notes the last round left instead, which a `review_notes`
+hold asks you to confirm, and a private repository's description lists them
+under **Notes to confirm before merging**; it's absent when there are none.
+`person_reasons` lists each decision the reviewers leave to a
 person: its `kind` (`irreversible`, `trust_boundary`, `breaks_contract`,
 `billing`, `unexplained`, or `not_reviewable`; more may appear) and the
-`question` to answer. Both are absent when there's nothing to list, and when
-the run saved no fix.
+`question` to answer. `observations` lists the reviewers' observations:
+follow-ups and other notes that don't hold the fix. Each is absent when there's nothing to list, and when the run saved no fix.
 
-Findings and questions are the reviewers' own words, and can quote your code.
+Beside `review`, the run's `choices` lists each decision its fix states
+beyond stopping the error, which you confirm when a `choices_to_confirm` hold
+holds the fix or when you merge it yourself, and `not_fixed` says where the defect starts outside the fix, as the
+private description's **Choices to confirm** and **Not fixed here** do.
+`choices` is absent and `not_fixed` is null when the fix states none.
+
+Findings, questions and observations are the reviewers' own words, and can quote your
+code. An observation LavaFlow leaves out reads like a question it leaves out, with
+`this observation` in place of `this question`, and a choice or `not_fixed` the same
+way with `this statement`.
 LavaFlow leaves out what may contain a credential, and a sentence in its place
 says why:
 
@@ -1974,10 +1971,55 @@ an `API_KEY`, or a password in a URL variable; either counts at 8 characters or
 longer. LavaFlow matches a finding's file however the reviewer wrote its path,
 such as `./src/cart.ts` or `b/src/cart.ts`.
 
+### How review rounds decide
+
+LavaFlow's reviewers read each fix in rounds. When a round finds problems,
+LavaFlow revises the fix and answers each finding, and the next round reviews
+the revision, up to 3 rounds.
+
+- In the first round, any `minor`, `major` or `critical` finding sends the fix
+  back for a revision.
+- Once LavaFlow has revised the fix, reviewers check that the earlier
+  findings are fixed and review the lines the revision changed. Only a
+  reviewer's `major` or `critical` finding sends the fix back. A `minor`
+  finding is a note wherever it is, even one an earlier round found: it
+  doesn't send the fix back or count as an open finding, and the pull
+  request's description and review say how many notes the last round left.
+  This applies to every reviewer, even one whose earlier review failed or
+  couldn't read the whole fix, and after a round where only LavaFlow's own
+  checks sent the fix back. With `autonomy: merge`, LavaFlow holds a fix
+  whose last round left a note for you with `review_notes` rather than
+  merging it.
+- LavaFlow answers each finding as it revises the fix, saying what it
+  changed or why the finding is wrong, and reviewers read those answers.
+  A revision that leaves a finding unanswered is asked once for the
+  answers; it's never held back for them.
+- LavaFlow's own checks hold back a revision that changes no file, and one
+  that deletes a whole test file your repository has, unless it moves the
+  file or also empties a source file, whose tests may go with it. LavaFlow
+  revises it again, or opens it for a person when the rounds run out.
+- Reviewers are asked to check every other sign that a fix weakens your
+  tests: a test that's deleted or renamed, a skip added to a test that ran
+  (as `t.Skip`, `it.skip` or `@pytest.mark.skip` do), a removed assertion,
+  or an added focus that would run only some tests (as `it.only`, `fit` or
+  `fdescribe` do). Each reviewer gives each sign a verdict, and one that finds a
+  test weakened reports a `major` finding, which sends the fix back.
+
+A fix that still changes no file when the review ends opens no pull request:
+the run ends with `pull_request_skipped` `no_patch`.
+
 ### Failure codes
 
 A `failed` or `cancelled` run says why in `failure.code`, and a `queued` run
 that waits says what for. Match on the code, not the message.
+
+During a platform publication pause, queued work waits and an in-flight
+attempt stops at its next checked boundary. The pause does not spend the run's
+retry allowance. You can still read existing runs and cancel work. A request
+already sent to your repository can finish. LavaFlow records a known accepted
+result under the existing ownership checks; unknown results remain outstanding. A queued fix is withdrawn
+from the merge queue when LavaFlow can reach it. This is separate from the
+run-execution pause; either pause can give a run the `feature_paused` code.
 
 | Code                     | Why the run stopped or waits                                                                                                        |
 | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
@@ -2018,6 +2060,9 @@ from making things worse without a person:
 - A held lineage is held for good. LavaFlow opens no pull request in it again,
   and its runs diagnose only. A lineage holds when one of its pull requests is
   held, stopped or closed, or when the project points at another repository.
+  A fix you merge (see
+  [Review and merge fixes yourself](#review-and-merge-fixes-yourself)) holds
+  it only when its pull request closes without merging.
 - Under `autonomy: merge`, a follow-up holds with `lineage_undoes_parent`
   when it deletes, changes or moves a line its parent fix added, or moves
   another line across one, edited or not. Removing a line on one side of the
@@ -2075,7 +2120,10 @@ Each run in `GET /lavaflow/runs` and `GET /lavaflow/runs/{run_id}` carries
 - `fix_outcome.state` is `watching` for 14 days after a merged fix goes live,
   then `effective`, unless its issue came back (`ineffective`) or a new issue
   was traced to it (`regressed`). An outcome never moves back.
-  `follow_ups` counts the runs linked to the fix.
+  `follow_ups` counts the runs linked to the fix. `fix_outcome` stays `null`,
+  meaning unknown, when LavaFlow first finds a fix live only after those 14
+  days and its issue neither resolved as of go-live nor was last seen inside
+  them.
 - A run read on its own adds `lineage_evidence`: the deployment's commit, the
   occurrence judged, and the functions and files the issue shares with the
   fix. A recurrence has none: its issue came back after the fix, so no deploy
@@ -2295,7 +2343,10 @@ A fix opens with a commit that skips CI. Under `autonomy: merge`, once its
 review passes and nothing holds it, LavaFlow starts its CI with a commit that
 runs it. It may start the CI of a fix it holds only for reasons that ask
 whether to merge it the same way, once, as it holds the fix; see
-[Waiting and held](#waiting-and-held).
+[Waiting and held](#waiting-and-held). For a fix you merge, as under
+`autonomy: open_pr`, it starts the fix's CI the same way, once, while
+`lavaflow.open_pr_ci_start` is available; see
+[Review and merge fixes yourself](#review-and-merge-fixes-yourself).
 Where it can, that commit is a clean copy of the fix: the fix's tree, on the
 merge base of the fix and the base commit its pull request names, with
 LavaFlow's message less the directive. It replaces every commit LavaFlow put
@@ -2346,6 +2397,11 @@ the fix with `ci_outside_actions` when either of these is true:
 - An app other than GitHub Actions or Volcano's reported a check run or
   commit status on the base branch's head, or LavaFlow couldn't read them
   all. This catches a service you configured outside the repository.
+
+The same check runs right before a fix you merge opens, on the fix's base
+commit, the files it adds and the base branch; a fix it finds anything for
+opens as a draft. See
+[Review and merge fixes yourself](#review-and-merge-fixes-yourself).
 
 | Service                      | Files at the repository's root                               |
 | ---------------------------- | ------------------------------------------------------------ |
@@ -2574,10 +2630,10 @@ LavaFlow has already replaced that commit with its clean copy to
 
 What the review shows depends on the repository:
 
-| Repository  | Review                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Private     | A review that found nothing to fix is a short pass headed **LavaFlow review: passed**. It says how many rounds the review took, how many reviewers finished the last round, and what earlier rounds found that LavaFlow fixed. Any other review is headed **LavaFlow review: did not pass**, with each open finding's severity and explanation, and each open finding on a changed line is also a comment on that line. Both list the questions the reviewers ask a person, with values that look like credentials or identifiers removed |
-| Not private | A note that LavaFlow reviewed the commit, with a link to the run in the Volcano dashboard and the `volcano cloud lavaflow show --json` command that reads it. It's the same whatever the review found: no verdict, findings, severities, or line comments, as the pull request's description has none                                                                                                                                                                                                                                     |
+| Repository  | Review                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Private     | A review that found nothing to fix is a short pass headed **LavaFlow review: passed**. It says how many rounds the review took, how many reviewers finished the last round, any [notes](#how-review-rounds-decide) they left, and what earlier rounds found that LavaFlow fixed. Any other review is headed **LavaFlow review: did not pass**, with each open finding's severity and explanation, and each open finding on a changed line is also a comment on that line. Both list the questions the reviewers ask a person, with values that look like credentials or identifiers removed |
+| Not private | A note that LavaFlow reviewed the commit, with a link to the run in the Volcano dashboard and the `volcano cloud lavaflow show --json` command that reads it. It's the same whatever the review found: no verdict, findings, severities, or line comments, as the pull request's description has none                                                                                                                                                                                                                                                                                       |
 
 If your branch protection requires conversations to be resolved before
 merging, resolve LavaFlow's open line comments once you've checked the
@@ -2590,6 +2646,8 @@ review that can't post leaves the fix and its pull request as they are.
 ## See what LavaFlow found
 
 Count the issues LavaFlow took on and the pull requests it opened per UTC day.
+The optional `outcomes` object reports what those fixes achieved; see
+[Read confirmed outcomes](#read-confirmed-outcomes).
 `days` is 30 by default and accepts 1 to 217 UTC days, ending today:
 
 ```bash
@@ -2611,6 +2669,59 @@ curl "https://api.volcano.dev/lavaflow/stats?project_id=$PROJECT_ID&days=7" \
 ```
 
 The response is shortened here; `days` has every day in the window.
+
+### Read confirmed outcomes
+
+The optional `outcomes` object keeps three different outcomes separate:
+
+| Field                        | What one confirmation means                                                                                                         |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `pull_requests_merged`       | A tracked pull request was confirmed merged, once per project, repository and pull request                                          |
+| `improvements_observed_live` | A tracked function or frontend's live commit was verified to include that pull request, once per change                             |
+| `issue_resolutions`          | LavaFlow actually changed an issue from open or ignored to resolved; a recurrence or manual reopen can start another metric episode |
+
+A merge does not prove a live deployment, and a live deployment need not resolve
+its issue. Issue resolutions include every category and retain their original
+category and reason. Manual resolve and ignore actions do not count. The
+count is once per metric episode: moving an already resolved issue to ignored
+does not start another episode; an actual reopen does. The
+reported-problem rule is unchanged: its fix resolves the report at merge, even
+when retention or a person previously ignored it. Runtime issues still resolve
+only when no later occurrence contradicts the fix.
+
+`outcomes.as_of` names the consistent snapshot. `outcomes.days` has the same
+ordered UTC dates as the activity series. `confirmed_counts` on each day and
+`confirmed_totals` are retained confirmations, so they are lower bounds when
+history is incomplete. `counts` and `totals` contain `null` until collection is
+proven complete; a day without a retained event is not a proved zero. Treat an
+older server's missing `outcomes` object as unavailable.
+
+`coverage` describes each metric separately. Initial collection is partial or
+unavailable, with `collection_start_unverified`; the migration date and the
+first event do not establish a complete interval. Verified retained merge
+records may be recovered, but their old category can be unknown. Old live
+observations without a retained observation date remain in
+`undated_confirmed_events`, outside the dated series and requested totals.
+Erased resolution episodes cannot be reconstructed from current issue status.
+For merge and live counts, a category filter uses the recorded category
+snapshot and excludes unknown old categories. The primary issue resolution
+count continues to include every category.
+
+Live dates use the first durable confirmation, rather than claiming the exact
+first release time or release to every region. The existing run
+`pull_request.deployed_at` remains the conservative recurrence cutoff and can
+fall back to merge time; it does not date this metric. Later deployments can be
+verified more than a week after merge. Unavailable or exhausted evidence stays
+unverified. LavaFlow makes at most eight verification attempts for each
+deployment. After those attempts are exhausted, restoring access to the
+repository or recovering from an outage does not restart verification for the
+same deployment. A different deployment resets the attempt budget.
+
+`outcomes.current.known_open_critical_count` is a **Now** snapshot of confirmed
+Code Quality findings whose issues are open, including findings with no fix
+run. It is independent of the historical window and activity category filter.
+The inventory is not exhaustive: zero means no known open critical findings in
+this supported scope. A failed read returns an error, not a zero.
 
 Add `category` to count only runs in one category, on both stats and resources;
 `uncategorized` counts runs without one.
@@ -2709,9 +2820,8 @@ curl -X PATCH "https://api.volcano.dev/lavaflow/settings" \
 ```
 
 A project access token's body names `project_id` and
-`code_quality.enabled: false`, each once, and nothing else, except that it may
-also turn [skill learning](#learned-skills) off with `skill_learning: off`. Any
-other body from a token, a token on `PUT`, and every request through MCP get
+`code_quality.enabled: false`, each once, and nothing else. Any
+other body from a token, and every request through MCP, get
 `403` with code `person_required`, and nothing is saved.
 
 Turning Code Quality off, or LavaFlow off, drops the project's waiting scan.
@@ -2810,6 +2920,10 @@ allowance it waits at, such as `findings_limit` or `pull_request_limit`, and is
 allowance again at least every 15 minutes, and starts the scan once it has
 room. A waiting scan skips no deploy: when it starts, it covers every commit
 since the last scan.
+For scans, `waiting_reason` is `feature_paused` during a platform publication
+pause, which preserves the retry allowance; with publication enabled, a
+separate run-execution pause or an unavailable feature instead gives
+`feature_unavailable`.
 `counts` says what the scan did with what it found, and `billed` lists what
 the runs on its findings billed. A finding that comes back bills under the
 scan that found it again. Scans stay readable while LavaFlow or Code Quality is
@@ -2818,12 +2932,21 @@ off, and any credential that reads the project's runs reads them.
 ## Report problems from Slack
 
 People in your Slack workspace can report a problem by mentioning `@Volcano`
-in a channel bound to the project, and LavaFlow diagnoses it like an issue. See
+in a channel bound to the project, and LavaFlow diagnoses it like an issue. The
+person who mentions it can also ask, in their own words, for new content or
+functionality, which LavaFlow proposes as a pull request for a person to
+review. The thread gets the outcome; the diagnosis stays in Volcano. See
 [Report problems from Slack](lavaflow-slack.md).
+
+## Fix Aikido issues
+
+Connect an Aikido workspace and bind the project, and each new code (SAST)
+issue Aikido finds on its repository starts a run that stops at a fix pull
+request. See
+[Fix Aikido issues with LavaFlow](lavaflow-aikido.md).
 
 ## Agents
 
 The [MCP endpoint](../interfaces/mcp.md) offers every LavaFlow read as a tool,
-for the project the agent's token is bound to, skills included. Changing the
-settings or a skill, and starting a run, are the owner's decisions, so no
-tool does any of them.
+for the project the agent's token is bound to. Changing the settings and
+starting a run are the owner's decisions, so no tool does either.

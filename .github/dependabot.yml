@@ -1,8 +1,6 @@
 version: 2
 updates:
-  # The docs site's root pnpm project. The examples under
-  # content/platform/examples/ are synced from volcano-hosting
-  # (docs.config.yaml), so their dependencies are updated there, not here.
+  # The docs site's root pnpm project.
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
@@ -38,6 +36,45 @@ updates:
       - dependency-name: "@types/node"
         update-types:
           - "version-update:semver-major"
+
+  # Example apps under content/platform/examples; directories without a
+  # package.json are skipped. SDK majors ship with coordinated docs changes,
+  # and Next.js majors follow the runtimes Volcano supports.
+  - package-ecosystem: "npm"
+    directories:
+      - "/content/platform/examples/**/*"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 5
+      semver-major-days: 30
+    labels: []
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    ignore:
+      - dependency-name: "@volcano.dev/*"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "next"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "eslint-config-next"
+        update-types:
+          - "version-update:semver-major"
+    groups:
+      examples:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      examples-major:
+        patterns:
+          - "*"
+        update-types:
+          - "major"
 
   # Keep SHA-pinned GitHub Actions (and their `# vX.Y.Z` comments) current,
   # including the reusable lint-docs composite action.

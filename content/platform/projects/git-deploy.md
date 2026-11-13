@@ -33,9 +33,9 @@ my-repo/
 │   ├── functions/
 │   │   ├── hello.js              # single-file function -> "hello"
 │   │   ├── checkout/             # directory function   -> "checkout"
-│   │   │   ├── index.mjs
+│   │   │   ├── index.mjs         # imports ./_shared/db.js, not ../_shared/db.js
 │   │   │   └── tax.mjs
-│   │   └── _shared/              # shared code, packaged into every function
+│   │   └── _shared/              # shared code, deployed beside each entry file
 │   │       └── db.js
 │   └── migrations/               # applied first when apply_migrations is on
 │       └── 001_create_orders.sql
@@ -48,33 +48,37 @@ my-repo/
 **Functions** are the entries directly under `volcano/functions/` in your build
 root:
 
-| Entry       | Function name | Entry file                                                                                                                                                                                     |
-| ----------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `hello.js`  | `hello`       | the file itself                                                                                                                                                                                |
-| `checkout/` | `checkout`    | a non-TypeScript `index.*`, else the runtime's handler file (`index.js`, `main.py`, `main.rb`), else the first non-TypeScript source file by name, else `index.ts`, `index.mts` or `index.cts` |
+| Entry       | Function name | Entry file                                                                                                                                                                                                  |
+| ----------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `hello.js`  | `hello`       | the file itself                                                                                                                                                                                             |
+| `checkout/` | `checkout`    | a non-TypeScript `index.*`, else the runtime's handler file (`index.js`, `main.py`, `main.rb`), else the first non-TypeScript source file by name, else `index.ts`, `index.mts`, `index.cts` or `index.tsx` |
 
 Node.js functions deploy `.js` and `.mjs` files, and TypeScript in `.ts`, `.mts`,
-and `.cts` files, which Volcano compiles during the build. See
+`.cts`, and `.tsx` files, which Volcano compiles during the build. See
 [TypeScript](../functions/creating-functions.md#typescript). JavaScript wins
 over TypeScript: `hello.js` beside `hello.ts`, or `checkout/index.js` beside
 `checkout/index.ts`, deploys the JavaScript. Across entries of one name, a
 function whose entry isn't TypeScript wins too: `hello.mjs` or `hello.py`
 beside a `hello/` directory holding only `index.ts` deploys the file. Of two
-TypeScript entries, a `hello/` directory wins over `hello.ts`. Keep shared
-TypeScript that isn't a function under a `_`-prefixed name, such as `_lib/`, so
-it isn't taken for one.
+TypeScript entries, a `hello/` directory wins over `hello.ts`. `.tsx` ranks
+after the other TypeScript: `hello.ts` deploys beside `hello.tsx` or a `hello/`
+directory holding only `index.tsx`. Two other TypeScript files of one name, such
+as `hello.ts` and `hello.mts`, fail the push. Keep
+shared TypeScript that isn't a function under a `_`-prefixed name, such as
+`_lib/`, so it isn't taken for one.
 
 Inside a function directory, TypeScript is the entry only as `index.ts`,
-`index.mts`, or `index.cts`, and only when no other file can be. TypeScript
-never changes what a directory already deploys: `main.py` or `main.rb` beside
+`index.mts`, `index.cts`, or `index.tsx`, and only when no other file can be.
+TypeScript never changes what a directory already deploys: `main.py` or `main.rb` beside
 `index.ts` stays a Python or Ruby function, and a JavaScript file beside it
-stays the entry. A directory whose entry is TypeScript must hold only one of
+stays the entry, and `index.ts`, `index.mts`, or `index.cts` stays it beside
+`index.tsx`. A directory whose entry is TypeScript must hold only one of
 `index.ts`, `index.mts`, and `index.cts`; more than one fails the push with
 `source_invalid`.
 
 A function whose TypeScript has no entry Volcano compiles isn't deployed: a
 `checkout/` directory with only `src/index.ts` and tool configs such as
-`vitest.config.ts` at its top, a `checkout/handler.ts`, or a `widget.tsx` file.
+`vitest.config.ts` at its top, or a `checkout/handler.ts`.
 Neither is `checkout/index.ts` beside a shipped `index.cjs`, an extensionless
 `index` file, or an `index/` directory holding a `package.json`, `index.js`,
 `index.json`, or `index.node`: Git deploy reads only `.js` and `.mjs` as a
@@ -92,8 +96,18 @@ Two entries resolving to the same name (`foo.js` and `foo/`) fail the run,
 unless one is TypeScript and gives way as described above.
 
 **Shared code** is any `_`-prefixed file or directory under `volcano/` or
-`volcano/functions/`. Each one is copied into every function archive under its
-own name, so `volcano/functions/_shared/db.js` is importable as `_shared/db.js`.
+`volcano/functions/`. Each one is copied into every function under its own
+name, next to the function's entry file. So every function imports
+`volcano/functions/_shared/db.js` as `./_shared/db.js`, including a directory
+function such as `checkout/`. `../_shared/db.js` works in your repository but
+fails once deployed with `Cannot find module`. The same goes for a single-file
+function and shared code under `volcano/`: `hello.js` imports
+`volcano/_shared/db.js` as `./_shared/db.js`, not `../_shared/db.js`. When a
+function imports shared code through a parent directory like this, its
+[build log](../functions/logs.md#deployment-logs) warns, naming the file, the
+line, and the import to use instead. See
+[Shared code](../functions/creating-functions.md#shared-code) to make your tests
+resolve the same imports.
 
 **Dependency manifests** (`package.json`, `requirements.txt`, `Gemfile`, and
 their lockfiles) are taken from the function's own directory when it has any,
@@ -677,7 +691,12 @@ deploys and regardless of whether that code deploy later succeeds. That is the
 same behavior as `volcano cloud config deploy` and
 `volcano cloud functions update <name> --visibility <level>`, which also flip it
 immediately. A function the commit creates gets its declared settings as the
-function is created. A push that would take a function with
+function is created. If a function's deploy fails while Volcano is still
+starting the push's deploys, that function keeps its previous settings, since
+its previous code still serves. The push's other
+functions get theirs before the run fails, unless the run was canceled or timed
+out or the settings write itself failed; then they keep their previous settings
+until the next successful push. A push that would take a function with
 [Frontend Function routes](../frontends/function-routes.md) out of `public` or
 HTTP mode is refused before anything deploys; remove the routes first.
 
@@ -759,12 +778,14 @@ curl -X PUT "https://api.volcano.dev/projects/$PROJECT_ID/git-deploy-settings" \
   }'
 ```
 
-If the database already holds these migrations, applied with the CLI or by
-hand, [record a baseline](../guides/migrations.md#adopt-an-existing-database-with-a-baseline)
-of those files before you turn `apply_migrations` on. The CLI does not track
-the files it runs, so without a baseline the first push treats every file as
-pending: DDL that already ran fails its rehearsal, and a file that succeeds
-again, such as an `INSERT`, applies a second time.
+Pushes read the same migration history as tracked runs from the API or
+`volcano cloud databases migration apply`, so files those applied are skipped.
+If the database holds migrations applied without tracking, by hand, with
+`migration up`, or with `--with-migrations` from a CLI before tracked runs,
+[record a baseline](../guides/migrations.md#adopt-an-existing-database-with-a-baseline)
+of those files before you turn `apply_migrations` on. Without one, the first
+push treats every file as pending: DDL that already ran fails its rehearsal,
+and a file that succeeds again, such as an `INSERT`, applies a second time.
 
 Each push then:
 
@@ -1046,7 +1067,7 @@ again.
 sits directly under `volcano/functions/` inside `root_directory`, that its name
 is DNS-safe and not reserved, and that a directory function contains at least one
 supported source file at its top. A TypeScript function directory needs its
-handler in `index.ts`, `index.mts`, or `index.cts` at its top.
+handler in `index.ts`, `index.mts`, `index.cts`, or `index.tsx` at its top.
 
 **The frontend did not deploy.** `frontend_name` must be set, and
 `root_directory` + `frontend_app_root` must contain a `package.json`, or the

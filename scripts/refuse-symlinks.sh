@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Fail if any given path is a symlink, goes through one, or contains one.
-# The docs build and search index follow symlinks, so a link in a synced source,
-# content/ or public/ could publish files from outside the docs tree. Docs never
+# The docs build and search index follow symlinks, so a link in content/ or
+# public/ could publish files from outside the docs tree. Docs never
 # need one. Prints one GitHub ::error:: annotation per link.
 #
 # Usage: scripts/refuse-symlinks.sh <relative-path>...
-# Run by scripts/sync-docs.sh (inside each source clone) and by CI.
+# Run by CI.
 set -euo pipefail
 
 links="$(mktemp)"

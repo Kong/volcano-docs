@@ -299,6 +299,8 @@ function App() {
 
 ### Server-Side Function
 
+Size pools across all function instances within the [shared connection limits](direct-connection.md#keep-connection-pools-within-capacity); this example uses two connections per instance.
+
 ```javascript
 const { VolcanoAuth } = require('@volcano.dev/sdk');
 
@@ -309,7 +311,7 @@ const volcano = new VolcanoAuth({
 });
 
 // Connection pool outside handler (reused)
-const pool = volcano.database.createPool({ max: 20 });
+const pool = volcano.database.createPool({ max: 2 });
 
 exports.handler = async (event) => {
   console.log('Event auth context:', event.__volcano_auth);
@@ -536,24 +538,10 @@ exports.handler = async (event) => {
 
 pgproxy fixes the auth identity from `application_name` at connection **startup**, so a pool serves exactly one user. Keep one pool per auth user:
 
+Save the [bounded per-user pool helper](https://github.com/Kong/volcano-docs/blob/main/content/platform/examples/database-pool-example/user-db-pool.js) as `user-db-pool.js` alongside your function. It retains at most four user pools with one connection each, reclaims idle pools for new users, removes empty pools after failed startup, and preserves active work. Handle its capacity error with backpressure and size all instances within the [shared connection limits](direct-connection.md#keep-connection-pools-within-capacity).
+
 ```javascript
-const { Pool } = require('pg');
-
-// One pool per auth user, reused across invocations while the container is
-// warm. In production, bound this cache (e.g. LRU with idle eviction).
-const poolsByUser = new Map();
-
-function poolForUser(userId) {
-  let pool = poolsByUser.get(userId);
-  if (!pool) {
-    // Replace application_name (DATABASE_URL already has volcano_full_access)
-    const url = new URL(process.env.DATABASE_URL);
-    url.searchParams.set('application_name', `volcano_user_access:${userId}`);
-    pool = new Pool({ connectionString: url.toString(), max: 5 });
-    poolsByUser.set(userId, pool);
-  }
-  return pool;
-}
+const { connectForUser } = require('./user-db-pool');
 
 exports.handler = async (event) => {
   const auth = event.__volcano_auth;
@@ -563,7 +551,18 @@ exports.handler = async (event) => {
   }
 
   // Every connection in this pool started as volcano_user_access:{userId}
-  const client = await poolForUser(auth.user_id).connect();
+  let client;
+  try {
+    client = await connectForUser(auth.user_id);
+  } catch (error) {
+    // Log diagnostic codes, never connection strings or error messages.
+    console.error('Database connection failed', { name: error?.name, code: error?.code ?? 'UNKNOWN' });
+    return {
+      statusCode: 503,
+      headers: { 'Retry-After': '1' },
+      body: JSON.stringify({ error: 'Database temporarily unavailable' }),
+    };
+  }
 
   try {
     // Query - auth.uid() = auth.user_id from event

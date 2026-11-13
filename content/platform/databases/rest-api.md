@@ -813,6 +813,7 @@ reached — and 14 ms on the database.
 - **Operators:** See supported operators table above
 - **Filters:** Combined with AND (OR not yet supported)
 - **UPDATE/DELETE:** Requires at least one filter for safety
+- **Connection capacity:** Each server shares up to 32 REST database connections across callers and accepts at most 32 active or waiting requests, with at most 20 requests from one project and at most 20 across all projects owned by one platform account. Connections remain specific to their authenticated identity. Under pressure, idle connections can be reclaimed without closing checked-out work. Acquiring a connection waits up to five seconds, or your earlier cancellation/deadline. A full request queue or acquisition failure returns `500 Internal Server Error` with `"error": "Failed to connect to database"`. Bound application concurrency and retry connection failures with bounded backoff. REST connections also share the [native connection limits](direct-connection.md#keep-connection-pools-within-capacity).
 - **Query time:** A query must finish within 60 seconds. Volcano cancels one
   that runs longer and answers `500 Internal Server Error` with
   `"error": "Query failed"`.

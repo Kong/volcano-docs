@@ -140,6 +140,22 @@ curl -X POST "https://api.volcano.dev/projects/PROJECT_ID/logs/search" \
   -d '{"resource":{"type":"function"},"limit":100,"cursor":"eyJwayI6..."}'
 ```
 
+## While a Preview Serves
+
+While a function is promoted to one of its [previews](previews.md), its runtime
+logs include the lines the preview wrote while it served, and for 15
+minutes after, under the function's ID and name.
+
+- `resource.id:FUNC_ID` in `q` matches those lines too, and `resource.id:PREVIEW_ID`
+  matches none of them in the function's logs. To read the preview's own lines,
+  select its ID in `resource.ids`.
+- A cursor reads what its first page read. A promotion or rollback made while
+  you page shows from the next search without a cursor.
+- A search of every function (`resource.ids` omitted) by `invocation.id` alone
+  reads the project's log index without looking up the functions, so it reports
+  a line the preview wrote while serving under the preview's ID. Select
+  the function's ID to read it as the function's.
+
 ## Activity
 
 Count logs over time to draw a histogram. The request takes the same

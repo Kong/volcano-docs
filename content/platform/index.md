@@ -42,6 +42,7 @@ Agents and APIs in Node.js, Python, or Ruby, invoked over HTTP and deployed to t
 | [User context](functions/user-context.md)                   | Access authenticated user data       |
 | [Environment variables](functions/environment-variables.md) | Configure secrets and settings       |
 | [Logs](functions/logs.md)                                   | View and filter function logs        |
+| [Function previews](functions/previews.md)                  | Preview a build, promote, roll back  |
 
 ### Durable functions
 
@@ -143,12 +144,13 @@ Next.js, static or server-rendered, served from the edge. A failed build never r
 
 [LavaFlow](guides/lavaflow.md) turns production errors into reviewed fixes: it diagnoses the issue, opens a pull request with the fix, and, when you allow it, merges it. In preview on SUPERAGENT.
 
-| Guide                                                  | Description                                                           |
-| ------------------------------------------------------ | --------------------------------------------------------------------- |
-| [LavaFlow](guides/lavaflow.md)                         | Turn it on, follow its runs, and let it merge fixes                   |
-| [Report problems from Slack](guides/lavaflow-slack.md) | Mention Volcano in Slack to have LavaFlow diagnose a reported problem |
-| [Issues](guides/issues.md)                             | Runtime errors grouped into the issues LavaFlow diagnoses and fixes   |
-| [CLI](/cli/lavaflow)                                   | Turn LavaFlow on and follow its runs from a terminal                  |
+| Guide                                                  | Description                                                         |
+| ------------------------------------------------------ | ------------------------------------------------------------------- |
+| [LavaFlow](guides/lavaflow.md)                         | Turn it on, follow its runs, and let it merge fixes                 |
+| [Report problems from Slack](guides/lavaflow-slack.md) | Mention Volcano in Slack to report a problem or request a change    |
+| [Fix Aikido issues](guides/lavaflow-aikido.md)         | Have LavaFlow open fixes for the vulnerabilities Aikido finds       |
+| [Issues](guides/issues.md)                             | Runtime errors grouped into the issues LavaFlow diagnoses and fixes |
+| [CLI](/cli/lavaflow)                                   | Turn LavaFlow on and follow its runs from a terminal                |
 
 ### Security
 
@@ -199,12 +201,13 @@ Step-by-step guides for common tasks.
 | ---------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | [Deploy to production](guides/production.md)               | Ship your project to the cloud                                                      |
 | [Plans and limits](guides/plans-and-limits.md)             | HOBBY vs SUPERAGENT limits by resource                                              |
-| [Database migrations](guides/migrations.md)                | Apply schema changes once each, rehearsed and backed up, or with the CLI            |
+| [Database migrations](guides/migrations.md)                | Apply schema changes once each, rehearsed and backed up, from the API, Git, or CLI  |
 | [Deployment performance](guides/deployment-performance.md) | Deployment latency objectives, phases, and telemetry                                |
 | [Sandboxes](guides/sandboxes.md)                           | Run commands and HTTP services in isolated sessions with plan-based runtime pricing |
 | [Issues](guides/issues.md)                                 | See runtime errors grouped into issues, and resolve or ignore them                  |
 | [LavaFlow](guides/lavaflow.md)                             | Turn production errors into reviewed fixes, from diagnosis to pull request to merge |
-| [Report problems from Slack](guides/lavaflow-slack.md)     | Mention Volcano in Slack to have LavaFlow diagnose a reported problem               |
+| [Report problems from Slack](guides/lavaflow-slack.md)     | Mention Volcano in Slack to report a problem or request a change                    |
+| [Fix Aikido issues](guides/lavaflow-aikido.md)             | Have LavaFlow open fixes for the vulnerabilities Aikido finds                       |
 
 ## Examples
 

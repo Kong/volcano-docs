@@ -2,8 +2,8 @@ import { readFile, realpath } from "node:fs/promises";
 import path from "node:path";
 
 // Page paths come from Fumadocs' build-time page map, not straight from the
-// request. Synced docs are still untrusted input (see sync-docs.yml), so the
-// read itself refuses anything that could land outside the content root.
+// request. The read itself still refuses anything that could land outside the
+// content root.
 //
 // The path and fs calls below carry turbopackIgnore so Turbopack doesn't trace
 // the whole project for these dynamic paths. Callers pass a statically scoped

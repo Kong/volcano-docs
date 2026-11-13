@@ -1,6 +1,6 @@
 ---
 title: 'Database Migrations'
-description: 'Apply SQL migrations to a Volcano database once each, rehearsed on a branch and backed up first, or run them untracked with the CLI.'
+description: 'Apply SQL migrations to a Volcano database once each, rehearsed on a branch and backed up first, from the API, a Git push, or the CLI.'
 ---
 
 Migrations are SQL files in your project's `volcano/migrations/` directory.
@@ -13,10 +13,10 @@ Volcano applies them three ways:
   branch starts a tracked run for each database its commit has files for, with
   `source: git_deploy`, and deploys the code only after every run succeeds. See
   [Apply migrations on push](../projects/git-deploy.md#apply-migrations-on-push).
-- **The CLI**, with `volcano deploy --with-migrations`, `volcano cloud
-  databases migration up`, and `volcano migrations deploy`. The CLI does not
-  use tracked runs yet: every file runs again on each call. See
-  [Run migrations with the CLI](#run-migrations-with-the-cli).
+- **The CLI**, with `volcano deploy --with-migrations` and `volcano cloud
+  databases migration apply`, which start tracked runs. The CLI's untracked
+  `migration up` and `volcano migrations deploy` run every file again on each
+  call. See [Run migrations with the CLI](#run-migrations-with-the-cli).
 
 ## Apply migrations with a tracked run
 
@@ -332,7 +332,9 @@ A run gets four attempts.
 
 A database migrated before you used tracked runs already reflects its files,
 and running them again would fail. Record them as applied without running
-them:
+them. With the CLI, `volcano cloud databases migration baseline -d main_db
+--all` records every file in your migrations directory, and `-f <file>`,
+repeatable, records only some. Through the API:
 
 ```bash
 curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/databases/main_db/migrations/baseline" \
@@ -476,17 +478,32 @@ read the project's migration runs can see it.
 
 ## Run migrations with the CLI
 
-The CLI applies migrations without tracking them. Every file runs again on each
-`--with-migrations` deploy and each `migration up --all`: write files to be
-safe to repeat, such as `CREATE TABLE IF NOT EXISTS`, or leave the flag out
-once they have run.
-
-`volcano deploy --with-migrations` applies every migration as part of a whole
-project deploy, after the variables and before the functions. `volcano cloud
-deploy --with-migrations -d mydb` does the same for a cloud database, and picks
+`volcano cloud databases migration apply -d mydb` sends the database's files to
+a tracked run and waits for it to end; `--no-wait` returns once it is queued.
+`volcano cloud deploy --with-migrations -d mydb` does the same as part of a
+whole project deploy, after the variables and before the functions, and picks
 the database itself when your `volcano-config.yaml` declares exactly one. See
-the [CLI deploy reference](/cli/deploy). Use the commands below to apply
-migrations on their own.
+the [CLI deploy reference](/cli/deploy).
+
+```bash
+volcano cloud databases migration status -d mydb          # compare files with the history
+volcano cloud databases migration baseline -d mydb --all  # adopt a database migrated without tracking
+volcano cloud databases migration apply -d mydb
+volcano cloud databases migration runs list -d mydb
+volcano cloud databases migration runs get <run-id> -d mydb
+```
+
+Where tracked runs are not available, `apply` and `deploy --with-migrations`
+refuse before they send anything and name the untracked command instead,
+`baseline` refuses, and `status` and `runs` keep working. Drop `cloud` for
+the same commands in local development, where a run applies directly, without a
+rehearsal or a backup.
+
+## Run migrations without tracking
+
+`volcano cloud databases migration up` and `volcano migrations deploy` run each
+file whether or not it ran before. Write files to be safe to repeat, such as
+`CREATE TABLE IF NOT EXISTS`.
 
 ### Cloud databases
 

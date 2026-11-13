@@ -50,8 +50,9 @@ volcano cloud deploy --env-file volcano/cloud.env --with-migrations -d app
 the migrations in `volcano/migrations`, deploys your functions, durable
 functions, and the frontends listed in `.volcano/source-layout.json`, then
 applies `volcano-config.yaml`. It waits until every deployment is live and
-prints each frontend's URL. Leave out `--with-migrations` on later deploys
-unless your migrations are safe to run again. See the
+prints each frontend's URL. Later `--with-migrations` deploys apply only the
+files the database has not recorded; see
+[Database Migrations](migrations.md#run-migrations-with-the-cli). See the
 [CLI deploy reference](/cli/deploy) for every option and the commands that
 deploy one kind of resource at a time.
 

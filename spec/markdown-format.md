@@ -4,11 +4,9 @@ description: The frontmatter schema and authoring rules every Volcano doc must f
 order: 1
 ---
 
-This is the contract for every markdown file synced into the Volcano developer
-docs. It is **generator-agnostic**: fields are neutral so Hugo, Docusaurus,
-Astro Starlight, or a Next.js route in `volcano-web` can each consume it with a
-thin adapter. Docs live in their product repo; CI validates against this spec
-before syncing.
+This is the contract for every markdown file in the Volcano developer docs.
+It is **generator-agnostic**: fields are neutral so any site generator can
+consume it with a thin adapter. CI validates every page against this spec.
 
 ## Frontmatter
 
@@ -43,7 +41,7 @@ order: 3
 
 | Field | Purpose |
 | --- | --- |
-| `source` | `{ repo, path, ref, commit }` stamped at sync time for provenance and "Edit this page" links. |
+| `source` | `{ repo, path, ref, commit }` for provenance and "Edit this page" links, if a build ever stamps it. |
 
 Generator adapters map the neutral fields: `order` → Hugo `weight` /
 Docusaurus `sidebar_position` / Starlight `sidebar.order`; `nav_title` →
@@ -60,8 +58,8 @@ Docusaurus `sidebar_position` / Starlight `sidebar.order`; `nav_title` →
 
 - `kebab-case.md` filenames.
 - `index.md` is the section (directory) landing page. Its `title`/`description`
-  describe the whole section. (`README.md` is also accepted so the page renders
-  on GitHub; the sync emits it as `index.md`.) Do not use Hugo's `_index.md` —
+  describe the whole section. (Links to a section's `README.md` still resolve
+  to its `index.md`.) Do not use Hugo's `_index.md` —
   the adapter produces the tool-specific landing name at build time.
 - Images and other assets go in an `assets/` folder next to the doc and are
   referenced relatively: `![diagram](./assets/flow.png)`.
@@ -105,10 +103,9 @@ Functions are serverless code that runs on AWS Lambda...
 ## Validation
 
 Frontmatter is validated against [`frontmatter.schema.json`](frontmatter.schema.json).
-CI fails the sync on: missing `title`/`description`, an H1 in the body, a
-fenced block with no language, or a non-kebab-case filename. The sync also
-refuses any symlink on or under a synced path; commit a copy of the file
-instead.
+CI fails a PR on: missing `title`/`description`, an H1 in the body, a fenced
+block with no language, or a non-kebab-case filename. It also refuses any
+symlink under `content/` or `public/`; commit a copy of the file instead.
 
 ## Adapter responsibilities
 

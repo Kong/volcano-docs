@@ -31,8 +31,8 @@ export function getMarkdownPage(slug: string[]): DocsPage | undefined {
 }
 
 // The page route a relative .md link in a page's source names, with its query
-// and fragment, or null when it names no page. A section's README.md is synced
-// as index.md, so a link to the README falls back to the index.
+// and fragment, or null when it names no page. A section's README.md was renamed
+// to index.md, so a link to the README falls back to the index.
 function resolvePageHref(href: string, page: DocsPage): string | null {
   const candidates = [href, href.replace(/README\.md(?=[?#]|$)/, "index.md")];
   for (const candidate of candidates) {

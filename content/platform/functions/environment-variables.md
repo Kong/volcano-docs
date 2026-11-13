@@ -142,6 +142,26 @@ Dashboard clients can replace the list with `PUT /projects/{id}/shared-variables
 ```
 
 The operation returns `204` after saving membership and starting synchronization.
+When a [promoted preview](previews.md#while-a-preview-serves) serves a function
+the change would reach, that function keeps the variables the preview was built
+with: the operation still saves membership and synchronizes every other
+function, and returns `200` with a `skipped_functions` list naming each skipped
+function's `id` and `name`, a `code` (`function_served_by_candidate`; accept
+codes not listed here) and a `message`:
+
+```json
+{
+  "skipped_functions": [
+    {
+      "id": "8f8c1d1e-4a3b-4c55-9e7a-2f4b8a7c6d10",
+      "name": "api",
+      "code": "function_served_by_candidate",
+      "message": "a promoted preview serves this function and keeps the variables it was built with; ..."
+    }
+  ]
+}
+```
+
 Request bodies larger than 4 MiB return `413` before decoding.
 Unknown names or an oversized final function environment return `400` before
 any membership, sync, or deployment changes. The final list is validated as a
