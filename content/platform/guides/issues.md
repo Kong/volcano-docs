@@ -223,9 +223,10 @@ scans that found them. Each carries its `finding`:
 ```
 
 The lines are in `commit_sha`, the deployed commit the scan found the problem
-in. When an explanation may contain a credential, LavaFlow withholds it whole,
-and `explanation` reads `LavaFlow left this explanation out because it may
-contain a credential`. A `runtime` issue has no `finding`.
+in. When an explanation holds one of your project's secret values or a secret
+that gitleaks' default rules detect, `explanation` reads
+`Hidden: this field matched a secret.` in place of all of it. A `runtime` issue
+has no `finding`.
 
 ## Failed builds
 
