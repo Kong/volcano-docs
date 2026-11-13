@@ -76,12 +76,10 @@ updates:
         update-types:
           - "major"
 
-  # Keep SHA-pinned GitHub Actions (and their `# vX.Y.Z` comments) current,
-  # including the reusable lint-docs composite action.
+  # Keep SHA-pinned GitHub Actions (and their `# vX.Y.Z` comments) current.
   - package-ecosystem: "github-actions"
     directories:
       - "/"
-      - "/.github/actions/*"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5

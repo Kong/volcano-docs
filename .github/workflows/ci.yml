@@ -41,9 +41,6 @@ jobs:
       - name: Check links and routes
         run: pnpm check:links
 
-      - name: Test reusable actions
-        run: pnpm test:actions
-
       - name: Test docs tooling
         run: pnpm test:docs
 
