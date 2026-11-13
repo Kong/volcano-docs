@@ -209,7 +209,8 @@ curl "https://api.volcano.dev/capabilities"
     { "id": "frontend_routes", "status": "available" },
     { "id": "frontends.candidates", "status": "unavailable" },
     { "id": "databases.migrations", "status": "available" },
-    { "id": "shares", "status": "available" }
+    { "id": "shares", "status": "available" },
+    { "id": "ai_gateway", "status": "unavailable" }
   ]
 }
 ```
@@ -234,6 +235,7 @@ curl "https://api.volcano.dev/capabilities"
 | `functions.candidates`         | Creating, deploying to, promoting and rolling back to [function previews](../functions/previews.md); listing, reading and deleting them, and rolling back to the function's own build, work either way                                                                    |
 | `databases.migrations`         | Starting [migration runs](../guides/migrations.md), recording a baseline, and turning on `apply_migrations` for [Git deploy](../projects/git-deploy.md#apply-migrations-on-push); reading history and runs works either way                                               |
 | `shares`                       | [Sharing and forking](../projects/sharing.md): sharing a project and forking a share; listing, reading, switching off, deleting, and counting existing shares work either way                                                                                             |
+| `ai_gateway`                   | The [Volcano AI gateway](../guides/ai-gateway.md): creating AI keys and minting a run's first token; reading, regenerating and deleting keys, and reading, extending and revoking tokens or minting again for a run, work either way                                      |
 
 The endpoint needs no token, and every caller in an environment gets the same
 answer. While a capability is `unavailable`, requests that start new work
