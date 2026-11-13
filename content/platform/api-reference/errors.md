@@ -403,7 +403,8 @@ full-scope
 with `403` and code `person_required`, except for turning Code Quality off: a
 body that sends `project_id` and `"code_quality": {"enabled": false}`, and
 nothing else, to `PATCH /lavaflow/settings`. The project's
-owner makes every other change with a platform token:
+owner makes every other change with a platform token or a live Volcano
+dashboard sign-in:
 
 ```json
 {
