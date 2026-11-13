@@ -2747,9 +2747,9 @@ with `code` `plan_required` when the plan allows none.
 
 Code Quality reads the project's source, so turning it on is the owner's
 decision, made the way [Turn merging on](#turn-merging-on) describes: signed in
-as a person, with a `volcano login` token whose sign-in is live, or a platform
-token that expires, while the owner's GitHub account can push to the project's
-repository.
+as a person, with a `volcano login` token whose sign-in is live, a live Volcano
+dashboard sign-in, or a platform token that expires, while the owner's GitHub
+account can push to the project's repository.
 
 ```bash
 curl -X PATCH "https://api.volcano.dev/lavaflow/settings" \
