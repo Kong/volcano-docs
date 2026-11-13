@@ -127,3 +127,7 @@ React 19.2 rather than `volcano-web`'s Next 15.5. Every other convention matches
 
 - [`scripts/lint-docs.mjs`](scripts/lint-docs.mjs) — validates docs against the
   contract (`pnpm lint:docs content`).
+- [`scripts/check-api-drift.mjs`](scripts/check-api-drift.mjs) — checks that the
+  pages listing function preview error codes, function runtimes and PostgreSQL
+  versions match `https://api.volcano.dev` (`pnpm check:api`). CI runs it on PRs
+  that change those pages and daily.

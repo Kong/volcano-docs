@@ -1,0 +1,48 @@
+name: Docs match production API
+
+# Pages that list values the production API serves (function preview error
+# codes, function runtimes, PostgreSQL versions) must match it. Runs on PRs that
+# change those pages and daily, since a release can change the API without a
+# docs PR.
+on:
+  pull_request:
+    paths:
+      - content/platform/functions/previews.md
+      - content/platform/functions/overview.md
+      - content/platform/functions/upload-api.md
+      - content/platform/databases/overview.md
+      - content/platform/databases/creating-databases.md
+      - scripts/check-api-drift.mjs
+      - .github/workflows/api-drift.yml
+  schedule:
+    - cron: "17 14 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: api-drift-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Check pages against api.volcano.dev
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Check pages against the production API
+        run: pnpm check:api
