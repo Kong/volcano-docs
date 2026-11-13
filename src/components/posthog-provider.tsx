@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import type { PostHog } from "posthog-js";
+import { shouldInitializePostHog } from "@/lib/posthog-hosts.mjs";
 
 type PostHogProviderProps = {
   children: ReactNode;
@@ -15,14 +16,15 @@ const FlagsContext = createContext<FlagsState>({ client: null, version: 0 });
 
 // Loads posthog-js on demand: builds with no key never download the SDK, and
 // builds with one load it after the page is interactive. With no key configured
-// (local dev without .env.local) PostHog stays off and every flag check reads
-// as disabled.
+// (local dev without .env.local), or on any host other than the published docs
+// hosts (localhost, previews), PostHog stays off and every flag check reads as
+// disabled.
 function PostHogProvider({ children }: PostHogProviderProps) {
   const [state, setState] = useState<FlagsState>({ client: null, version: 0 });
 
   useEffect(function initPostHog() {
     const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
-    if (!key) return;
+    if (!key || !shouldInitializePostHog(window.location.hostname)) return;
     let cancelled = false;
     let unsubscribe: (() => void) | undefined;
 
