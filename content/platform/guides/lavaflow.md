@@ -132,8 +132,8 @@ change.
 
 Only the project's owner, signed in, starts these runs: turning LavaFlow on
 starts them when the request carries a `volcano login` token whose sign-in is
-live, or a platform token that expires. A platform token that never expires,
-or a `volcano login` token whose sign-in ended, starts none.
+live, a live Volcano dashboard sign-in, or a platform token that expires. A
+platform token that never expires, or a `volcano login` token whose sign-in ended, starts none.
 
 Not every recurring error needs a code change. When the diagnosis finds no
 change that fixes it, for example because the cause is outside your code, the
@@ -539,8 +539,8 @@ keeps its saved value, or its default when the project never saved settings.
 made the last save. It is `null` when no person made it, such as a project
 access token's save.
 
-Only the project's owner changes the settings, signed in with a platform token,
-while their account is active, except that a full-scope project access token
+Only the project's owner changes the settings, signed in with a platform token
+or a live Volcano dashboard sign-in, while their account is active, except that a full-scope project access token
 can turn Code Quality off with `PATCH`. `can_update` says
 whether your credential can change the rest.
 
@@ -551,7 +551,7 @@ whether your credential can change the rest.
 | `400`  | `feature_unavailable` | The save turns `code_quality` on while Code Quality is not available to the project                                                                                                                                                                                                                        |
 | `401`  |                       | The request has no valid credential                                                                                                                                                                                                                                                                        |
 | `403`  | `person_required`     | A full-scope project access token tried any change but [turning Code Quality off](#turn-code-quality-off), or MCP tried to change the settings                                                                                                                                                             |
-| `403`  | `person_required`     | The save turns on `allow_ungated_workflows` or `code_quality`, or changes a setting [Turn merging on](#turn-merging-on) lists, and the owner didn't make it with `volcano login` or a platform token that expires, or their GitHub account can't push to the project's repository, or the project has none |
+| `403`  | `person_required`     | The save turns on `allow_ungated_workflows` or `code_quality`, or changes a setting [Turn merging on](#turn-merging-on) lists, and the owner didn't make it while signed in or with a platform token that expires, or their GitHub account can't push to the project's repository, or the project has none |
 | `403`  | `plan_required`       | The owner's plan does not include LavaFlow, or the save turns `code_quality` on and the plan allows no Code Quality findings                                                                                                                                                                               |
 | `403`  |                       | A read-only project access token tried to change the settings, or the owner's account is read-only                                                                                                                                                                                                         |
 | `403`  |                       | The owner's plan could not be read. Nothing was saved; retry                                                                                                                                                                                                                                               |
@@ -1033,7 +1033,8 @@ volcano cloud lavaflow settings set --autonomy merge
 ```
 
 The owner makes these changes signed in as a person: with a `volcano login`
-token whose sign-in is live, or a platform token that expires. Your GitHub
+token whose sign-in is live, a live Volcano dashboard sign-in, or a platform
+token that expires. Your GitHub
 account must also be able to push to the project's repository;
 [checking the owner's access](../projects/git-deploy.md#check-that-the-owner-can-push)
 says why it can't. These get `403` with code `person_required`, and nothing is
@@ -1322,7 +1323,8 @@ LavaFlow starts runs on its own only while it is on, and only for issues with
 `exception: true`. An issue grouped from messages, structured logs or printed
 tracebacks never starts one. Of the issues LavaFlow passed over while it was
 off, turning it on as the owner, with a `volcano login` token whose sign-in is
-live or a platform token that expires, starts runs for up to 5, and each of the
+live, a live Volcano dashboard sign-in, or a platform token that expires,
+starts runs for up to 5, and each of the
 others starts one when it's seen again;
 [When runs start](#when-runs-start) says which. Start a run on any of the
 project's issues yourself, as the project's owner:
@@ -2438,7 +2440,8 @@ that runs CI, or merge it with a message that does.
 
 Gating the job is the safer fix. If you can't, the project's owner can let
 LavaFlow open its pull requests anyway, signed in as a person: with the
-platform token `volcano login` stores, or another platform token that expires. The owner's GitHub account must be able to push to the
+platform token `volcano login` stores, a live Volcano dashboard sign-in, or
+another platform token that expires. The owner's GitHub account must be able to push to the
 project's repository:
 
 ```bash
