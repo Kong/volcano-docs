@@ -5,6 +5,21 @@ description: 'Connect directly to your Volcano PostgreSQL database from function
 
 Connect directly to your Volcano PostgreSQL database from functions, Node.js servers, or any PostgreSQL client.
 
+## Keep connection pools within capacity
+
+Native PostgreSQL connections share a limit of **20 open sessions per project on each server**, across all databases, branches, full-access connections, and user-access connections. Idle driver-pool connections count until their sockets close. The owning platform account also shares **20 sessions across all its projects on each server**. Application users do not get separate account allowances. These safety limits apply to every plan and in local mode. In the default local setup, all projects share one platform account, so the local server shares one allowance of 20 native sessions and 20 active or waiting REST requests across those projects.
+
+Each server also admits at most **32 authenticated sessions in total**. These are per-server limits, not project-wide or account-wide fleet allowances. Capacity can be reached before your project or account reaches 20 sessions. Database REST traffic shares this capacity. Its idle connections use a two-minute timeout. Capacity reclamation can restart this timeout for retained idle connections, extending their project/account occupancy beyond two minutes after the last query. A native driver's refusal does not trigger REST reclamation; only later REST requests reclaim their own idle sockets when acquisition needs capacity. Applications sharing a source address do not face an additional IP-based connection limit.
+
+When capacity is full, a new authenticated connection receives PostgreSQL SQLSTATE `53300` (`too_many_connections`), for example:
+
+```text
+FATAL: PostgreSQL connection capacity reached (project)
+HINT: Close idle connections, reduce pool sizes, and retry with backoff.
+```
+
+The refused connection closes; existing healthy sessions remain available. Share small, reusable pools, bound the number of per-user pools, and close idle pools when they are no longer needed. Include all application instances and databases when sizing pools, and reserve capacity for server-side database operations, migrations, and interactive clients. Returning a connection to a driver's pool keeps its session open; closing the pool releases its idle sessions. Retry new connections with exponential backoff and jitter instead of a tight reconnect loop. An authenticated session outside a transaction closes after **five minutes waiting for its next client message**, with PostgreSQL `57P05` (`idle_session_timeout`). Active queries continue normally; explicit transactions retain their existing idle-in-transaction timeout. Configure driver pools to retire idle connections before five minutes and reconnect when the server closes a stale session. Retry connection acquisition with backoff; do not automatically replay writes after a connection error.
+
 ## Overview
 
 **Two ways to connect:**
@@ -185,26 +200,10 @@ exports.handler = async (event) => {
 
 ### With Connection Pooling (Production)
 
-pgproxy fixes the access mode and RLS identity from `application_name` at connection **startup** — `SET application_name` after connect has no effect. So a pool can only ever serve one identity: key pools by user.
+pgproxy fixes the access mode and RLS identity from `application_name` at connection **startup** — `SET application_name` after connect has no effect. So a pool can only ever serve one identity: key pools by user. Save the [bounded pool helper](https://github.com/Kong/volcano-docs/blob/main/content/platform/examples/database-pool-example/user-db-pool.js) as `user-db-pool.js` alongside your function. It reuses up to four identity pools, retires idle pools when another user needs capacity, and preserves checked-out or waiting clients. When every slot is busy or a connection fails, return a temporary-unavailable response as below. For a larger changing set of user identities, the [database REST API](rest-api.md) manages scoped identity pools for you.
 
 ```javascript
-const { Pool } = require('pg');
-
-// One pool per auth user, reused across invocations while the container is
-// warm. In production, bound this cache (e.g. LRU with idle eviction).
-const poolsByUser = new Map();
-
-function poolForUser(userId) {
-  let pool = poolsByUser.get(userId);
-  if (!pool) {
-    // Replace application_name (DATABASE_URL already has volcano_full_access)
-    const url = new URL(process.env.DATABASE_URL);
-    url.searchParams.set('application_name', `volcano_user_access:${userId}`);
-    pool = new Pool({ connectionString: url.toString(), max: 5 });
-    poolsByUser.set(userId, pool);
-  }
-  return pool;
-}
+const { connectForUser } = require('./user-db-pool');
 
 exports.handler = async (event) => {
   const auth = event.__volcano_auth;
@@ -215,7 +214,18 @@ exports.handler = async (event) => {
 
   // Get a connection from THIS user's pool — every connection in it started
   // up as volcano_user_access:{userId}, so RLS is already in effect.
-  const client = await poolForUser(auth.user_id).connect();
+  let client;
+  try {
+    client = await connectForUser(auth.user_id);
+  } catch (error) {
+    // Log diagnostic codes, never connection strings or error messages.
+    console.error('Database connection failed', { name: error?.name, code: error?.code ?? 'UNKNOWN' });
+    return {
+      statusCode: 503,
+      headers: { 'Retry-After': '1' },
+      body: JSON.stringify({ error: 'Database temporarily unavailable' }),
+    };
+  }
 
   try {
     const { rows } = await client.query('SELECT * FROM posts');
@@ -237,6 +247,79 @@ exports.handler = async (event) => {
 - **10-50x faster!**
 
 ---
+
+## Protocol safety limits
+
+All plans use these PostgreSQL protocol safety limits per connection:
+
+| Resource                                               | Ceiling                   |
+| ------------------------------------------------------ | ------------------------- |
+| Frontend message body, including Query, Parse and Bind | 16 MiB (16,777,216 bytes) |
+| Each CopyData message body                             | 1 MiB (1,048,576 bytes)   |
+| Retained prepared statements                           | 1,024                     |
+| Retained portals (bound statements)                    | 1,024                     |
+| Combined accounted statement and portal memory         | 32 MiB (33,554,432 bytes) |
+
+These are per-message and per-session ceilings, not a global memory bound.
+Keep application connection pools bounded.
+
+Message body sizes exclude the one-byte message type and four-byte length
+field. An oversized declared body gets a PostgreSQL FATAL error with SQLSTATE
+`54000` naming the permitted body size in bytes, then the connection closes
+before allocating a receive buffer for that body. Delivery is best effort: a
+client that stops reading may see only the disconnect. Split large queries or
+parameter batches into separate operations. A single
+parameter cannot be split across Bind messages; change the operation or use
+a suitable streaming COPY input for values exceeding the frame limit. For COPY,
+stream data in chunks of at most 1 MiB; the total COPY may exceed 1 MiB, and a
+row may span chunks. See [Importing data](importing-data.md#limits).
+
+The frame ceiling applies after driver encoding and includes protocol overhead.
+For example, text/hex encoding of `bytea` roughly doubles the value size: an
+8 MiB value already exceeds 16 MiB once encoded. Use smaller batches or a
+supported binary/streaming API rather than relying on the value's in-memory size.
+
+Session memory includes names, SQL, parameter values, type and format arrays,
+retained column descriptions, and accounting overhead. A portal is charged for
+the statement data it retains even after that statement is closed or replaced.
+The shared SQL and column descriptions are conservatively charged once per
+retaining object, even when their underlying storage is shared. Large SQL
+bound to many portals can therefore reach the byte ceiling before either
+count ceiling.
+
+Replacing an object reclaims its previous charge; protocol Close releases that
+object's charge, and disconnecting releases the session. Portals also expire
+at COMMIT/ROLLBACK and at Sync outside an explicit transaction. Sync inside
+BEGIN preserves portals, including while the transaction awaits rollback after
+an error. Named prepared statements survive transaction completion. A simple
+Query discards the unnamed statement and replaces the unnamed portal when it
+executes a nonempty query; an empty Query inside BEGIN preserves that portal.
+
+SQL `DEALLOCATE [PREPARE] name` also releases a prepared statement created by
+protocol Parse. `DEALLOCATE ALL` releases all named prepared statements, and
+`DISCARD ALL` releases them and the portals while performing PostgreSQL's
+session reset. Both forms of ALL preserve the protocol's unnamed statement
+when executed through the extended protocol; a simple Query independently
+discards it. Bound portals survive statement deallocation until their own
+Close or transaction end, and their retained data still counts toward the
+byte ceiling. Failed cleanup does not release named statements.
+
+`DISCARD ALL` cannot run inside an explicit transaction, or after an earlier
+Execute in a pipeline before Sync. Send Sync before issuing it as a standalone
+command. Use your driver's cache-clear/deallocation API when available so its
+own prepared-name cache stays consistent with the server.
+
+Using an expired portal fails with SQLSTATE `34000`; Bind a surviving named
+statement again to create a new portal. A statement removed by Close or simple
+Query must be parsed again; otherwise its lookup fails with SQLSTATE `26000`.
+
+A Parse, Bind or Describe that would exceed a session ceiling fails with
+SQLSTATE `54000` and `pgproxy session prepared statement or portal limit exceeded; close unused statements and portals`.
+The previous retained objects remain available. As with other extended-query
+errors, the proxy discards pending messages until Sync. Send Sync, then Close
+unused statements or portals before retrying. Inside a transaction, roll back
+the failed transaction before resuming queries. Drivers that cache prepared
+statements should evict entries with protocol Close.
 
 ## Node.js Server (Custom Backend)
 
@@ -274,25 +357,8 @@ The SDK's [server client](/sdk/js/nextjs) makes the same `GET /auth/user` call.
 ### Option 1: Pool Connections Per User
 
 ```javascript
-const { Pool } = require('pg');
+const { connectForUser } = require('./user-db-pool');
 const express = require('express');
-
-// One pool per auth user: the RLS identity is fixed at connection startup by
-// application_name, so a shared pool cannot switch users per request.
-// In production, bound this cache (e.g. LRU with idle eviction).
-const poolsByUser = new Map();
-
-function poolForUser(userId) {
-  let pool = poolsByUser.get(userId);
-  if (!pool) {
-    // Replace application_name (DATABASE_URL already has volcano_full_access)
-    const url = new URL(process.env.DATABASE_URL);
-    url.searchParams.set('application_name', `volcano_user_access:${userId}`);
-    pool = new Pool({ connectionString: url.toString(), max: 5 });
-    poolsByUser.set(userId, pool);
-  }
-  return pool;
-}
 
 const app = express();
 
@@ -304,7 +370,14 @@ app.get('/api/posts', async (req, res) => {
   }
 
   // 2. Get a connection from this user's pool (started under RLS)
-  const client = await poolForUser(user.id).connect();
+  let client;
+  try {
+    client = await connectForUser(user.id);
+  } catch (error) {
+    // Log diagnostic codes, never connection strings or error messages.
+    console.error('Database connection failed', { name: error?.name, code: error?.code ?? 'UNKNOWN' });
+    return res.status(503).set('Retry-After', '1').json({ error: 'Database temporarily unavailable' });
+  }
 
   try {
     // 3. Query - auth.uid() = user.id
@@ -690,24 +763,10 @@ const user2Posts = await queryAsUser('user2-id');
 **Or pool connections per user.** Since the auth identity is fixed at connection startup, a pool can only ever serve one user — so key pools by user:
 
 ```javascript
-const { Pool } = require('pg');
-
-// In production, bound this cache (e.g. LRU with idle eviction).
-const poolsByUser = new Map();
-
-function poolForUser(userId) {
-  let pool = poolsByUser.get(userId);
-  if (!pool) {
-    const url = new URL(process.env.DATABASE_URL);
-    url.searchParams.set('application_name', `volcano_user_access:${userId}`);
-    pool = new Pool({ connectionString: url.toString(), max: 5 });
-    poolsByUser.set(userId, pool);
-  }
-  return pool;
-}
+const { connectForUser } = require('./user-db-pool');
 
 async function queryAsUser(userId) {
-  const client = await poolForUser(userId).connect();
+  const client = await connectForUser(userId);
 
   try {
     const { rows } = await client.query('SELECT * FROM posts');
@@ -868,17 +927,24 @@ The codes you are most likely to handle:
 | `42P01`  | Undefined table                                                                | 400, check the name and your migrations |
 | `40001`  | Serialization failure                                                          | Retry the transaction                   |
 
-Errors that Volcano itself raises, rather than PostgreSQL, are the exception:
+Volcano also emits PostgreSQL-compatible SQLSTATEs:
 
-| SQLSTATE | Meaning                                                                                                                                                                                                          |
-| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `53400`  | The account is over its billing-cycle database request allowance                                                                                                                                                 |
-| `25006`  | The database is over its storage allowance; writes are blocked                                                                                                                                                   |
-| `57P03`  | The platform is briefly unable to accept connections — retry                                                                                                                                                     |
-| `0A000`  | The query holds more than one statement; see [One Statement per Query](connection-strings.md#one-statement-per-query). PostgreSQL raises this code too, for features it does not support; the message says which |
+| SQLSTATE | Meaning                                                                                                                                                                                                                                                            |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `53400`  | The account is over its billing-cycle database request allowance                                                                                                                                                                                                   |
+| `25006`  | The database is over its storage allowance; writes are blocked                                                                                                                                                                                                     |
+| `57P03`  | The platform is briefly unable to accept connections — retry                                                                                                                                                                                                       |
+| `53300`  | New authenticated connection refused because the server, project or owning account has reached its session limit; reduce pool sizes, close idle connections and retry acquisition with backoff. See [connection capacity](#keep-connection-pools-within-capacity). |
+| `57P05`  | Session closed after five minutes waiting for client input outside a transaction; reconnect and retire idle driver connections sooner. Do not automatically replay writes.                                                                                         |
+| `0A000`  | The query holds more than one statement; see [One Statement per Query](connection-strings.md#one-statement-per-query). PostgreSQL raises this code too, for features it does not support; the message says which                                                   |
 
-Anything else Volcano refuses, such as a failed connection or an unsupported
-statement like `COMMIT AND CHAIN`, arrives with no SQLSTATE at all.
+Some failures, such as an unsupported statement like `COMMIT AND CHAIN`, arrive without a SQLSTATE. Inspect the driver's error code when handling a connection failure.
+
+### Pipelined Queries
+
+When a driver pipelines extended queries, an error skips all remaining messages until the next `Sync`. Queries after that boundary can run again. Inside an explicit transaction, send `ROLLBACK` after the error's `Sync` before issuing more queries; a rollback queued before that boundary is skipped too. Drivers normally manage these protocol boundaries for you.
+
+Outside an explicit transaction, Volcano commits each statement independently: writes that succeeded before the error stay committed. Use an explicit `BEGIN`/`COMMIT` transaction when several writes must succeed or fail together.
 
 ---
 
@@ -1004,27 +1070,7 @@ await verifyAuthContext('test-user-uuid', 'project-uuid');
 ## Complete Function Example
 
 ```javascript
-const { Pool } = require('pg');
-
-// One pool per auth user (the RLS identity is fixed at connection startup).
-// In production, bound this cache (e.g. LRU with idle eviction).
-const poolsByUser = new Map();
-
-function poolForUser(userId) {
-  let pool = poolsByUser.get(userId);
-  if (!pool) {
-    // Replace application_name (DATABASE_URL already has volcano_full_access)
-    const url = new URL(process.env.DATABASE_URL);
-    url.searchParams.set('application_name', `volcano_user_access:${userId}`);
-    pool = new Pool({
-      connectionString: url.toString(),
-      max: 5,
-      idleTimeoutMillis: 30000,
-    });
-    poolsByUser.set(userId, pool);
-  }
-  return pool;
-}
+const { connectForUser } = require('./user-db-pool');
 
 /**
  * Handler that queries as the authenticated user
@@ -1052,7 +1098,18 @@ exports.handler = async (event) => {
 
   // 2. Get a connection from THIS user's pool — every connection in it
   //    started up as volcano_user_access:{userId}, so RLS is already active.
-  const client = await poolForUser(auth.user_id).connect();
+  let client;
+  try {
+    client = await connectForUser(auth.user_id);
+  } catch (error) {
+    // Log diagnostic codes, never connection strings or error messages.
+    console.error('Database connection failed', { name: error?.name, code: error?.code ?? 'UNKNOWN' });
+    return {
+      statusCode: 503,
+      headers: { 'Retry-After': '1' },
+      body: JSON.stringify({ error: 'Database temporarily unavailable' }),
+    };
+  }
 
   try {
     // 3. Parse request

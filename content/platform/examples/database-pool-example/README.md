@@ -3,9 +3,9 @@ title: 'Database Connection Pool Example'
 description: 'Production-ready example showing how to use connection pooling with Volcano SDK for optimal performance.'
 ---
 
-# Database Connection Pool Example
-
 Production-ready example showing how to use connection pooling with Volcano SDK for optimal performance.
+
+The included [`user-db-pool.js`](https://github.com/Kong/volcano-docs/blob/main/content/platform/examples/database-pool-example/user-db-pool.js) keeps at most four user pools per execution instance, one connection per identity. Idle connections close after 30 seconds; idle pools can be retired early for a new user, and failed startup frees the empty pool. When all pools are busy or connection acquisition fails, the handler returns 503 with Retry-After. Size the aggregate across execution instances within the [shared connection limits](../../databases/direct-connection.md#keep-connection-pools-within-capacity).
 
 ## Features
 
@@ -76,7 +76,7 @@ The browser calls this function as the signed-in user, so deploy it with
 tokens with `404`. Volcano installs the dependencies in `package.json` during the build.
 
 ```bash
-zip -r function.zip index.js package.json
+zip -r function.zip index.js user-db-pool.js package.json
 curl -X POST https://api.volcano.dev/projects/PROJECT_ID/functions \
   -H "Authorization: Bearer $PLATFORM_TOKEN" \
   -F "name=posts" \

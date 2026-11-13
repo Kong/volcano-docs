@@ -164,7 +164,9 @@ All database connections use SSL/TLS encryption by default for security.
 
 ## Connection Limits
 
-Databases have connection limits based on your plan.
+Native PostgreSQL connections have fixed limits on every plan: **20 authenticated connections per project per server process**, at most **20 across all projects owned by one account per server process**, within **32 across that server process**. Admin and user access, databases and branches share the project limit. Idle connections count too, including connections retained by the REST API. Local mode uses the same limits. Sessions waiting for client activity outside a transaction close after five idle minutes with PostgreSQL `57P05`; set a shorter idle retention in your driver pool and handle reconnection.
+
+A new connection over either limit receives PostgreSQL `53300` (`too_many_connections`); existing connections keep working. Release unused connections and retry with bounded backoff. See [connection capacity and pool sizing](direct-connection.md#keep-connection-pools-within-capacity) before choosing pool sizes across application instances.
 
 For functions, use:
 

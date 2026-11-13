@@ -61,7 +61,8 @@ Issues are always available in local mode.
 ## What becomes an issue
 
 An issue starts from a runtime log line at `error` or `fatal` level from a
-function or frontend. Build output is never grouped.
+function or frontend. Build output is grouped only into
+[build issues](#failed-builds), with LavaFlow on.
 
 Volcano groups errors by:
 
@@ -111,7 +112,8 @@ Node.js 24, that needs a handler named `file.export`, where `file` is a `.js`,
 Node prints, and their heading, such as `TypeError: Cannot read properties of
 undefined`, is an issue grouped by its message. It is `false` for an issue
 grouped only from messages, structured logs, or printed tracebacks, and for
-every `code_quality` issue. Once `true`, it stays `true`.
+every `code_quality` issue. It is `true` for every `build` issue. Once `true`,
+it stays `true`.
 
 In local mode, output a function writes to stderr without a level of its own is
 at `error` level, so only an exception becomes an issue: one your code threw or
@@ -164,6 +166,19 @@ fresh LavaFlow run budget. After that, redeploys keep it. A function or project
 at its open-issue bound records the moved errors only once it has room; resolve
 the old issues to make room.
 
+A function written in
+[TypeScript](../functions/creating-functions.md#typescript) groups by the
+frames of its `.ts` files, which its stack traces name through source maps.
+A TypeScript function built before Volcano wrote source maps named its compiled
+`index.cjs` or `index.mjs` instead, so its first redeploy since moves each of
+its existing issues once to a new issue, as above. The old issues, named by
+the compiled module, stay open and count toward the open-issue bounds until
+you resolve them, so resolve them after that redeploy. A TypeScript function that
+[compiles without a source map](../functions/creating-functions.md#typescript),
+or that sets `NODE_OPTIONS=--no-enable-source-maps`, groups by its compiled
+module, so a change that switches it between the two moves its issues the same
+way.
+
 Issues are kept per function or frontend: the same error in two functions is
 two issues.
 
@@ -179,7 +194,8 @@ reported problem.
 
 The `title` is that normalized message, prefixed with the error type. The raw
 log line stays in your logs; `sample_event_id` and `sample_event_at` point to
-the latest occurrence while your logs retain it. See [Logs](../functions/logs.md).
+the latest occurrence while your logs retain it. See
+[Logs](../functions/logs.md).
 
 `event_count` can overcount: an error that Volcano has to deliver twice is
 counted twice, and the count stays that way.
@@ -211,6 +227,49 @@ in. When an explanation may contain a credential, LavaFlow withholds it whole,
 and `explanation` reads `LavaFlow left this explanation out because it may
 contain a credential`. A `runtime` issue has no `finding`.
 
+## Failed builds
+
+With [LavaFlow](lavaflow.md) on, a deploy of a function or frontend that fails
+in your own build step files an issue with `source: "build"`: your build
+command, the TypeScript compile, or the check for your handler file. Build issues are in preview and are not available in every
+environment yet.
+
+```json
+{
+  "source": "build",
+  "resource": { "type": "frontend", "id": "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e", "name": "storefront" },
+  "title": "Type error: Type 'string' is not assignable to type 'number'.",
+  "error_type": "Type error",
+  "culprit": "app/cart/page.tsx:14",
+  "exception": true,
+  "event_count": 1,
+  "last_deployment_id": "7f2a1d3b-0c4e-4a6f-9b8d-2e3f4a5b6c7d"
+}
+```
+
+- `title` is the build's first error, and `error_type` the tool's code for it,
+  such as `Type error` or `TS2322`. A function's TypeScript
+  compile doesn't check types, so a type error fails a function's build only
+  when your own build command runs `tsc`. A build log with no error Volcano can read
+  is titled `The build failed without an error LavaFlow could read`.
+- `culprit` is the error's file and line, relative to the directory the build
+  ran in: your repository's root, or the function's or frontend's root directory.
+- `last_deployment_id` is the latest failed deployment, whose build log has
+  the whole error.
+- `event_count` counts the failed deploys. The same error from the same
+  function or frontend is one issue, however its line numbers move.
+- A later deploy of the function or frontend that builds resolves its open
+  build issues. A failure after that reopens the issue.
+
+A deploy that fails for a reason of Volcano's, such as a build that timed out,
+was stopped, or never started, files no issue. Neither does a failed dependency
+install, since a registry outage and a missing package look alike, nor a
+failure to reach your package registry from your build command.
+
+A build issue starts a [LavaFlow run](lavaflow.md#when-runs-start) at once.
+Build issues count toward the project's 1,000 open issues, but not toward a
+function's or frontend's bounds.
+
 ## Find issues
 
 List a project's issues, most recently seen first:
@@ -224,6 +283,7 @@ curl "https://api.volcano.dev/projects/$PROJECT_ID/issues?limit=20" \
 | ------------- | --------------------------------------------------------------------- |
 | `status`      | `open`, `resolved`, or `ignored`                                      |
 | `resource_id` | Only issues from this function or frontend                            |
+| `source`      | `runtime`, `code_quality`, `build`, or `report`                       |
 | `limit`       | Issues per page, 1 to 100. Default `10`                               |
 | `cursor`      | The previous page's `next_cursor`. Keep the same filters while paging |
 

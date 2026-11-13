@@ -1,12 +1,13 @@
 ---
 title: 'Report problems from Slack'
-description: 'Mention Volcano in Slack to have LavaFlow diagnose a reported problem and open a fix.'
+description: 'Mention Volcano in Slack to have LavaFlow diagnose a reported problem, or propose a change you ask for, in a pull request.'
 ---
 
 Mention `@Volcano` in a Slack thread that describes a problem, and
 [LavaFlow](lavaflow.md) reads the report, picks the project, and runs its
 usual diagnosis, fix, review and pull request. It answers in the thread and
-updates that answer with the outcome.
+updates that answer with the outcome. You can also ask it for a change, such
+as new content or functionality; see [Request a change](#request-a-change).
 
 Slack reports need the project's `lavaflow.slack` capability. Reporting from
 Slack is rolling out environment by environment, so check it first. It is
@@ -69,12 +70,42 @@ your ten newest in the thread. If they don't all fit a report's limit of 8,200
 characters, it keeps the newest that fit, and the report LavaFlow works from
 notes how many it left out.
 
+Where problem clarification has launched, LavaFlow checks whether it has enough
+detail to investigate before starting diagnosis. If something essential is
+missing, it asks about it in the same thread with one of a fixed set of
+questions: what happened, where it happened, what you expected instead, how to
+reproduce it, or which of two conflicting replies is right. The question never
+quotes the thread or anything LavaFlow's AI wrote. Anyone in that thread
+can answer by mentioning `@Volcano` with the missing details, even if they have
+not connected their own Slack account to Volcano. The question says that a
+reply reaches LavaFlow's AI and how long Volcano keeps it, and links to
+[Data and retention](#data-and-retention). LavaFlow assesses the replies for
+relevant evidence, asks again if needed, and continues the original report
+once it has enough information. Ordinary replies without a mention are not read.
+
+Contributors do not choose another project or grant new permissions, and
+their replies don't change what the original reporter reported. LavaFlow lists
+the reporter's own replies apart from everyone else's, and reads the others as
+context: they can clarify facts, but they can't add to, narrow, or replace the
+reporter's report. The original reporter must remain connected and authorized,
+and the original channel binding must remain valid. The report keeps up to the ten newest
+clarification replies within its 8,200-character limit. Other people's replies
+are left out first; the original description is shortened only to make room
+for the reporter's own replies. Waiting for an answer does not
+start a run. Once diagnosis starts, later replies no longer change that
+report. A later mention in the thread starts a new report, which reads the
+thread again: for example, a request for a change after the run's result, or a
+retry after LavaFlow refused the report at a limit.
+
 LavaFlow then answers in the thread with the project it picked, and updates
 that answer with the outcome. A run from Slack goes as far as opening a fix
 pull request, even where the project lets LavaFlow merge, and so does a run
 someone starts again on the report's issue: merging a fix someone reported in
-Slack stays a person's step. The outcome is the fix pull request's link, or why it stopped,
-and the run's ID. Follow the run in Volcano like any other; see
+Slack stays a person's step. The outcome is the pull request's link, or a
+fixed reason it opened none, and the run's ID. It never holds the diagnosis:
+everyone in the channel reads the answer, including people who can't see the
+project's runs. Read the diagnosis in Volcano, and follow the run like any
+other; see
 [Follow runs](lavaflow.md#follow-runs). Each report becomes an issue on the
 project, titled `Problem reported in Slack`, and counts toward the project's
 open issues until its fix pull request merges, which resolves it. A project at
@@ -82,11 +113,52 @@ its limit of open issues is refused in the thread, and so is one that has used
 its LavaFlow runs for the day; that reply says when to mention Volcano again.
 
 While LavaFlow is paused, it keeps a report for up to 10 days after it arrives,
-and picks it up if LavaFlow resumes in that time. A reporter who may report for
-no project is refused even while LavaFlow is paused.
+and picks it up if LavaFlow resumes in that time. A reporter without an
+authorized project can still be refused during a run-execution pause. During a
+publication maintenance pause, outgoing notices also wait, including pause and
+refusal notices; the pause does not use the report's retry allowance.
+Authorization and retention still apply. A reply to a question LavaFlow is
+waiting on still joins that report during a pause. A capped or unauthorized
+report ends without a channel notice. Its text is cleared unless it was
+already kept as a clarification; previously clarified text keeps its existing
+retention period.
 
 Answers and fix pull request links are posted in the channel, where everyone
 in it can see them.
+
+## Request a change
+
+The person who mentions `@Volcano` can ask for a change rather than report a
+defect, such as `@Volcano add hello.md containing "hello world"`. Only what
+that person wrote can ask for one: the original message when they wrote it,
+the reply that mentions `@Volcano`, and their replies LavaFlow asked about. An
+original message someone else wrote is read only as a description of the
+problem, so mentioning `@Volcano` under another person's feature request
+doesn't ask for it; write the request in your own reply instead. Replies to a
+clarification question, the reporter's included, only describe the problem;
+to ask for a change after the run's result, mention `@Volcano` again.
+
+Before any run starts, LavaFlow reads what you wrote, and only that, to tell
+what you're asking for:
+
+- When your words name the change, such as a file or feature to add, the run
+  builds it.
+- When they describe a problem, ask LavaFlow to look at or fix one, or only
+  point at the thread, such as a bare `@Volcano` or a project's name, the run
+  diagnoses the thread like any report. If it finds nothing to fix, the reply
+  tells you to describe the change you want in your own message.
+- When they ask for new content or functionality without naming it, such as
+  `@Volcano do this` under someone else's feature request, LavaFlow starts no
+  run and asks you to say what to change in your own message.
+
+LavaFlow builds what the request asks for and nothing beyond it, and its
+reviewers hold anything else the change adds. The request can't change what
+LavaFlow may do: its permissions, the files it may not change, its review, and
+when it opens a pull request stay the same, and the run stops at a pull
+request for a person to review and merge. The pull request says it proposes a
+requested change, not a fix, and the run's `diagnosis.requested` is `true`.
+When the request is unclear, the result already exists, or the change lies
+outside the repository, LavaFlow opens nothing and says so in the thread.
 
 ## Who can report
 
@@ -101,7 +173,9 @@ A mention starts work only when all of these hold:
 - LavaFlow can work on the project: it is turned on, offered, and included in
   the owner's plan.
 
-A person who hasn't connected gets a reply with a link to connect. A connected
+A person who hasn't connected gets a reply with a link to connect, except in a
+thread where a report is waiting for an answer to LavaFlow's clarification
+question: there their mention is read as an answer to it instead. A connected
 person in a channel bound to none of their projects gets a reply with a link
 to LavaFlow settings, where the owner binds it. Each person hears each
 refusal once a day in a thread, and a report limit's refusal once an hour:
@@ -114,6 +188,11 @@ nothing new, while someone else, or a new reason, gets an answer.
 | ------------------------------ | -------------------- | --------------------------------------------------------------- |
 | Mentions from one person       | 10 in any hour       | The next one is refused once that hour; later ones get no reply |
 | Reports waiting in a workspace | 25 not yet picked up | Each person is refused once an hour until LavaFlow catches up   |
+
+A clarification answer still counts against its contributor's hourly mention
+limit. It can join an existing report even when the workspace's waiting queue
+is full, because it does not create another waiting report. A report waiting
+for an answer doesn't count toward the workspace's waiting reports either.
 
 A report over a limit starts no work and reads nothing from Slack. The runs
 reports start count toward the project's LavaFlow run limits like any other.
@@ -129,7 +208,7 @@ Enterprise Grid org-wide installs are not supported.
 | What                       | Limit                                                                                                                                                                |
 | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | The original message       | 4,000 characters. A reply mentioning `@Volcano` under a longer one is refused in the thread; a longer original message that mentions `@Volcano` itself gets no reply |
-| The reply that mentions it | 4,000 characters. It doesn't read the rest of the thread, except your replies LavaFlow asked about                                                                   |
+| The reply that mentions it | 4,000 characters. It doesn't read the rest of the thread, except replies mentioning it to answer a clarification question                                            |
 | Screenshots                | Up to 5 PNG, JPEG or GIF images on the original message. A GIF is read as its first frame                                                                            |
 | Text files                 | Up to 5 files, such as logs, JSON, CSV or YAML, 100 KB in total and 50 KB each. A longer file keeps its start and end                                                |
 
@@ -152,6 +231,10 @@ counting toward the project's open issues without being counted as fixed. If
 its fix pull request merges later, the issue resolves. Deleting a message in Slack does not delete
 the report sooner. Deleting the project deletes its reports at once.
 
+Replies that answer a clarification question are part of the report: they
+reach LavaFlow's AI with it, from whoever wrote them, and Volcano deletes them
+with it.
+
 The run itself is kept like any other LavaFlow run, and its diagnosis may quote
 the report.
 
@@ -161,6 +244,16 @@ The dashboard uses these routes. Where Slack reports are not available in the
 environment, installing, connecting, the channel picker and binding a channel
 answer `404` with code `feature_unavailable`. Listing and removing connections,
 connectors and bindings work either way, so nothing you set up is stranded.
+
+Starting an installation or connection, listing channels, and binding a
+channel accept the dashboard's current sign-in session. Browser requests
+include credentials so the callback can verify its cookie. Only the configured
+dashboard origin receives credentialed cross-origin access. A session from
+another Volcano project cannot authorize these operations.
+
+Bound Slack channels keep a project's LavaFlow settings readable while
+LavaFlow is unavailable, even if the project has no saved settings or runs.
+The owner can still remove those bindings; this does not enable new reports.
 
 | Route                                      | Purpose                                                                                         |
 | ------------------------------------------ | ----------------------------------------------------------------------------------------------- |

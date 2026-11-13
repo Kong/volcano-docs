@@ -11,35 +11,7 @@
  * while the execution environment is warm.
  */
 
-const { Pool } = require('pg');
-
-// One pool per auth user. Reused across invocations for a warm container. In
-// production, bound this cache (e.g. LRU with idle eviction) so a container that
-// serves many distinct users doesn't accumulate unbounded pools.
-const poolsByUser = new Map();
-
-function poolForUser(userId) {
-  let pool = poolsByUser.get(userId);
-  if (!pool) {
-    // DATABASE_URL already includes the routing username and an
-    // application_name (volcano_full_access). REPLACE application_name so this
-    // user's pool starts up under RLS — appending a second one would leave the
-    // mode up to the driver's duplicate-param handling.
-    const url = new URL(process.env.DATABASE_URL);
-    url.searchParams.set('application_name', `volcano_user_access:${userId}`);
-    pool = new Pool({
-      connectionString: url.toString(),
-      // Maximum 20 connections
-      max: 20,
-      // Close idle connections after 30s
-      idleTimeoutMillis: 30000,
-      // Fail fast if can't get connection
-      connectionTimeoutMillis: 2000,
-    });
-    poolsByUser.set(userId, pool);
-  }
-  return pool;
-}
+const { connectForUser } = require('./user-db-pool');
 
 /**
  * Handler - invoked per request
@@ -58,31 +30,21 @@ exports.handler = async (event) => {
   // 2. Get a connection from THIS user's pool. Its startup application_name
   // already fixed the RLS identity to auth.user_id, so every query below is
   // automatically scoped to that user — no `SET` needed (and none would work).
-  const client = await poolForUser(auth.user_id).connect();
+  let client;
+  try {
+    client = await connectForUser(auth.user_id);
+  } catch (error) {
+    // Log diagnostic codes, never connection strings or error messages.
+    console.error('Database connection failed', { name: error?.name, code: error?.code ?? 'UNKNOWN' });
+    return {
+      statusCode: 503,
+      headers: { 'Retry-After': '1' },
+      body: JSON.stringify({ error: 'Database temporarily unavailable' }),
+    };
+  }
 
   try {
-    // 3. Handle different actions
-    const { action, ...params } = event;
-
-    switch (action) {
-      case 'get_posts':
-        return await getPosts(client, auth, params);
-
-      case 'create_post':
-        return await createPost(client, auth, params);
-
-      case 'update_post':
-        return await updatePost(client, auth, params);
-
-      case 'delete_post':
-        return await deletePost(client, auth, params);
-
-      default:
-        return {
-          statusCode: 400,
-          body: JSON.stringify({ error: 'Unknown action' }),
-        };
-    }
+    return await dispatchAction(client, auth, event);
   } catch (error) {
     console.error('Database error:', error);
     return {
@@ -94,6 +56,30 @@ exports.handler = async (event) => {
     client.release();
   }
 };
+
+function dispatchAction(client, auth, event) {
+  const { action, ...params } = event;
+
+  switch (action) {
+    case 'get_posts':
+      return getPosts(client, auth, params);
+
+    case 'create_post':
+      return createPost(client, auth, params);
+
+    case 'update_post':
+      return updatePost(client, auth, params);
+
+    case 'delete_post':
+      return deletePost(client, auth, params);
+
+    default:
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Unknown action' }),
+      };
+  }
+}
 
 /**
  * Get posts for current user

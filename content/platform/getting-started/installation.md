@@ -54,7 +54,7 @@ API with it — a leak then exposes that project only, and you can revoke it
 without disturbing anything else. See
 [Using the API](../api-reference/using-the-api.md#move-ci-off-an-account-wide-platform-token).
 
-See the [Volcano CLI docs](https://github.com/Kong/volcano-cli/tree/main/docs) for authentication and the full command reference (or run `volcano <command> --help`).
+See the [Volcano CLI docs](/cli) for authentication and the full command reference (or run `volcano <command> --help`).
 
 ### Verify Installation
 
