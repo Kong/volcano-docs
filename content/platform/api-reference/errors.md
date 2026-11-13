@@ -400,27 +400,15 @@ has accrued answers `400`.
 Changing [LavaFlow settings](../guides/lavaflow.md#settings) refuses a
 full-scope
 [project access token](../authentication/security/project-access-tokens.md)
-with `403` and code `person_required`, except for turning Code Quality or
-skill learning off: a body that sends `project_id` and one or both of
-`"code_quality": {"enabled": false}` and `"skill_learning": "off"`, and
+with `403` and code `person_required`, except for turning Code Quality off: a
+body that sends `project_id` and `"code_quality": {"enabled": false}`, and
 nothing else, to `PATCH /lavaflow/settings`. The deprecated
 `PUT /lavaflow/settings` refuses every project access token. The project's
 owner makes every other change with a platform token:
 
 ```json
 {
-  "error": "project access tokens can change LavaFlow settings only to turn Code Quality or skill learning off, with PATCH /lavaflow/settings; the project's owner changes the rest with a platform token",
-  "code": "person_required"
-}
-```
-
-Changing or deleting a [learned skill](../guides/lavaflow.md#learned-skills)
-of the token's project refuses a full-scope project access token the same
-way. A skill of another project answers `404`, as an unknown one does:
-
-```json
-{
-  "error": "project access tokens cannot change LavaFlow skills; the project's owner changes them with a `volcano login` token whose sign-in is live, or a platform token with an expiry",
+  "error": "project access tokens can change LavaFlow settings only to turn Code Quality off, with PATCH /lavaflow/settings; the project's owner changes the rest with a platform token",
   "code": "person_required"
 }
 ```
@@ -432,10 +420,8 @@ Turning on LavaFlow merging, or another change
 [Turn merging on](../guides/lavaflow.md#turn-merging-on) lists, also answers
 `person_required` in the cases that section lists, such as an ended
 `volcano login` sign-in, an owner whose GitHub account can't push to the
-project's repository, or a project with no repository. So do changing a skill
-other than retiring it, and turning skill learning up, as
-[Learned skills](../guides/lavaflow.md#learned-skills) describes. The `error`
-says what to do.
+project's repository, or a project with no repository. The `error` says what
+to do.
 
 [Starting a LavaFlow run](../guides/lavaflow.md#start-a-run) answers
 `person_required` to a full-scope project access token, a request made through

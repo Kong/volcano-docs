@@ -238,6 +238,79 @@ exports.handler = async (event) => {
 
 ---
 
+## Protocol safety limits
+
+All plans use these PostgreSQL protocol safety limits per connection:
+
+| Resource                                               | Ceiling                   |
+| ------------------------------------------------------ | ------------------------- |
+| Frontend message body, including Query, Parse and Bind | 16 MiB (16,777,216 bytes) |
+| Each CopyData message body                             | 1 MiB (1,048,576 bytes)   |
+| Retained prepared statements                           | 1,024                     |
+| Retained portals (bound statements)                    | 1,024                     |
+| Combined accounted statement and portal memory         | 32 MiB (33,554,432 bytes) |
+
+These are per-message and per-session ceilings, not a global memory bound.
+Keep application connection pools bounded.
+
+Message body sizes exclude the one-byte message type and four-byte length
+field. An oversized declared body gets a PostgreSQL FATAL error with SQLSTATE
+`54000` naming the permitted body size in bytes, then the connection closes
+before allocating a receive buffer for that body. Delivery is best effort: a
+client that stops reading may see only the disconnect. Split large queries or
+parameter batches into separate operations. A single
+parameter cannot be split across Bind messages; change the operation or use
+a suitable streaming COPY input for values exceeding the frame limit. For COPY,
+stream data in chunks of at most 1 MiB; the total COPY may exceed 1 MiB, and a
+row may span chunks. See [Importing data](importing-data.md#limits).
+
+The frame ceiling applies after driver encoding and includes protocol overhead.
+For example, text/hex encoding of `bytea` roughly doubles the value size: an
+8 MiB value already exceeds 16 MiB once encoded. Use smaller batches or a
+supported binary/streaming API rather than relying on the value's in-memory size.
+
+Session memory includes names, SQL, parameter values, type and format arrays,
+retained column descriptions, and accounting overhead. A portal is charged for
+the statement data it retains even after that statement is closed or replaced.
+The shared SQL and column descriptions are conservatively charged once per
+retaining object, even when their underlying storage is shared. Large SQL
+bound to many portals can therefore reach the byte ceiling before either
+count ceiling.
+
+Replacing an object reclaims its previous charge; protocol Close releases that
+object's charge, and disconnecting releases the session. Portals also expire
+at COMMIT/ROLLBACK and at Sync outside an explicit transaction. Sync inside
+BEGIN preserves portals, including while the transaction awaits rollback after
+an error. Named prepared statements survive transaction completion. A simple
+Query discards the unnamed statement and replaces the unnamed portal when it
+executes a nonempty query; an empty Query inside BEGIN preserves that portal.
+
+SQL `DEALLOCATE [PREPARE] name` also releases a prepared statement created by
+protocol Parse. `DEALLOCATE ALL` releases all named prepared statements, and
+`DISCARD ALL` releases them and the portals while performing PostgreSQL's
+session reset. Both forms of ALL preserve the protocol's unnamed statement
+when executed through the extended protocol; a simple Query independently
+discards it. Bound portals survive statement deallocation until their own
+Close or transaction end, and their retained data still counts toward the
+byte ceiling. Failed cleanup does not release named statements.
+
+`DISCARD ALL` cannot run inside an explicit transaction, or after an earlier
+Execute in a pipeline before Sync. Send Sync before issuing it as a standalone
+command. Use your driver's cache-clear/deallocation API when available so its
+own prepared-name cache stays consistent with the server.
+
+Using an expired portal fails with SQLSTATE `34000`; Bind a surviving named
+statement again to create a new portal. A statement removed by Close or simple
+Query must be parsed again; otherwise its lookup fails with SQLSTATE `26000`.
+
+A Parse, Bind or Describe that would exceed a session ceiling fails with
+SQLSTATE `54000` and `pgproxy session prepared statement or portal limit exceeded; close unused statements and portals`.
+The previous retained objects remain available. As with other extended-query
+errors, the proxy discards pending messages until Sync. Send Sync, then Close
+unused statements or portals before retrying. Inside a transaction, roll back
+the failed transaction before resuming queries. Drivers that cache prepared
+statements should evict entries with protocol Close.
+
 ## Node.js Server (Custom Backend)
 
 If you have your own Node.js server and want to impersonate Volcano auth users,
@@ -879,6 +952,12 @@ Errors that Volcano itself raises, rather than PostgreSQL, are the exception:
 
 Anything else Volcano refuses, such as a failed connection or an unsupported
 statement like `COMMIT AND CHAIN`, arrives with no SQLSTATE at all.
+
+### Pipelined Queries
+
+When a driver pipelines extended queries, an error skips all remaining messages until the next `Sync`. Queries after that boundary can run again. Inside an explicit transaction, send `ROLLBACK` after the error's `Sync` before issuing more queries; a rollback queued before that boundary is skipped too. Drivers normally manage these protocol boundaries for you.
+
+Outside an explicit transaction, Volcano commits each statement independently: writes that succeeded before the error stay committed. Use an explicit `BEGIN`/`COMMIT` transaction when several writes must succeed or fail together.
 
 ---
 
