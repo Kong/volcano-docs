@@ -1923,7 +1923,9 @@ Findings, questions, observations and statements are the reviewers' and the
 fix's own words, and can quote your code. Each is shown whole, or reads
 `Hidden: this field matched a secret.` when it holds a secret, as
 [a run's other text](#follow-runs) does. A finding whose `file`
-holds a secret reads `""` there.
+holds a secret or a control character reads `""` there, and its
+`explanation` reads `Hidden: this field matched a secret.`, since it may
+quote that path.
 
 A secret value is the value of one of your project's secret variables, such as
 an `API_KEY`, or a password in a URL variable; either counts at 8 characters or
