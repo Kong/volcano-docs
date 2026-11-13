@@ -1382,8 +1382,8 @@ A run on a [Code Quality](#code-quality) issue is a Code Quality run, with
 project's `GET /capabilities` is available and Code Quality is on for the
 project.
 
-Starting a run is the owner's decision. Start one with a platform token that
-expires, or `volcano login`. A platform token that never expires, a
+Starting a run is the owner's decision. Start one from the Volcano dashboard,
+with `volcano login`, or with a platform token that expires. A platform token that never expires, a
 `volcano login` token whose sign-in ended, a full-scope project access token,
 and an agent through [MCP](#agents) get `403` with code `person_required`; a
 read-only project access token is refused as read-only first. Every start

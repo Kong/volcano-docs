@@ -351,7 +351,8 @@ with [`POST /lavaflow/runs`](lavaflow.md#start-a-run); LavaFlow doesn't start
 one later on its own.
 
 Only the project's owner can write an issue, signed in with `volcano login` or
-with a platform token that expires, as only they can start a run: LavaFlow
+to the Volcano dashboard, or with a platform token that expires, as only they
+can start a run: LavaFlow
 starts one on the issue by itself, which sends its description to an AI
 service with your source and counts toward your run limits. A project access
 token or MCP is refused with `person_required` first, even where writing issues
@@ -409,7 +410,8 @@ LavaFlow run. Reopening an issue yourself doesn't start one;
 Platform tokens and project access tokens can list and read issues, including
 read-only project tokens. Changing a status needs a token that can write.
 Writing an issue needs the project's owner as a person: a `volcano login`
-token whose sign-in is live, or a platform token that expires. Project access
+token whose sign-in is live, a live Volcano dashboard sign-in, or a platform
+token that expires. Project access
 tokens and MCP can't write issues.
 
 Agents connected through the [MCP server](../interfaces/mcp.md) can call
