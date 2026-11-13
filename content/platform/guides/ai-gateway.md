@@ -18,6 +18,10 @@ The gateway is in preview. Where the `ai_gateway` capability in
 AI key and minting the first token of a run answer `404` with code
 `feature_unavailable`. Runs already minted for keep working.
 
+For now only registered first-party apps, such as the Volcano Builder, mint
+run tokens. An AI key on any other project can be created, but minting with it
+answers `403` with code `first_party_app_required`.
+
 ## Create an AI key
 
 A person creates the AI key, signed in to the dashboard or with `volcano login`.
@@ -51,8 +55,8 @@ curl -X POST "https://api.volcano.dev/ai/tokens" \
     "models": ["claude-sonnet-5-5"],
     "spend_cap_micro_usd": 20000000,
     "ttl_seconds": 900,
-    "subject_project_id": "6f1c2a8e-3b7d-4c55-9a0e-2d4f8b1c7e90",
-    "subject_user_id": "user_42",
+    "delegated_grant_id": "3c9e1f4a-7b2d-4e6f-8a1c-5d0b9e2f7a34",
+    "generation": 0,
     "labels": { "attempt": "1" },
     "replace": true
   }'
@@ -87,13 +91,13 @@ Response (`201`):
 
 | Field                 | Required | Meaning                                                                                                                                                                                                                   |
 | --------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `run_ref`             | Yes      | Your name for the run, up to 200 bytes. `replace` and revoking by run act on every token of a run.                                                                                                                        |
+| `run_ref`             | Yes      | Your name for the run, up to 200 bytes. A run is a `run_ref` of one customer project. `replace` acts on the run's tokens; revoking by `run_ref` acts on it in every customer project.                                     |
 | `models`              | Yes      | 1 to 16 models the token may call. Each needs a list price and a provider the gateway forwards to, which today is Anthropic only, and the gateway must offer it, or the mint answers `400` with code `model_not_offered`. |
 | `spend_cap_micro_usd` | Yes      | The most the token may spend at list price, in millionths of a US dollar. At most `150000000` ($150).                                                                                                                     |
 | `ttl_seconds`         | Yes      | How long the token lives, 60 to 28800 seconds.                                                                                                                                                                            |
 | `max_concurrency`     | No       | The most calls in flight at once, 1 to 4. Defaults to 4.                                                                                                                                                                  |
-| `subject_project_id`  | No       | The project the run works on, kept on the token's usage.                                                                                                                                                                  |
-| `subject_user_id`     | No       | The user the run works for, kept on the token's usage.                                                                                                                                                                    |
+| `delegated_grant_id`  | Yes      | The run's live delegated grant. See below.                                                                                                                                                                                |
+| `generation`          | Yes      | The run generation the grant was minted for.                                                                                                                                                                              |
 | `labels`              | No       | Up to 16 tags. Keys are lowercase letters, digits, `_`, `.` and `-`, up to 64 bytes; values up to 256 bytes.                                                                                                              |
 | `replace`             | No       | Revoke the run's other live tokens in the same step, so the new token is its only one. Without it a run may hold several.                                                                                                 |
 
@@ -101,6 +105,21 @@ A token belongs to the AI key's project. Deleting the AI key deletes the
 tokens it minted, which stops them at once. What their calls cost still
 counts against each run's $150, and each run stays minted for: another AI key
 of the project can mint for it again while the gateway is unavailable.
+
+Every mint names the run's live delegated grant in `delegated_grant_id` (the
+grant's `token_id`) and `generation`. The grant's run key must equal
+`run_ref`. The token's `subject_project_id` and `subject_user_id`, which every
+call's usage carries, are copied from the grant and its consent; a request
+that sets them answers `400`, and one that names no grant answers `400` with
+code `delegated_grant_required`. A run is a `run_ref` of one customer project:
+the same `run_ref` in another customer project is another run, with its own
+tokens and its own $150. Every token of a run carries the same subject, so a
+later mint for the run, `replace` included, must name a grant for the same
+person. A grant that is unknown or another app's, revoked or expired, or for
+another run or generation answers `409` with code `delegated_grant_not_found`,
+`delegated_grant_not_live` or `delegated_grant_mismatch`. The token outlives
+the grant's 15-minute lifetime; revoke the run's tokens when you revoke its
+grants.
 
 A run gets $150 in all, however many tokens it mints. A new token's cap is
 `spend_cap_micro_usd` cut to $150 less what the run's other tokens count: what
@@ -217,7 +236,8 @@ refused. When the run has nothing left, the change answers `402` with code
 `budget_exhausted`.
 
 A revoked or expired token stays dead: changing it answers `409` with code
-`token_revoked` or `token_expired`. Mint a new one.
+`token_revoked` or `token_expired`, before the run's cap is read. Mint a new
+one.
 
 ## Revoke tokens
 
@@ -228,7 +248,7 @@ curl -X DELETE "https://api.volcano.dev/ai/tokens/$TOKEN_ID" \
   -H "Authorization: Bearer $VOLCANO_AI_KEY"
 ```
 
-Or every live token of a run:
+Or every live token of a `run_ref`, in every customer project:
 
 ```bash
 curl -X POST "https://api.volcano.dev/ai/tokens/revoke" \

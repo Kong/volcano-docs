@@ -43,7 +43,7 @@ Response:
 
 ## Scope a service key
 
-Pass `permissions` when you create a key to limit what it can do. A key created without `permissions`, or with an empty list, gets `["*"]`, which grants everything. `ai.invoke` is reserved: `*` doesn't include it, and only a person creates a key that holds it; see [Create an AI key](#create-an-ai-key).
+Pass `permissions` when you create a key to limit what it can do. A key created without `permissions`, or with an empty list, gets `["*"]`, which grants every permission but the reserved ones. `ai.invoke` and `grants.mint` are reserved: `"*"` doesn't include them, only a person creates a key that holds one, and it must be the key's only permission; see [Create an AI key](#create-an-ai-key) and [Create a key that mints grants](#create-a-key-that-mints-grants).
 
 ```bash
 curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/service-keys" \
@@ -86,6 +86,19 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/service-keys" \
 ```
 
 The response carries `key_value`. Mint [run tokens](../../guides/ai-gateway.md) with it. Read, regenerate, and delete it with the service key routes: reading it returns `key_value` again. Reading or regenerating an AI key, or any key that holds `ai.invoke`, takes the same person as creating one; anyone else gets `403` with code `person_required`, and lists leave its value out. An AI key only mints run tokens: the database API answers it `403` and realtime refuses its subscribe or publish, whether or not the rule above applies. A key that holds `*`, and a key created before AI keys existed, never count as AI keys. Where the `ai_gateway` capability in [`GET /capabilities`](../../api-reference/overview.md) is unavailable, asking for `ai.invoke` answers `404` with code `feature_unavailable`.
+
+## Create a key that mints grants
+
+A first-party app, such as the Builder, mints delegated grants on its users' projects with a key that holds `grants.mint`. The service key create route makes it: pass `"permissions": ["grants.mint"]` and nothing else. A key holds one reserved permission alone, so a key never holds `ai.invoke` and `grants.mint` together.
+
+```bash
+curl -X POST "https://api.volcano.dev/projects/$APP_PROJECT_ID/service-keys" \
+  -H "Authorization: Bearer $VOLCANO_LOGIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "builder-grants", "permissions": ["grants.mint"]}'
+```
+
+Only a registered first-party app's project may hold `grants.mint`, and only that project's owner, signed in as for an AI key, creates the key. Another project gets `403` with code `first_party_app_required`. The `ai_gateway` capability doesn't gate this key. Reading or regenerating it takes the same person as creating it.
 
 ## Using service keys
 

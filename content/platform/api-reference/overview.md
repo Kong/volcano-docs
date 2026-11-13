@@ -513,14 +513,14 @@ See [Auth endpoints](auth-endpoints.md) for details.
 
 ### Project access tokens
 
-| Method   | Endpoint                                       | Description                                                |
-| -------- | ---------------------------------------------- | ---------------------------------------------------------- |
-| `POST`   | `/projects/{id}/access-tokens`                 | Create a token and return its secret, once                 |
-| `GET`    | `/projects/{id}/access-tokens`                 | List tokens (`page`, `limit`, `search`, `include_revoked`) |
-| `GET`    | `/projects/{id}/access-tokens/{tokenId}`       | Get one token's metadata                                   |
-| `DELETE` | `/projects/{id}/access-tokens/{tokenId}`       | Revoke a token                                             |
-| `GET`    | `/projects/{id}/access-tokens/usage`           | Daily request counts for every token in the project        |
-| `GET`    | `/projects/{id}/access-tokens/{tokenId}/usage` | Daily request counts for one token                         |
+| Method   | Endpoint                                       | Description                                                                     |
+| -------- | ---------------------------------------------- | ------------------------------------------------------------------------------- |
+| `POST`   | `/projects/{id}/access-tokens`                 | Create a token and return its secret, once                                      |
+| `GET`    | `/projects/{id}/access-tokens`                 | List tokens (`page`, `limit`, `search`, `include_revoked`, `include_delegated`) |
+| `GET`    | `/projects/{id}/access-tokens/{tokenId}`       | Get one token's metadata                                                        |
+| `DELETE` | `/projects/{id}/access-tokens/{tokenId}`       | Revoke a token                                                                  |
+| `GET`    | `/projects/{id}/access-tokens/usage`           | Daily request counts for every token in the project                             |
+| `GET`    | `/projects/{id}/access-tokens/{tokenId}/usage` | Daily request counts for one token                                              |
 
 Creating, listing, reading, and revoking require a platform token: a project access token cannot manage project access tokens. The usage endpoints are ordinary project reads. See [Project access tokens](../authentication/security/project-access-tokens.md).
 
