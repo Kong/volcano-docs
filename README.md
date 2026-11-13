@@ -1,64 +1,52 @@
 # Volcano Developer Docs
 
-Assembly point and format contract for the Volcano developer documentation
-site. Content is authored **in each product repo** and pulled in here by CI;
-this repo owns the shared structure, the markdown format contract, and the
-cross-surface intro pages.
+The Volcano developer documentation site and all of its content. Every page is
+written in this repository, and a push to `main` deploys it.
 
 ## How it works
 
 ```
-source repos (own their docs, follow the contract)
-        │  daily sync — a per-repo subtree copy into content/<section>/,
-        │  committed by the bot (manual escape hatch available)
-        ▼
-volcano-docs (this repo: contract + assembly + get-started + synced content)
+volcano-docs (this repo: every page, the format contract, the site)
         │  push to main — Volcano Git auto-deploy builds the Fumadocs site
         ▼
 developer docs site
 ```
 
-Sync is designed to run on a **daily schedule** rather than on every merge to
-`main`, to keep commit noise low — but the schedule is **currently paused**
-(until the source repos land on their default branches), so the active trigger
-today is a **manual** run of the **Sync docs** workflow (`workflow_dispatch`),
-optionally scoped to a single section via the `source` input. Each run opens a
-PR that **auto-merges**. Source repos are internal, so the job authenticates as
-the **Volcano GitHub App**. See
-[`.github/workflows/sync-docs.yml`](.github/workflows/sync-docs.yml).
-
 The site is a standalone [Fumadocs](https://fumadocs.dev) app (see
 [Site](#site-fumadocs)) that Volcano deploys from this repository (see
-[Deployment](#deployment)). The markdown format
-([`spec/markdown-format.md`](spec/markdown-format.md)) uses neutral frontmatter
-fields so any generator can consume it with a thin adapter.
+[Deployment](#deployment)). Pages follow the markdown format in
+[`spec/markdown-format.md`](spec/markdown-format.md) and the writing rules in
+[`spec/writing.md`](spec/writing.md).
 
-## Section → source repo
+## Sections
 
-| Section | Source repo | Path | Owns |
-| --- | --- | --- | --- |
-| `content/get-started/` | **this repo** | — | Cross-surface intro |
-| `content/platform/` | `Kong/volcano-hosting` | `docs/public/` | Platform concepts + API reference |
-| `content/sdk/index.md` | **this repo** | — | SDK language selector and runtime requirements |
-| `content/sdk/js/` | `Kong/volcano-sdk-js` | `docs/` | JavaScript/TypeScript SDK |
-| `content/sdk/python/` | `Kong/volcano-sdk-python` | `docs/` | Python SDK |
-| `content/sdk/ruby/` | `Kong/volcano-sdk-ruby` | `docs/` | Ruby SDK |
-| `content/cli/` | `Kong/volcano-cli` | `docs/` | CLI reference |
+| Section | Covers | Product repo |
+| --- | --- | --- |
+| `content/get-started/` | Cross-surface intro | — |
+| `content/platform/` | Platform concepts, guides, API reference, example apps | `Kong/volcano-hosting` |
+| `content/sdk/index.md` | SDK language selector and runtime requirements | — |
+| `content/sdk/js/` | JavaScript/TypeScript SDK | `Kong/volcano-sdk-js` |
+| `content/sdk/python/` | Python SDK | `Kong/volcano-sdk-python` |
+| `content/sdk/ruby/` | Ruby SDK | `Kong/volcano-sdk-ruby` |
+| `content/cli/` | CLI reference | `Kong/volcano-cli` |
+| `content/cookbooks/`, `content/blog/` | Recipes and posts | — |
 
-> Agent skills (`volcano-skills`) and IDE plugins (`volcano-agentic-plugins`) are
-> **not** synced here — they are agent instruction files, not human docs. A
-> human-facing "AI / IDE integrations" section, if wanted, is curated content.
-
-The mapping is defined machine-readably in [`docs.config.yaml`](docs.config.yaml).
+The product repos no longer carry published docs. The full OpenAPI document is
+served by the API at `https://api.volcano.dev/openapi.yaml`; the API reference
+pages link to it instead of copying it.
 
 ## Editing docs
 
-- **Product docs** (platform, SDK languages, CLI): edit them in their source repo,
-  following [`spec/markdown-format.md`](spec/markdown-format.md). The sync bot
-  commits them here — do not hand-edit `content/platform`, `content/sdk/js`,
-  `content/sdk/python`, `content/sdk/ruby`, or `content/cli`; they are overwritten on every sync.
-- **Intro pages**: edit [`content/get-started/`](content/get-started) here.
-- **SDK landing page**: edit [`content/sdk/index.md`](content/sdk/index.md) here when a language's runtime requirements or shared capabilities change. Check the claims against its package metadata and keep the sync destinations scoped to the language subdirectories.
+- **A product change that users see** (an endpoint, a CLI flag, an SDK method, a
+  new limit) gets a companion PR here that updates the affected pages. Merge it
+  when the change is released, not before: a push to `main` publishes it.
+- **Docs-only fixes** go straight to a PR here.
+- **SDK landing page**: edit [`content/sdk/index.md`](content/sdk/index.md) when a
+  language's runtime requirements or shared capabilities change. Check the
+  claims against its package metadata.
+- **Example apps** in [`content/platform/examples/`](content/platform/examples)
+  are type-checked by [`.github/workflows/examples.yml`](.github/workflows/examples.yml)
+  when a PR changes them.
 
 ## Deployment
 
@@ -70,17 +58,6 @@ and [docs.volcano.dev](https://docs.volcano.dev). Each deployment records the
 commit it was built from. The build settings live in each project's **Project
 settings → Git** page in the Volcano dashboard, and `DOCS_SITE_URL` is a project
 variable there.
-
-## Rollout
-
-1. Land the format contract + sync job + tooling (this repo). ← we are here
-2. In each source repo: run [`scripts/migrate-docs.mjs`](scripts/migrate-docs.mjs)
-   to reformat `docs/`, add the [`spec/ci-caller.example.yml`](spec/ci-caller.example.yml)
-   lint workflow, and paste [`spec/AGENTS.snippet.md`](spec/AGENTS.snippet.md)
-   into the repo's `AGENTS.md`.
-3. Install the Volcano GitHub App on `volcano-docs` and every source repo, and
-   set the `VOLCANO_APP_ID` variable + `VOLCANO_APP_KEY` secret.
-4. Pick and wire the generator.
 
 ## Site (Fumadocs)
 
@@ -149,7 +126,4 @@ React 19.2 rather than `volcano-web`'s Next 15.5. Every other convention matches
 ## Tooling
 
 - [`scripts/lint-docs.mjs`](scripts/lint-docs.mjs) — validates docs against the
-  contract; run by every source repo via the reusable
-  [`.github/workflows/lint-docs.yml`](.github/workflows/lint-docs.yml).
-- [`scripts/migrate-docs.mjs`](scripts/migrate-docs.mjs) — one-time reformat of a
-  repo's `docs/` (frontmatter, H1 removal, fence languages). Seeds are for review.
+  contract (`pnpm lint:docs content`).

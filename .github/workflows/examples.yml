@@ -1,0 +1,126 @@
+name: Docs examples type-check
+
+# Type-checks the example apps under content/platform/examples that a PR
+# changes. Each example is a package.json with a tsconfig.json beside it and a
+# lockfile. Moved here from volcano-hosting when the docs stopped syncing.
+on:
+  pull_request:
+  merge_group:
+
+concurrency:
+  group: examples-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    name: Detect docs example changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      examples: ${{ steps.examples.outputs.examples }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          # The diff below reads only trees, so no later fetch needs credentials.
+          filter: blob:none
+          persist-credentials: false
+      - name: List examples to type-check
+        id: examples
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+        run: |
+          set -o pipefail
+          changed=$(git diff --no-renames --name-only "$BASE_SHA" HEAD -- \
+            content/platform/examples .github/workflows/examples.yml)
+          examples='[]'
+          if [ -n "$changed" ]; then
+            # An example is a package.json with a tsconfig.json beside it; a
+            # tsconfig.json alone is a sub-config of an enclosing project.
+            examples=$(
+              find content/platform/examples -name package.json -not -path '*/node_modules/*' |
+                sort |
+                while read -r package; do
+                  dir=$(dirname "$package")
+                  [ -f "$dir/tsconfig.json" ] || continue
+                  if [ -f "$dir/yarn.lock" ]; then
+                    manager=yarn lockfile="$dir/yarn.lock"
+                  elif [ -f "$dir/package-lock.json" ]; then
+                    manager=npm lockfile="$dir/package-lock.json"
+                  else
+                    echo "::error file=$package::$dir needs a yarn.lock or package-lock.json" >&2
+                    exit 1
+                  fi
+                  jq -cn --arg dir "$dir" --arg manager "$manager" --arg lockfile "$lockfile" \
+                    '{dir: $dir, manager: $manager, lockfile: $lockfile}'
+                done |
+                jq -cs .
+            )
+          fi
+          echo "examples=$examples" >> "$GITHUB_OUTPUT"
+
+  typecheck:
+    name: Type-check ${{ matrix.example.dir }}
+    needs: changes
+    if: needs.changes.outputs.examples != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        example: ${{ fromJSON(needs.changes.outputs.examples) }}
+    defaults:
+      run:
+        working-directory: ${{ matrix.example.dir }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          cache: ${{ matrix.example.manager }}
+          cache-dependency-path: ${{ matrix.example.lockfile }}
+      - name: Install dependencies
+        env:
+          MANAGER: ${{ matrix.example.manager }}
+        run: |
+          if [ "$MANAGER" = yarn ]; then
+            yarn install --frozen-lockfile --ignore-scripts --non-interactive
+          else
+            npm ci --ignore-scripts --no-audit --no-fund
+          fi
+      - name: Type-check
+        env:
+          EXAMPLE_DIR: ${{ matrix.example.dir }}
+          MANAGER: ${{ matrix.example.manager }}
+        run: |
+          if jq -e '.scripts["type-check"]' package.json > /dev/null; then
+            "$MANAGER" run type-check
+          elif [ -x node_modules/.bin/tsc ]; then
+            node_modules/.bin/tsc --noEmit
+          else
+            echo "::error file=$EXAMPLE_DIR/package.json::Add a type-check script or a typescript devDependency"
+            exit 1
+          fi
+
+  docs-examples:
+    name: Docs examples type-check
+    needs: [changes, typecheck]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Require type-checks when examples changed
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          EXAMPLES: ${{ needs.changes.outputs.examples }}
+          TYPECHECK_RESULT: ${{ needs.typecheck.result }}
+        run: |
+          test "$CHANGES_RESULT" = success
+          if [ "$EXAMPLES" != '[]' ]; then
+            test "$TYPECHECK_RESULT" = success
+          fi

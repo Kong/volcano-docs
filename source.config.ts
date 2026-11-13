@@ -3,8 +3,7 @@ import { pageSchema } from "fumadocs-core/source/schema";
 import { remarkRelocatedIndex } from "./scripts/relocated-index.mjs";
 import { BLOG_CATEGORY_SLUGS } from "./src/lib/blog-categories.mjs";
 
-// Reads the assembled docs tree. Intro and SDK landing pages are authored here;
-// product and SDK language subtrees are synced (see docs.config.yaml).
+// Reads the docs tree. Every page is authored in this repository.
 export const docs = defineDocs({
   dir: "content",
   docs: {

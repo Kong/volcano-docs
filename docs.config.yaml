@@ -1,12 +1,9 @@
-# Assembly manifest for the Volcano developer docs.
-#
-# CI reads this to pull docs from each source repo into content/<dest>/.
-# Each source repo owns its subtree and must follow spec/markdown-format.md.
-# Kept generator-agnostic on purpose — the build tool is not chosen yet.
+# Site manifest for the Volcano developer docs. scripts/lint-docs.mjs reads
+# `nav` to validate site-absolute links between sections.
 
 site:
   title: Volcano Developer Docs
-  base_url: https://docs.volcano.dev   # placeholder; final host TBD
+  base_url: https://docs.volcano.dev
 
 # Top-level section order. Pages within a section are ordered by the `order`
 # frontmatter field, then alphabetically.
@@ -17,37 +14,3 @@ nav:
   - cli
   - cookbooks
   - blog
-
-# Sync sources. `index` names the file mapped to the section landing (index.md).
-# content/sdk/index.md is authored here; sync only the language subdirectories.
-# `include` (glob) narrows what to copy for repos that are not doc-shaped.
-sources:
-  - dest: content/platform
-    repo: Kong/volcano-hosting
-    ref: main
-    path: docs/public   # docs/internal is maintainer-only and never synced
-    index: README.md
-
-  - dest: content/sdk/js
-    repo: Kong/volcano-sdk-js
-    ref: main
-    path: docs
-    index: README.md
-
-  - dest: content/sdk/python
-    repo: Kong/volcano-sdk-python
-    ref: main
-    path: docs
-    index: README.md
-
-  - dest: content/sdk/ruby
-    repo: Kong/volcano-sdk-ruby
-    ref: main
-    path: docs
-    index: README.md
-
-  - dest: content/cli
-    repo: Kong/volcano-cli
-    ref: main
-    path: docs
-    index: README.md

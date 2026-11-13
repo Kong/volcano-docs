@@ -2,7 +2,7 @@
 // Route-aware link checker for the assembled docs. Fumadocs only turns .md files
 // into routes (index.md -> the directory route); everything else under content/
 // is NOT served. This catches broken cross-section links, index relocations that
-// leave stale relative links, and links to unserved assets (openapi.yaml, source
+// leave stale relative links, and links to unserved assets (YAML, source
 // files, LICENSE, ...) that would 404 after deploy — which the format lint cannot.
 //
 // Usage: node scripts/check-links.mjs [contentDir] [publicDir]   (defaults: content, public)

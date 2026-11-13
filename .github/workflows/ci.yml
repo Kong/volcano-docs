@@ -1,9 +1,7 @@
 name: CI
 
-# Site-level validation for every PR (including the scheduled sync's PRs):
-# the docs-format lint, a route-aware link check, and a real Next build.
-# Source-repo format lint cannot catch integration failures (relocated index
-# links, cross-section routes, unserved assets, a broken build) — this can.
+# Site-level validation for every PR: the docs-format lint, a route-aware link
+# check, and a real Next build.
 on:
   pull_request:
   merge_group:
@@ -24,8 +22,7 @@ jobs:
           persist-credentials: false
 
       # The build and search index follow symlinks, so one could pull files
-      # from outside content/ into the public site. The sync refuses them
-      # (scripts/sync-docs.sh); this stops a hand-made PR from adding one.
+      # from outside content/ into the public site.
       - name: Refuse symlinks in content and public
         run: bash scripts/refuse-symlinks.sh content public
 
