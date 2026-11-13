@@ -1750,13 +1750,16 @@ LavaFlow checks each text a run serves for secrets: its `title`, `fix_summary`,
 `diagnosis`, review findings and questions, hold reasons, and repository check
 commands and output, in the run and in the runs list. A field that holds one
 of your project's exact secret values, or a secret that
-[gitleaks](https://github.com/gitleaks/gitleaks)' default rules detect, reads
+[gitleaks](https://github.com/gitleaks/gitleaks)' default rules detect, also
+inside base64, hex or percent-encoded text, reads
 `Hidden: this field matched a secret.` in place of its whole text. Nothing
 else is hidden, so text that only looks like a credential, such as a test's
-fixture, stays readable. A path that holds a secret reads `""`, and so does a
-log line's `level`. On a run held with `possible_credential`, the fix's
-summary, review text, statements, check commands and output, and hold
-reasons read `Hidden: the fix may add a credential.`
+fixture, stays readable. A path that holds a secret or a control character
+reads `""`, and so does a log line's `level`; a hold reason with such a path
+reads `Hidden: this field matched a secret.` in its `question` too. On a run
+held with `possible_credential`, the fix's summary, review text, statements,
+check commands and output, and hold reasons read
+`Hidden: the fix may add a credential.`
 
 For new fixes, `diff` compares each file before and after all edits as a
 unified diff. Unchanged lines appear as context around the changes.
