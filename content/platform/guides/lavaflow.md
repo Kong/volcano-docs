@@ -125,8 +125,8 @@ Turning LavaFlow on, from off, also starts runs for up to 5 open issues with
 days, most recently seen first. Runs LavaFlow queued on its own and hasn't
 started count toward the 5. An issue LavaFlow already ran is left out, so
 turning LavaFlow off and on again starts runs only for issues that still have
-none. These runs start like any other run LavaFlow starts on its own, one at a
-time per project. Sending `enabled: true` while LavaFlow is on starts none, and
+none. These runs start like any other run LavaFlow starts on its own, up to 3
+at once per project. Sending `enabled: true` while LavaFlow is on starts none, and
 neither does LavaFlow becoming available to the project, such as after a plan
 change.
 
@@ -1379,7 +1379,9 @@ expires, or `volcano login`. A platform token that never expires, a
 and an agent through [MCP](#agents) get `403` with code `person_required`; a
 read-only project access token is refused as read-only first. Every start
 counts toward the run limits: 5 runs per issue and 200 per project in any 24
-hours. A start that doesn't run answers a code:
+hours. A project runs up to 3 runs at once, one per issue, and later runs wait
+`queued`; a Code Quality run runs alone. A start that doesn't run answers a
+code:
 
 | Status | `code`                      | Why                                                                                  | What to do                                             |
 | ------ | --------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------ |
