@@ -30,6 +30,7 @@ and structurally consistent.
 pnpm lint            # ESLint house style (mirrors volcano-web)
 pnpm build           # Next build (also regenerates .source)
 pnpm lint:docs <dir> # validate markdown against spec/markdown-format.md
+pnpm check:api       # pages listing API values match api.volcano.dev
 ```
 
 ---
@@ -43,7 +44,7 @@ pnpm lint:docs <dir> # validate markdown against spec/markdown-format.md
 | `src/lib/` | `source.ts` (Fumadocs loader over `content/`), `layout.shared.tsx`. |
 | `source.config.ts` | Fumadocs MDX config; `.source/` is generated (gitignored). |
 | `spec/` | Docs format contract + JSON schema. |
-| `scripts/` | `lint-docs.mjs`, `check-links.mjs`, and the search-index tooling. |
+| `scripts/` | `lint-docs.mjs`, `check-links.mjs`, `check-api-drift.mjs`, and the search-index tooling. |
 | `eslint-rules/` | The `volcano/*` custom rules (copied from volcano-web). |
 
 The SDK landing page is owned by this repository. When an SDK changes its minimum
@@ -161,6 +162,7 @@ Conventions are caught by tooling, not reviewers. Config: `eslint.config.mjs`.
 | `react/jsx-no-bind` | inline arrow / `.bind()` in JSX props | warn (ref callbacks exempt) |
 | `jsx-a11y/*` | interactive-element / ARIA problems | warn (`aria-props`/`aria-role` error) |
 | `lint:docs` | markdown format contract | error (PR CI) |
+| `check:api` | preview error codes, runtimes and PostgreSQL versions match the production API | error (PRs touching those pages, daily) |
 | commitlint | Conventional Commits | error (husky `commit-msg` hook) |
 
 **The one exception:** `src/app/_og/**` renders social cards through Satori
