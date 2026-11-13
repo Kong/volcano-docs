@@ -18,7 +18,7 @@ export const docs = defineDocs({
   },
 });
 
-// Synced docs use fence languages Shiki doesn't ship (e.g. env, cron). Rewrite
+// Docs use fence languages Shiki doesn't ship (e.g. env, cron). Rewrite
 // them to a real grammar in the markdown AST so external content can't crash the
 // build. Done in remark (deterministic per file) rather than Shiki langAlias,
 // which races across Turbopack's parallel workers.

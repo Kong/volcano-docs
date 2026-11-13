@@ -58,8 +58,8 @@ Docusaurus `sidebar_position` / Starlight `sidebar.order`; `nav_title` →
 
 - `kebab-case.md` filenames.
 - `index.md` is the section (directory) landing page. Its `title`/`description`
-  describe the whole section. (`README.md` is also accepted so the page renders
-  on GitHub; the sync emits it as `index.md`.) Do not use Hugo's `_index.md` —
+  describe the whole section. (Links to a section's `README.md` still resolve
+  to its `index.md`.) Do not use Hugo's `_index.md` —
   the adapter produces the tool-specific landing name at build time.
 - Images and other assets go in an `assets/` folder next to the doc and are
   referenced relatively: `![diagram](./assets/flow.png)`.

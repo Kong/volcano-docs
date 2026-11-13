@@ -39,7 +39,7 @@ updates:
 
   # Example apps under content/platform/examples; directories without a
   # package.json are skipped. SDK majors ship with coordinated docs changes,
-  # and Next.js and React majors follow the runtimes Volcano supports.
+  # and Next.js majors follow the runtimes Volcano supports.
   - package-ecosystem: "npm"
     directories:
       - "/content/platform/examples/**/*"

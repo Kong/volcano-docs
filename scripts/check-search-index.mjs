@@ -100,7 +100,7 @@ try {
       }
       console.log(`check-search-index: query "${query}" found ${url} (${mode})`);
     }
-    // Anchor the Docs scope check to content authored here, so SDK syncs and
+    // Anchor the Docs scope check to content authored here, so SDK page edits and
     // ranking changes for broad terms cannot invalidate this assertion.
     for (const [section, query, expected] of [
       ["docs", searchTerm, expectedUrl],
