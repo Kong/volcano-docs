@@ -267,6 +267,10 @@ curl "https://api.volcano.dev/user/git/connections" \
 }
 ```
 
+`last_authenticated_at` records when you connected or reconnected GitHub.
+Routine token rotation preserves it.
+Disconnecting or reconnecting takes effect even if a token refresh is running.
+
 ### Installing from GitHub
 
 You can also install the Volcano GitHub App from GitHub itself: from the App's
