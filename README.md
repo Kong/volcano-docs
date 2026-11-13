@@ -13,7 +13,7 @@ source repos (own their docs, follow the contract)
         │  committed by the bot (manual escape hatch available)
         ▼
 volcano-docs (this repo: contract + assembly + get-started + synced content)
-        │  build — Hugo / Docusaurus / Starlight / Next.js in volcano-web (TBD)
+        │  push to main — Volcano Git auto-deploy builds the Fumadocs site
         ▼
 developer docs site
 ```
@@ -27,10 +27,11 @@ PR that **auto-merges**. Source repos are internal, so the job authenticates as
 the **Volcano GitHub App**. See
 [`.github/workflows/sync-docs.yml`](.github/workflows/sync-docs.yml).
 
-The serving layer is intentionally **not decided yet**. The markdown format
+The site is a standalone [Fumadocs](https://fumadocs.dev) app (see
+[Site](#site-fumadocs)) that Volcano deploys from this repository (see
+[Deployment](#deployment)). The markdown format
 ([`spec/markdown-format.md`](spec/markdown-format.md)) uses neutral frontmatter
-fields so any generator can consume it with a thin adapter — the choice between
-a standalone static site and a route inside `volcano-web` stays open.
+fields so any generator can consume it with a thin adapter.
 
 ## Section → source repo
 
@@ -58,6 +59,17 @@ The mapping is defined machine-readably in [`docs.config.yaml`](docs.config.yaml
   `content/sdk/python`, `content/sdk/ruby`, or `content/cli`; they are overwritten on every sync.
 - **Intro pages**: edit [`content/get-started/`](content/get-started) here.
 - **SDK landing page**: edit [`content/sdk/index.md`](content/sdk/index.md) here when a language's runtime requirements or shared capabilities change. Check the claims against its package metadata and keep the sync destinations scoped to the language subdirectories.
+
+## Deployment
+
+Volcano deploys the site from this repository. The staging and production
+`volcano-docs` Volcano projects are connected to `Kong/volcano-docs` with Git
+auto-deploy: every push to `main` builds and deploys the `docs` frontend from the
+repository root, to [docs.staging.volcano.dev](https://docs.staging.volcano.dev)
+and [docs.volcano.dev](https://docs.volcano.dev). Each deployment records the
+commit it was built from. The build settings live in each project's **Project
+settings → Git** page in the Volcano dashboard, and `DOCS_SITE_URL` is a project
+variable there.
 
 ## Rollout
 
