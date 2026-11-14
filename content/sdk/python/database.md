@@ -73,6 +73,13 @@ Mutations return a list of the affected rows.
 Updates and deletes with no matches return an empty list.
 They require at least one filter; Volcano rejects filterless updates and deletes.
 
+## Handle temporary capacity failures
+
+When Volcano cannot acquire database capacity before dispatching SQL, the request raises `ServerError` with `status=503`, the message `Database capacity temporarily unavailable; query was not executed`, and `retry_after=1` from the response header.
+The SDK does not automatically retry this response.
+For this specific response, wait at least `retry_after` seconds, add jitter, and bound any application retries.
+Do not replay a mutation solely because its status is 503: other service failures and transport errors may have an unknown execution outcome.
+
 ## Handle authentication failures
 
 Database reads and mutations refresh a rejected access token once when the captured session has a usable refresh token, then retry the same request.
