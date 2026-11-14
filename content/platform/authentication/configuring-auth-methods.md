@@ -196,8 +196,9 @@ is returned by:
   an existing user cannot move onto a rejected domain)
 
 These routes also refuse `anonymous.volcano.internal` and `volcano.local`, the
-domains of the anonymous and Builder debug accounts Volcano creates, in every
-project, with or without a list.
+domains of anonymous accounts and of the debug accounts an earlier Builder
+created (Volcano no longer creates them), in every project, with or without a
+list.
 
 Under `signup_and_signin` the same `403` also comes back from `POST /auth/signin`,
 `POST /auth/refresh`, the OAuth callback for an already-linked account, and the

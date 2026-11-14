@@ -43,7 +43,7 @@ Response:
 
 ## Scope a service key
 
-Pass `permissions` when you create a key to limit what it can do. A key created without `permissions`, or with an empty list, gets `["*"]`, which grants everything. `ai.invoke` is reserved: the create route refuses it with `400`.
+Pass `permissions` when you create a key to limit what it can do. A key created without `permissions`, or with an empty list, gets `["*"]`, which grants every permission but the reserved ones. `ai.invoke` and `grants.mint` are reserved: `"*"` doesn't include them, only a person creates a key that holds one, and it must be the key's only permission; see [Create an AI key](#create-an-ai-key) and [Create a key that mints grants](#create-a-key-that-mints-grants).
 
 ```bash
 curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/service-keys" \
@@ -72,7 +72,33 @@ Volcano is extending the list to the database API and realtime. Once it applies 
 | Publish on broadcast channels                               | `realtime.publish`   |
 | Watch Postgres changes                                      | `*`                  |
 
-Without it, the database API answers `403` and realtime refuses the subscribe or publish. A subscription opened before the rule applied ends within seconds, with unsubscribe code `2100` and reason `service key scope`; the SDKs do not resubscribe. A durable run's channel keeps the rule above. Until then, every service key, scoped or not, can query and change every table with RLS bypassed, subscribe to any other channel, publish on broadcast channels, and watch changes to any table. A backend that queries your database or watches table changes needs a key holding `*`.
+Without it, the database API answers `403` and realtime refuses the subscribe or publish. A subscription opened before the rule applied ends within seconds, with unsubscribe code `2100` and reason `service key scope`; the SDKs do not resubscribe. A durable run's channel keeps the rule above. Until then, every service key but an [AI key](#create-an-ai-key), scoped or not, can query and change every table with RLS bypassed, subscribe to any other channel, publish on broadcast channels, and watch changes to any table. A backend that queries your database or watches table changes needs a key holding `*`.
+
+## Create an AI key
+
+An AI key is a service key for the Volcano AI gateway, which calls models on your project's behalf. Volcano pays the model provider for those calls, and your project isn't billed for them. Create one with the same route as any service key, asking for `ai.invoke` and nothing else; `ai.invoke` beside another permission gets `400`. Only a person creates one: signed in to the dashboard, or with a `volcano login` token whose sign-in is live. A project access token, a request made through MCP, a platform token created through the token API, and a sign-in that ended get `403` with code `person_required`.
+
+```bash
+curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/service-keys" \
+  -H "Authorization: Bearer $VOLCANO_LOGIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "builder", "permissions": ["ai.invoke"]}'
+```
+
+The response carries `key_value`. Mint [run tokens](../../guides/ai-gateway.md) with it. Read, regenerate, and delete it with the service key routes: reading it returns `key_value` again. Reading or regenerating an AI key, or any key that holds `ai.invoke`, takes the same person as creating one; anyone else gets `403` with code `person_required`, and lists leave its value out. An AI key only mints run tokens: the database API answers it `403` and realtime refuses its subscribe or publish, whether or not the rule above applies. A key that holds `*`, and a key created before AI keys existed, never count as AI keys. Where the `ai_gateway` capability in [`GET /capabilities`](../../api-reference/overview.md) is unavailable, asking for `ai.invoke` answers `404` with code `feature_unavailable`.
+
+## Create a key that mints grants
+
+A first-party app, such as the Builder, mints delegated grants on its users' projects with a key that holds `grants.mint`. The service key create route makes it: pass `"permissions": ["grants.mint"]` and nothing else. A key holds one reserved permission alone, so a key never holds `ai.invoke` and `grants.mint` together.
+
+```bash
+curl -X POST "https://api.volcano.dev/projects/$APP_PROJECT_ID/service-keys" \
+  -H "Authorization: Bearer $VOLCANO_LOGIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "builder-grants", "permissions": ["grants.mint"]}'
+```
+
+Only a registered first-party app's project may hold `grants.mint`, and only that project's owner, signed in as for an AI key, creates the key. Another project gets `403` with code `first_party_app_required`. The `ai_gateway` capability doesn't gate this key. Reading or regenerating it takes the same person as creating it.
 
 ## Using service keys
 

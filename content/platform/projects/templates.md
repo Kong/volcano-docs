@@ -57,7 +57,6 @@ application is ready. Poll `GET /projects/{id}` and inspect the additional field
 Statuses are `pending`, `running`, `ready`, and `failed`. Phases are `database`,
 `restore`, `configure`, `deploy`, `verify`, and `ready`. Ordinary projects omit
 this field. Wait for `ready` before using or editing the installed application.
-Do not combine `template_id` with `initialPrompt`.
 
 If installation fails after acceptance, the project remains available for
 inspection or deletion. Delete it before starting over if you do not want to

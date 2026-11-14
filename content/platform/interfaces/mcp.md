@@ -462,6 +462,8 @@ Nor can it approve or deny a durable approval. An agent can list what workflows 
 
 Nor can it change [LavaFlow's settings](../guides/lavaflow.md#settings) or [start a LavaFlow run](../guides/lavaflow.md#start-a-run), so it can't turn LavaFlow on, [turn merging on](../guides/lavaflow.md#turn-merging-on), or have LavaFlow work on an issue it wouldn't start on by itself. Those are the project owner's decisions, and both endpoints refuse a full-scope project access token with `403` and code `person_required`. Nor can it [open a fix LavaFlow held](../guides/lavaflow.md#open-a-held-fix-yourself) for ungated workflows: the owner reads the fix and the workflow jobs, and the open endpoint refuses a project access token the same way.
 
+Nor can it [create an AI key](../authentication/security/service-keys.md#create-an-ai-key), which calls models on Volcano's provider account: only a person creates one, and the create endpoint refuses `ai.invoke` to a project access token with `403` and code `person_required`.
+
 ## Revoke access
 
 Revoking the token stops the agent. It takes effect immediately in the region handling the call and within seconds everywhere else, and the MCP endpoint then answers `401` like every other route:
