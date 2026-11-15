@@ -123,8 +123,8 @@ instead: set `VOLCANO_TOKEN_FD` to the descriptor's number and leave
 a file on disk. The CLI reads the token once, up to the first newline, closes
 the descriptor, and does not pass the token to processes it starts. `0` reads
 stdin and leaves it open; `1` and `2` are refused. Numbers from `3` up are
-Unix only. A grant set in `VOLCANO_TOKEN` is also removed from the
-environment those processes get.
+Unix only. A blank `VOLCANO_TOKEN_FD` counts as unset. A grant set in
+`VOLCANO_TOKEN` is also removed from the environment those processes get.
 
 ```bash
 # get-grant prints the grant; the CLI reads it from a pipe on descriptor 3.
