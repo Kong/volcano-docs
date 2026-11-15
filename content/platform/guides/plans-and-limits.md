@@ -115,7 +115,7 @@ All accounts receive at least 240 included build minutes for monthly cycles that
 
 Build minutes count from when your build gets build capacity. Time spent waiting for capacity does not count, but preparing the build environment does, so the end of a deployment's [Queue phase](deployment-performance.md) can count toward your minutes.
 
-Installing dependencies and running your build command must finish at least five minutes before the build timeout, which leaves time to package the result. Each step can also run for at most 30 minutes. A step that runs out of time fails the build, and the build log names the step.
+Installing dependencies and running your build command must finish at least five minutes before the build timeout, which leaves time to package the result. Each step can also run for at most 30 minutes. A step that runs out of time fails the build, and the build log names the step. If a dependency install stops making progress, it is stopped and retried once within the same step limit.
 
 ## Databases
 
