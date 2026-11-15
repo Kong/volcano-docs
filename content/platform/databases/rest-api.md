@@ -25,6 +25,10 @@ the branch in the path: `POST
 /databases/{databaseName}/branches/{branchName}/query/{operation}`. Everything on
 this page applies unchanged. See [Branching](branching.md).
 
+A request body can be up to 4 MiB. A larger one is refused with `413` and
+`{"error": "request body too large"}`. Keep large files in
+[Storage](/platform/storage/overview) and store their path in the row instead.
+
 ---
 
 ## Getting Started

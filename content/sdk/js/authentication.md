@@ -516,7 +516,9 @@ if (error) {
 Volcano automatically handles token refresh and passes the correct credentials to the provider.
 `data` is the provider's raw JSON value, or `null` when the provider returns no body.
 Provider bodies are limited to 8 MiB after decompression. Transport failures,
-invalid JSON, and oversized responses produce a Volcano 502 error.
+invalid JSON, and oversized responses produce a Volcano 502 error. The request
+you send, including `body`, is limited to 4 MiB; a larger one produces a Volcano
+413 error.
 
 Check `error` for Volcano request failures. The current SDK does not expose the
 provider's HTTP status: a valid JSON response from a provider, including a 4xx or
