@@ -262,7 +262,7 @@ Fix:
 
 ### Allow ungated workflows
 
-Normal repository CI under `open_pr` does not need this setting: LavaFlow opens the PR and lets the repository run its configured CI.
+Normal repository CI for any fix LavaFlow leaves a person to merge does not need this setting, in any autonomy: LavaFlow opens the PR and lets the repository run its configured CI.
 The following option applies to automatic merging and the earlier publication path; see [Review and merge fixes yourself](/platform/guides/lavaflow#review-and-merge-fixes-yourself).
 
 On that publication path, LavaFlow doesn't open a fix's pull request where a workflow in

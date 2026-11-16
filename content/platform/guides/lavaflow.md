@@ -892,11 +892,12 @@ Your repository runs its configured CI, with the permissions, credentials, previ
 LavaFlow does not require an approval label, inspect workflows before opening the PR, or restrict CI to GitHub Actions.
 Your CI may run model-generated code with repository secrets before a person reviews it, including code influenced by issue descriptions or error logs your users control.
 You control that access in the repository: keep secrets out of untrusted jobs, or, if you want a person to approve credentialed execution, use a job condition like the optional [approval-label example](#gate-workflows-that-run-a-fix) on your `volcano/lavaflow/` branches.
-Normal `open_pr` publication does not enforce that optional repository gate.
+Normal publication of a fix LavaFlow leaves a person to merge, in any autonomy, does not enforce that optional repository gate.
 You do not need `allow_ungated_workflows` for a fix you merge.
 
-A fix whose AI review did not pass opens as a draft with a warning.
-Its commit still allows CI; your workflows decide whether to run on drafts.
+Code Quality fixes still require a passed review before any PR opens; a failed review records `review_unresolved` and opens no PR.
+For other fixes, an AI review that did not pass opens a draft with a warning.
+A draft's commit still allows CI; your workflows decide whether to run on drafts.
 Check the review and CI results before merging.
 LavaFlow never merges a fix opened for a person, even if you later enable automatic merging.
 
@@ -2089,7 +2090,7 @@ Each run in `GET /lavaflow/runs` and `GET /lavaflow/runs/{run_id}` carries
 ## Gate workflows that run a fix
 
 The checks in this section apply to automatic merging, explicitly opened held fixes, and releases using the earlier publication path.
-They do not block normal `open_pr` publication or its CI.
+They do not block normal publication or CI for any fix LavaFlow leaves a person to merge, in any autonomy.
 
 Until you gate every job that could run a fix with your repository's secrets
 before a person approves it, LavaFlow holds every fix in the repository: the
@@ -2360,7 +2361,7 @@ the fix with `ci_outside_actions` when either of these is true:
   commit status on the base branch's head, or LavaFlow couldn't read them
   all. This catches a service you configured outside the repository.
 
-The same check runs right before a fix you merge opens, on the fix's base
+On the earlier publication path, the same check runs right before a fix you merge opens, on the fix's base
 commit, the files it adds and the base branch; a fix it finds anything for
 opens as a draft. See
 [Review and merge fixes yourself](#review-and-merge-fixes-yourself).
@@ -2796,11 +2797,11 @@ on, not the code that shipped while it was off.
 
 ### How Code Quality fixes open
 
-A Code Quality fix opens as a draft pull request, and LavaFlow never merges
-it, even with `autonomy: merge`. It opens only when LavaFlow's review passed
-the fix, and not while another project on the same repository has an open
-Code Quality pull request for the same finding. The issue keeps its diagnosis
-either way.
+A Code Quality fix opens ready for review with normal repository CI, or as a draft on the earlier publication path.
+LavaFlow never merges it, even with `autonomy: merge`.
+Both paths require LavaFlow's review to pass before any PR opens; an unresolved review records `review_unresolved` and opens no PR.
+Neither path opens a PR while another project on the same repository has an open Code Quality PR for the same finding.
+The issue keeps its diagnosis either way.
 
 On a repository that isn't private, LavaFlow writes no fix for a finding with
 security impact, since the diff would disclose the problem before it is fixed.
