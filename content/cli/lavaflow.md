@@ -262,7 +262,10 @@ Fix:
 
 ### Allow ungated workflows
 
-By default, LavaFlow doesn't open a fix's pull request where a workflow in
+Normal repository CI under `open_pr` does not need this setting: LavaFlow opens the PR and lets the repository run its configured CI.
+The following option applies to automatic merging and the earlier publication path; see [Review and merge fixes yourself](/platform/guides/lavaflow#review-and-merge-fixes-yourself).
+
+On that publication path, LavaFlow doesn't open a fix's pull request where a workflow in
 the repository could run it, or put its text into a command, with the
 repository's secrets before a person approves it: the fix stays on its run
 instead. Only the project's owner can turn that on, signed in as a person:
