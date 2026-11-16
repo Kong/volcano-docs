@@ -417,9 +417,10 @@ status and reason that names the pull request when one opened, such as
 For a fix that opened no pull request, such as one held for its workflows, it
 names none: `LavaFlow didn't run the repository's tests.`
 
-When the checks didn't run on a fix whose pull request opened, `message` then
-says what became of your CI on that pull request, as the run stands when you
-read it:
+When the checks didn't run on a fix whose pull request opened, `message` then says what became of CI on that pull request.
+Normal repository CI is recorded as started when the PR opens without a CI-skip marker, including a draft; this reports that CI can run, not that a workflow ran or passed.
+Use the pull request's checks for execution results.
+The CI-skip and one-time-start messages below describe automatic merging and the earlier publication path:
 
 | Second sentence                                                                                                                                   | When                                                                                                                                                                                                                                |
 | ------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1048,10 +1049,11 @@ close it.
 A fix that needs a person when its pull request opens shows
 `waiting_for_checks`, with no `hold_reasons`, until LavaFlow's first read
 about a minute later (longer while merging is paused); LavaFlow never merges
-it, and that read records it as `held`, starting its CI once first when every
-reason asks only whether to merge the fix, as described below.
+it, and that read records it as `held`.
+With normal repository CI, checks can run from the first push independently of the hold.
+On the earlier publication path, that read can start CI once first when every reason asks only whether to merge the fix, as described below.
 
-LavaFlow may start a held fix's CI once, as it holds the fix, when every
+For automatic merging or the earlier publication path, LavaFlow may start a held fix's CI once, as it holds the fix, when every
 reason asks only whether to merge it, not whether your CI may run it. It
 starts it the way it starts CI on a fix nothing holds (see
 [Check before CI starts](#check-before-ci-starts)), so you review the fix with
@@ -1078,6 +1080,10 @@ fix so CI runs on what merges: after a clean copy, any merge method; after a
 commit on top, a merge commit, a rebase, or a squash with a message of your
 own. It doesn't mention CI LavaFlow started on the fix before it held it; the
 pull request's checks show that.
+
+These holds decide whether LavaFlow merges a fix.
+They do not stop normal repository CI on a fix a person merges.
+References below to a separate CI start describe automatic merging and the earlier publication path.
 
 LavaFlow holds a fix for these reasons:
 
@@ -1106,7 +1112,7 @@ LavaFlow holds a fix for these reasons:
 | `choices_to_confirm`           | The fix decides behavior beyond stopping the error, such as a response shape or a validation policy, and LavaFlow's reviewers didn't all mark each decision as needing no person. A private repository's description lists each decision under **Choices to confirm**; on any repository, the run's `choices` lists them. Confirm each one, then merge                                                                                                                                                                                                              |
 | `risky_change`                 | The fix adds or removes a line that converts a value, such as with `float()` or `parseInt()`, in a file that names a rate limit or quota, authentication or authorization, or money; see below                                                                                                                                                                                                                                                                                                                                                                      |
 | `review_notes`                 | LavaFlow's reviewers passed the fix, but its review's last round left notes: `minor` problems a later round no longer sends back, such as a decision the fix makes without listing it. Read the run's review findings, then merge                                                                                                                                                                                                                                                                                                                                   |
-| `person_merges`                | You review and merge the fix: the project's autonomy is `open_pr`, merging was unavailable when it opened, or its run may only open a pull request. LavaFlow ran the fix's CI once first, unless another reason or the check before CI starts stopped it; see [Review and merge fixes yourself](#review-and-merge-fixes-yourself)                                                                                                                                                                                                                                   |
+| `person_merges`                | You review and merge the fix: the project's autonomy is `open_pr`, merging was unavailable when it opened, or its run may only open a pull request. Normal repository CI can run from the first push. On the earlier publication path, LavaFlow starts CI at most once, unless another reason or its CI-start check stops it; see [Review and merge fixes yourself](#review-and-merge-fixes-yourself)                                                                                                                                                                                                                                   |
 | Any other code                 | One of LavaFlow's reviewers raised a concern, or its review was cut short; the code names it                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 
 Volcano always holds a fix that changes deploy or infrastructure configuration
@@ -2290,13 +2296,15 @@ that job on the same label alone under `pull_request` or
 
 ### Check before CI starts
 
-A fix opens with a commit that skips CI. Under `autonomy: merge`, once its
+This section applies to automatic merging and the earlier publication path.
+Normal repository CI for a fix you merge runs from the first push without these checks or a CI-start commit; see [Review and merge fixes yourself](#review-and-merge-fixes-yourself).
+
+On these earlier or automatic-merge paths, a fix opens with a commit that skips CI. Under `autonomy: merge`, once its
 review passes and nothing holds it, LavaFlow starts its CI with a commit that
 runs it. It may start the CI of a fix it holds only for reasons that ask
 whether to merge it the same way, once, as it holds the fix; see
 [Waiting and held](#waiting-and-held). For a fix you merge, as under
-`autonomy: open_pr`, it starts the fix's CI the same way, once, while
-`lavaflow.open_pr_ci_start` is available; see
+`autonomy: open_pr`, the earlier publication path starts the fix's CI the same way, once, when its legacy CI-start release is enabled; see
 [Review and merge fixes yourself](#review-and-merge-fixes-yourself).
 Where it can, that commit is a clean copy of the fix: the fix's tree, on the
 merge base of the fix and the base commit its pull request names, with
