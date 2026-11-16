@@ -194,13 +194,15 @@ closest one that fits your limit, for you to edit before you merge.
 
 When nothing asks for Conventional Commits, the title describes the change without a type prefix.
 Titles and descriptions use the same secret checks: a text containing a known secret is replaced whole, while other text stays readable.
-On a repository that is not confirmed private, text with an email address absent from the repository, or an opaque value absent from both the repository and the reviewed change, uses an issue-based title and a run link instead.
+LavaFlow treats a repository whose visibility it cannot confirm as not private, alongside public and internal repositories.
+On a repository that isn't private, text with an email address absent from the repository, or an opaque value absent from both the repository and the reviewed change, uses an issue-based title and a run link instead.
 For example, the fallback title is `LavaFlow: fix TypeError in function checkout (issue 3f9a2c71)`, or `fix: the TypeError in function checkout (issue 3f9a2c71)` when your repository asks for Conventional Commits.
 The pull request still opens.
+An issue-based title too long for its header limit leaves out the resource, then the issue ID, rather than cutting either.
 When LavaFlow automatically squash merges a private repository's fix, it keeps the approved title and adds the pull request number.
 A fix LavaFlow may merge under `autonomy: merge` still gets a Conventional `fix:` header with no scope, such as `fix: guard the empty cart`, unless your repository requires a scope.
 
-A title too long for its limit ends with `…` after its last whole word.
+A descriptive title too long for its limit ends with `…` after its last whole word.
 
 On every repository, including public and internal repositories, new pull request titles and fix commit subjects describe the actual change when they pass the privacy checks above.
 For example, `fix: add the Volcano X account to the footer` tells reviewers what changed.
@@ -705,19 +707,6 @@ The description distinguishes test changes from verification results and links t
 Private repositories also get test details, the review summary and findings, and a fixed caution when LavaFlow is less sure of the diagnosis; other repositories keep those details in the run.
 Read the diagnosis and detailed evidence in that run, with `volcano cloud lavaflow show <run-id>`, or from [`GET /lavaflow/runs/{run_id}`](#follow-runs).
 
-### Follow a pull request template
-
-LavaFlow reads applicable repository agent guidance and looks for one unambiguous default pull request template in the commit the fix was made against.
-It accepts `pull_request_template.md`, `.markdown`, or `.txt` at the repository root, in `.github/`, or in `docs/`; filenames are case-insensitive.
-The template supplies headings and information the description should cover.
-LavaFlow renders simple paragraphs and lists, leaves checklist attestations unchecked, and appends its own verification information and run link.
-
-Missing, unreadable, oversized, secret-bearing or ambiguous templates use the standard summary format.
-Templates must fit 8 KiB and fewer than 200 lines.
-LavaFlow looks at up to 20,000 repository paths and uses the standard format if it cannot get a complete list.
-LavaFlow does not automatically choose among named templates in a `PULL_REQUEST_TEMPLATE/` directory or load organization-default templates.
-Repository guidance and templates cannot change publication permissions or secret handling.
-
 A fix goes after the cause, not just the line that crashed, and restores the
 behavior your code, tests and docs intend. It keeps accepting input your logs,
 docs, or changelog show callers already sending, such as a number sent as a
@@ -849,9 +838,22 @@ or comment, it checks that text once more, along with the fields it was built
 from. If either still holds one of your project's secret values or a
 recognized secret, LavaFlow replaces the whole text: a title becomes `apply a LavaFlow fix` in your repository's commit form,
 and a description or comment becomes a sentence that points to the run
-details. Everything else shows as the model wrote it. LavaFlow catches only
+details. Other text stays readable, subject to the additional public-repository checks above. LavaFlow catches only
 your secret values as they are stored and secrets it recognizes, so don't
 rely on it to hide a secret written another way.
+
+### Follow a pull request template
+
+LavaFlow reads applicable repository agent guidance and looks for one unambiguous default pull request template in the commit the fix was made against.
+It accepts `pull_request_template.md`, `.markdown`, or `.txt` at the repository root, in `.github/`, or in `docs/`; filenames are case-insensitive.
+The template supplies headings and information the description should cover.
+LavaFlow renders simple paragraphs and lists, leaves checklist attestations unchecked, and appends its own verification information and run link.
+
+Missing, unreadable, oversized, secret-bearing or ambiguous templates use the standard summary format.
+Templates must fit 8 KiB and fewer than 200 lines.
+LavaFlow looks at up to 20,000 repository paths and uses the standard format if it cannot get a complete list.
+LavaFlow does not automatically choose among named templates in a `PULL_REQUEST_TEMPLATE/` directory or load organization-default templates.
+Repository guidance and templates cannot change publication permissions or secret handling.
 
 ## Find LavaFlow's pull requests
 
