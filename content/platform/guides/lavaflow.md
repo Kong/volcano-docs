@@ -20,6 +20,7 @@ LavaFlow sends this project's logs and source code to an AI service that Volcano
 
 Once [normal repository CI is available](#review-and-merge-fixes-yourself) and the owner [allows it for the connected repository](#allow-ungated-workflows), `autonomy: open_pr` opens reviewed fixes ready for review and lets your repository run its configured CI.
 It adds no CI-skip marker and requires no separate approval for each PR.
+Without permission or normal-CI availability, the guarded path can still open commits that skip CI; [keep that directive out of your base branch](#keep-the-ci-skip-out-of-your-base-branch).
 CI may execute generated code with repository secrets before human review; issues and logs can contain input from your users.
 You review and merge the pull request.
 Automatic merging uses the additional checks under [Merge fixes](#merge-fixes).
@@ -564,6 +565,7 @@ whether your credential can change the rest.
 | `404`  |                       | The project doesn't exist, you can't read it, or it is being deleted                                                                                                                                                                                                                                       |
 | `404`  | `feature_unavailable` | LavaFlow is not available to the project; see [Check availability](#check-availability)                                                                                                                                                                                                                    |
 | `409`  |                       | The settings, or the project's repository, kept changing while the save checked them. Nothing was saved; send it again                                                                                                                                                                                     |
+| `409` | `repository_changed` | The supplied `expected_repository` no longer matches the connected repository or installation. Nothing was saved. Review the current connection and submit a new grant; do not automatically replay the old request |
 | `413`  |                       | The body is over 128 KiB                                                                                                                                                                                                                                                                                   |
 | `429`  |                       | The owner's GitHub push access was checked too often this hour. Nothing was saved; retry after `Retry-After`                                                                                                                                                                                               |
 | `503`  |                       | The owner's GitHub push access couldn't be checked now. Nothing was saved; retry after `Retry-After`                                                                                                                                                                                                       |
@@ -902,14 +904,57 @@ A draft's commit still allows CI; your workflows decide whether to run on drafts
 Check the review and CI results before merging.
 LavaFlow never merges a fix opened for a person, even if you later enable automatic merging.
 
-With permission off or normal repository CI unavailable, LavaFlow keeps the guarded publication path: commits skip CI initially and LavaFlow checks workflows before opening a PR or starting CI.
+### Without normal repository CI
+
+With permission off or normal repository CI unavailable, LavaFlow keeps the guarded publication path.
+Commits skip CI initially, and LavaFlow checks workflows before opening a PR or starting CI.
 An ungated workflow can hold the fix without opening a PR.
-The earlier one-time CI start remains available only where its own release is enabled.
-Those PR descriptions tell you whether CI started and how to start it yourself.
-The `lavaflow.open_pr_ci_start` capability is `available` when normal repository CI or the earlier one-time CI-start path is released; its value alone does not distinguish them.
-Use `lavaflow.repository_ci` to distinguish normal-CI availability; neither capability grants owner permission.
-Read the PR description for the behavior used: normal publication says the repository's configured CI can run, while guarded publication describes its CI skip or LavaFlow's one-time CI start.
+For PRs that open, the description says whether LavaFlow can start CI once or you must start it yourself.
+Neither `lavaflow.repository_ci` nor the compatibility capability `lavaflow.open_pr_ci_start` grants permission.
+The compatibility value alone does not distinguish normal CI from the earlier one-time start; read the PR description for the behavior used.
 See [Capabilities for one project](../api-reference/overview.md#capabilities-for-one-project).
+
+**While the earlier one-time CI start is unavailable,** every fix you merge
+opens as a draft whose commit skips CI, and LavaFlow runs no CI on it. Push a
+commit to the branch to run your CI, mark the pull request ready for review,
+then review and merge it, and
+[keep the CI skip out of your base branch](#keep-the-ci-skip-out-of-your-base-branch).
+
+**When the earlier one-time CI start is available,** a fix whose review passed opens ready for review.
+Its commit skips CI at first. About a minute later, LavaFlow's first read of
+the pull request runs your repository's CI on it once, the way it starts CI
+under `merge` (see [Check before CI starts](#check-before-ci-starts)): where
+it can, it replaces its commit with a clean copy that has the same changes and
+no CI-skip directive, so any merge method runs your workflows; otherwise it
+adds a commit on top that runs CI. LavaFlow then comments
+**LavaFlow ran your CI on this fix once; review it and merge it yourself.**,
+and never pushes to the pull request again. The run's `merge` shows `held`
+with the `person_merges` hold reason. A fix whose review didn't pass still
+opens as a draft whose commit skips CI.
+
+A fix you merge also opens as that draft, and LavaFlow runs no CI on it, when
+your repository may run CI or previews outside GitHub Actions: right before
+the fix opens, LavaFlow runs the check it runs before it starts CI (see
+[Check before CI starts](#check-before-ci-starts)), on the fix's changes and
+your base branch, and opens a draft when that check finds any such service,
+or when LavaFlow can't complete it. This way only CI that GitHub Actions gates
+sees the fix as ready for review. Where your repository can't have draft pull
+requests, such as a private repository on a plan without them, the fix opens
+as a regular pull request instead, and LavaFlow still runs no CI on it.
+LavaFlow runs this check on every attempt to open the fix. If an earlier
+attempt already opened it ready for review and a later check finds such a
+service, the pull request stays as it is, and LavaFlow runs no CI on it.
+
+Anything that keeps a held fix's CI from starting keeps this fix's from
+starting too, such as a sensitive path, a reviewer's call for a person, a
+`needs-human-review` label, a change request, or a workflow that could run the
+fix with your secrets before a person approves it; see
+[Waiting and held](#waiting-and-held). The pull request then opens ready with
+a description that says LavaFlow won't run its CI, and LavaFlow's comment
+lists why. Its commit still skips CI: push a commit to the branch to run it,
+and [keep the CI skip out of your base branch](#keep-the-ci-skip-out-of-your-base-branch)
+when you merge.
+
 
 A fix you merge doesn't hold its [lineage](#fix-lineage) when LavaFlow hands
 it to you, so a later fix of the same issue still opens. Closing it without
@@ -1262,7 +1307,7 @@ LavaFlow doesn't bill merges.
 ### Keep the CI skip out of your base branch
 
 Fixes opened with normal repository CI have no CI-skip directive.
-For automatic merging or an older PR, LavaFlow's commit on a fix branch can carry a CI-skip directive, so your CI
+On the guarded publication path, for automatic merging, or on an older PR, LavaFlow's commit on a fix branch can carry a CI-skip directive, so your CI
 doesn't run code a model wrote until LavaFlow's review and checks clear it or
 a person looks at it. When LavaFlow
 [starts the fix's CI](#check-before-ci-starts), it force-updates its own fix
@@ -2402,7 +2447,8 @@ that runs CI, or merge it with a message that does.
 ### Allow ungated workflows
 
 The project's owner can allow automatic PRs and repository CI in the dashboard's LavaFlow settings.
-Read the warning under **Automatic PRs and repository CI**, check the named repository, then choose **Allow repository CI**.
+Read the warning under **Automatic PRs and repository CI**, check the named repository, then choose the **Allow repository CI** button.
+After a grant, the button is replaced by the **Allow repository CI before review** switch; turn that switch off to revoke permission.
 This saves only `allow_ungated_workflows: true`; it preserves autonomy, Code Quality, and merge settings.
 The owner's GitHub account must be able to push to that repository.
 The dashboard ties the grant to the displayed repository and installation IDs.
@@ -2421,7 +2467,7 @@ A project access token, a platform token that never expires, or anyone but the
 owner gets `403` with `person_required`. Turning it off works with any of the
 owner's credentials.
 
-API callers can include `expected_repository: {"repo_id": 4242, "repo_installation_id": 7}`, using the IDs in the settings response's `repository` field.
+API callers can include `expected_repository: {"repo_id": 812345678, "repo_installation_id": 52001234}`, using the IDs in the settings response's `repository` field.
 This optional precondition is checked atomically with the save, including when permission is already on.
 A mismatch returns `409` with `code: repository_changed` and changes nothing; review the current connection before sending a new request.
 Omitting it preserves the existing API behavior of authorizing the connection current during the save.

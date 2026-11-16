@@ -277,11 +277,11 @@ to it:
 volcano cloud lavaflow settings set --allow-ungated-workflows true
 ```
 
-Workflows in the repository may then run LavaFlow's pull requests, or put
-their text into commands, with the repository's secrets before a person
-reviews them. LavaFlow writes those changes from the project's error logs,
-which its users can influence. Turn it on only if those workflows keep secrets
-away from untrusted code; gating them on a label a person adds is safer.
+CI and previews may run generated code with the credentials those jobs receive before human review.
+This includes draft PRs, fixes whose LavaFlow review did not pass, and fixes held for a person to review.
+Issue descriptions and logs can influence that code.
+On the normal path LavaFlow does not check workflow gates as a prerequisite to opening the PR; see the [permission disclosure](/platform/guides/lavaflow#allow-ungated-workflows).
+Keep credentials away from untrusted code or require human approval in the repository when needed.
 
 Changing the connected repository or GitHub installation, or disconnecting it, turns the setting off.
 Changing back does not restore permission.
