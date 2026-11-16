@@ -199,6 +199,7 @@ curl "https://api.volcano.dev/capabilities"
     { "id": "sandboxes.network_isolation", "status": "available" },
     { "id": "sandboxes.output_not_kept", "status": "available" },
     { "id": "issues", "status": "available" },
+    { "id": "issues.create", "status": "available" },
     { "id": "lavaflow", "status": "unavailable" },
     { "id": "lavaflow.merge", "status": "unavailable" },
     { "id": "lavaflow.lineage", "status": "unavailable" },
@@ -222,6 +223,7 @@ curl "https://api.volcano.dev/capabilities"
 | `sandboxes.network_isolation`  | Creating [sessions with no outbound network](../guides/sandboxes.md#turn-off-outbound-network); existing ones work either way                                                                                                                                             |
 | `sandboxes.output_not_kept`    | [Commands that keep no output](../guides/sandboxes.md#keep-no-command-output); commands that keep output work either way                                                                                                                                                  |
 | `issues`                       | The Issues API: listing, reading, and updating grouped runtime errors                                                                                                                                                                                                     |
+| `issues.create`                | [Writing an issue](../guides/issues.md#write-an-issue); written issues already recorded read and update either way                                                                                                                                                        |
 | `lavaflow`                     | LavaFlow, which diagnoses a project's issues, opens pull requests that fix them, and can merge them. This list says only whether it's released in the environment; a project's list says whether that project has it                                                      |
 | `lavaflow.merge`               | Letting LavaFlow [merge its fixes](../guides/lavaflow.md#merge-fixes): `autonomy: merge` and changing `merge_policy`; reading merges works either way                                                                                                                     |
 | `lavaflow.lineage`             | LavaFlow [following up its fixes](../guides/lavaflow.md#fix-lineage): follow-up runs and the lineage holds; lineage fields already stored read either way                                                                                                                 |
@@ -266,6 +268,7 @@ curl "https://api.volcano.dev/projects/$PROJECT_ID/capabilities" \
   "data": [
     { "id": "sandboxes", "status": "available" },
     { "id": "issues", "status": "available" },
+    { "id": "issues.create", "status": "available" },
     { "id": "lavaflow", "status": "available" }
   ]
 }
