@@ -194,6 +194,7 @@ closest one that fits your limit, for you to edit before you merge.
 
 When nothing asks for Conventional Commits, the title describes the change without a type prefix.
 Titles and descriptions use the same secret checks: a text containing a known secret is replaced whole, while other text stays readable.
+On a repository that is not confirmed private, text with an email address absent from the repository, or an opaque value absent from both the repository and the reviewed change, uses the fixed public title and a run link instead. The PR still opens.
 For newly opened fixes, a squash merge keeps the approved title and adds the
 pull request number.
 A fix LavaFlow may merge under `autonomy: merge` still gets a Conventional
