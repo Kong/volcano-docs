@@ -192,9 +192,8 @@ number. When your repository's types include no type for a fix, no allowed
 scope is left, or the limit leaves no such room at all, the title is the
 closest one that fits your limit, for you to edit before you merge.
 
-When nothing asks for Conventional Commits, a private title uses the fix's
-summary with the same privacy checks as its description. Verified repository
-values may remain; other numbers and quoted values become `‹n›` and `‹str›`.
+When nothing asks for Conventional Commits, the title describes the change without a type prefix.
+Titles and descriptions use the same secret checks: a text containing a known secret is replaced whole, while other text stays readable.
 For newly opened fixes, a squash merge keeps the approved title and adds the
 pull request number.
 A fix LavaFlow may merge under `autonomy: merge` still gets a Conventional
@@ -202,13 +201,9 @@ A fix LavaFlow may merge under `autonomy: merge` still gets a Conventional
 
 A title too long for its limit ends with `…` after its last whole word.
 
-On a repository that isn't private, including one internal to your GitHub
-enterprise, the title and commit subject name only the issue and the first 8
-characters of its ID, never the fix's summary:
-`LavaFlow: fix TypeError in function checkout (issue 3f9a2c71)`, or
-`fix: the TypeError in function checkout (issue 3f9a2c71)` when your repository
-asks for Conventional Commits. A title too long for your header length limit
-leaves out the resource, then the issue ID, rather than cut either.
+On every repository, including public and internal repositories, new pull request titles and commit subjects describe the actual change.
+For example, `fix: add the Volcano X account to the footer` tells reviewers what changed.
+The automatic squash title on a repository that isn't private retains its issue-based format, such as `fix: the TypeError in function checkout (issue 3f9a2c71)`.
 
 Such a title carries a scope only when one of your checks lists it by name, in
 lowercase letters, digits and hyphens, at most 24 characters. A scope taken
@@ -700,12 +695,22 @@ starts a new run when it's seen again a few minutes after the deploy; see
 
 ## Read a fix's pull request
 
-On a private repository, the pull request's description holds the diagnosis,
-what the fix decides for you to confirm, and the review. The pull request's
-changes are the fix, so the description doesn't repeat a suggested fix. On any
-other repository, the description leaves the diagnosis out: read it in the
-Volcano dashboard, with `volcano cloud lavaflow show <run-id>`, or from
-[`GET /lavaflow/runs/{run_id}`](#follow-runs).
+A pull request starts with a concise summary of the final change and its reason.
+It describes the implementation reviewers are reading, including any revisions, rather than repeating the investigation.
+The description separates tests added or changed from checks that actually ran, retains material review warnings, and links to the LavaFlow run in the Volcano dashboard.
+Read the diagnosis and detailed evidence in that run, with `volcano cloud lavaflow show <run-id>`, or from [`GET /lavaflow/runs/{run_id}`](#follow-runs).
+
+### Follow a pull request template
+
+LavaFlow reads applicable repository agent guidance and looks for one unambiguous default PR template in the pinned repository commit.
+It accepts `pull_request_template.md`, `.markdown`, or `.txt` at the repository root, in `.github/`, or in `docs/`; filenames are case-insensitive.
+The template supplies headings and information the description should cover.
+LavaFlow renders simple paragraphs and lists, leaves checklist attestations unchecked, and appends its own verification information and run link.
+
+Missing, unreadable, oversized, secret-bearing or ambiguous templates use the standard summary format.
+Templates must fit 8 KiB and fewer than 200 lines; discovery inventories at most 20,000 snapshot paths and falls back when the inventory is incomplete.
+LavaFlow does not automatically choose among named templates in a `PULL_REQUEST_TEMPLATE/` directory or load organization-default templates.
+Repository guidance and templates cannot change publication permissions or secret handling.
 
 A fix goes after the cause, not just the line that crashed, and restores the
 behavior your code, tests and docs intend. It keeps accepting input your logs,
@@ -799,27 +804,17 @@ lists none, merges as before, and its description still lists its choices. A
 fix you merge yourself, held with `person_merges` as under `open_pr`, isn't
 also held for its choices: confirm them as you review it.
 
-A public or internal repository's description shows nothing LavaFlow's models
-wrote, so it lists no choice: it says the fix has choices to confirm and to
+A public or internal repository's description leaves detailed choices in the run: it says the fix has choices to confirm and to
 read them with `volcano cloud lavaflow show <run-id> --json`. The run's
 `choices` and `not_fixed` (see [Read a review's findings](#read-a-reviews-findings))
 serve them on every repository, masked as review questions and observations are, and
 the hold's question says where to read them.
 
-If the review didn't pass, a warning leads the description. On a private
-repository, it counts the open findings by severity and points to **Review**
-below. On a public or internal repository, it gives the command to read the
-review instead. The warning gives the CI steps once; the footer doesn't repeat
-them. **Review** says in one sentence how the review went, such as
-"LavaFlow's 2 reviewers checked this fix. The last round had no blocking
-finding." When LavaFlow's own checks found problems in a fix that didn't
-pass, the sentence says what they found, such as a missing test. The description doesn't print the model's
-confidence label: a low-confidence diagnosis opens no pull request, and a
-medium-confidence one adds a caution to check the root cause before you
-merge. **For a person to decide** labels each question with
-what to check, such as its effect on payments or access. If a saved question
-ends mid-sentence, LavaFlow shows only complete sentences, never cutting
-inside inline code, and asks you to review the change in **Files changed**.
+If the review didn't pass, the description includes a warning and points to the run details.
+The run records the full review and its findings.
+
+The run shows the review results, confidence cautions and questions needing a person's decision.
+A low-confidence diagnosis opens no pull request.
 
 A reviewer asks a person to decide only about what merging this fix does,
 compared with your code's behavior before it, and cites the line of the change
