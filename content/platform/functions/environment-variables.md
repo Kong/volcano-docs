@@ -162,7 +162,8 @@ codes not listed here) and a `message`:
 }
 ```
 
-Request bodies larger than 4 MiB return `413` before decoding.
+Request bodies larger than 4 MiB, or whose JSON has too many objects, arrays
+or values, return `413` before decoding.
 Unknown names or an oversized final function environment return `400` before
 any membership, sync, or deployment changes. The final list is validated as a
 whole, so it can shrink an oversized legacy list in one request.
