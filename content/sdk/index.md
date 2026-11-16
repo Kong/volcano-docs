@@ -17,4 +17,4 @@ JavaScript returns result envelopes; Python and Ruby raise typed exceptions.
 Follow each language's guide for its API names and realtime lifecycle.
 
 Use an anonymous key for user authentication and keep service keys in trusted server code.
-See [API authentication](/platform/api-reference/authentication) for credential scopes.
+See [API authentication](/docs/platform/api-reference/authentication) for credential scopes.

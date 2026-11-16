@@ -23,7 +23,7 @@ export function Logo({ height = 22, className }: LogoProps) {
     <span className={`logo ${className ?? ""}`}>
       <span className="logo-mark-wrap">
         <Image
-          src="/design/logo-mark.svg"
+          src="/docs/design/logo-mark.svg"
           alt="Volcano"
           width={markSize}
           height={markSize}

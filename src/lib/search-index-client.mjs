@@ -8,7 +8,7 @@
 // Shared by the search dialog and the build scripts that emit and check the
 // index, so all three agree on the path and on how the file is read.
 
-export const SEARCH_INDEX_PATH = "/search-index.gz";
+export const SEARCH_INDEX_PATH = "/docs/search-index.gz";
 
 const decodedIndexUrls = new Map();
 

@@ -21,7 +21,7 @@ export default async function CookbooksPage({ params }: CookbooksPageProps) {
     <DocsPage toc={page.data.toc}>
       <div className="docs-title-row">
         <DocsTitle>{page.data.title}</DocsTitle>
-        <CopyPageDropdown slug={page.slugs} />
+        <CopyPageDropdown url={page.url} />
       </div>
       <DocsDescription>{page.data.description}</DocsDescription>
       <MarkdownContent page={page} />

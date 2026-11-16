@@ -30,7 +30,7 @@ curl -X POST "https://api.volcano.dev/projects/$PROJECT_ID/source-export" \
 1. Create a GitHub repository without a README, license, `.gitignore`, or any
    other initial commit.
 2. Connect it to the project and export from the
-   [CLI](/cli/git). An empty repository has no default branch, so name the
+   [CLI](/docs/cli/git). An empty repository has no default branch, so name the
    branch pushes will deploy from when you connect it:
 
    ```bash

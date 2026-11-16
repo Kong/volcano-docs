@@ -19,7 +19,7 @@ The project overview is the fastest way to answer "what is deployed right now".
 
 **Functions and frontends.** Browse what is deployed, check deployment status
 and history, and open a live URL. Deploys themselves are usually better from
-the [CLI](/cli) or [Git](../projects/git-deploy.md), because those are
+the [CLI](/docs/cli) or [Git](../projects/git-deploy.md), because those are
 repeatable.
 
 **Approvals.** See every approval your durable functions have asked for, or
@@ -72,9 +72,9 @@ The dashboard is the right tool for looking at things and for changes you are
 not going to make twice. Two jobs belong elsewhere:
 
 - **Anything repeatable.** A deploy you will run again, a migration, or a step
-  in CI belongs in the [CLI](/cli), where it can be scripted and reviewed.
+  in CI belongs in the [CLI](/docs/cli), where it can be scripted and reviewed.
 - **Anything your application does at runtime.** Signing users in, querying
-  with row-level security, uploading files — that is an [SDK](/sdk/js), not a
+  with row-level security, uploading files — that is an [SDK](/docs/sdk/js), not a
   person in a browser.
 
 ## Reading a project's configuration as a file

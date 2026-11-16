@@ -164,7 +164,7 @@ Volcano checks the current row against the subscriber's Row-Level Security polic
 Authenticated user subscriptions currently do not receive delete notifications after
 the row is gone. Service-key subscriptions can receive deletion events with the
 primary key in `old_record`; other deleted columns are not retained. See
-[Postgres Changes](/platform/realtime/postgres-changes) for platform behavior.
+[Postgres Changes](/docs/platform/realtime/postgres-changes) for platform behavior.
 
 Do not treat realtime delivery as a durable record of every database change.
 Unsubscribe or remove channels during cleanup:

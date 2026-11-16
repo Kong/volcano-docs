@@ -10,6 +10,7 @@ next-env.d.ts
 # Older builds wrote search-index.json uncompressed; keep ignoring it so a stale
 # local copy is never packaged into a deploy.
 /public/search-index.gz
+/public/docs/search-index.gz
 /public/search-index.json
 
 # Never ignore anything under content/: `volcano cloud frontends deploy`

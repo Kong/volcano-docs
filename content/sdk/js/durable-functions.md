@@ -5,7 +5,7 @@ description: 'Write functions that checkpoint their progress and resume where th
 
 A durable function records its progress as it runs. When it suspends on a wait, or an attempt crashes, it resumes from the last completed operation instead of starting over — so one execution can run for up to a year, far longer than a single invocation is allowed.
 
-`@volcano.dev/sdk/durable` is what you write that function against, and `volcano.durable.start` is how an app starts one. The app then [reads and stops](#reading-and-stopping-from-the-application) the executions it started, and [messages](#sending-and-reading-messages) them, with the credential it already holds. Listing executions, following any of them by project, and deciding the [approvals](#ctxwaitforapprovalname-options) they ask for are owner-scoped, so they belong on your backend, the [CLI](/cli/durable-functions), or the dashboard.
+`@volcano.dev/sdk/durable` is what you write that function against, and `volcano.durable.start` is how an app starts one. The app then [reads and stops](#reading-and-stopping-from-the-application) the executions it started, and [messages](#sending-and-reading-messages) them, with the credential it already holds. Listing executions, following any of them by project, and deciding the [approvals](#ctxwaitforapprovalname-options) they ask for are owner-scoped, so they belong on your backend, the [CLI](/docs/cli/durable-functions), or the dashboard.
 
 ```javascript
 const { durable } = require('@volcano.dev/sdk/durable');
@@ -368,7 +368,7 @@ try {
 
 Suspends until a message with that name is sent to the execution, and resumes
 holding it. Anyone the function's
-[visibility](/platform/functions/durable-messages#who-can-send-and-read) admits
+[visibility](/docs/platform/functions/durable-messages#who-can-send-and-read) admits
 can send one — a webhook receiver, a backend, a browser, another function — so
 use it for any answer that does not need a person's decision.
 
@@ -645,7 +645,7 @@ ctx.log.error('shipping failed', error, { order_id: input.order_id });
 `error` takes the error as its second argument and the data as its third; the
 other three take a message and data.
 
-`console.log` still works, and still reaches [function logs](/platform/functions/logs) — it just repeats on every replay.
+`console.log` still works, and still reaches [function logs](/docs/platform/functions/logs) — it just repeats on every replay.
 
 ## A complete function
 
@@ -712,7 +712,7 @@ that start and read executions — is in
 Nothing in this module starts an execution. `volcano.durable.start` does, with
 the same credential an invoke would send: a signed-in user's session when there
 is one, otherwise the client's anon or service key. The durable function's
-[visibility](/platform/functions/durable-functions#who-can-start-executions)
+[visibility](/docs/platform/functions/durable-functions#who-can-start-executions)
 decides who may start it, the same as for an invoke:
 
 | Visibility          | Service keys and schedulers | Your project's signed-in users | Anon keys with `functions.invoke` |
@@ -787,7 +787,7 @@ await volcano.durable.stopFromApplication('order-pipeline', execution.id, {
 | Anon key                                 | Only executions whose client token it sends                                 |
 
 The function's
-[visibility](/platform/functions/durable-functions#who-can-start-executions)
+[visibility](/docs/platform/functions/durable-functions#who-can-start-executions)
 has to admit the caller too, as it does for a start, and a scoped service key
 needs `functions.invoke`. While an execution is still `pending`, only a service
 key holding `*` reaches it, and stopping it answers `409`. An execution the
@@ -921,8 +921,8 @@ approval that expired or was cancelled, is `409`, and `error.code` says which:
 `approval_decided`, `approval_expired`, or `approval_cancelled`. An approval this
 project does not have is `404`.
 
-See [Durable functions](/platform/functions/durable-functions) for the full API
-and [the CLI reference](/cli/durable-functions) for `volcano cloud durable`.
+See [Durable functions](/docs/platform/functions/durable-functions) for the full API
+and [the CLI reference](/docs/cli/durable-functions) for `volcano cloud durable`.
 
 ### Sending and reading messages
 
@@ -1024,7 +1024,7 @@ yourself.
 All three answer `{ data, status, error }`. `status` is `409` with
 `error.code` `execution_not_running` for a send to an execution that has ended,
 and `too_many_queued_messages` when it already holds 100 messages nothing has
-taken. See [Durable messages](/platform/functions/durable-messages) for the
+taken. See [Durable messages](/docs/platform/functions/durable-messages) for the
 limits and every error.
 
 ## Limits and what an operation costs
@@ -1088,5 +1088,5 @@ persist across `volcano stop` and `volcano start`.
 ## Next steps
 
 - [Functions](./functions.md) — standard functions, invocation, and user context
-- [Durable functions on the platform](/platform/functions/durable-functions) — the API, limits, and billing
-- [CLI](/cli/durable-functions) — deploy, start, and inspect executions
+- [Durable functions on the platform](/docs/platform/functions/durable-functions) — the API, limits, and billing
+- [CLI](/docs/cli/durable-functions) — deploy, start, and inspect executions

@@ -7,7 +7,7 @@ import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
 export function baseOptions(): BaseLayoutProps {
   return {
     nav: {
-      url: "/",
+      url: "/docs",
     },
     // The design places search in the sidebar (our SearchBanner), so disable
     // Fumadocs' default search trigger to avoid a duplicate search box.

@@ -6,7 +6,7 @@ order: 6
 
 Search logs and inspect activity for resources in your project.
 
-Project logs require a platform user token or a [project access token](/platform/api-reference/using-the-api). For server-side log readers, create a `read_only` project token and set `VOLCANO_PROJECT_ACCESS_TOKEN`, `VOLCANO_PROJECT_ID`, and `VOLCANO_ANON_KEY`. Keep this credential on your server. The constructor requires an anon key, but the supplied project access token authorizes these requests. Project end-user sign-in, anon keys, and service keys do not grant project log access.
+Project logs require a platform user token or a [project access token](/docs/platform/api-reference/using-the-api). For server-side log readers, create a `read_only` project token and set `VOLCANO_PROJECT_ACCESS_TOKEN`, `VOLCANO_PROJECT_ID`, and `VOLCANO_ANON_KEY`. Keep this credential on your server. The constructor requires an anon key, but the supplied project access token authorizes these requests. Project end-user sign-in, anon keys, and service keys do not grant project log access.
 
 ```javascript
 import { VolcanoClient } from '@volcano.dev/sdk';

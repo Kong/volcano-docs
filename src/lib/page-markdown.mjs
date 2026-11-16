@@ -1,7 +1,8 @@
 // The markdown an agent reads in place of a page's HTML. One renderer feeds
-// /api/llm/<slug>, /<slug>.md, and /llms-full.txt so the three never drift.
+// /api/llm/<slug>, /<slug>.md, and /docs/llms-full.txt so the three never drift.
 
 import { fromMarkdown } from "mdast-util-from-markdown";
+import { routeSlugs } from "./site-routes.mjs";
 
 /**
  * A page's markdown: its title (and, when given, its URL) and description as a
@@ -76,7 +77,7 @@ export function rewriteMarkdownLinks(text, rewriteHref) {
  * The `.md` path that serves a page's markdown. The site root has no slug of
  * its own, so it is served as /index.md.
  *
- * @param {string} pageUrl a page route such as "/cli/installation"
+ * @param {string} pageUrl a page route such as "/docs/cli/installation"
  */
 export function markdownPath(pageUrl) {
   const trimmed = pageUrl.replace(/\/+$/, "");
@@ -96,13 +97,13 @@ export function canonicalLinkHeader(pageUrl) {
 }
 
 /**
- * A root-absolute link to a docs page, such as `/platform/functions#deploy`,
+ * A root-absolute link to a docs page, such as `/docs/platform/functions#deploy`,
  * pointed at that page's markdown URL, keeping its query and fragment. Any
  * other link, and one to a route that is not a page (an image, a file, an API
  * route), is returned unchanged.
  *
  * @param {string} href
- * @param {(route: string) => boolean} isPage whether a route such as "/cli" is a docs page
+ * @param {(route: string) => boolean} isPage whether a route such as "/docs/cli" is a docs page
  * @param {(route: string) => string} toMarkdownUrl
  */
 export function rootPageMarkdownHref(href, isPage, toMarkdownUrl) {
@@ -114,14 +115,14 @@ export function rootPageMarkdownHref(href, isPage, toMarkdownUrl) {
 }
 
 /**
- * The page slugs a markdown request names. `/index.md` is the site root, which
- * the [...slug] route cannot otherwise reach.
+ * The page slugs a markdown request names: `/docs.md` and `/index.md` are the
+ * docs home, which the [...slug] route cannot otherwise reach.
  *
  * @param {string[]} slug
  */
 export function pageSlugs(slug) {
   if (slug.length === 1 && slug[0] === "index") return [];
-  return slug;
+  return routeSlugs(`/${slug.join("/")}`);
 }
 
 /**

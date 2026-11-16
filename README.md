@@ -76,16 +76,20 @@ make          # list all targets
 
 Structure:
 
-- `src/app` — App Router (`layout.tsx`, `(docs)` group, `[[...slug]]` renderer, `api/search`).
+- `src/app` — App Router (`layout.tsx`, `docs/` with the `[[...slug]]` renderer and the docs-wide agent files, `api/search`).
 - `src/lib/source.ts` — Fumadocs loader over `content/` (mounted at `/`).
 - `source.config.ts` — Fumadocs MDX config; `.source/` is generated (gitignored).
 - Custom UI uses the design tokens in `src/app/theme.css` alongside Fumadocs primitives.
 
 ### Docs, Cookbooks, and Blog
 
-The shared header links three sections while preserving existing docs URLs:
+The shared header links three sections. They are served under `/docs`,
+`/cookbooks`, and `/blog` only, so the site can be mounted at those paths of
+another host (see `src/lib/site-routes.mjs`). Content files keep their paths:
+`content/cli/setup.md` is `/docs/cli/setup`. Link another docs section as
+`/docs/<section>/...`. `/` and the old unprefixed docs URLs redirect to `/docs`.
 
-- `/` and the existing guide routes use the documentation sidebar.
+- `/docs` and the guide routes under it use the documentation sidebar.
 - `/cookbooks` lists recipes; recipe pages use their own sidebar and table of contents.
 - `/blog` lists posts; both the listing and articles share a Blog sidebar with search, All posts, and the categories with counts.
 

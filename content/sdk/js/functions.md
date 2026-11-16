@@ -101,7 +101,7 @@ invoke through the API host instead. Same call, same result.
 
 ## Authentication
 
-A function's [visibility](/platform/functions/creating-functions#choose-who-can-invoke-it)
+A function's [visibility](/docs/platform/functions/creating-functions#choose-who-can-invoke-it)
 decides which credentials can invoke it. New functions are `private`.
 
 | Visibility          | Service keys and schedulers | Your project's signed-in users | Anon keys with `functions.invoke` |

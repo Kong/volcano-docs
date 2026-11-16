@@ -8,7 +8,7 @@ import Link from "next/link";
 // brand mark takes the theme's text color in both light and dark mode.
 // `volcano setup` installs Volcano into all five, so every tile points at the
 // setup guide that documents them.
-const SETUP_HREF = "/cli/setup";
+const SETUP_HREF = "/docs/cli/setup";
 
 const PLATFORMS = [
   { id: "claude-code", name: "Claude Code" },

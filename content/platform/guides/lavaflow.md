@@ -23,7 +23,7 @@ LavaFlow's fix commits skip CI until LavaFlow or a person starts it; see
 
 Turn it on as the project's owner. With no repository linked yet, the next one
 the project [links](../projects/git-deploy.md) becomes the repository LavaFlow
-fixes. The [CLI](/cli/lavaflow) says what LavaFlow does and where it sends data,
+fixes. The [CLI](/docs/cli/lavaflow) says what LavaFlow does and where it sends data,
 then asks first:
 
 ```bash
@@ -1020,7 +1020,7 @@ the project's owner can change `autonomy` to `merge`, turn `enabled` on while
 `autonomy` stays `merge`, or change `merge_policy`, to any value, while
 `autonomy` is or becomes `merge`. Anyone who can save can turn LavaFlow off.
 
-With the [CLI](/cli/lavaflow), run this for the current project. It says what
+With the [CLI](/docs/cli/lavaflow), run this for the current project. It says what
 merging allows, then asks before it saves:
 
 ```bash

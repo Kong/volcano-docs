@@ -1,13 +1,15 @@
 import { loader } from "fumadocs-core/source";
 import { docs } from "../../.source/server";
 import { isPageVisible } from "./content-visibility.mjs";
+import { pageUrl } from "./site-routes.mjs";
 
 const content = docs.toFumadocsSource();
 
-// baseUrl "/" mounts the docs at the site root so cross-section links in the
-// content (e.g. /platform, /sdk/js) resolve without a /docs prefix.
+// Docs pages are served under /docs; blog and cookbooks keep their own prefix
+// (see site-routes.mjs).
 export const source = loader({
   baseUrl: "/",
+  url: pageUrl,
   // Filter before loading so routes, navigation, search, sitemap, and raw
   // Markdown endpoints all share the same publication boundary.
   source: {

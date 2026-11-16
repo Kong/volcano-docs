@@ -27,8 +27,8 @@ distributed locks, and variables.
 
 | Surface | Use it for |
 | --- | --- |
-| [CLI](/cli) | Managing projects, deploying functions, durable functions, and frontends, and running migrations. |
-| [JavaScript SDK](/sdk/js) | Calling auth, database, storage, realtime, durable functions, and distributed locks from your app. |
-| [Platform API](/platform) | Understanding how it all works and the raw HTTP surface. |
+| [CLI](/docs/cli) | Managing projects, deploying functions, durable functions, and frontends, and running migrations. |
+| [JavaScript SDK](/docs/sdk/js) | Calling auth, database, storage, realtime, durable functions, and distributed locks from your app. |
+| [Platform API](/docs/platform) | Understanding how it all works and the raw HTTP surface. |
 
 Next: [install the tools](./install.md).

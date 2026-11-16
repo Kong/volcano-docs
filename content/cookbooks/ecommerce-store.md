@@ -27,7 +27,7 @@ There's no payment provider. Placing an order records it and reserves the stock,
 ## What you need
 
 - A Volcano account. Tested on SUPERAGENT. The app uses email and password sign-in, one database, two functions and one frontend with a function route. No third-party services.
-- Claude Code, Codex or Cursor with the Volcano skills (`volcano setup`), or Node.js 24+ and the [Volcano CLI](/get-started/install) to build it yourself.
+- Claude Code, Codex or Cursor with the Volcano skills (`volcano setup`), or Node.js 24+ and the [Volcano CLI](/docs/get-started/install) to build it yourself.
 
 New Volcano projects start with email confirmation off, so anyone can sign up with any address. See [Notes app with per-user data](./notes-app-with-login.md#why-its-built-this-way) for turning it on.
 
@@ -147,7 +147,7 @@ What a signed-in shopper can do through the database API:
 - **Orders:** read their own, and nothing else. There's no `INSERT`, `UPDATE` or `DELETE` grant on `orders` or `order_items`.
 - **Products:** nothing. RLS is on with no grants, so the only way in is the `catalog` function below.
 
-`CHECK (stock >= 0)` is the last line of defence: whatever code runs, a row with negative stock can't be written. Product images are static SVGs in `web/public/products/`. To manage them from a dashboard instead, put them in a public [storage](/platform/storage/overview) bucket and store the file path in `image_path`.
+`CHECK (stock >= 0)` is the last line of defence: whatever code runs, a row with negative stock can't be written. Product images are static SVGs in `web/public/products/`. To manage them from a dashboard instead, put them in a public [storage](/docs/platform/storage/overview) bucket and store the file path in `image_path`.
 
 ### Two functions with a database connection
 
@@ -162,7 +162,7 @@ volcano/functions/place-order/index.js
 volcano/functions/place-order/package.json
 ```
 
-`catalog` lists the active products and reads nothing else. It's a `public` function in HTTP mode, and a [Frontend Function route](/platform/frontends/function-routes) serves it on the store's own origin at `/api/products`, so the page fetches it like any URL, with no key and no session:
+`catalog` lists the active products and reads nothing else. It's a `public` function in HTTP mode, and a [Frontend Function route](/docs/platform/frontends/function-routes) serves it on the store's own origin at `/api/products`, so the page fetches it like any URL, with no key and no session:
 
 ```javascript
 const { Pool } = require('pg');
@@ -307,7 +307,7 @@ Each order keeps a copy of the product name and the price it was bought at in `o
 
 The browser only signs people in. The catalog comes through the route, the cart and orders through the database API with the shopper's token, and `place-order` with the shopper's token too. So the auth-only key every new project starts with is enough, and `volcano projects keys anon list` shows it. With no `functions.invoke` permission, the key on its own can't call either function. A request with only the key gets `403 anon key does not have functions.invoke permission`.
 
-The default key also carries password reset and email confirmation. To drop those, create a key with only `auth.signup`, `auth.signin`, `auth.refresh` and `auth.logout` in the [dashboard's anonymous keys page](https://volcano.dev/dashboard/keys) or through the [anon key API](/platform/authentication/security/anon-keys).
+The default key also carries password reset and email confirmation. To drop those, create a key with only `auth.signup`, `auth.signin`, `auth.refresh` and `auth.logout` in the [dashboard's anonymous keys page](https://volcano.dev/dashboard/keys) or through the [anon key API](/docs/platform/authentication/security/anon-keys).
 
 ### Browse, fill the cart and check out
 
@@ -441,7 +441,7 @@ Deploy everything in one command:
 volcano cloud deploy --env-file volcano/cloud.env --with-migrations -d shop
 ```
 
-It saves the variables, runs the migrations, deploys the functions, builds the frontend and applies the manifest, then prints the frontend URL. The deploy creates the functions as `private`, and the manifest then sets their visibility and mode and adds the route, so everything works once the command finishes. Add the frontend's HTTPS origin to `auth.cors.allowed_origins` and run the same command again. See [CORS configuration](/platform/authentication/configuration/cors).
+It saves the variables, runs the migrations, deploys the functions, builds the frontend and applies the manifest, then prints the frontend URL. The deploy creates the functions as `private`, and the manifest then sets their visibility and mode and adds the route, so everything works once the command finishes. Add the frontend's HTTPS origin to `auth.cors.allowed_origins` and run the same command again. See [CORS configuration](/docs/platform/authentication/configuration/cors).
 
 `npm run dev` serves the app without the route. To browse locally, add a `web/next.config.mjs` that forwards the path to the deployed site (`volcano init nextjs` doesn't create one), and set `CATALOG_ORIGIN` to the frontend URL in `web/.env.local`:
 
@@ -497,5 +497,5 @@ A forged price or total sent with the order is simply ignored, because the funct
 - **The cart is in the database, not the request.** The function buys exactly the rows it locked, and removing them in the same transaction makes a double-click or a retried request harmless: the second call finds an empty cart and gets `400`. A product added from another tab while the order is being placed isn't locked or priced, so it stays in the cart for next time. In testing, an item added while checkout was held up by a locked product row was still in the cart afterwards. Carts also follow the shopper across devices.
 - **A full-access connection in the function, RLS for the browser.** The browser and the functions reach the same tables, and any grant the function had through RLS, the browser would have too. So the function uses the full-access connection string, and the `authenticated` role gets only what a shopper needs: their own cart, and read-only orders. The connection string is scoped to the two functions, and neither the frontend nor the browser ever sees it.
 - **Browsing through a function route.** The database API refuses requests that only carry the anon key, so signed-out browsing needs a server-side reader. A `public` function that returns only active products keeps the products table closed to everyone else. Serving it through a Frontend Function route keeps the browser key auth-only: invoking a function with the anon key would need `functions.invoke`, while the route needs no credential. Anyone can call the route, so it does nothing but read.
-- **Where a payment provider goes.** A charge can't be rolled back with a database transaction, so don't charge inside one. Instead, let `place-order` commit the order as `pending` with the stock reserved (add `pending`, `paid` and `cancelled` to the `status` check). After the commit, create the payment, for example a Stripe PaymentIntent for the stored total, with the order id as its idempotency key and in its metadata, so a retry can't charge twice. Mark the order `paid` only from the provider's webhook, handled by a `public` function in [HTTP mode](/platform/functions/invoking-functions) with `http_auth_mode: none`. The default mode refuses requests that carry no Volcano credential, and a provider's webhook carries none, so the function's check of the provider's signature is the only gate. It then updates the order by that id. A [scheduled function](/platform/functions/scheduled-invocations) cancels orders that stay `pending` too long and returns their stock, after checking with the provider that nothing was paid. Keep the provider's secret key in a variable scoped to those functions only.
+- **Where a payment provider goes.** A charge can't be rolled back with a database transaction, so don't charge inside one. Instead, let `place-order` commit the order as `pending` with the stock reserved (add `pending`, `paid` and `cancelled` to the `status` check). After the commit, create the payment, for example a Stripe PaymentIntent for the stored total, with the order id as its idempotency key and in its metadata, so a retry can't charge twice. Mark the order `paid` only from the provider's webhook, handled by a `public` function in [HTTP mode](/docs/platform/functions/invoking-functions) with `http_auth_mode: none`. The default mode refuses requests that carry no Volcano credential, and a provider's webhook carries none, so the function's check of the provider's signature is the only gate. It then updates the order by that id. A [scheduled function](/docs/platform/functions/scheduled-invocations) cancels orders that stay `pending` too long and returns their stock, after checking with the provider that nothing was paid. Keep the provider's secret key in a variable scoped to those functions only.
 - **No admin, refunds or cancellations.** Products are managed with SQL, orders can't be cancelled from the app, and stock only goes down. Add an admin role and functions for restocking, cancelling (which returns the stock in the same transaction) and refunds before running a real shop.
