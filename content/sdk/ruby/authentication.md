@@ -315,7 +315,8 @@ puts repos.first.fetch('name')
 The method returns an immutable copy of the provider's JSON value. Volcano owns
 token refresh and host validation. A stale result raises
 `Volcano::Error::SessionChangedError`. The request you send, including its body,
-is limited to 4 MiB; Volcano refuses a larger one with a 413 error.
+is limited to 4 MiB; Volcano refuses a larger one, or one whose JSON has too many
+objects, arrays or values, with a 413 error.
 
 ## Sign out all other devices
 
