@@ -3,7 +3,7 @@ import "./ide-platforms.css";
 import Link from "next/link";
 
 // The coding agents Volcano supports, in the same order as the agent strip on
-// volcano.dev. Each mark is a monochrome SVG in /design/agent-logos, painted
+// volcano.dev. Each mark is a monochrome SVG in /docs/design/agent-logos, painted
 // through a CSS mask (mapped by `data-logo` in ide-platforms.css) so every
 // brand mark takes the theme's text color in both light and dark mode.
 // `volcano setup` installs Volcano into all five, so every tile points at the

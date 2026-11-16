@@ -74,14 +74,15 @@ export function rewriteMarkdownLinks(text, rewriteHref) {
 }
 
 /**
- * The `.md` path that serves a page's markdown. The site root has no slug of
- * its own, so it is served as /index.md.
+ * The `.md` path that serves a page's markdown. A section landing such as
+ * /docs is served as /docs/index.md, because the site is mounted by path
+ * prefix and /docs.md would fall outside /docs. The site root is /index.md.
  *
  * @param {string} pageUrl a page route such as "/docs/cli/installation"
  */
 export function markdownPath(pageUrl) {
   const trimmed = pageUrl.replace(/\/+$/, "");
-  if (trimmed === "") return "/index.md";
+  if (!trimmed.slice(1).includes("/")) return `${trimmed}/index.md`;
   return `${trimmed}.md`;
 }
 
@@ -115,14 +116,15 @@ export function rootPageMarkdownHref(href, isPage, toMarkdownUrl) {
 }
 
 /**
- * The page slugs a markdown request names: `/docs.md` and `/index.md` are the
- * docs home, which the [...slug] route cannot otherwise reach.
+ * The page slugs a markdown request names. A trailing `index` names its
+ * section's landing (`/docs/index.md` is the docs home); index.md files are
+ * served as their directory, so no page has `index` as its last slug.
  *
  * @param {string[]} slug
  */
 export function pageSlugs(slug) {
-  if (slug.length === 1 && slug[0] === "index") return [];
-  return routeSlugs(`/${slug.join("/")}`);
+  const route = slug.at(-1) === "index" ? slug.slice(0, -1) : slug;
+  return routeSlugs(`/${route.join("/")}`);
 }
 
 /**
