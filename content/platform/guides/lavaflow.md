@@ -2405,6 +2405,8 @@ The project's owner can allow automatic PRs and repository CI in the dashboard's
 Read the warning under **Automatic PRs and repository CI**, check the named repository, then choose **Allow repository CI**.
 This saves only `allow_ungated_workflows: true`; it preserves autonomy, Code Quality, and merge settings.
 The owner's GitHub account must be able to push to that repository.
+The dashboard ties the grant to the displayed repository and installation IDs.
+If the connection changed while the page was open, nothing is saved: review the refreshed connection and choose **Allow repository CI** again.
 
 The same permission can be saved with the API, using the platform token `volcano login` stores or another platform token that expires:
 
@@ -2418,6 +2420,12 @@ curl -X PATCH "https://api.volcano.dev/lavaflow/settings" \
 A project access token, a platform token that never expires, or anyone but the
 owner gets `403` with `person_required`. Turning it off works with any of the
 owner's credentials.
+
+API callers can include `expected_repository: {"repo_id": 4242, "repo_installation_id": 7}`, using the IDs in the settings response's `repository` field.
+This optional precondition is checked atomically with the save, including when permission is already on.
+A mismatch returns `409` with `code: repository_changed` and changes nothing; review the current connection before sending a new request.
+Omitting it preserves the existing API behavior of authorizing the connection current during the save.
+Omit it when revoking permission so a stale connection cannot block that action.
 
 CI and previews may execute LavaFlow's generated code with the credentials those jobs receive before a person reviews it.
 Issue descriptions and error logs can influence that code, including input from your users.
