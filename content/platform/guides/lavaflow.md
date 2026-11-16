@@ -194,19 +194,20 @@ closest one that fits your limit, for you to edit before you merge.
 
 When nothing asks for Conventional Commits, the title describes the change without a type prefix.
 Titles and descriptions use the same secret checks: a text containing a known secret is replaced whole, while other text stays readable.
-On a repository that is not confirmed private, text with an email address absent from the repository, or an opaque value absent from both the repository and the reviewed change, uses the fixed public title and a run link instead. The PR still opens.
-For newly opened fixes, a squash merge keeps the approved title and adds the
-pull request number.
-A fix LavaFlow may merge under `autonomy: merge` still gets a Conventional
-`fix:` header with no scope, such as `fix: guard the empty cart`.
+On a repository that is not confirmed private, text with an email address absent from the repository, or an opaque value absent from both the repository and the reviewed change, uses an issue-based title and a run link instead.
+For example, the fallback title is `LavaFlow: fix TypeError in function checkout (issue 3f9a2c71)`, or `fix: the TypeError in function checkout (issue 3f9a2c71)` when your repository asks for Conventional Commits.
+The pull request still opens.
+When LavaFlow automatically squash merges a private repository's fix, it keeps the approved title and adds the pull request number.
+A fix LavaFlow may merge under `autonomy: merge` still gets a Conventional `fix:` header with no scope, such as `fix: guard the empty cart`, unless your repository requires a scope.
 
 A title too long for its limit ends with `…` after its last whole word.
 
-On every repository, including public and internal repositories, new pull request titles and commit subjects describe the actual change.
+On every repository, including public and internal repositories, new pull request titles and fix commit subjects describe the actual change when they pass the privacy checks above.
 For example, `fix: add the Volcano X account to the footer` tells reviewers what changed.
-The automatic squash title on a repository that isn't private retains its issue-based format, such as `fix: the TypeError in function checkout (issue 3f9a2c71)`.
+When LavaFlow automatically squash merges on a repository that isn't private, the merge commit retains the issue-based title, such as `fix: the TypeError in function checkout (issue 3f9a2c71)`, followed by the pull request number.
+When you merge the fix yourself, GitHub and your repository settings determine the merge title; check it before confirming the merge.
 
-Such a title carries a scope only when one of your checks lists it by name, in
+Every title on a repository that isn't private, including a descriptive title and an automatic squash title, carries a scope only when one of your checks lists it by name, in
 lowercase letters, digits and hyphens, at most 24 characters. A scope taken
 from a changed path, or matched only by a pattern, is left out unless a check
 lists it, since a directory can name a customer. When your repository requires a scope and such a
@@ -358,8 +359,10 @@ LavaFlow added no test: nothing in the repository tests the code this fix change
 ```
 
 On a private repository, the section lists the tests the fix adds or changes,
-or follows the reason with the fix's own explanation. On any other repository,
-it is one line that gives only the reason. For a repository too large for
+or follows the reason with the fix's own explanation.
+On any other repository, a **Tests** line says the fix adds or changes a test, or gives only the reason it adds none; it lists no test names or model-written explanation.
+The description's **Verification** note points to recorded checks in the run and GitHub CI results; adding or changing a test does not mean that it passed.
+For a repository too large for
 LavaFlow to read whole, where it found no tests for the changed code, the
 section says so instead of claiming the code is untested.
 
@@ -698,18 +701,20 @@ starts a new run when it's seen again a few minutes after the deploy; see
 
 A pull request starts with a concise summary of the final change and its reason.
 It describes the implementation reviewers are reading, including any revisions, rather than repeating the investigation.
-The description separates tests added or changed from checks that actually ran, retains material review warnings, and links to the LavaFlow run in the Volcano dashboard.
+The description distinguishes test changes from verification results and links to the LavaFlow run in the Volcano dashboard.
+Private repositories also get test details, the review summary and findings, and a fixed caution when LavaFlow is less sure of the diagnosis; other repositories keep those details in the run.
 Read the diagnosis and detailed evidence in that run, with `volcano cloud lavaflow show <run-id>`, or from [`GET /lavaflow/runs/{run_id}`](#follow-runs).
 
 ### Follow a pull request template
 
-LavaFlow reads applicable repository agent guidance and looks for one unambiguous default PR template in the pinned repository commit.
+LavaFlow reads applicable repository agent guidance and looks for one unambiguous default pull request template in the commit the fix was made against.
 It accepts `pull_request_template.md`, `.markdown`, or `.txt` at the repository root, in `.github/`, or in `docs/`; filenames are case-insensitive.
 The template supplies headings and information the description should cover.
 LavaFlow renders simple paragraphs and lists, leaves checklist attestations unchecked, and appends its own verification information and run link.
 
 Missing, unreadable, oversized, secret-bearing or ambiguous templates use the standard summary format.
-Templates must fit 8 KiB and fewer than 200 lines; discovery inventories at most 20,000 snapshot paths and falls back when the inventory is incomplete.
+Templates must fit 8 KiB and fewer than 200 lines.
+LavaFlow looks at up to 20,000 repository paths and uses the standard format if it cannot get a complete list.
 LavaFlow does not automatically choose among named templates in a `PULL_REQUEST_TEMPLATE/` directory or load organization-default templates.
 Repository guidance and templates cannot change publication permissions or secret handling.
 
@@ -811,11 +816,16 @@ read them with `volcano cloud lavaflow show <run-id> --json`. The run's
 serve them on every repository, masked as review questions and observations are, and
 the hold's question says where to read them.
 
-If the review didn't pass, the description includes a warning and points to the run details.
-The run records the full review and its findings.
+If the review didn't pass, a warning leads the description.
+On a private repository, it counts the open findings by severity and points to **Review** below.
+On any other repository, it points to the run details instead.
+The run records the full review and its findings for every repository.
 
-The run shows the review results, confidence cautions and questions needing a person's decision.
-A low-confidence diagnosis opens no pull request.
+On a private repository, **Review** summarizes the result and lists material findings, observations and questions needing a person's decision.
+The description doesn't print the model's confidence label: a low-confidence diagnosis opens no pull request, and a medium-confidence one adds a fixed caution to check the root cause before merging.
+That caution is included only on private repositories.
+**For a person to decide** labels each question with what to check, such as its effect on payments or access.
+If a saved question ends mid-sentence, LavaFlow shows only complete sentences, never cutting inside inline code, and asks you to review the change in **Files changed**.
 
 A reviewer asks a person to decide only about what merging this fix does,
 compared with your code's behavior before it, and cites the line of the change
