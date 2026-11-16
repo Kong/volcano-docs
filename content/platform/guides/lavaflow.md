@@ -884,6 +884,9 @@ logged errors. LavaFlow never adds a fix you merge to a merge queue, or takes
 it out of one you added it to, and the fix stays yours if merging becomes
 available later.
 
+Normal repository CI applies whenever LavaFlow leaves merging to a person: `open_pr` fixes, Code Quality fixes, fixes while automatic merging is unavailable, and runs capped at opening a PR.
+This includes those cases in projects whose autonomy is `merge`.
+
 A fix whose review passed opens ready for review, without a CI-skip marker.
 Your repository runs its configured CI, with the permissions, credentials, previews, and approval rules you have configured there.
 LavaFlow does not require an approval label, inspect workflows before opening the PR, or restrict CI to GitHub Actions.
