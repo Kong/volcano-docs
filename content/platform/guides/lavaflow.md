@@ -2428,6 +2428,7 @@ Omitting it preserves the existing API behavior of authorizing the connection cu
 Omit it when revoking permission so a stale connection cannot block that action.
 
 CI and previews may execute LavaFlow's generated code with the credentials those jobs receive before a person reviews it.
+This includes draft PRs, fixes whose LavaFlow review did not pass, and fixes held for a person to review.
 Issue descriptions and error logs can influence that code, including input from your users.
 Keep credentials away from untrusted code or require human approval in the repository when needed.
 
