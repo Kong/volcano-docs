@@ -1,0 +1,107 @@
+name: Install Volcano CLI
+description: >-
+  Download a pinned Volcano CLI release from Volcano downloads, check its
+  SHA256SUMS against a digest pinned here, verify the binary against SHA256SUMS
+  and its Sigstore bundle, and add `volcano` to PATH. Never pipes the remote
+  install script into a shell. Requires cosign on PATH (run
+  sigstore/cosign-installer first).
+
+inputs:
+  version:
+    description: Volcano CLI release tag to install (vMAJOR.MINOR.PATCH).
+    required: false
+    default: v0.70.0
+  checksums-sha256:
+    description: >-
+      SHA-256 of the `version` release's SHA256SUMS file. Change it together
+      with `version`; print it with
+      `gh release view <version> -R Kong/volcano-cli --json assets --jq '.assets[] | select(.name == "SHA256SUMS") | .digest | ltrimstr("sha256:")'`.
+    required: false
+    default: '9d8e39893b9457f21e5bff73164ad1e0ca5f1354787089ba5177313a085edfcd'
+
+runs:
+  using: composite
+  steps:
+    - name: Download, verify, and install Volcano CLI
+      shell: bash
+      env:
+        VOLCANO_VERSION: ${{ inputs.version }}
+        VOLCANO_CHECKSUMS_SHA256: ${{ inputs.checksums-sha256 }}
+      run: |
+        set -euo pipefail
+
+        fail() {
+          echo "::error::$*" >&2
+          exit 1
+        }
+
+        sha256_of() {
+          if command -v sha256sum >/dev/null 2>&1; then
+            sha256sum "$1" | awk '{ print $1 }'
+          else
+            shasum -a 256 "$1" | awk '{ print $1 }'
+          fi
+        }
+
+        if [[ ! "$VOLCANO_VERSION" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+          fail "version must be vMAJOR.MINOR.PATCH, got '${VOLCANO_VERSION}'"
+        fi
+        [[ "$VOLCANO_CHECKSUMS_SHA256" =~ ^[0-9a-f]{64}$ ]] \
+          || fail "checksums-sha256 must be a lowercase hex SHA-256 digest"
+        command -v cosign >/dev/null 2>&1 \
+          || fail "cosign is required to verify the Volcano CLI signature; run sigstore/cosign-installer before this action"
+
+        case "$RUNNER_OS" in
+          Linux) os=linux ;;
+          macOS) os=macos ;;
+          *) fail "unsupported runner OS: ${RUNNER_OS}" ;;
+        esac
+        case "$RUNNER_ARCH" in
+          X64) arch=amd64 ;;
+          ARM64) arch=arm64 ;;
+          *) fail "unsupported runner architecture: ${RUNNER_ARCH}" ;;
+        esac
+
+        asset="volcano-${os}-${arch}"
+        base_url="https://download.volcano.dev/builds/releases/download/${VOLCANO_VERSION}"
+        tmp_dir="$(mktemp -d "${RUNNER_TEMP}/volcano-cli.XXXXXX")"
+        trap 'rm -rf "$tmp_dir"' EXIT
+
+        download() {
+          curl --fail --location --silent --show-error --proto '=https' --tlsv1.2 \
+            --retry 3 --output "${tmp_dir}/$1" "${base_url}/$1"
+        }
+
+        # A pinned digest stops a tampered release from swapping both the binary
+        # and SHA256SUMS. Check it before downloading the binary.
+        download SHA256SUMS
+        sums_actual="$(sha256_of "${tmp_dir}/SHA256SUMS")"
+        [[ "$sums_actual" == "$VOLCANO_CHECKSUMS_SHA256" ]] \
+          || fail "SHA256SUMS for ${VOLCANO_VERSION} has SHA-256 ${sums_actual}, not the pinned ${VOLCANO_CHECKSUMS_SHA256}. If version changed, set checksums-sha256 to the digest GitHub records for that release's SHA256SUMS; otherwise treat this download as tampered and do not re-pin it."
+        download "$asset"
+        download "${asset}.sigstore.json"
+
+        expected="$(awk -v name="$asset" '$2 == name || $2 == "*" name { print $1 }' "${tmp_dir}/SHA256SUMS")"
+        [[ "$expected" =~ ^[0-9a-f]{64}$ ]] \
+          || fail "SHA256SUMS for ${VOLCANO_VERSION} has no single checksum for ${asset}"
+        actual="$(sha256_of "${tmp_dir}/${asset}")"
+        [[ "$actual" == "$expected" ]] \
+          || fail "checksum mismatch for ${asset} ${VOLCANO_VERSION}: expected ${expected}, got ${actual}"
+        echo "Verified ${asset} ${VOLCANO_VERSION} SHA-256 ${actual}"
+
+        # Same identity install.sh enforces for a pinned version: the binary was
+        # signed by volcano-cli's publish workflow running on this exact tag.
+        cosign verify-blob "${tmp_dir}/${asset}" \
+          --bundle "${tmp_dir}/${asset}.sigstore.json" \
+          --certificate-identity "https://github.com/Kong/volcano-cli/.github/workflows/publish-cli.yml@refs/tags/${VOLCANO_VERSION}" \
+          --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+
+        install_dir="${RUNNER_TEMP}/volcano-cli-${VOLCANO_VERSION}/bin"
+        mkdir -p "$install_dir"
+        install -m 0755 "${tmp_dir}/${asset}" "${install_dir}/volcano"
+        # install.sh writes this marker so `volcano upgrade` self-replaces.
+        printf 'script\n' > "${install_dir}/.volcano-install-method"
+        echo "$install_dir" >> "$GITHUB_PATH"
+
+        echo "Installed Volcano CLI ${VOLCANO_VERSION} to ${install_dir}/volcano"
+        "${install_dir}/volcano" --version

@@ -59,6 +59,16 @@ commit it was built from. The build settings live in each project's **Project
 settings → Git** page in the Volcano dashboard, and `DOCS_SITE_URL` is a project
 variable there.
 
+volcano.dev serves the same site at `/docs`, `/blog`, and `/cookbooks` by
+mounting a `docs` frontend with Frontend routes, which mount only a frontend of
+the same project. So [`deploy-volcano-dev.yml`](.github/workflows/deploy-volcano-dev.yml)
+also uploads each push to `main` to volcano.dev's production project, with
+`DOCS_SITE_URL=https://volcano.dev`. LavaFlow stays on the `volcano-docs`
+project, whose Git deployments it can read; a commit that fails to build fails
+in both, and volcano.dev keeps serving its last good build. The workflow's
+`volcano-dev` environment, limited to `main`, holds `VOLCANO_DEV_PROJECT_ID` and
+the project access token `VOLCANO_DEV_TOKEN`.
+
 ## Site (Fumadocs)
 
 The site is a [Fumadocs](https://fumadocs.dev) app that reads the assembled
