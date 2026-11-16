@@ -322,6 +322,10 @@ auth token. The top-level `__volcano_auth` and `__volcano_http` keys are
 reserved: Volcano removes caller-supplied values for both, so an RPC payload
 never carries the HTTP-ingress marker described in [HTTP mode request event](#http-mode-request-event).
 
+Volcano changes only the payload's top level, so the rest reaches your function
+as you sent it, numbers included. A payload that makes the invocation event,
+`__volcano_auth` included, larger than 6 MiB is refused with `413`.
+
 ## Response format
 
 ```json
