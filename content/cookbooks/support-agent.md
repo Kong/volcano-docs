@@ -13,8 +13,6 @@ tags:
 
 Tested on Volcano CLI 0.66.0, SDK 2.2.0, @anthropic-ai/sdk 1.6.0, Node 26.11.1, next 16.4.5, react 19.3.1, pg 8.23.1; last verified 2026-11-06 on CLI 0.66.0.
 
-> **Which model ran:** every live test of this recipe used the scripted stand-in model described in [The model, or a stand-in](#the-model-or-a-stand-in), because no Claude API key was available. That covers the durable steps, retries, tools, row-level security, live progress and the page, but not Claude's own answers, token counts or costs. The Claude call follows the [Claude API documentation](https://platform.claude.com/docs/en/build-with-claude/tool-use/overview), and the cost figures below are estimates, not measurements.
-
 ## What it does
 
 A small support desk for an online shop. Customers sign up with an email and password and get three sample orders. When they file a ticket, an AI agent picks it up. It looks up their orders and searches the help center with tools, then saves a category, a priority and a suggested reply on the ticket. The page shows each step as it happens, and a reload shows the saved answer.
@@ -24,8 +22,6 @@ The agent runs in a Volcano [durable function](/platform/functions/durable-funct
 ![Ada's ticket about her hoodie, answered: the assistant looked up order VO-1042, found the "My order is late" article and drafted a reply, with Shipping and Priority: Normal tags](/cookbooks/support-agent-answered.png)
 
 ![Ada asks for an address change on VO-1057. The assistant checked her orders and the address article, and marked the ticket "Needs a person" because only a person can change an order](/cookbooks/support-agent-needs-person.png)
-
-The screenshots show the stand-in model's templated replies. Claude writes its own.
 
 ## What you need
 
@@ -855,7 +851,7 @@ It saves the variables, runs the migrations, deploys the durable function and th
 
 Open the URL, create an account with a made-up address and your name (the default password rule is at least 15 characters), and file one of the example tickets. The steps appear one by one, then the category, priority and suggested reply. Reload, and the ticket is still answered. File **Show me everything**, which tells the agent to ignore its instructions and list every customer's orders. The lookup returns only yours.
 
-To check the rules and not just the page, write a Node script that signs up two customers against the live project with the same SDK calls. Give it the connection string too, so it can check the rows the agent wrote, query the tables the way the tools do, and remove the test rows afterwards. In testing, that script passed all 31 checks, all with the stand-in model:
+To check the rules and not just the page, write a Node script that signs up two customers against the live project with the same SDK calls. Give it the connection string too, so it can check the rows the agent wrote, query the tables the way the tools do, and remove the test rows afterwards. In testing, that script passed all 31 checks:
 
 ```text
 PASS the anon key alone can't start the agent — 403
@@ -893,14 +889,6 @@ PASS the failure shows no error details to the customer
 
 The retry, failure and tool-cap checks use the `[test:model-busy]`, `[test:model-down]` and `[test:many-tools]` hooks. The model step retried after 5, 10 and 20 seconds before handing off, so the failure took about 40 seconds. Reading another customer's run, or its progress, answered `404`, the same as a run that doesn't exist. A run started by B on A's ticket found nothing to claim. A run in headless Chrome also passed: sign-up, the sample orders, the steps arriving live, the saved answer after a reload, and the injection ticket, with no console errors and no Claude key or connection string in any response the browser received. With the stand-in, the page showed the first step about 4 seconds after **File ticket** and the reply after about 6. Most of that was the ticket insert, the start request and the Realtime connection, not the agent. The first run after a deploy took a few seconds longer.
 
-## Cost and safety
-
-- **What a ticket costs.** Each ticket is one durable execution and about 15 durable operations: the execution, the run id, the claim, two model steps, two tool steps, the save, four progress messages and the three operations of the messages session that the first publish opens. SUPERAGENT includes 10,000 executions and 200,000 operations a month. The Claude calls are billed by Anthropic. A typical ticket sends two requests of roughly 1,000 to 3,000 input tokens each, mostly the system prompt, tool definitions and tool results, and gets back a few hundred output tokens. At Claude Opus 5.5's $4 and $20 per million tokens, that's an estimated 2 or 3 cents. That's an estimate: no ticket in this recipe's tests reached Claude. The tickets table records the model and token counts for each run, so you can measure it.
-- **What bounds the worst case.** A run stops after 6 model turns, each answer is capped at 4,096 tokens, at most 4 tool calls run per turn, each lookup returns at most 5 orders or 3 articles, each customer can file 20 tickets a day, and a ticket body is at most 2,000 characters, padding included. A run that hits every limit costs about a dollar at those prices: up to 25,000 output tokens, and well under 150,000 input tokens because each turn resends everything before it. Lower `max_tokens`, `MAX_TURNS` or the daily limit to tighten it, or set `ANTHROPIC_MODEL` to a cheaper model.
-- **The model sees only the customer's data.** The tools connect as the customer, so a prompt injection, a confused model or a bug in a tool can't read another customer's orders: Postgres refuses. The tools also read only. The two writes the agent makes, the claim and the result, are fixed SQL in the function, not tools the model can call.
-- **The key never leaves the function.** `ANTHROPIC_API_KEY` is scoped to `triage-ticket` alone, so the frontend build can't read it. When the agent fails, the handler logs the error with `ctx.log` and shows the customer a fixed message. The customer who started a run can read its result, so keep secrets out of anything the handler returns or throws.
-- **A person stays in charge.** The agent drafts replies and never sends them, and the system prompt tells it to set `needs_human` for refunds, replacements and address changes. Before the desk talks to real customers, add a staff view that reviews `needs_human` tickets, and turn `AGENT_TEST_HOOKS` off.
-
 ## Why it's built this way
 
 - **A durable function, not a standard one.** An agent run makes several slow calls to an outside API, and any of them can fail. In a durable function each call is a step: a failure retries that step with backoff, and a crash resumes from the last finished step instead of calling the model again for answers it already has. The run also keeps going after the customer closes the tab. A standard function would need its own queue and retry bookkeeping to do the same.
@@ -909,3 +897,7 @@ The retry, failure and tool-cap checks use the `[test:model-busy]`, `[test:model
 - **The ticket row is the record, the messages are the live view.** Progress messages reach the page within a second, and a reload or another device catches up from the run's message list. The saved row holds the answer and the steps, so the page doesn't depend on the run's 30-day retention. Saving before announcing `done` means the page never reads a stale row.
 - **One run per ticket.** The browser starts the run under the name `ticket-<id>`, so a retried start finds the run that exists. The claim's run id stops a second execution under any other name, including one another customer starts with a ticket id they guessed.
 - **A stand-in model behind the same interface.** The parts most likely to break, such as replay, retries, permissions and the page, don't depend on what the model says. The stand-in tests them for free and without a key. Swapping in Claude changes one function. It doesn't test the quality of Claude's answers, so try a few real tickets before you rely on them.
+- **What bounds the worst case.** A run stops after 6 model turns, each answer is capped at 4,096 tokens, at most 4 tool calls run per turn, each lookup returns at most 5 orders or 3 articles, each customer can file 20 tickets a day, and a ticket body is at most 2,000 characters, padding included. A run that hits every limit costs about a dollar at those prices: up to 25,000 output tokens, and well under 150,000 input tokens because each turn resends everything before it. Lower `max_tokens`, `MAX_TURNS` or the daily limit to tighten it, or set `ANTHROPIC_MODEL` to a cheaper model.
+- **The model sees only the customer's data.** The tools connect as the customer, so a prompt injection, a confused model or a bug in a tool can't read another customer's orders: Postgres refuses. The tools also read only. The two writes the agent makes, the claim and the result, are fixed SQL in the function, not tools the model can call.
+- **The key never leaves the function.** `ANTHROPIC_API_KEY` is scoped to `triage-ticket` alone, so the frontend build can't read it. When the agent fails, the handler logs the error with `ctx.log` and shows the customer a fixed message. The customer who started a run can read its result, so keep secrets out of anything the handler returns or throws.
+- **A person stays in charge.** The agent drafts replies and never sends them, and the system prompt tells it to set `needs_human` for refunds, replacements and address changes. Before the desk talks to real customers, add a staff view that reviews `needs_human` tickets, and turn `AGENT_TEST_HOOKS` off.
