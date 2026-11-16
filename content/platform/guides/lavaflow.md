@@ -18,8 +18,9 @@ Volcano picks and runs the models, so there is no model or API key to set up.
 
 LavaFlow sends this project's logs and source code to an AI service that Volcano operates.
 
-With `autonomy: open_pr`, LavaFlow opens reviewed fixes ready for review and lets your repository run its configured CI.
+Once [normal repository CI is released](#review-and-merge-fixes-yourself), `autonomy: open_pr` opens reviewed fixes ready for review and lets your repository run its configured CI.
 It adds no CI-skip marker and requires no separate workflow approval.
+CI may execute generated code with repository secrets before human review; issues and logs can contain input from your users.
 You review and merge the pull request.
 Automatic merging uses the additional checks under [Merge fixes](#merge-fixes).
 
@@ -885,6 +886,9 @@ available later.
 A fix whose review passed opens ready for review, without a CI-skip marker.
 Your repository runs its configured CI, with the permissions, credentials, previews, and approval rules you have configured there.
 LavaFlow does not require an approval label, inspect workflows before opening the PR, or restrict CI to GitHub Actions.
+Your CI may run model-generated code with repository secrets before a person reviews it, including code influenced by issue descriptions or error logs your users control.
+You control that access in the repository: keep secrets out of untrusted jobs, or, if you want a person to approve credentialed execution, use a job condition like the optional [approval-label example](#gate-workflows-that-run-a-fix) on your `volcano/lavaflow/` branches.
+Normal `open_pr` publication does not enforce that optional repository gate.
 You do not need `allow_ungated_workflows` for a fix you merge.
 
 A fix whose AI review did not pass opens as a draft with a warning.
@@ -895,7 +899,10 @@ LavaFlow never merges a fix opened for a person, even if you later enable automa
 This publication behavior is rolling out.
 On releases that still use the earlier publication path, commits skip CI initially and LavaFlow checks workflows before opening a PR or starting CI.
 Those PR descriptions tell you whether CI started and how to start it yourself.
-The `lavaflow.open_pr_ci_start` capability reports whether CI for fixes you merge is available; see [Capabilities for one project](../api-reference/overview.md#capabilities-for-one-project).
+The `lavaflow.open_pr_ci_start` capability is `available` when normal repository CI or the earlier one-time CI-start path is released; its value alone does not distinguish them.
+An `unavailable` value means the earlier path opens a draft whose commit skips CI.
+Read the PR description to identify the path: normal publication says the repository's configured CI can run, while earlier publication describes its CI skip or LavaFlow's one-time CI start.
+See [Capabilities for one project](../api-reference/overview.md#capabilities-for-one-project).
 
 A fix you merge doesn't hold its [lineage](#fix-lineage) when LavaFlow hands
 it to you, so a later fix of the same issue still opens. Closing it without
@@ -1613,7 +1620,7 @@ waits for a person to mark it ready; `draft_reason` says why it is one, and is
 
 | `draft_reason`       | Why the pull request is a draft                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `open_pr`            | LavaFlow doesn't merge the fix, because autonomy is `open_pr`, merging was unavailable when it opened, or the run may only open a pull request, and its review didn't pass, LavaFlow's CI start for fixes you merge wasn't available, or your repository may run CI or previews outside GitHub Actions (or LavaFlow couldn't check; see [Review and merge fixes yourself](#review-and-merge-fixes-yourself)); or it was already a draft when the run took it on. Review it and mark it ready |
+| `open_pr`            | LavaFlow doesn't merge the fix, because autonomy is `open_pr`, merging was unavailable when it opened, or the run may only open a pull request, and its review didn't pass; on the earlier publication path it can also mean CI for fixes you merge wasn't available, or the repository may run CI outside GitHub Actions (or LavaFlow couldn't check; see [Review and merge fixes yourself](#review-and-merge-fixes-yourself)); or it was already a draft when the run took it on. Review it and mark it ready |
 | `review_unresolved`  | LavaFlow's review didn't pass the fix, so LavaFlow never merges it. Decide whether to finish it                                                                                                                                                                                                                                                                                                                                                                                              |
 | `converted_to_draft` | LavaFlow opened it ready for review, and someone made it a draft since                                                                                                                                                                                                                                                                                                                                                                                                                       |
 

@@ -227,7 +227,7 @@ curl "https://api.volcano.dev/capabilities"
 | `lavaflow`                     | LavaFlow, which diagnoses a project's issues, opens pull requests that fix them, and can merge them. This list says only whether it's released in the environment; a project's list says whether that project has it                                                      |
 | `lavaflow.merge`               | Letting LavaFlow [merge its fixes](../guides/lavaflow.md#merge-fixes): `autonomy: merge` and changing `merge_policy`; reading merges works either way                                                                                                                     |
 | `lavaflow.lineage`             | LavaFlow [following up its fixes](../guides/lavaflow.md#fix-lineage): follow-up runs and the lineage holds; lineage fields already stored read either way                                                                                                                 |
-| `lavaflow.open_pr_ci_start`    | A fix you [review and merge yourself](../guides/lavaflow.md#review-and-merge-fixes-yourself) opening ready for review, with LavaFlow running its CI once unless your repository may run CI outside GitHub Actions; unavailable, it opens as a draft whose commit skips CI |
+| `lavaflow.open_pr_ci_start` | CI for fixes a person merges: normal repository CI when released, or the earlier one-time CI-start path. The value alone does not distinguish them; the PR description names its behavior. See [Review and merge fixes yourself](../guides/lavaflow.md#review-and-merge-fixes-yourself) |
 | `lavaflow.slack`               | [Reporting problems from Slack](../guides/lavaflow-slack.md): installing Volcano's Slack app, connecting Slack accounts, the channel picker, and binding channels; reading and removing connections and bindings work either way                                          |
 | `lavaflow.aikido`              | [Fixing Aikido issues](../guides/lavaflow-aikido.md): connecting an Aikido workspace and binding projects to it; reading and removing connectors and bindings work either way                                                                                             |
 | `functions.response_streaming` | [Streaming a response](../functions/invoking-functions.md#stream-a-response) on a function's own URL                                                                                                                                                                      |
@@ -289,8 +289,9 @@ says what the project can still do:
 `lavaflow.merge` is `available` when `lavaflow` is and LavaFlow may merge
 fixes in the environment. `lavaflow.lineage` is `available` when `lavaflow` is
 and fix lineage is released in the environment. `lavaflow.open_pr_ci_start`
-is `available` when `lavaflow` is and the one CI start for fixes you merge is
-released in the environment. `lavaflow.slack` is
+is `available` when `lavaflow` is and normal repository CI or the earlier one-time CI-start path is released in the environment.
+An `unavailable` value means the earlier path opens drafts whose commits skip CI.
+The capability does not distinguish the two available paths; read the PR description as explained under [Review and merge fixes yourself](../guides/lavaflow.md#review-and-merge-fixes-yourself). `lavaflow.slack` is
 `available` when `lavaflow` is and reporting problems from Slack is available
 in the environment, which is rolling out environment by environment.
 `lavaflow.aikido` is `available` when `lavaflow` is and Aikido reports have
