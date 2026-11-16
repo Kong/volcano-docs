@@ -8,7 +8,7 @@ import { Logo } from "@/components/logo";
 // Links to the docs base URL so clicking the brand returns home.
 export function NavTitle() {
   return (
-    <Link href="/" aria-label="Volcano Docs home" className="nav-title">
+    <Link href="/docs" aria-label="Volcano Docs home" className="nav-title">
       <Logo height={22} />
       <span className="nav-title-label">
         <span className="nav-title-slash">/</span> Docs

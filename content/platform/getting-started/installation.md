@@ -25,7 +25,7 @@ curl -fsSL https://download.volcano.dev/builds/install.sh | bash
 
 The script requires `cosign` and verifies the CLI's signature before installing
 it. To verify the script itself before it runs, or to install with npm, pnpm, or
-Bun, see [CLI installation](/cli/installation).
+Bun, see [CLI installation](/docs/cli/installation).
 
 **Or download directly:**
 
@@ -54,7 +54,7 @@ API with it — a leak then exposes that project only, and you can revoke it
 without disturbing anything else. See
 [Using the API](../api-reference/using-the-api.md#move-ci-off-an-account-wide-platform-token).
 
-See the [Volcano CLI docs](/cli) for authentication and the full command reference (or run `volcano <command> --help`).
+See the [Volcano CLI docs](/docs/cli) for authentication and the full command reference (or run `volcano <command> --help`).
 
 ### Verify Installation
 

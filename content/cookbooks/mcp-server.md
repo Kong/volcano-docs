@@ -128,6 +128,6 @@ Most of this recipe isn't MCP. The SDK's stateless transport was the easy part i
 
 - Stateless, because a function keeps nothing between invocations. Sessions and server-initiated messages need a long-running process: an Express app on Fly.io or Render, or a Cloudflare Worker with a Durable Object.
 - One shared bearer token: anyone holding it can add and delete. For per-user access, MCP's OAuth flow is the standard answer, and it's more work.
-- Volcano's per-function request limits apply ([plans and limits](/platform/guides/plans-and-limits)); the function adds none of its own. A request without the token costs one short invocation and never reaches the database.
+- Volcano's per-function request limits apply ([plans and limits](/docs/platform/guides/plans-and-limits)); the function adds none of its own. A request without the token costs one short invocation and never reaches the database.
 - After changing `MCP_TOKEN`, run `volcano cloud deploy` again. A running function can keep the old value for several minutes after `volcano cloud variables deploy` alone.
 - Cost: the Claude Code run was $1.47. Each tool call is one function invocation and one or two database statements, with no model calls.

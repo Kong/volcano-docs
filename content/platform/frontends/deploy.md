@@ -4,7 +4,7 @@ description: 'Build and deploy a Next.js site to Volcano with the CLI, set varia
 ---
 
 Deploy a Next.js site to Volcano and serve it at a Volcano URL or your own
-domain. This uses the [Volcano CLI](/cli); install it and sign in first (see the
+domain. This uses the [Volcano CLI](/docs/cli); install it and sign in first (see the
 [Quickstart](../getting-started/quickstart.md)).
 
 ## 1. Scaffold or bring your app
@@ -108,7 +108,7 @@ exists, so the two steps above happen in the right order:
 `workspace` is the directory to upload, relative to the project root, and
 `app_root` is the Next.js app inside it. Projects created with
 `volcano init nextjs` include this file. A [connected Git repository](../projects/git-deploy.md)
-reads the same file. See the [CLI deploy reference](/cli/deploy).
+reads the same file. See the [CLI deploy reference](/docs/cli/deploy).
 
 The deploy can't pass any other selection to a build. An entry with
 `variable_scope: shared`, or one that leaves out either field, builds with the

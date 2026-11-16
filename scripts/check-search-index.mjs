@@ -20,7 +20,7 @@ import { assertBlogTopicIndex, readTaggedBlogPages } from "./blog-search-expecta
 // shrink or split the index rather than raise the budget.
 const GZIP_SIZE_BUDGET = 3_000_000;
 const searchTerm = "browser-friendly";
-const expectedUrl = "/get-started/what-is-volcano";
+const expectedUrl = "/docs/get-started/what-is-volcano";
 const expectedText = "managed PostgreSQL";
 
 const indexPath = path.join("public", SEARCH_INDEX_PATH.replace(/^\//, ""));
@@ -90,9 +90,9 @@ try {
       `check-search-index: query "${searchTerm}" returned ${results.length} result(s) (${mode})`,
     );
     for (const [query, url] of [
-      ["Volcano SDK Documentation", "/sdk/js"],
-      ["Python SDK", "/sdk/python"],
-      ["Ruby SDK", "/sdk/ruby"],
+      ["Volcano SDK Documentation", "/docs/sdk/js"],
+      ["Python SDK", "/docs/sdk/python"],
+      ["Ruby SDK", "/docs/sdk/ruby"],
     ]) {
       const matches = await client.search(query);
       if (!matches.some((result) => result.type === "page" && result.url === url)) {

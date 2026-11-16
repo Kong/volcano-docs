@@ -170,6 +170,8 @@ assert.equal(
 );
 assert.equal(markdownRoute(markdownPath("/platform")), "/api/llm/platform");
 assert.equal(markdownRoute(markdownPath("/")), "/api/llm/index");
+assert.equal(markdownRoute(markdownPath("/docs")), "/api/llm/docs");
+assert.equal(markdownRoute(markdownPath("/docs/cli/setup")), "/api/llm/docs/cli/setup");
 assert.equal(markdownRoute("/platform/guides/lavaflow"), null);
 
 // A page's markdown names its HTML page as canonical, root included.
@@ -186,6 +188,9 @@ assert.equal(
 assert.deepEqual(pageSlugs(["index"]), []);
 assert.deepEqual(pageSlugs(["cli", "installation"]), ["cli", "installation"]);
 assert.deepEqual(pageSlugs(["cli", "index"]), ["cli", "index"]);
+assert.deepEqual(pageSlugs(["docs"]), []);
+assert.deepEqual(pageSlugs(["docs", "cli", "installation"]), ["cli", "installation"]);
+assert.deepEqual(pageSlugs(["blog", "post"]), ["blog", "post"]);
 
 // Trees are walked index-first, and only page URLs are rewritten.
 const ref = { file: "cli/index.md" };

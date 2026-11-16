@@ -32,31 +32,31 @@ export function HomePage() {
           icon={<FlameIcon className="feature-card-glyph" />}
           title="Quick start"
           description={QUICKSTART_COPY}
-          href="/get-started/quickstart"
+          href="/docs/get-started/quickstart"
         />
         <FeatureCard
           icon={<TerminalIcon className="feature-card-glyph" />}
           title="Volcano CLI"
           description={CLI_COPY}
-          href="/cli"
+          href="/docs/cli"
         />
         <FeatureCard
           icon={<BracesIcon className="feature-card-glyph" />}
           title="Volcano API"
           description={API_COPY}
-          href="/platform/api-reference/overview"
+          href="/docs/platform/api-reference/overview"
         />
         <FeatureCard
           icon={<PlugIcon className="feature-card-glyph" />}
           title="MCP server"
           description={MCP_COPY}
-          href="/platform/interfaces/mcp"
+          href="/docs/platform/interfaces/mcp"
         />
         <FeatureCard
           icon={<BotIcon className="feature-card-glyph" />}
           title="Agent skills"
           description={AGENT_COPY}
-          href="/cli/setup"
+          href="/docs/cli/setup"
           variant="danger"
         />
       </div>
@@ -72,12 +72,12 @@ export function HomePage() {
         <FeatureCard
           title="Quick start"
           description={QUICKSTART_COPY}
-          href="/get-started/quickstart"
+          href="/docs/get-started/quickstart"
         />
         <FeatureCard
           title="Agent setup"
           description={AGENT_COPY}
-          href="/cli/setup"
+          href="/docs/cli/setup"
           variant="danger"
         />
       </div>

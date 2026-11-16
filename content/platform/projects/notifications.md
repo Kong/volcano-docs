@@ -312,7 +312,7 @@ rotating. Without a webhook the request answers `409`.
 ## Manage notifications from the CLI and the manifest
 
 The CLI wraps these endpoints in `volcano cloud notifications get`, `set`,
-`rotate-webhook-secret`, and `test`. See [Notifications in the CLI](/cli/notifications).
+`rotate-webhook-secret`, and `test`. See [Notifications in the CLI](/docs/cli/notifications).
 
 The [configuration manifest](configuration.md#notification-settings) takes a
 `notifications` section with the same fields. The signing secret is never part

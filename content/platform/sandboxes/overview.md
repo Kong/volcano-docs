@@ -74,8 +74,8 @@ Check whether Sandboxes are available in an environment with [`GET /capabilities
 | [Turn off outbound network](../guides/sandboxes.md#turn-off-outbound-network) | Run untrusted code in a session that cannot reach the network              |
 | [Deploy a custom template](../guides/sandboxes.md#deploy-a-custom-template)   | Build your own image from a `Dockerfile` fragment                          |
 | [Run locally](../guides/sandboxes.md#run-locally)                             | Use Docker-backed Sandboxes with `volcano start`                           |
-| [CLI](/cli/sandboxes)                                                         | Run commands and manage sessions, files, and templates from a terminal     |
-| [JavaScript SDK](/sdk/js/sandboxes)                                           | The `client.sandboxes` facade in JavaScript                                |
-| [Python SDK](/sdk/python/sandboxes)                                           | The `client.sandboxes` facade in Python                                    |
-| [Ruby SDK](/sdk/ruby/sandboxes)                                               | The `client.sandboxes` facade in Ruby                                      |
+| [CLI](/docs/cli/sandboxes)                                                         | Run commands and manage sessions, files, and templates from a terminal     |
+| [JavaScript SDK](/docs/sdk/js/sandboxes)                                           | The `client.sandboxes` facade in JavaScript                                |
+| [Python SDK](/docs/sdk/python/sandboxes)                                           | The `client.sandboxes` facade in Python                                    |
+| [Ruby SDK](/docs/sdk/ruby/sandboxes)                                               | The `client.sandboxes` facade in Ruby                                      |
 | [MCP server](../interfaces/mcp.md#sandbox-tools)                              | Let an AI agent start sessions, run commands, and read files               |

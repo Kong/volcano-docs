@@ -168,7 +168,7 @@ root-file priority.
 
 - `private`: service keys and schedulers only.
 - `authenticated`: also your project's signed-in users, including
-  [anonymous sign-ins](/platform/authentication/anonymous-users).
+  [anonymous sign-ins](/docs/platform/authentication/anonymous-users).
 - `public`: also anon keys with `functions.invoke`, and frontend function
   routes.
 
@@ -315,7 +315,7 @@ Until several domains per frontend reach your project, the list holds one
 domain. A server that predates `custom_domains` refuses the key in the dry run.
 See
 [Custom domains](frontends.md#custom-domains) and the
-[configuration reference](/platform/projects/configuration).
+[configuration reference](/docs/platform/projects/configuration).
 
 ## Frontend preview CORS
 
@@ -337,7 +337,7 @@ auth:
 - `config pull` writes it when it is on.
 
 A server that predates the setting refuses the key in the dry run. See
-[CORS configuration](/platform/authentication/configuration/cors#frontend-previews).
+[CORS configuration](/docs/platform/authentication/configuration/cors#frontend-previews).
 
 ## Shared variable names
 
@@ -505,7 +505,7 @@ snapshot of a prior apply. Practical implications:
   still outstanding.
 
 See the server-side
-[configuration manifest reference](/platform/projects/configuration)
+[configuration manifest reference](/docs/platform/projects/configuration)
 for the full reconciliation semantics.
 
 Behavior changes from older CLI releases:

@@ -60,7 +60,7 @@ The value is tied to your account and the domain, and it never changes.
 Verify a subdomain such as `team.example.com` when only that part of the zone
 is yours. A domain another account verified moves to yours once DNS serves your
 record and no longer serves theirs. See
-[Verify domain ownership](/platform/frontends/domain-verification) for the full
+[Verify domain ownership](/docs/platform/frontends/domain-verification) for the full
 rules.
 
 ## List and remove

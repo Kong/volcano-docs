@@ -22,8 +22,8 @@ The package includes type information for mypy and other PEP 561-compatible chec
 
 ## Sign in and read a profile
 
-Create a project, enable [email and password authentication](/platform/authentication/configuring-auth-methods), and create a user with a confirmed email when your project requires confirmation.
-Use that project's [anonymous key](/platform/authentication/security/anon-keys).
+Create a project, enable [email and password authentication](/docs/platform/authentication/configuring-auth-methods), and create a user with a confirmed email when your project requires confirmation.
+Use that project's [anonymous key](/docs/platform/authentication/security/anon-keys).
 Set `VOLCANO_ANON_KEY`, `VOLCANO_USER_EMAIL`, and `VOLCANO_USER_PASSWORD` in your environment.
 Set `VOLCANO_API_URL` only when using a different API endpoint, such as local mode.
 
@@ -71,7 +71,7 @@ Pass `sign_in_when_allowed=True` to sign in only when the project does not requi
 To adopt an existing session, pass a `Session` containing its access token, refresh token, and user ID to `client.auth.set_session()`.
 The SDK does not persist tokens for you.
 
-For operations that require a [service key](/platform/authentication/security/service-keys), pass `service_key` to the constructor in trusted server code.
+For operations that require a [service key](/docs/platform/authentication/security/service-keys), pass `service_key` to the constructor in trusted server code.
 Keep service keys and user credentials out of source control and client applications.
 
 ## Use a supplied access token

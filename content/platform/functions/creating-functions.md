@@ -117,7 +117,7 @@ packages stay as the package ships them.
   as `export * from "package"` does. The build log says which.
 
 Volcano compiles TypeScript deployed with [Git deploy](../projects/git-deploy.md),
-the [upload API](./upload-api.md) or the [CLI](/cli/functions), in the cloud and
+the [upload API](./upload-api.md) or the [CLI](/docs/cli/functions), in the cloud and
 in local mode. The CLI uploads `.ts`, `.mts` and `.cts` handlers from version
 0.76.0 and `.tsx` handlers from version 0.78.0; older versions skip those
 files, so upgrade first. See
@@ -400,7 +400,7 @@ Cloud uploads are limited to 256 MB per source archive, and that limit is enforc
 
 `functions deploy --all` uploads functions in API batches of up to 100 functions. Larger projects are split into multiple batch requests automatically by the CLI.
 
-`volcano deploy` (or `volcano cloud deploy`) deploys every function in `volcano/functions/` along with the project's variables, durable functions, frontends, and `volcano-config.yaml`, then waits until the deployments are live. See the [CLI deploy reference](/cli/deploy).
+`volcano deploy` (or `volcano cloud deploy`) deploys every function in `volcano/functions/` along with the project's variables, durable functions, frontends, and `volcano-config.yaml`, then waits until the deployments are live. See the [CLI deploy reference](/docs/cli/deploy).
 
 ## Deploying
 

@@ -38,7 +38,7 @@ openapi-generator generate \
 
 Swap `-g python` for `typescript-axios`, `go`, `ruby`, or any other supported target.
 
-Before you generate, check whether an [official SDK](/sdk) already covers what you need. The SDKs handle token refresh, retries, and realtime subscriptions, none of which a generated client gives you.
+Before you generate, check whether an [official SDK](/docs/sdk) already covers what you need. The SDKs handle token refresh, retries, and realtime subscriptions, none of which a generated client gives you.
 
 ## Import into a REST client
 

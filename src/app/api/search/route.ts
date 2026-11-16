@@ -7,7 +7,7 @@ import { getSearchSection } from "@/lib/search-section.mjs";
 // static index past the CloudFront auto-compression ceiling (see
 // scripts/check-search-index.mjs). Its titles and headings, which name each
 // endpoint, stay searchable; its body text is left out.
-const HEADINGS_ONLY_PREFIX = "/platform/api-reference";
+const HEADINGS_ONLY_PREFIX = "/docs/platform/api-reference";
 
 type Page = ReturnType<typeof source.getPages>[number];
 

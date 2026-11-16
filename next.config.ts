@@ -9,12 +9,31 @@ const withMDX = createMDX();
 // src/app/_og/social-card.tsx). Next.js does not trace that read, and the
 // server runs from its traces, so name the file here.
 // scripts/check-server-traces.mjs fails the build if it goes missing.
-const socialCardFiles = ["./public/design/logo-mark.svg"];
+const socialCardFiles = ["./public/docs/design/logo-mark.svg"];
 
 const config: NextConfig = {
   outputFileTracingIncludes: {
-    "/opengraph-image": socialCardFiles,
-    "/twitter-image": socialCardFiles,
+    "/docs/opengraph-image": socialCardFiles,
+    "/docs/twitter-image": socialCardFiles,
+  },
+  // Docs pages moved under /docs so the site can be mounted on volcano.dev at
+  // /docs, /blog, and /cookbooks (see src/lib/site-routes.mjs). Keep links to
+  // the old paths working.
+  async redirects() {
+    return [
+      { source: "/", destination: "/docs", permanent: true },
+      {
+        source: "/:section(get-started|platform|sdk|cli)/:path*",
+        destination: "/docs/:section/:path*",
+        permanent: true,
+      },
+      {
+        source: "/:section(get-started|platform|sdk|cli).md",
+        destination: "/docs/:section.md",
+        permanent: true,
+      },
+      { source: "/:file(llms.txt|llms-full.txt|sitemap.xml)", destination: "/docs/:file", permanent: true },
+    ];
   },
   async rewrites() {
     return [

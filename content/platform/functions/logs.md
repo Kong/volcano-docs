@@ -10,8 +10,8 @@ owner or a project access token. A `read_only` project token is sufficient.
 Project end-user sessions, anon keys, and service keys do not grant log access.
 Keep project tokens on your server and rotate them through project token management.
 
-For SDK examples, see [JavaScript](/sdk/js/logs), [Python](/sdk/python/logs),
-and [Ruby](/sdk/ruby/logs).
+For SDK examples, see [JavaScript](/docs/sdk/js/logs), [Python](/docs/sdk/python/logs),
+and [Ruby](/docs/sdk/ruby/logs).
 
 ## Runtime Logs
 

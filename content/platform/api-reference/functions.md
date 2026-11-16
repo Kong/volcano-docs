@@ -300,8 +300,8 @@ The JavaScript, Python, and Ruby SDKs can recover a rejected user credential
 before dispatch: they refresh the captured session once per resolution or
 invocation stage and retry with the original payload. They preserve explicit
 session replacement and never replay a function's own HTTP response, a platform
-403, or an ambiguous network failure. See the [JavaScript](/sdk/js/functions),
-[Python](/sdk/python/functions), and [Ruby](/sdk/ruby/functions) guides for native
+403, or an ambiguous network failure. See the [JavaScript](/docs/sdk/js/functions),
+[Python](/docs/sdk/python/functions), and [Ruby](/docs/sdk/ruby/functions) guides for native
 response and error handling.
 
 ## Resolve Function Name

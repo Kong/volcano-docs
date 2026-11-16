@@ -36,6 +36,6 @@ volcano use my-first-project
 
 Pick your path:
 
-- [Deploy a function](/cli) with the CLI.
-- [Call Volcano from your app](/sdk/js) with the JavaScript SDK.
-- [Understand the platform](/platform) and its API.
+- [Deploy a function](/docs/cli) with the CLI.
+- [Call Volcano from your app](/docs/sdk/js) with the JavaScript SDK.
+- [Understand the platform](/docs/platform) and its API.

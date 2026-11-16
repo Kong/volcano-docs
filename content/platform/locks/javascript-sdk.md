@@ -100,7 +100,7 @@ release or expiry. Keep the ownership token private.
 
 Each lock method accepts `requestId`. `withLock` forwards acquisition IDs only
 to acquisition and gives renewal and release their own request IDs. Equivalent
-native examples are in the [Python](/sdk/python/locks) and [Ruby](/sdk/ruby/locks)
+native examples are in the [Python](/docs/sdk/python/locks) and [Ruby](/docs/sdk/ruby/locks)
 lock guides.
 
 ## Reject writes from a displaced holder

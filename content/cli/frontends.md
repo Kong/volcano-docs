@@ -59,7 +59,7 @@ frontend exists.
 Builds never see variables named `VOLCANO_*`; the server runtime still gets
 them. Browser code reads values Next.js inlines at build time, so give it
 `NEXT_PUBLIC_*` copies, such as `NEXT_PUBLIC_VOLCANO_ANON_KEY`. See
-[Variables](/platform/frontends/overview#variables).
+[Variables](/docs/platform/frontends/overview#variables).
 
 `volcano cloud config deploy` never creates a frontend; an entry for one that
 does not exist yet is skipped. Deploy a new frontend with the variables its
@@ -69,7 +69,7 @@ manifest entry selects, then run `volcano cloud config deploy`.
 
 The selected variables other than `NEXT_PUBLIC_*` must fit the frontend's
 4,096-byte runtime environment, of which Volcano uses about 900 bytes. See
-[Environment size](/platform/frontends/deploy#environment-size).
+[Environment size](/docs/platform/frontends/deploy#environment-size).
 
 `deploy` archives `--path` (default `.`) and leaves out `node_modules`, `.next`,
 `dist`, `build`, `.env*.local`, the Volcano env files (`volcano/*.env` and
@@ -173,7 +173,7 @@ swap which domain serves in one step, declare both in `custom_domains` in the
 Adding a domain past the plan's limit per frontend fails with `403`. On HOBBY,
 managed certificates are also limited to one per account, so a second managed
 domain fails with `403` on any frontend. See
-[Plans and limits](/platform/guides/plans-and-limits#frontends).
+[Plans and limits](/docs/platform/guides/plans-and-limits#frontends).
 
 ### Switch TLS modes
 
@@ -197,7 +197,7 @@ Moving to managed TLS prints the `_acme-challenge` CNAME to publish.
 `Serving certificate` reads `uploaded` until the managed certificate serves,
 then `managed`. If issuance fails, `Failure reason` names the cause while your
 certificate keeps serving. The switch needs a free managed certificate in your
-[plan](/platform/guides/plans-and-limits#frontends). A domain that is not yet
+[plan](/docs/platform/guides/plans-and-limits#frontends). A domain that is not yet
 active has no certificate to keep serving. Wait until it is active, or delete
 it and attach it again in the other mode.
 
@@ -247,7 +247,7 @@ target the same variable selection. A deployment from before Volcano kept
 builds is refused until the source is redeployed once. Local development
 builds each frontend from its own source, so `volcano frontends deploy --from`
 fails and names the command to run instead. See
-[Deploy one build to several frontends](/platform/frontends/deploy#deploy-one-build-to-several-frontends)
+[Deploy one build to several frontends](/docs/platform/frontends/deploy#deploy-one-build-to-several-frontends)
 for what the target serves and what it costs.
 
 ## Previews
@@ -291,7 +291,7 @@ indexed, but anyone who holds it can open it. Creating, deploying to and
 promoting a preview, and a rollback that would make one serve again, are behind
 a release gate and answer `feature_unavailable` while it is off;
 `rollback --to-production` always works. See
-[Frontend previews](/platform/frontends/previews).
+[Frontend previews](/docs/platform/frontends/previews).
 
 ## Function routes
 
@@ -338,7 +338,7 @@ and is 2 to 512 characters long. The CLI checks this before calling Volcano.
 The same commands without `cloud` manage routes on a local frontend. Declare
 `function_routes` in [`volcano-config.yaml`](project-configuration.md) to manage
 the whole set at once. See
-[Frontend Function routes](/platform/frontends/function-routes) for how
+[Frontend Function routes](/docs/platform/frontends/function-routes) for how
 requests are matched and how to keep a session in cookies.
 
 ## Frontend routes
@@ -387,6 +387,6 @@ reports the refusal with the frontends that mount it and prints the
 The same commands without `cloud` manage Frontend routes on a local frontend.
 Declare `frontend_routes` in [`volcano-config.yaml`](project-configuration.md#frontend-routes)
 to manage the whole set at once. See
-[Frontend routes](/platform/frontends/frontend-routes) for how a mounted
+[Frontend routes](/docs/platform/frontends/frontend-routes) for how a mounted
 frontend's build files and images are served and how to link between
 frontends.

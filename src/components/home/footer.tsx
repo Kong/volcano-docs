@@ -36,8 +36,8 @@ const LINK_COLUMNS = [
   {
     heading: "Resources",
     links: [
-      { label: "Getting started", href: "/get-started" },
-      { label: "Documentation", href: "/" },
+      { label: "Getting started", href: "/docs/get-started" },
+      { label: "Documentation", href: "/docs" },
     ],
   },
   {

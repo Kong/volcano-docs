@@ -57,23 +57,23 @@
 }
 
 .ide-platform-mark[data-logo="claude-code"] {
-  --cmp-mark-src: url("/design/agent-logos/claude-code.svg");
+  --cmp-mark-src: url("/docs/design/agent-logos/claude-code.svg");
 }
 
 .ide-platform-mark[data-logo="codex"] {
-  --cmp-mark-src: url("/design/agent-logos/codex.svg");
+  --cmp-mark-src: url("/docs/design/agent-logos/codex.svg");
 }
 
 .ide-platform-mark[data-logo="cursor"] {
-  --cmp-mark-src: url("/design/agent-logos/cursor.svg");
+  --cmp-mark-src: url("/docs/design/agent-logos/cursor.svg");
 }
 
 .ide-platform-mark[data-logo="opencode"] {
-  --cmp-mark-src: url("/design/agent-logos/opencode.svg");
+  --cmp-mark-src: url("/docs/design/agent-logos/opencode.svg");
 }
 
 .ide-platform-mark[data-logo="pi"] {
-  --cmp-mark-src: url("/design/agent-logos/pi.svg");
+  --cmp-mark-src: url("/docs/design/agent-logos/pi.svg");
 }
 
 .ide-platform-label {

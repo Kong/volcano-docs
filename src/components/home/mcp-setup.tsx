@@ -5,7 +5,7 @@ import { ServerCodeBlock } from "fumadocs-ui/components/codeblock.rsc";
 import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 import { DocsBody } from "fumadocs-ui/page";
 
-const MCP_GUIDE_HREF = "/platform/interfaces/mcp";
+const MCP_GUIDE_HREF = "/docs/platform/interfaces/mcp";
 
 const EXPORT_TOKEN = "export VOLCANO_PROJECT_TOKEN=pt-your-project-access-token";
 

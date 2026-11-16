@@ -21,6 +21,7 @@ if (!fs.existsSync(source)) {
 
 const json = fs.readFileSync(source);
 const gzip = zlib.gzipSync(json, { level: zlib.constants.Z_BEST_COMPRESSION });
+fs.mkdirSync(path.dirname(dest), { recursive: true });
 fs.writeFileSync(dest, gzip);
 
 console.log(

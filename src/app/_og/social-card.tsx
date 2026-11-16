@@ -29,7 +29,7 @@ const BACKGROUND = "linear-gradient(135deg, #0a0a0a 0%, #352320 100%)";
 // request time. The file reaches the server only through next.config.ts's
 // outputFileTracingIncludes; public/ is not part of the server bundle.
 function markDataUri() {
-  const mark = readFileSync(join(process.cwd(), "public/design/logo-mark.svg"));
+  const mark = readFileSync(join(process.cwd(), "public/docs/design/logo-mark.svg"));
   return `data:image/svg+xml;base64,${mark.toString("base64")}`;
 }
 

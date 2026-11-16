@@ -48,7 +48,7 @@ the route. The list is the complete set: routes you leave out are deleted, and
 [project configuration](../projects/configuration.md).
 
 Once the function is public and in HTTP mode, you can also manage routes one at
-a time with the [CLI](/cli). Name a route by its path prefix or ID:
+a time with the [CLI](/docs/cli). Name a route by its path prefix or ID:
 
 ```bash
 volcano cloud frontends routes create web --path /api/session --function session --strip-prefix

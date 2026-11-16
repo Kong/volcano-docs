@@ -21,7 +21,7 @@ type HeroProps = {
 export function Hero({
   title = "Volcano docs",
   description = "Build AI agents and modern applications with the platform for the AI era, fully integrated with your agentic coding tools.",
-  actionHref = "/get-started",
+  actionHref = "/docs/get-started",
   actionLabel = "Get started",
   children,
 }: HeroProps) {
@@ -33,10 +33,10 @@ export function Hero({
       <p>
       Functions, frontends, databases, and the rest of the platform are
       documented under{" "}
-      <InlineLink href="/platform">Platform</InlineLink>.
+      <InlineLink href="/docs/platform">Platform</InlineLink>.
       <br />
       The same docs are in your terminal with{" "}
-      <InlineLink href="/cli/docs-search"><code>volcano docs</code></InlineLink>.
+      <InlineLink href="/docs/cli/docs-search"><code>volcano docs</code></InlineLink>.
       <br />
       For step-by-step recipes you can build, explore the{" "}
       <InlineLink href="/cookbooks">Cookbooks</InlineLink>.

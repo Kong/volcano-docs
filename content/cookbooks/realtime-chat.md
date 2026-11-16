@@ -23,7 +23,7 @@ A chat app where visitors pick a display name and talk in three rooms with no si
 ## What you need
 
 - A Volcano account. Tested on SUPERAGENT. The app uses anonymous sign-in, one database, one frontend, and broadcast and presence channels. No functions and no third-party services.
-- Claude Code, Codex or Cursor with the Volcano skills (`volcano setup`), or Node.js 24+ and the [Volcano CLI](/get-started/install) to build it yourself.
+- Claude Code, Codex or Cursor with the Volcano skills (`volcano setup`), or Node.js 24+ and the [Volcano CLI](/docs/get-started/install) to build it yourself.
 
 ## Build it with your coding agent
 
@@ -262,7 +262,7 @@ frontends:
       - NEXT_PUBLIC_VOLCANO_DATABASE
 ```
 
-The browser key needs Realtime permissions, and `volcano projects keys anon create` only makes auth-only keys. Create it in the [dashboard's anonymous keys page](https://volcano.dev/dashboard/keys): select the project, click **Create Key**, name it `Chat`, keep the default **Auth** permissions, add **Realtime → Connect, Subscribe, Publish**, and copy the value. To script it, mint a short-lived project access token with `volcano cloud access-tokens create chat-key-setup --expires-at <RFC3339 time> --json`. Send it as the bearer token to the [anon key API](/platform/authentication/security/anon-keys) with the same permission list, then revoke it with `volcano cloud access-tokens revoke chat-key-setup --yes`.
+The browser key needs Realtime permissions, and `volcano projects keys anon create` only makes auth-only keys. Create it in the [dashboard's anonymous keys page](https://volcano.dev/dashboard/keys): select the project, click **Create Key**, name it `Chat`, keep the default **Auth** permissions, add **Realtime → Connect, Subscribe, Publish**, and copy the value. To script it, mint a short-lived project access token with `volcano cloud access-tokens create chat-key-setup --expires-at <RFC3339 time> --json`. Send it as the bearer token to the [anon key API](/docs/platform/authentication/security/anon-keys) with the same permission list, then revoke it with `volcano cloud access-tokens revoke chat-key-setup --yes`.
 
 Put the three variables in `volcano/cloud.env`, and the same values in `web/.env.local` for `npm run dev`. Both paths are gitignored:
 
@@ -278,7 +278,7 @@ Deploy everything in one command:
 volcano cloud deploy --env-file volcano/cloud.env --with-migrations -d chat
 ```
 
-It saves the variables, runs the migrations, builds the frontend and applies the manifest, then prints the frontend URL. Add that exact HTTPS origin to `auth.cors.allowed_origins` and run the same command again. Without it, the browser can't open the realtime socket. See [CORS configuration](/platform/authentication/configuration/cors).
+It saves the variables, runs the migrations, builds the frontend and applies the manifest, then prints the frontend URL. Add that exact HTTPS origin to `auth.cors.allowed_origins` and run the same command again. Without it, the browser can't open the realtime socket. See [CORS configuration](/docs/platform/authentication/configuration/cors).
 
 ## Check that it works
 
@@ -301,7 +301,7 @@ The first load took about 5 seconds in testing. Loading the page took about 1.6 
 
 ## Why it's built this way
 
-- **Postgres is the source of truth.** Broadcast carries only the message id, and receivers read the row. A client can broadcast anything, but it can't make others show a message the database didn't accept. The cost is one read per incoming message, which is fine for small rooms. For busy ones, subscribe to [Postgres changes](/platform/realtime/postgres-changes) or batch the reads.
+- **Postgres is the source of truth.** Broadcast carries only the message id, and receivers read the row. A client can broadcast anything, but it can't make others show a message the database didn't accept. The cost is one read per incoming message, which is fine for small rooms. For busy ones, subscribe to [Postgres changes](/docs/platform/realtime/postgres-changes) or batch the reads.
 - **Two snapshots per room.** History loads straight away so the room isn't empty, then again once the channels are subscribed, because a message sent between the first read and the subscription would otherwise be missed. Merging by id makes the overlap harmless. Every reconnect re-subscribes and loads again.
 - **Presence for who's here, broadcast for what they're doing.** Presence gives each connection's authenticated user id, so the online count counts distinct users across tabs. Typing is a short-lived broadcast and is never stored.
 - **Anonymous sessions, not accounts.** Display names are plain labels anyone can reuse, and only `user_id` is tied to the session. Add [email sign-in](./notes-app-with-login.md) if names must belong to someone.
