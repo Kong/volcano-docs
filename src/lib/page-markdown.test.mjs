@@ -98,7 +98,7 @@ assert.equal(
 // Root-absolute links to pages point at the page's .md URL, keeping their
 // query and fragment; assets, API routes, other routes and external or
 // protocol-relative links are left alone.
-const pageRoutes = new Set(["/", "/cli", "/platform/functions/overview"]);
+const pageRoutes = new Set(["/docs", "/docs/cli", "/docs/platform/functions/overview"]);
 function isPage(route) {
   return pageRoutes.has(route);
 }
@@ -109,22 +109,23 @@ function rootHref(href) {
   return rootPageMarkdownHref(href, isPage, toMdUrl);
 }
 assert.equal(
-  rootHref("/platform/functions/overview"),
-  "https://docs.volcano.dev/platform/functions/overview.md",
+  rootHref("/docs/platform/functions/overview"),
+  "https://docs.volcano.dev/docs/platform/functions/overview.md",
 );
 assert.equal(
-  rootHref("/platform/functions/overview#deploy"),
-  "https://docs.volcano.dev/platform/functions/overview.md#deploy",
+  rootHref("/docs/platform/functions/overview#deploy"),
+  "https://docs.volcano.dev/docs/platform/functions/overview.md#deploy",
 );
-assert.equal(rootHref("/cli/?tab=npm#top"), "https://docs.volcano.dev/cli.md?tab=npm#top");
-assert.equal(rootHref("/"), "https://docs.volcano.dev/index.md");
-assert.equal(rootHref("/#intro"), "https://docs.volcano.dev/index.md#intro");
+assert.equal(rootHref("/docs/cli/?tab=npm#top"), "https://docs.volcano.dev/docs/cli.md?tab=npm#top");
+assert.equal(rootHref("/docs"), "https://docs.volcano.dev/docs/index.md");
+assert.equal(rootHref("/docs#intro"), "https://docs.volcano.dev/docs/index.md#intro");
 for (const kept of [
   "/blog/introducing-volcano-sandbox/cover.png",
   "/api/llm/cli",
   "/llms.txt",
   "/llms-full.txt",
   "/nope",
+  "/cli",
   "//cdn.example.com/cli",
   "https://volcano.dev/cli",
   "#section",
@@ -134,10 +135,10 @@ for (const kept of [
 }
 assert.equal(
   rewriteMarkdownLinks(
-    "[Overview](/platform/functions/overview#deploy) ![x](/blog/x.png) [api](/api/llm/cli)\n\n[d]: /cli",
+    "[Overview](/docs/platform/functions/overview#deploy) ![x](/blog/x.png) [api](/api/llm/cli)\n\n[d]: /docs/cli",
     rootHref,
   ),
-  "[Overview](https://docs.volcano.dev/platform/functions/overview.md#deploy) ![x](/blog/x.png) [api](/api/llm/cli)\n\n[d]: https://docs.volcano.dev/cli.md",
+  "[Overview](https://docs.volcano.dev/docs/platform/functions/overview.md#deploy) ![x](/blog/x.png) [api](/api/llm/cli)\n\n[d]: https://docs.volcano.dev/docs/cli.md",
 );
 
 // renderPageMarkdown applies the rewrite to the body only.
@@ -146,10 +147,14 @@ assert.equal(
   "# T\n\n[x](https://docs.volcano.dev/cli/x.md)\n",
 );
 
-// Page routes map to .md paths; the root is /index.md.
-assert.equal(markdownPath("/cli/installation"), "/cli/installation.md");
-assert.equal(markdownPath("/sdk"), "/sdk.md");
-assert.equal(markdownPath("/sdk/"), "/sdk.md");
+// Page routes map to .md paths. Section landings keep theirs inside the
+// section's prefix, so a site mounted by path prefix still serves them.
+assert.equal(markdownPath("/docs/cli/installation"), "/docs/cli/installation.md");
+assert.equal(markdownPath("/docs/sdk"), "/docs/sdk.md");
+assert.equal(markdownPath("/docs/sdk/"), "/docs/sdk.md");
+assert.equal(markdownPath("/docs"), "/docs/index.md");
+assert.equal(markdownPath("/blog"), "/blog/index.md");
+assert.equal(markdownPath("/cookbooks/"), "/cookbooks/index.md");
 assert.equal(markdownPath("/"), "/index.md");
 
 // Every .md path, nested ones included, reaches the markdown route. Resolve the
@@ -168,9 +173,9 @@ assert.equal(
   markdownRoute("/platform/authentication/configuration/email-smtp.md"),
   "/api/llm/platform/authentication/configuration/email-smtp",
 );
-assert.equal(markdownRoute(markdownPath("/platform")), "/api/llm/platform");
+assert.equal(markdownRoute(markdownPath("/docs/platform")), "/api/llm/docs/platform");
 assert.equal(markdownRoute(markdownPath("/")), "/api/llm/index");
-assert.equal(markdownRoute(markdownPath("/docs")), "/api/llm/docs");
+assert.equal(markdownRoute(markdownPath("/docs")), "/api/llm/docs/index");
 assert.equal(markdownRoute(markdownPath("/docs/cli/setup")), "/api/llm/docs/cli/setup");
 assert.equal(markdownRoute("/platform/guides/lavaflow"), null);
 
@@ -187,7 +192,9 @@ assert.equal(
 // /index.md names the root page; every other slug passes through.
 assert.deepEqual(pageSlugs(["index"]), []);
 assert.deepEqual(pageSlugs(["cli", "installation"]), ["cli", "installation"]);
-assert.deepEqual(pageSlugs(["cli", "index"]), ["cli", "index"]);
+assert.deepEqual(pageSlugs(["cli", "index"]), ["cli"]);
+assert.deepEqual(pageSlugs(["docs", "index"]), []);
+assert.deepEqual(pageSlugs(["blog", "index"]), ["blog"]);
 assert.deepEqual(pageSlugs(["docs"]), []);
 assert.deepEqual(pageSlugs(["docs", "cli", "installation"]), ["cli", "installation"]);
 assert.deepEqual(pageSlugs(["blog", "post"]), ["blog", "post"]);
@@ -197,14 +204,14 @@ const ref = { file: "cli/index.md" };
 const tree = {
   name: "Docs",
   children: [
-    { type: "page", url: "/", name: "Home" },
+    { type: "page", url: "/docs", name: "Home" },
     {
       type: "folder",
       name: "CLI",
-      index: { type: "page", url: "/cli", name: "CLI", $ref: ref },
+      index: { type: "page", url: "/docs/cli", name: "CLI", $ref: ref },
       children: [
         { type: "separator", name: "Guides" },
-        { type: "page", url: "/cli/installation", name: "Install" },
+        { type: "page", url: "/docs/cli/installation", name: "Install" },
         { type: "page", url: "https://github.com/Kong", name: "GitHub", external: true },
       ],
     },
@@ -214,7 +221,7 @@ assert.deepEqual(
   treePages(tree).map(function url(node) {
     return node.url;
   }),
-  ["/", "/cli", "/cli/installation", "https://github.com/Kong"],
+  ["/docs", "/docs/cli", "/docs/cli/installation", "https://github.com/Kong"],
 );
 const mapped = mapTreeUrls(tree, function toMd(url) {
   return `https://docs.volcano.dev${markdownPath(url)}`;
@@ -224,9 +231,9 @@ assert.deepEqual(
     return node.url;
   }),
   [
-    "https://docs.volcano.dev/index.md",
-    "https://docs.volcano.dev/cli.md",
-    "https://docs.volcano.dev/cli/installation.md",
+    "https://docs.volcano.dev/docs/index.md",
+    "https://docs.volcano.dev/docs/cli.md",
+    "https://docs.volcano.dev/docs/cli/installation.md",
     // External nodes keep their URL.
     "https://github.com/Kong",
   ],
@@ -234,6 +241,6 @@ assert.deepEqual(
 assert.equal(mapped.children[1].index.$ref, ref);
 assert.equal(mapped.children[1].children[0].name, "Guides");
 // The input tree is left as it was.
-assert.equal(tree.children[1].children[1].url, "/cli/installation");
+assert.equal(tree.children[1].children[1].url, "/docs/cli/installation");
 
 console.log("page-markdown: OK");

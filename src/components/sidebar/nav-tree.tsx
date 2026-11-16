@@ -18,6 +18,7 @@ import {
 } from "fumadocs-ui/components/ui/collapsible";
 import { useTreePath } from "fumadocs-ui/contexts/tree";
 import { ChevronRightIcon } from "@/components/home/icons";
+import { DOCS_PREFIX } from "@/lib/site-routes.mjs";
 
 // Fumadocs only tracks folder depth through its own SidebarFolder, but our
 // top-level groups render as plain <div> labels (no SidebarFolder), so its
@@ -34,13 +35,13 @@ function isActive(url: string, pathname: string) {
   return url === pathname;
 }
 
-// A leaf nav link. The root "/" (Home) is hidden — it's accessed via the logo.
+// A leaf nav link. The docs home is hidden — it's accessed via the logo.
 export function NavItem({ item }: { item: PageTree.Item }) {
   const pathname = usePathname();
   const depth = useNavDepth();
   const active = isActive(item.url, pathname);
 
-  if (item.url === "/") return null;
+  if (item.url === DOCS_PREFIX) return null;
 
   return (
     <BaseSidebarItem

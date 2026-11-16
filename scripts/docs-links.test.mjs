@@ -8,7 +8,7 @@ import { fromMarkdown } from "mdast-util-from-markdown";
 import { relocatedIndexHref, remarkRelocatedIndex } from "./relocated-index.mjs";
 import { loader } from "fumadocs-core/source";
 import { resolveRelativeMdHref } from "../src/lib/relative-md-href.mjs";
-import { routeSlugs } from "../src/lib/site-routes.mjs";
+import { pageUrl, routeSlugs } from "../src/lib/site-routes.mjs";
 
 const root = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), "..");
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "volcano-docs-links-"));
@@ -30,7 +30,10 @@ try {
   for (const component of ["footer.tsx", "ide-platforms.tsx", "index.tsx"]) {
     const jsx = fs.readFileSync(path.join(root, "src", "components", "home", component), "utf8");
     for (const [, href] of jsx.matchAll(/\bhref(?:=|:\s*)["'](\/[^"']*)["']/g)) {
-      const route = routeSlugs(new URL(href, "https://docs.volcano.dev").pathname).join("/");
+      const { pathname } = new URL(href, "https://docs.volcano.dev");
+      // Links must use the served URL, not the content path or a redirect.
+      assert.equal(pageUrl(routeSlugs(pathname)), pathname, `${component}: ${href} is not a served URL`);
+      const route = routeSlugs(pathname).join("/");
       assert.ok(
         fs.existsSync(path.join(root, "content", route, "index.md")) ||
           fs.existsSync(path.join(root, "content", `${route}.md`)),
