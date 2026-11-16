@@ -33,6 +33,15 @@ const config: NextConfig = {
         permanent: true,
       },
       { source: "/:file(llms.txt|llms-full.txt|sitemap.xml)", destination: "/docs/:file", permanent: true },
+      // Short links volcano.dev redirected itself before it mounted /docs.
+      ...Object.entries({
+        "/docs/api/sdk": "/docs/sdk/js",
+        "/docs/durable-approvals": "/docs/platform/functions/durable-approvals",
+        "/docs/durable-functions": "/docs/platform/functions/durable-functions",
+        "/docs/edge-functions": "/docs/platform/functions/overview",
+        "/docs/getting-started": "/docs/get-started",
+        "/docs/quick-start": "/docs/get-started/quickstart",
+      }).map(([source, destination]) => ({ source, destination, permanent: false })),
     ];
   },
   async rewrites() {
