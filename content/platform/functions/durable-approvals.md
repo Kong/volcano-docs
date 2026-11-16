@@ -115,7 +115,7 @@ Open **Approvals** in the project's dashboard. It lists approvals newest first, 
 
 ## Decide from the CLI
 
-The [Volcano CLI](/docs/cli/durable-functions) decides approvals as the person signed in with `volcano login`:
+The [Volcano CLI](/cli/durable-functions) decides approvals as the person signed in with `volcano login`:
 
 ```bash
 volcano cloud durable approvals list
@@ -288,7 +288,7 @@ page = owner_client.durable.approvals.list(project_id, status: "pending")
 owner_client.durable.approvals.approve(project_id, page.approvals.first.id, comment: "Checked stock")
 ```
 
-All three have `list`, `get`, `stats`, `approve`, and `deny`. JavaScript returns its usual `{ data, status, error }` envelope; Python and Ruby raise a permission error for `403`, a conflict error for `409`, and a not-found error for `404`. See the [JavaScript](/docs/sdk/js/durable-functions#deciding-approvals), [Python](/docs/sdk/python/functions#decide-approvals-from-a-backend), and [Ruby](/docs/sdk/ruby/functions#decide-durable-approvals) guides.
+All three have `list`, `get`, `stats`, `approve`, and `deny`. JavaScript returns its usual `{ data, status, error }` envelope; Python and Ruby raise a permission error for `403`, a conflict error for `409`, and a not-found error for `404`. See the [JavaScript](/sdk/js/durable-functions#deciding-approvals), [Python](/sdk/python/functions#decide-approvals-from-a-backend), and [Ruby](/sdk/ruby/functions#decide-durable-approvals) guides.
 
 ## Who can decide
 

@@ -86,7 +86,7 @@ Warning: Copy this secret now. It is shown once and cannot be retrieved again.
 
 The first webhook URL generates a signing secret, printed only by this command.
 Changing the URL later keeps the secret. Use `--json` to capture it in a script.
-See [Verify a webhook](/docs/platform/projects/notifications) for the payload and
+See [Verify a webhook](/platform/projects/notifications) for the payload and
 how to check its signature.
 
 Outside local development, the URL must reach the public internet. A URL naming

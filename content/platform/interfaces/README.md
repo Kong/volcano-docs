@@ -11,8 +11,8 @@ of them, and moving between them does not mean rebuilding anything.
 | Interface                                | Reach for it when                                                                                     | Credential                                             |
 | ---------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
 | [Dashboard](dashboard.md)                | Exploring, one-off changes, reading logs and usage, anything you would rather click than script       | Your login                                             |
-| [CLI](/docs/cli)                              | Deploying from a terminal or CI, migrations, local development                                        | Platform token (`pk-`) or project access token (`pt-`) |
-| [SDK](/docs/sdk/js)                           | Writing application code — auth, queries, storage, realtime — from a browser, a function, or a server | Anon key, service key, or a signed-in user's token     |
+| [CLI](/cli)                              | Deploying from a terminal or CI, migrations, local development                                        | Platform token (`pk-`) or project access token (`pt-`) |
+| [SDK](/sdk/js)                           | Writing application code — auth, queries, storage, realtime — from a browser, a function, or a server | Anon key, service key, or a signed-in user's token     |
 | [REST API](../api-reference/overview.md) | Automating something the CLI does not cover, or calling Volcano from a language with no SDK           | Platform token (`pk-`) or project access token (`pt-`) |
 | [MCP server](mcp.md)                     | Letting an AI agent inspect or change one project                                                     | Project access token (`pt-`)                           |
 
@@ -28,7 +28,7 @@ understands your project on disk: `volcano-config.yaml`, your migrations
 directory, and the source it packages and uploads.
 
 **Use an SDK from application code.** There are SDKs for
-[JavaScript](/docs/sdk/js), [Python](/docs/sdk/python), and [Ruby](/docs/sdk/ruby), and they
+[JavaScript](/sdk/js), [Python](/sdk/python), and [Ruby](/sdk/ruby), and they
 are how your _users_ reach Volcano — signing in, querying with row-level
 security applied, uploading files, subscribing to changes. That is a different
 job from the three above, which are how _you_ manage the project. Each feature

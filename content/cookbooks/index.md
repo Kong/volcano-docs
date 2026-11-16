@@ -13,4 +13,4 @@ Build with Volcano using focused code, a coding-agent prompt, and commands to de
 - [Petstore API from its OpenAPI spec](./petstore-api.md): the Swagger Petstore spec as a live API on Postgres, with public reads, signed-in writes, and row-level security, tested from Insomnia.
 - [Remote MCP server with Postgres tools](./mcp-server.md): an MCP server on a public HTTPS URL, with bookmark tools behind a bearer token, called from Insomnia or Claude Code.
 
-For platform concepts and API references, explore the [Docs](/docs).
+For platform concepts and API references, explore the [Docs](/).

@@ -7,7 +7,7 @@ order: 5
 Invoke a deployed function by its name.
 This example assumes a public function named `hello` that accepts a JSON object.
 Grant the anonymous key the explicit `functions.invoke` permission; the default
-authentication-only permissions do not allow invocation. See [anonymous keys](/docs/platform/authentication/security/anon-keys).
+authentication-only permissions do not allow invocation. See [anonymous keys](/platform/authentication/security/anon-keys).
 
 ```ruby
 require "volcano"

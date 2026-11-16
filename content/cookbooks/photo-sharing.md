@@ -25,7 +25,7 @@ The files live in a Volcano Storage bucket, and each photo's caption, size and u
 ## What you need
 
 - A Volcano account. Tested on SUPERAGENT. The app uses email and password sign-in, one storage bucket, one database and one frontend. No functions and no third-party services.
-- Claude Code, Codex or Cursor with the Volcano skills (`volcano setup`), or Node.js 24+ and the [Volcano CLI](/docs/get-started/install) to build it yourself.
+- Claude Code, Codex or Cursor with the Volcano skills (`volcano setup`), or Node.js 24+ and the [Volcano CLI](/get-started/install) to build it yourself.
 
 New Volcano projects start with email confirmation off, so anyone can sign up with any address. See [Notes app with per-user data](./notes-app-with-login.md#why-its-built-this-way) for turning it on.
 
@@ -103,13 +103,13 @@ buckets:
 - **View:** any registered user. `auth.role() = 'authenticated'` leaves out anonymous sessions, so the gallery stays private even if you later turn on anonymous sign-in for something else.
 - **Upload:** only into a folder named after your own user id, so every file lives at `<user id>/<photo id>/…`.
 - **Delete:** only the uploader. Volcano sets `owner_id` to whoever uploaded the file.
-- **Overwrite and visibility:** an upload to a path that already exists is an `UPDATE`, and so is making a file public. A bucket with no `UPDATE` policy still lets the owner change visibility, so `false` is there to block both, for everyone. See [storage policies](/docs/platform/storage/policies).
+- **Overwrite and visibility:** an upload to a path that already exists is an `UPDATE`, and so is making a file public. A bucket with no `UPDATE` policy still lets the owner change visibility, so `false` is there to block both, for everyone. See [storage policies](/platform/storage/policies).
 
 The manifest never creates buckets, which is why `volcano cloud storage bucket create` runs first. The bucket enforces the size and type limits whatever the policies say: a `text/plain` upload gets `400 MIME type text/plain is not allowed`, and a file over 10 MB gets a `400` too.
 
 ### The browser key needs no storage permissions
 
-Anon keys have [storage permissions](/docs/platform/authentication/security/anon-keys) (`storage.upload`, `storage.download`, `storage.list`, `storage.delete`), but those only apply to requests the anon key makes on its own, with nobody signed in. Once someone signs in, the SDK sends their access token, and the bucket policies decide. In testing, every upload, view and delete worked with an auth-only key. A signed-out request with that key got `401 anon key missing required permission: storage.download`.
+Anon keys have [storage permissions](/platform/authentication/security/anon-keys) (`storage.upload`, `storage.download`, `storage.list`, `storage.delete`), but those only apply to requests the anon key makes on its own, with nobody signed in. Once someone signs in, the SDK sends their access token, and the bucket policies decide. In testing, every upload, view and delete worked with an auth-only key. A signed-out request with that key got `401 anon key missing required permission: storage.download`.
 
 So the least-privilege key for this app is the auth-only key every new project starts with. `volcano projects keys anon create` makes more like it. Add `storage.download` only if signed-out visitors should see something, and then write a `SELECT` policy that allows `auth.role() = 'anon'` for those files.
 
@@ -302,7 +302,7 @@ Deploy everything in one command:
 volcano cloud deploy --env-file volcano/cloud.env --with-migrations -d photos
 ```
 
-It saves the variables, runs the migrations, builds the frontend and applies the manifest, then prints the frontend URL. The first run reports `buckets.policies: 4 created, 4 deleted` as it swaps out the defaults. Add the frontend's HTTPS origin to `auth.cors.allowed_origins` and run the same command again. See [CORS configuration](/docs/platform/authentication/configuration/cors).
+It saves the variables, runs the migrations, builds the frontend and applies the manifest, then prints the frontend URL. The first run reports `buckets.policies: 4 created, 4 deleted` as it swaps out the defaults. Add the frontend's HTTPS origin to `auth.cors.allowed_origins` and run the same command again. See [CORS configuration](/platform/authentication/configuration/cors).
 
 ## Check that it works
 
@@ -338,8 +338,8 @@ A run in two headless Chrome windows also passed: thumbnails came back at 640 pi
 
 - **Two layers, each enforcing its own rules.** Bucket policies guard the files and RLS guards the rows. A client can skip the app and call either API directly, so each has to hold up alone. The path constraint is what ties them together: a row can only point at files in its owner's folder, and only the owner can put files there.
 - **One folder per user.** Putting the user id first in the path gives the `INSERT` policy something to check, since `owner_id` doesn't exist until the file does. Delete checks `owner_id`, the uploader Volcano recorded, not the path.
-- **Thumbnails made in the browser.** Volcano Storage stores and serves files as they are, with no resizing. A 640-pixel JPEG is usually tens of kilobytes, against several megabytes for a phone photo, so the grid stays fast and the original loads only when someone opens it. To resize on the server, run a [function](/docs/platform/functions/overview) after upload.
+- **Thumbnails made in the browser.** Volcano Storage stores and serves files as they are, with no resizing. A 640-pixel JPEG is usually tens of kilobytes, against several megabytes for a phone photo, so the grid stays fast and the original loads only when someone opens it. To resize on the server, run a [function](/platform/functions/overview) after upload.
 - **Private files and object URLs.** The files are never made public, so every download goes through a policy check with the viewer's token. That costs one authenticated download per thumbnail, and in return there's never a link that works for someone who isn't signed in. An object URL is a temporary reference to bytes already in the browser. It works in that browser until the page revokes it or closes, and showing it again doesn't repeat the check.
 - **Members see each other's email addresses.** `uploader_email` is readable by everyone signed in, so anyone with an account can read every uploader's address through the database API, even though the page only shows the part before the `@`. That suits a group that already knows each other. Otherwise, store a display name the person chooses and leave the email out of the table.
-- **A shared wall, not private albums.** For per-person photos, change `members-view` to `auth.uid() = owner_id` and `photos_read` to `user_id = auth.uid()`. Storage policies see the path, the owner and the session, not your tables, so sharing with chosen people needs the path to carry the rule (for example a folder per album) or a [function](/docs/platform/functions/overview) that checks a shares table before serving the file.
-- **No moderation.** Anyone who signs up can upload, and there's no rate limit or report flow. Before opening it beyond a trusted group, turn on email confirmation (see [Email SMTP configuration](/docs/platform/authentication/configuration/email-smtp)) and add an admin delete path. Restricting sign-up with `allowed_email_domains` only keeps outsiders out once confirmation is on. Without it, anyone can register a made-up address in an allowed domain.
+- **A shared wall, not private albums.** For per-person photos, change `members-view` to `auth.uid() = owner_id` and `photos_read` to `user_id = auth.uid()`. Storage policies see the path, the owner and the session, not your tables, so sharing with chosen people needs the path to carry the rule (for example a folder per album) or a [function](/platform/functions/overview) that checks a shares table before serving the file.
+- **No moderation.** Anyone who signs up can upload, and there's no rate limit or report flow. Before opening it beyond a trusted group, turn on email confirmation (see [Email SMTP configuration](/platform/authentication/configuration/email-smtp)) and add an admin delete path. Restricting sign-up with `allowed_email_domains` only keeps outsiders out once confirmation is on. Without it, anyone can register a made-up address in an allowed domain.

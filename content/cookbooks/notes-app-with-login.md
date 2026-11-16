@@ -23,7 +23,7 @@ Try the [live demo](https://e86d69db-a9e5-4022-b0f2-506a57cf3d44.frontends.volca
 
 ## What you need
 
-- A Volcano account. Tested on SUPERAGENT. Everything this app uses (email and password sign-in, one database, one frontend, no functions) is also on HOBBY according to the [plans and limits page](/docs/platform/guides/plans-and-limits).
+- A Volcano account. Tested on SUPERAGENT. Everything this app uses (email and password sign-in, one database, one frontend, no functions) is also on HOBBY according to the [plans and limits page](/platform/guides/plans-and-limits).
 - Claude Code, Codex or Cursor with the Volcano skills (`volcano setup`).
 
 New Volcano projects start with email sending and confirmation off, so anyone can sign up with any address. That's fine for a demo or an internal tool. For a real app, add an email provider and turn confirmation on (see the last section).
@@ -114,5 +114,5 @@ When a coding agent builds your app, the code changes every time you ask for som
       require_confirmation: true
   ```
 
-  The sign-up form already handles `confirmationRequired`, so nothing in the app changes. See [Email SMTP configuration](/docs/platform/authentication/configuration/email-smtp).
+  The sign-up form already handles `confirmationRequired`, so nothing in the app changes. See [Email SMTP configuration](/platform/authentication/configuration/email-smtp).
 - Cost: the Claude Code run was $1.25. The deploy used 152 build seconds and 7.8 MB of database storage, inside HOBBY's monthly allowances.

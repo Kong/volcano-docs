@@ -17,7 +17,7 @@ npm install -g @volcano.dev/cli
 volcano --help
 ```
 
-See the [CLI docs](/docs/cli) for the full command reference and other install
+See the [CLI docs](/cli) for the full command reference and other install
 methods.
 
 ## JavaScript SDK
@@ -29,6 +29,6 @@ npm install @volcano.dev/sdk
 # or: pnpm add @volcano.dev/sdk
 ```
 
-See the [SDK docs](/docs/sdk/js) for configuration and your first request.
+See the [SDK docs](/sdk/js) for configuration and your first request.
 
 Next: [quickstart](./quickstart.md).

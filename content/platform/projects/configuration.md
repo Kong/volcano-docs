@@ -520,7 +520,7 @@ volcano cloud config deploy
 last. Pass `-c` to apply another manifest, and repeat it to apply several in
 order. It refuses a manifest with a `variables` section when an env file is
 also present, since applying the section would delete the variables only the
-env file sets. See the [CLI deploy reference](/docs/cli/deploy).
+env file sets. See the [CLI deploy reference](/cli/deploy).
 
 ## Validation, plan limits, and partial failures
 

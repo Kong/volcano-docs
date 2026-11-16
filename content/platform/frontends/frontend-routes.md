@@ -126,7 +126,7 @@ The list is the complete set: routes you leave out are deleted, and
 `frontend_routes: []` deletes them all. Omitting the key leaves the routes as
 they are. See [project configuration](../projects/configuration.md).
 
-You can also manage routes one at a time with the [CLI](/docs/cli). Name a route by
+You can also manage routes one at a time with the [CLI](/cli). Name a route by
 its path prefix or ID, and point one at another frontend with
 `routes update site /docs --frontend <name>`:
 

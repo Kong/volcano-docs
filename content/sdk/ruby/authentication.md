@@ -5,7 +5,7 @@ order: 2
 ---
 
 Sign in with a project's anonymous key and an existing user's credentials.
-Enable the required [authentication methods](/docs/platform/authentication/configuring-auth-methods) for the project first.
+Enable the required [authentication methods](/platform/authentication/configuring-auth-methods) for the project first.
 Install the SDK using the [quickstart](./README.md).
 
 ```ruby

@@ -4,7 +4,7 @@ description: 'Take a Volcano project to production: deploy functions and fronten
 ---
 
 Once your project works locally (see the [Quickstart](../getting-started/quickstart.md)),
-ship it to the cloud with the [Volcano CLI](/docs/cli). Everything below targets your
+ship it to the cloud with the [Volcano CLI](/cli). Everything below targets your
 cloud project — select it first:
 
 ```bash
@@ -53,7 +53,7 @@ applies `volcano-config.yaml`. It waits until every deployment is live and
 prints each frontend's URL. Later `--with-migrations` deploys apply only the
 files the database has not recorded; see
 [Database Migrations](migrations.md#run-migrations-with-the-cli). See the
-[CLI deploy reference](/docs/cli/deploy) for every option and the commands that
+[CLI deploy reference](/cli/deploy) for every option and the commands that
 deploy one kind of resource at a time.
 
 A frontend builds with the variables its entry in `volcano-config.yaml`

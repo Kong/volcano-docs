@@ -22,8 +22,8 @@ MCP server are all ways of calling it — see
 | Interface  | Reach for it when                                                                                                | Documentation                                                   |
 | ---------- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
 | Dashboard  | Exploring, one-off changes, reading logs and usage                                                               | [Dashboard](interfaces/dashboard.md)                            |
-| CLI        | Deploying from a terminal or CI, migrations, local development                                                   | [CLI reference](/docs/cli)                                           |
-| SDK        | Writing application code — auth, queries, storage, realtime, durable functions, sandboxes, and distributed locks | [JavaScript](/docs/sdk/js), [Python](/docs/sdk/python), [Ruby](/docs/sdk/ruby) |
+| CLI        | Deploying from a terminal or CI, migrations, local development                                                   | [CLI reference](/cli)                                           |
+| SDK        | Writing application code — auth, queries, storage, realtime, durable functions, sandboxes, and distributed locks | [JavaScript](/sdk/js), [Python](/sdk/python), [Ruby](/sdk/ruby) |
 | REST API   | Automating what the CLI does not cover                                                                           | [API reference](api-reference/overview.md)                      |
 | MCP server | Letting an AI agent inspect or change one project                                                                | [MCP server](interfaces/mcp.md)                                 |
 
@@ -65,7 +65,7 @@ Isolated sessions where agents and applications run commands, keep files, and se
 | [Overview](sandboxes/overview.md)                                        | What Sandboxes do, who can use them, and how runtime is billed  |
 | [Sandboxes guide](guides/sandboxes.md)                                   | Sessions, files, HTTP access, user grants, and custom templates |
 | [Deploy a custom template](guides/sandboxes.md#deploy-a-custom-template) | Build your own image from a `Dockerfile` fragment               |
-| [CLI](/docs/cli/sandboxes)                                                    | Run commands and manage sessions from a terminal                |
+| [CLI](/cli/sandboxes)                                                    | Run commands and manage sessions from a terminal                |
 
 ### Databases
 
@@ -150,7 +150,7 @@ Next.js, static or server-rendered, served from the edge. A failed build never r
 | [Report problems from Slack](guides/lavaflow-slack.md) | Mention Volcano in Slack to report a problem or request a change    |
 | [Fix Aikido issues](guides/lavaflow-aikido.md)         | Have LavaFlow open fixes for the vulnerabilities Aikido finds       |
 | [Issues](guides/issues.md)                             | Runtime errors grouped into the issues LavaFlow diagnoses and fixes |
-| [CLI](/docs/cli/lavaflow)                                   | Turn LavaFlow on and follow its runs from a terminal                |
+| [CLI](/cli/lavaflow)                                   | Turn LavaFlow on and follow its runs from a terminal                |
 
 ### Security
 

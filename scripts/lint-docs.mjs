@@ -9,7 +9,6 @@ import yaml from "js-yaml";
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
 import { markdownLinks, routePath } from "./markdown-links.mjs";
-import { routeSlugs } from "../src/lib/site-routes.mjs";
 
 const here = path.dirname(url.fileURLToPath(import.meta.url));
 const schema = JSON.parse(
@@ -57,8 +56,8 @@ function checkBody(file, body, offset) {
     if (!link.url.startsWith("/")) continue;
     const route = routePath(link.url);
     if (route === "/") continue;
-    const [section] = routeSlugs(route);
-    if (section !== undefined && !siteSections.has(section)) {
+    const section = route.split("/", 2)[1];
+    if (!siteSections.has(section)) {
       err(file, `site-absolute link must start with a docs section at line ${offset + link.line}: ${link.url}`);
     }
   }

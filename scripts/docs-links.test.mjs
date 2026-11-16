@@ -44,7 +44,7 @@ try {
 
   fs.writeFileSync(
     path.join(content, "index.md"),
-    `---\ntitle: "Test"\ndescription: "Valid link forms."\n---\n\n[root](/docs)\n[root fragment](/docs#top)\n[fragment](/docs/sdk#authentication)\n[query](/docs/sdk?tab=js)\n[titled](/docs/sdk "SDK docs")\n\`[ignored](/bogus)\`\n\n\`\`\`text\n[ignored](/bogus)\n\`\`\`\n`,
+    `---\ntitle: "Test"\ndescription: "Valid link forms."\n---\n\n[root](/)\n[root fragment](/#top)\n[fragment](/sdk#authentication)\n[query](/sdk?tab=js)\n[titled](/sdk "SDK docs")\n\`[ignored](/bogus)\`\n\n\`\`\`text\n[ignored](/bogus)\n\`\`\`\n`,
   );
   fs.writeFileSync(
     path.join(content, "sdk", "index.md"),

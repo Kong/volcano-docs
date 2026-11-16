@@ -795,4 +795,4 @@ until it is active, or remove it and attach it again with the other mode.
 - [Frontend routes](frontend-routes.md) — serve another frontend under a frontend path.
 - [Frontend previews](previews.md) — deploy a build to its own URL, then promote or roll back.
 - [Frontend API reference](../api-reference/frontend-endpoints.md) — the HTTP surface.
-- [CLI reference](/docs/cli) — every `volcano cloud frontends` command.
+- [CLI reference](/cli) — every `volcano cloud frontends` command.

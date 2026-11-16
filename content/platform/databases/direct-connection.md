@@ -352,7 +352,7 @@ async function verifiedUser(req) {
 }
 ```
 
-The SDK's [server client](/docs/sdk/js/nextjs) makes the same `GET /auth/user` call.
+The SDK's [server client](/sdk/js/nextjs) makes the same `GET /auth/user` call.
 
 ### Option 1: Pool Connections Per User
 

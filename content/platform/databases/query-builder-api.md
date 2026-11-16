@@ -5,8 +5,8 @@ description: 'Query your PostgreSQL database from the browser using a simple, ch
 
 Query your PostgreSQL database from the browser using a simple, chainable query API!
 
-The [JavaScript](/docs/sdk/js/database), [Python](/docs/sdk/python/database), and
-[Ruby](/docs/sdk/ruby/database) SDK guides cover projection, filters, and ordered
+The [JavaScript](/sdk/js/database), [Python](/sdk/python/database), and
+[Ruby](/sdk/ruby/database) SDK guides cover projection, filters, and ordered
 pagination. Use native null and boolean values with identity filters; include a
 unique final sort column when paginating.
 

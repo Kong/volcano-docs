@@ -62,7 +62,7 @@ functions:
     http_auth_mode: none
 ```
 
-Ownership lives in the table, and seeded rows have no owner. Write policies check `auth.role() = 'authenticated'`, a registered user. `auth.uid() IS NOT NULL` would also admit [anonymous sessions](/docs/platform/databases/auth-helpers):
+Ownership lives in the table, and seeded rows have no owner. Write policies check `auth.role() = 'authenticated'`, a registered user. `auth.uid() IS NOT NULL` would also admit [anonymous sessions](/platform/databases/auth-helpers):
 
 ```sql
 CREATE TABLE IF NOT EXISTS pets (
@@ -161,6 +161,6 @@ Where the API deviates from the spec:
 
 Other notes:
 
-- Volcano's database API needs a signed-in session even for a public read, so reads use the [direct connection with `application_name=volcano_user_access`](/docs/platform/databases/direct-connection#authentication--user-impersonation). The Codex run signed the function in as an anonymous user instead, which turns anonymous sign-ins on for the whole project. Its write policies refuse anonymous sessions, so that holds too.
+- Volcano's database API needs a signed-in session even for a public read, so reads use the [direct connection with `application_name=volcano_user_access`](/platform/databases/direct-connection#authentication--user-impersonation). The Codex run signed the function in as an anonymous user instead, which turns anonymous sign-ins on for the whole project. Its write policies refuse anonymous sessions, so that holds too.
 - An Express app on Fly or Render with Postgres, or a Cloudflare Worker with D1, works too, with ownership and users in your code.
 - The first request after a deploy or an idle spell took 7 to 13 seconds, warm requests about 0.55 seconds.

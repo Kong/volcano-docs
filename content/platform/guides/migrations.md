@@ -483,7 +483,7 @@ a tracked run and waits for it to end; `--no-wait` returns once it is queued.
 `volcano cloud deploy --with-migrations -d mydb` does the same as part of a
 whole project deploy, after the variables and before the functions, and picks
 the database itself when your `volcano-config.yaml` declares exactly one. See
-the [CLI deploy reference](/docs/cli/deploy).
+the [CLI deploy reference](/cli/deploy).
 
 ```bash
 volcano cloud databases migration status -d mydb          # compare files with the history

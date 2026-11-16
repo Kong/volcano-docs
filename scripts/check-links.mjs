@@ -11,7 +11,6 @@ import path from "node:path";
 import yaml from "js-yaml";
 import { markdownLinks, routePath } from "./markdown-links.mjs";
 import { relocatedIndexHref } from "./relocated-index.mjs";
-import { pageUrl } from "../src/lib/site-routes.mjs";
 
 const contentDir = process.argv[2] || "content";
 const publicDir = process.argv[3] || "public";
@@ -30,7 +29,7 @@ function walk(dir, out = []) {
 function routeOf(file) {
   let rel = path.relative(contentDir, file).replace(/\\/g, "/").replace(/\.md$/, "");
   rel = rel.replace(/(^|\/)index$/, "");
-  return pageUrl(rel.split("/").filter(Boolean));
+  return "/" + rel.replace(/^\/+/, "").replace(/\/+$/, "");
 }
 
 const allFiles = walk(contentDir);

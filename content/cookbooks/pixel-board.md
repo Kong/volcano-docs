@@ -15,7 +15,7 @@ This is the Pixel canvas onboarding template (`pixel-board`): PostgreSQL stores 
 ## What you need
 
 A Volcano account; no third-party services.
-For the code paths below, install Node.js 24+, the [Volcano CLI](/docs/get-started/install), and, for your agent, the [Volcano skills](https://github.com/Kong/volcano-agentic-plugins).
+For the code paths below, install Node.js 24+, the [Volcano CLI](/get-started/install), and, for your agent, the [Volcano skills](https://github.com/Kong/volcano-agentic-plugins).
 
 ## Build it with your coding agent
 
@@ -221,7 +221,7 @@ volcano cloud frontends get web
 ```
 
 Add the frontend's exact HTTPS origin to `auth.cors.allowed_origins` in the manifest, then rerun `volcano cloud config deploy --file volcano/volcano-config.yaml`.
-See [CORS configuration](/docs/platform/authentication/configuration/cors); include a different localhost origin if your dev server uses another port.
+See [CORS configuration](/platform/authentication/configuration/cors); include a different localhost origin if your dev server uses another port.
 These initial migrations target an empty database; do not rerun them on an installed template.
 
 ## Check that it works

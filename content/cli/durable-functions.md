@@ -191,7 +191,7 @@ those with `executions stop`.
 
 A workflow that calls `ctx.waitForApproval` pauses until a person approves or
 denies it, then resumes with the decision. See
-[durable functions in the JavaScript SDK](/docs/sdk/js/durable-functions) for the
+[durable functions in the JavaScript SDK](/sdk/js/durable-functions) for the
 authoring side. The `approvals` commands are the deciding side:
 
 ```bash
@@ -265,7 +265,7 @@ waits resolve immediately.
 
 A workflow that calls `ctx.waitForMessage` pauses until a message with that name
 arrives, and `ctx.publish` sends progress out of a running execution. See
-[durable functions in the JavaScript SDK](/docs/sdk/js/durable-functions) for the
+[durable functions in the JavaScript SDK](/sdk/js/durable-functions) for the
 authoring side. The `messages` commands send to an execution and read what it
 received and published:
 
@@ -327,7 +327,7 @@ execution running on the local engine.
 
 A workflow that calls `ctx.waitForCallback` hands a `vcb_` token to another
 system and pauses until that system succeeds or fails the wait. See
-[durable callbacks](/docs/platform/functions/durable-callbacks) for the authoring
+[durable callbacks](/platform/functions/durable-callbacks) for the authoring
 side. The `callbacks` commands are the token holder's side:
 
 ```bash
@@ -409,7 +409,7 @@ Visibility decides who can start executions of a function:
 | Visibility | Who can start executions |
 |---|---|
 | `private` | Service keys and schedulers |
-| `authenticated` | Also your project's signed-in users, including [anonymous sign-ins](/docs/platform/authentication/anonymous-users) |
+| `authenticated` | Also your project's signed-in users, including [anonymous sign-ins](/platform/authentication/anonymous-users) |
 | `public` | Also anon keys with `functions.invoke` |
 
 A caller a `private` function refuses gets `404` with `durable function not
@@ -421,7 +421,7 @@ A durable function is never invocable over HTTP the way a public standard
 function is, whatever its level: starting an execution is all the level
 allows. An anon key reads and stops only the executions whose `client_token`
 it sends, and a signed-in user also the ones they started. See
-[Durable functions](/docs/platform/functions/durable-functions#wait-for-the-result).
+[Durable functions](/platform/functions/durable-functions#wait-for-the-result).
 
 A new durable function starts `private`, and `durable get` shows the level.
 To change it without rebuilding, declare `visibility` in

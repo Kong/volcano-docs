@@ -210,7 +210,7 @@ be able to push to the project's repository. Volcano refuses these changes
 with `person_required` for a platform token that never expires, a sign-in that
 ended, an owner whose GitHub account can't push to the repository, or a
 project with no repository. The command says why in Volcano's words and exits with code 5.
-[Checking that the owner can push](/docs/platform/projects/git-deploy#check-that-the-owner-can-push)
+[Checking that the owner can push](/platform/projects/git-deploy#check-that-the-owner-can-push)
 says why the owner can't. While `VOLCANO_TOKEN` is set, its token is used
 instead of a `volcano login` sign-in. A project access token is refused before
 anything is sent, also with code 5. Merging applies to the
@@ -342,7 +342,7 @@ LavaFlow starts runs on its own only for issues that hold an exception your
 code threw or logged. Start one yourself for any other
 issue of the project, or for one recorded before LavaFlow was turned on. Name
 the issue by its ID, such as the `Issue` that `show` prints for an earlier
-run, or an ID from the [issues](/docs/platform/guides/issues) API. The run follows
+run, or an ID from the [issues](/platform/guides/issues) API. The run follows
 the project's settings and starts `queued`.
 
 ```bash

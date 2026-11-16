@@ -24,8 +24,8 @@ yarn add @volcano.dev/sdk
 
 ## Sign in and read a profile
 
-Create a project, enable [email and password authentication](/docs/platform/authentication/configuring-auth-methods), and create a user with a confirmed email when your project requires confirmation.
-Use that project's [anonymous key](/docs/platform/authentication/security/anon-keys).
+Create a project, enable [email and password authentication](/platform/authentication/configuring-auth-methods), and create a user with a confirmed email when your project requires confirmation.
+Use that project's [anonymous key](/platform/authentication/security/anon-keys).
 Set `VOLCANO_ANON_KEY`, `VOLCANO_USER_EMAIL`, and `VOLCANO_USER_PASSWORD` in your environment.
 Set `VOLCANO_API_URL` only when using a different endpoint, such as local mode.
 
@@ -61,7 +61,7 @@ try {
 ```
 
 Run it with `node quickstart.mjs`.
-It signs in, fetches the profile, prints the user's email, revokes its server session, and clears the local session. JavaScript auth methods return `{ user, error }` or `{ error }`; check `error` before using a result. Python and Ruby use typed exceptions for the [equivalent Python](/docs/sdk/python) and [Ruby](/docs/sdk/ruby) quickstarts.
+It signs in, fetches the profile, prints the user's email, revokes its server session, and clears the local session. JavaScript auth methods return `{ user, error }` or `{ error }`; check `error` before using a result. Python and Ruby use typed exceptions for the [equivalent Python](/sdk/python) and [Ruby](/sdk/ruby) quickstarts.
 
 Use a separate client for each independent user session.
 Do not share one mutable client across users in a server application.

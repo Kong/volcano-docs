@@ -2,8 +2,11 @@ import { createMDX } from "fumadocs-mdx/next";
 import type { NextConfig } from "next";
 
 import { markdownRewrite } from "./src/lib/markdown-rewrite.mjs";
+import { DOCS_SECTIONS } from "./src/lib/site-routes.mjs";
 
 const withMDX = createMDX();
+
+const docsSections = DOCS_SECTIONS.join("|");
 
 // The social card reads its logo from public/ when it renders (see
 // src/app/_og/social-card.tsx). Next.js does not trace that read, and the
@@ -23,12 +26,12 @@ const config: NextConfig = {
     return [
       { source: "/", destination: "/docs", permanent: true },
       {
-        source: "/:section(get-started|platform|sdk|cli)/:path*",
+        source: `/:section(${docsSections})/:path*`,
         destination: "/docs/:section/:path*",
         permanent: true,
       },
       {
-        source: "/:section(get-started|platform|sdk|cli).md",
+        source: `/:section(${docsSections}).md`,
         destination: "/docs/:section.md",
         permanent: true,
       },

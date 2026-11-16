@@ -1035,9 +1035,9 @@ volcano sandboxes exec --preset python3.12 -- python -c 'print(42)'
 volcano cloud sandboxes exec --preset python3.12 -- python -c 'print(42)'
 ```
 
-See [CLI Sandboxes](/docs/cli/sandboxes) for sessions, files, saved templates, and
-request IDs. See [JavaScript Sandboxes](/docs/sdk/js/sandboxes),
-[Python Sandboxes](/docs/sdk/python/sandboxes), and [Ruby Sandboxes](/docs/sdk/ruby/sandboxes) for the
+See [CLI Sandboxes](/cli/sandboxes) for sessions, files, saved templates, and
+request IDs. See [JavaScript Sandboxes](/sdk/js/sandboxes),
+[Python Sandboxes](/sdk/python/sandboxes), and [Ruby Sandboxes](/sdk/ruby/sandboxes) for the
 `client.sandboxes` facade, binary files, scoped HTTP credentials, and automatic
 session cleanup in each language.
 

@@ -96,7 +96,7 @@ JavaScript during the build, in the cloud and in local mode:
   its handler at its top, such as `checkout/index.ts`, not
   `checkout/src/index.ts`.
 
-See [TypeScript](/docs/platform/functions/creating-functions#typescript) for how the
+See [TypeScript](/platform/functions/creating-functions#typescript) for how the
 build compiles it.
 
 ## CLI operations
@@ -130,7 +130,7 @@ Visibility decides who can invoke a function:
 | Visibility | Who can invoke it |
 |---|---|
 | `private` | Service keys and schedulers |
-| `authenticated` | Also your project's signed-in users, including [anonymous sign-ins](/docs/platform/authentication/anonymous-users) |
+| `authenticated` | Also your project's signed-in users, including [anonymous sign-ins](/platform/authentication/anonymous-users) |
 | `public` | Also anon keys with `functions.invoke`, and [frontend routes](frontends.md#function-routes) |
 
 A refused caller gets:

@@ -4,7 +4,7 @@ description: 'REST API endpoints for Volcano Storage operations.'
 ---
 
 REST API endpoints for Volcano Storage operations.
-For language-native uploads and resumable sessions, see the [JavaScript](/docs/sdk/js/storage), [Python](/docs/sdk/python/storage), and [Ruby](/docs/sdk/ruby/storage) guides.
+For language-native uploads and resumable sessions, see the [JavaScript](/sdk/js/storage), [Python](/sdk/python/storage), and [Ruby](/sdk/ruby/storage) guides.
 
 ## Authentication
 

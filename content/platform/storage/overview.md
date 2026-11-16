@@ -133,7 +133,7 @@ const response = await fetch('/storage/buckets', {
 ```
 
 See [Buckets](buckets.md) for more details.
-For CLI workflows, see the [Volcano CLI docs](/docs/cli).
+For CLI workflows, see the [Volcano CLI docs](/cli).
 
 ## Storage limits
 

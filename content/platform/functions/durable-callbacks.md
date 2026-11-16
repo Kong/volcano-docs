@@ -129,7 +129,7 @@ From a shell, the CLI sends the same requests without a login. Pass `-` in place
 printf '%s' "$CALLBACK_TOKEN" | volcano cloud durable callbacks succeed - --result '{"charge_id": "ch_1"}'
 ```
 
-`fail - --type CardDeclined` and `heartbeat -` read the token the same way. See [durable functions in the CLI](/docs/cli/durable-functions#callbacks).
+`fail - --type CardDeclined` and `heartbeat -` read the token the same way. See [durable functions in the CLI](/cli/durable-functions#callbacks).
 
 ### Succeed it
 

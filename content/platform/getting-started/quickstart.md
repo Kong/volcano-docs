@@ -97,5 +97,5 @@ schedules, auth, and function and frontend settings) from one manifest — see
 | [Deploy to production](../guides/production.md)       | Ship your project to the cloud                    |
 | [View logs](../functions/logs.md)                     | Debug with `volcano cloud functions logs`         |
 
-For the full command set, see the [CLI reference](/docs/cli) or run
+For the full command set, see the [CLI reference](/cli) or run
 `volcano <command> --help`.

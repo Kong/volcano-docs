@@ -96,8 +96,10 @@ Structure:
 The shared header links three sections. They are served under `/docs`,
 `/cookbooks`, and `/blog` only, so the site can be mounted at those paths of
 another host (see `src/lib/site-routes.mjs`). Content files keep their paths:
-`content/cli/setup.md` is `/docs/cli/setup`. Link another docs section as
-`/docs/<section>/...`. `/` and the old unprefixed docs URLs redirect to `/docs`.
+`content/cli/setup.md` is `/docs/cli/setup`. Content still links another docs
+section by its content path (`/cli/setup`); rendered pages link the `/docs`
+URL, and `/` and the unprefixed docs paths redirect to `/docs`, which is how
+links in the Markdown routes resolve.
 
 - `/docs` and the guide routes under it use the documentation sidebar.
 - `/cookbooks` lists recipes; recipe pages use their own sidebar and table of contents.

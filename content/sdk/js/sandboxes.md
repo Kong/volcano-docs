@@ -80,7 +80,7 @@ const response = await fetch(access.data.url, {
 console.log(await response.text());
 ```
 
-Read the scoped credential through `access.data.token`; it is omitted from JSON serialization and routine object logging. The token is bound to this session and port. Do not append it to URLs. See [Sandbox HTTP access](/docs/platform/guides/sandboxes) for browser redemption and authorization.
+Read the scoped credential through `access.data.token`; it is omitted from JSON serialization and routine object logging. The token is bound to this session and port. Do not append it to URLs. See [Sandbox HTTP access](/platform/guides/sandboxes) for browser redemption and authorization.
 
 ## Retry safely
 

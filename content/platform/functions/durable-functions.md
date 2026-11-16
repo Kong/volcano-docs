@@ -76,7 +76,7 @@ Every context operation is checkpointed: what finished is recorded, and a resume
 | `ctx.child(name?, fn)`                           | Groups operations under one checkpointed context.                                                                                                                                                                                                                      |
 | `ctx.log`                                        | The execution's logger, with the execution's identifiers attached.                                                                                                                                                                                                     |
 
-Waits and polls are held by the platform rather than by your code, so a function suspended for an hour costs nothing while it waits — but the execution timeout still applies. To wait for a person's sign-off, use [`ctx.waitForApproval`](durable-approvals.md). To wait for a webhook, your application, or another function, have it send a message and wait with [`ctx.waitForMessage`](durable-messages.md). To wait for a system that holds no Volcano credential, hand it a token with [`ctx.waitForCallback`](durable-callbacks.md); for state only you can check, poll it with `ctx.waitUntil`. Full reference and worked examples are in the SDK's [durable functions guide](/docs/sdk/js/durable-functions).
+Waits and polls are held by the platform rather than by your code, so a function suspended for an hour costs nothing while it waits — but the execution timeout still applies. To wait for a person's sign-off, use [`ctx.waitForApproval`](durable-approvals.md). To wait for a webhook, your application, or another function, have it send a message and wait with [`ctx.waitForMessage`](durable-messages.md). To wait for a system that holds no Volcano credential, hand it a token with [`ctx.waitForCallback`](durable-callbacks.md); for state only you can check, poll it with `ctx.waitUntil`. Full reference and worked examples are in the SDK's [durable functions guide](/sdk/js/durable-functions).
 
 ## Deploy one
 
@@ -200,7 +200,7 @@ A repository has no runtime to declare, so the runtime comes from the source fil
 
 ## From the CLI
 
-The [Volcano CLI](/docs/cli) covers the whole lifecycle under `volcano cloud durable`, reading the same `volcano-config.yaml` and the same `volcano/functions/` layout standard functions use:
+The [Volcano CLI](/cli) covers the whole lifecycle under `volcano cloud durable`, reading the same `volcano-config.yaml` and the same `volcano/functions/` layout standard functions use:
 
 ```bash
 volcano cloud durable deploy --all
@@ -214,7 +214,7 @@ volcano cloud durable approvals approve $APPROVAL_ID --comment "Checked stock"
 
 Logs come from the same command in both shapes a durable function has them: `volcano cloud durable logs order-pipeline --type build` is the deploy's own output, which is where a deploy that ended in `failed` says why, and `--type runtime` is what the function logged while its executions ran. Add `--follow` to tail either one.
 
-The two collections refuse each other's names, so a function declared `kind: durable` is skipped by `volcano cloud functions deploy` and picked up by `volcano cloud durable deploy` — a wrong kind fails before anything is uploaded rather than creating a function that can never change. `volcano cloud deploy` runs both as part of the whole project: variables and migrations first, then functions, durable functions, frontends, and the manifest. See the [CLI deploy reference](/docs/cli/deploy).
+The two collections refuse each other's names, so a function declared `kind: durable` is skipped by `volcano cloud functions deploy` and picked up by `volcano cloud durable deploy` — a wrong kind fails before anything is uploaded rather than creating a function that can never change. `volcano cloud deploy` runs both as part of the whole project: variables and migrations first, then functions, durable functions, frontends, and the manifest. See the [CLI deploy reference](/cli/deploy).
 
 ## Start an execution
 

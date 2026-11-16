@@ -13,8 +13,8 @@ enforces them.
 
 - Link within a section by relative path with `.md`
   (`../guides/deployment-source.md`).
-- Link another section by site-absolute path without extension (`/docs/cli`,
-  `/docs/platform/functions/overview`, `/cookbooks`).
+- Link another section by site-absolute path without extension (`/cli`,
+  `/platform/functions/overview`).
 - Link the OpenAPI document at `https://api.volcano.dev/openapi.yaml`. The site
   serves only Markdown pages, so files such as YAML or source code under
   `content/` are not reachable by URL; `pnpm check:links` fails on links to

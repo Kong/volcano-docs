@@ -17,6 +17,6 @@ New here? Follow these in order:
 
 Then dive into a surface:
 
-- [Platform](/docs/platform) — how Volcano works, concepts, and API reference.
-- [JavaScript SDK](/docs/sdk/js) — build web and Node apps.
-- [CLI](/docs/cli) — manage projects, functions, durable functions, databases, and frontends.
+- [Platform](/platform) — how Volcano works, concepts, and API reference.
+- [JavaScript SDK](/sdk/js) — build web and Node apps.
+- [CLI](/cli) — manage projects, functions, durable functions, databases, and frontends.

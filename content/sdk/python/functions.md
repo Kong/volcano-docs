@@ -7,7 +7,7 @@ order: 5
 Invoke a deployed function by its name.
 This example assumes a public function named `hello` that accepts a JSON object.
 Grant the anonymous key the explicit `functions.invoke` permission; the default
-authentication-only permissions do not allow invocation. See [anonymous keys](/docs/platform/authentication/security/anon-keys).
+authentication-only permissions do not allow invocation. See [anonymous keys](/platform/authentication/security/anon-keys).
 
 ```python
 import os
@@ -256,7 +256,7 @@ curl -X POST "https://api.volcano.dev/durable-callbacks/heartbeat" \
 
 `wait_for_callback(name, submitter, timeout=None, heartbeat_timeout=None)` returns the JSON value the token was succeeded with, or `None` once `timeout` passes, or `heartbeat_timeout` passes without a heartbeat. A result is never `None`, so the two cannot be confused. A failure raises `CallbackFailedError` with the `type` and `message` it was failed with. A token takes one answer: a second gets `409 callback_completed`, and one after the wait timed out or the execution ended gets `410`. It works only for this wait, so treat it as a secret.
 
-The submitter runs inside a checkpointed step that is not retried, so a replay does not run it again. An attempt interrupted before the step is recorded can run it twice, with the same token both times, so make the hand-off idempotent; if the token was answered or the wait timed out in between, it is not run again. When it raises, `wait_for_callback()` raises the runtime's `CallbackSubmitterError`. It must be synchronous: an `async def` submitter raises `TypeError` before the callback opens, and one that returns an awaitable fails the wait instead of handing off. Getting the token needs `VOLCANO_PLATFORM_API_URL` and is retried for the same 30 seconds an approval gets. See [Durable callbacks](/docs/platform/functions/durable-callbacks) for every request, response, and limit.
+The submitter runs inside a checkpointed step that is not retried, so a replay does not run it again. An attempt interrupted before the step is recorded can run it twice, with the same token both times, so make the hand-off idempotent; if the token was answered or the wait timed out in between, it is not run again. When it raises, `wait_for_callback()` raises the runtime's `CallbackSubmitterError`. It must be synchronous: an `async def` submitter raises `TypeError` before the callback opens, and one that returns an awaitable fails the wait instead of handing off. Getting the token needs `VOLCANO_PLATFORM_API_URL` and is retried for the same 30 seconds an approval gets. See [Durable callbacks](/platform/functions/durable-callbacks) for every request, response, and limit.
 
 ## Decide approvals from a backend
 

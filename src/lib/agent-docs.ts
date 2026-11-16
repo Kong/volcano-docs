@@ -9,7 +9,7 @@ import {
   rootPageMarkdownHref,
   treePages,
 } from "@/lib/page-markdown.mjs";
-import { routeSlugs } from "@/lib/site-routes.mjs";
+import { routeSlugs, siteHref } from "@/lib/site-routes.mjs";
 import { siteUrl } from "@/lib/site-url";
 import { source } from "@/lib/source";
 
@@ -54,7 +54,7 @@ function isPageRoute(route: string): boolean {
 // (content/cli/index.md is /docs/cli.md), so they resolve against the file.
 function markdownHref(href: string, page: DocsPage): string {
   if (href.startsWith("/")) {
-    return rootPageMarkdownHref(href, isPageRoute, markdownUrl);
+    return rootPageMarkdownHref(siteHref(href), isPageRoute, markdownUrl);
   }
   if (/^([a-z][a-z0-9+.-]*:|#)/i.test(href)) return href;
   const resolved = resolvePageHref(href, page);

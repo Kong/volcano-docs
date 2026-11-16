@@ -87,7 +87,7 @@ access = session.access(8080)
 
 The process lasts until it exits or its session ends. Access credentials are scoped
 to the session and port and expire at `access.expires_at`. Do not log the token or
-put it in URLs. See [Sandbox HTTP access](/docs/platform/guides/sandboxes).
+put it in URLs. See [Sandbox HTTP access](/platform/guides/sandboxes).
 
 ## Select presets and authorize users
 
