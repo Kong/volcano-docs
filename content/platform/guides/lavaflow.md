@@ -8,9 +8,9 @@ LavaFlow turns production errors into reviewed fixes.
 1. **Error**: a function or frontend fails in production.
 2. **Issue**: Volcano groups the error into an [issue](issues.md).
 3. **Diagnosis**: LavaFlow reads the project's logs and source code and finds the root cause.
-4. **Fix**: LavaFlow writes a fix and [reviews it](#follow-runs).
-5. **Pull request**: LavaFlow opens a pull request with the fix in the project's [linked repository](#link-a-repository).
-6. **Review**: you review the pull request like any other, unless you let LavaFlow merge.
+4. **Fix**: LavaFlow writes its first safe patch.
+5. **Draft pull request**: LavaFlow opens the patch in the project's [linked repository](#link-a-repository).
+6. **Review and revision**: LavaFlow [posts code-review findings inline](#read-the-review-on-the-pull-request), pushes fixes, and replies to those threads. You review the resulting change like any other pull request.
 7. **Merge**: you merge it, or [let LavaFlow merge it](#merge-fixes) once LavaFlow's reviewers and the required checks pass.
 8. **Deployed**: when a deployment Volcano confirmed has the fix goes live, LavaFlow [resolves the issue](#after-a-fix-merges).
 
@@ -701,8 +701,10 @@ starts a new run when it's seen again a few minutes after the deploy; see
 
 ## Read a fix's pull request
 
-A pull request starts with a concise summary of the final change and its reason.
-It describes the implementation reviewers are reading, including any revisions, rather than repeating the investigation.
+LavaFlow opens a draft pull request after its first safe patch, before its AI review begins.
+The run links to that draft while it is reviewing and revising the change.
+After the review loop finishes, LavaFlow updates the title and description to summarize the resulting implementation and its reason, including any revisions.
+The draft becomes ready only when the existing review and project policy allow it; an unresolved review leaves it as a draft.
 The description distinguishes test changes from verification results and links to the LavaFlow run in the Volcano dashboard.
 Private repositories also get test details, the review summary and findings, and a fixed caution when LavaFlow is less sure of the diagnosis; other repositories keep those details in the run.
 Read the diagnosis and detailed evidence in that run, with `volcano cloud lavaflow show <run-id>`, or from [`GET /lavaflow/runs/{run_id}`](#follow-runs).
@@ -765,7 +767,7 @@ fixes or names that code, are held for you as `breaks_contract`. A listed choice
 covers only the behavior it describes: a reviewer still asks you about any
 other change in behavior that nothing justifies. A later round's `minor`
 problem, such as a decision the revision still doesn't list, doesn't send
-the fix back again, so the review can pass and the pull request opens. With
+the fix back again, so the review can pass and the draft can become ready under the project policy. With
 `autonomy: merge`, LavaFlow then holds the fix for you with `review_notes`
 rather than merging it.
 
@@ -1578,7 +1580,7 @@ While LavaFlow still works on a run, `progress` says how far it has come:
 | `queued`             | Waiting to start                                   |
 | `diagnosing`         | Finding the root cause                             |
 | `fixing`             | Writing the fix                                    |
-| `reviewing`          | Reviewing the fix; the pull request opens after it |
+| `reviewing`          | Reviewing and revising its draft pull request |
 | `waiting_for_checks` | Waiting for its pull request's checks to pass      |
 | `merge_queued`       | Queued to merge                                    |
 
@@ -1644,9 +1646,9 @@ tell which first included it, and `deployed_at` is the merge time.
 ### Draft pull requests
 
 `draft` says whether the pull request is a draft, as GitHub last reported it to
-LavaFlow, and is `null` for one opened before LavaFlow recorded it. A draft
-waits for a person to mark it ready; `draft_reason` says why it is one, and is
-`null` otherwise.
+LavaFlow, and is `null` for one opened before LavaFlow recorded it.
+While the initial review loop is running, the pull request stays a draft and `draft_reason` is `null`; this is progress, not a request for human takeover.
+After the loop finishes, `draft_reason` says why a remaining draft needs a person, and is `null` otherwise.
 
 | `draft_reason`       | Why the pull request is a draft                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -2595,32 +2597,32 @@ in the first example.
 
 ## Read the review on the pull request
 
-LavaFlow's AI reviewers check each fix before its pull request opens. The
-run's `review` always has their verdict and
-[the findings](#read-a-reviews-findings), and on a private repository the pull
-request's description has the review's summary.
+LavaFlow opens the first safe patch as a draft, then reviews that draft's exact commit.
+Each completed review posts findings on changed lines where GitHub permits inline comments.
+Findings that cannot be anchored to the diff appear in the review summary and the Volcano run instead.
+A posted review is a comment by Volcano's GitHub App: it never approves the pull request or requests changes, and never counts as a required human approval.
 
-LavaFlow is starting to post the review on the pull request too, as Volcano's
-GitHub App, so a pull request may not have one yet. A posted review is a
-comment: it never approves the pull request or requests changes, so
-it never counts as an approval. It is pinned to the commit it reviewed, or, when
-LavaFlow has already replaced that commit with its clean copy to
-[start CI](#check-before-ci-starts), to the copy, which holds the same files.
+When its fixer pushes a revision, LavaFlow replies to its finding threads with what it changed and the revision's commit.
+That reply does not itself resolve a thread.
+A later review must explicitly verify that the finding is fixed against the new code before LavaFlow replies with that confirmation and resolves its own thread.
+A finding disappearing from the next review, moving off the diff, or becoming a minor note does not establish a fix.
 
-What the review shows depends on the repository:
+LavaFlow leaves human discussions and other reviewers' threads open.
+It also stops its initial review loop if a person changes the draft's code, base, or managed description, or marks it ready early.
+If a thread may have been reopened after an uncertain resolution, LavaFlow leaves it open for a person.
+Your branch protection still decides whether unresolved conversations block a merge.
 
-| Repository  | Review                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Private     | A review that found nothing to fix is a short pass headed **LavaFlow review: passed**. It says how many rounds the review took, how many reviewers finished the last round, any [notes](#how-review-rounds-decide) they left, and what earlier rounds found that LavaFlow fixed. Any other review is headed **LavaFlow review: did not pass**, with each open finding's severity and explanation, and each open finding on a changed line is also a comment on that line. Both list the questions the reviewers ask a person, with values that look like credentials or identifiers removed |
-| Not private | A note that LavaFlow reviewed the commit, with a link to the run in the Volcano dashboard and the `volcano cloud lavaflow show --json` command that reads it. It's the same whatever the review found: no verdict, findings, severities, or line comments, as the pull request's description has none                                                                                                                                                                                                                                                                                       |
+Inline findings and fixer replies describe repository code on private, internal, and public repositories.
+The reviewers that produce those comments receive code and review history, without runtime logs, reports, or the diagnosis.
+Text that cannot safely be published is replaced by a short note linking to the authenticated Volcano run.
+The pull request description keeps its existing visibility rules: detailed investigation and private review summaries remain in the run for repositories that are not private.
 
-If your branch protection requires conversations to be resolved before
-merging, resolve LavaFlow's open line comments once you've checked the
-findings.
+The initial loop stays on the run's existing time, model, and round budgets, and shares the limit of 20 posted reviews per project per hour.
+An interrupted loop resumes from its saved progress and reconciles completed GitHub writes before trying them again.
+If publication cannot finish within its retry allowance, the run reports the failure and leaves the discoverable draft for you.
 
-The review holds no log lines. LavaFlow posts it only while LavaFlow is on for
-the project and its repository, and at most 20 reviews a project an hour. A
-review that can't post leaves the fix and its pull request as they are.
+Runs already using the older publication flow may still show a single review after the pull request opens.
+That older flow publishes detailed findings only on private repositories.
 
 ## See what LavaFlow found
 

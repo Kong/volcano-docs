@@ -34,6 +34,10 @@ doesn't include it" before it asks anything, and exits with code 4. It says
 the same when the owner's plan couldn't be read.
 `settings set` exits with the plan's code 5 or code 4, as above.
 
+A run can show a draft pull request link while its progress is `reviewing`.
+Open that link to follow LavaFlow's inline findings, fixer replies, and verified thread resolutions.
+The first draft is a work in progress; read the final run result and GitHub checks before treating the change as ready.
+
 ## How it relates
 
 - Belongs to a **project**. It reads the runtime errors of the project's
