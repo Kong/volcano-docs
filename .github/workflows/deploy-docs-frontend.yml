@@ -1,0 +1,37 @@
+name: Deploy docs frontend
+run-name: Docs frontend — ${{ github.sha }}
+
+# Deploys this repository as the `docs` frontend of volcano-web's project,
+# which mounts it at /docs, /blog, and /cookbooks with Frontend routes:
+# staging.volcano.dev first, then volcano.dev once staging succeeds. Git
+# auto-deploy keeps deploying the same commits to the docs projects, where
+# LavaFlow fixes them; Frontend routes mount only a Frontend of the same
+# Project, so volcano-web's project needs this second copy.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-docs-frontend
+  cancel-in-progress: false
+
+jobs:
+  staging:
+    name: Staging
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/deploy-docs-frontend-environment.yml
+    with:
+      environment: staging
+      site_url: https://staging.volcano.dev
+
+  production:
+    name: Production
+    needs: staging
+    uses: ./.github/workflows/deploy-docs-frontend-environment.yml
+    with:
+      environment: production
+      site_url: https://volcano.dev

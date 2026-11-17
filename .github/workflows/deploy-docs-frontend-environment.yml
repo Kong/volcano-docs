@@ -1,51 +1,51 @@
-name: Deploy docs to volcano.dev
-run-name: volcano.dev docs — ${{ github.sha }}
+name: Deploy docs frontend to one environment
 
-# Deploys this repository as the `docs` frontend of the production project that
-# serves volcano.dev, which mounts it at /docs, /blog, and /cookbooks with
-# Frontend routes. Git auto-deploy keeps deploying the same commits to the docs
-# project, where LavaFlow fixes them; Frontend routes mount only a Frontend of
-# the same Project, so volcano.dev needs this second copy.
-#
-# The `volcano-dev` environment must allow only the main branch. It holds the
-# variables VOLCANO_DEV_PROJECT_ID, NEXT_PUBLIC_POSTHOG_KEY, and
-# NEXT_PUBLIC_POSTHOG_HOST (the docs project's values; the build inlines them,
-# and the Blog header link waits on a PostHog flag), and the secret
-# VOLCANO_DEV_TOKEN, a project access token for that project.
+# Called by deploy-docs-frontend.yml, once for staging and once for production.
+# Each GitHub environment must allow only the main branch and holds, under the
+# same names volcano-web uses for its project:
+#   secrets   VOLCANO_API_URL, VOLCANO_PROJECT_ID (volcano-web's project),
+#             VOLCANO_TOKEN (a project access token for it)
+#   variables NEXT_PUBLIC_POSTHOG_KEY, NEXT_PUBLIC_POSTHOG_HOST (the docs
+#             project's values; the build inlines them, and the Blog header
+#             link waits on a PostHog flag)
 on:
-  push:
-    branches: [main]
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      site_url:
+        required: true
+        type: string
 
 permissions:
   contents: read
 
-concurrency:
-  group: deploy-volcano-dev
-  cancel-in-progress: false
-
 jobs:
   # Uploads source only (Volcano builds remotely), so no dependency install
   # runs next to the token. A commit that fails to build fails here too, and
-  # volcano.dev keeps serving the last deployment that built; the docs
-  # project's LavaFlow opens the fix.
+  # the site keeps serving the last deployment that built; the docs project's
+  # LavaFlow opens the fix.
   deploy:
     name: Deploy docs frontend
-    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    environment: volcano-dev
+    environment: ${{ inputs.environment }}
     timeout-minutes: 25
     env:
-      VOLCANO_PROJECT: ${{ vars.VOLCANO_DEV_PROJECT_ID }}
-      DOCS_SITE_URL: https://volcano.dev
+      VOLCANO_API_URL: ${{ secrets.VOLCANO_API_URL }}
+      VOLCANO_PROJECT: ${{ secrets.VOLCANO_PROJECT_ID }}
+      DOCS_SITE_URL: ${{ inputs.site_url }}
       NEXT_PUBLIC_POSTHOG_KEY: ${{ vars.NEXT_PUBLIC_POSTHOG_KEY }}
       NEXT_PUBLIC_POSTHOG_HOST: ${{ vars.NEXT_PUBLIC_POSTHOG_HOST }}
     steps:
       - name: Check project configuration
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+          VOLCANO_TOKEN: ${{ secrets.VOLCANO_TOKEN }}
         run: |
-          for name in VOLCANO_PROJECT NEXT_PUBLIC_POSTHOG_KEY NEXT_PUBLIC_POSTHOG_HOST; do
+          for name in VOLCANO_API_URL VOLCANO_PROJECT VOLCANO_TOKEN NEXT_PUBLIC_POSTHOG_KEY NEXT_PUBLIC_POSTHOG_HOST; do
             if [ -z "${!name}" ]; then
-              echo "::error::$name is empty; set it on the volcano-dev environment."
+              echo "::error::$name is empty; set it on the $ENVIRONMENT environment."
               exit 1
             fi
           done
@@ -68,19 +68,14 @@ jobs:
 
       - name: Authenticate with Volcano
         env:
-          VOLCANO_TOKEN: ${{ secrets.VOLCANO_DEV_TOKEN }}
-        run: |
-          if [ -z "$VOLCANO_TOKEN" ]; then
-            echo "::error::VOLCANO_DEV_TOKEN is empty; refusing to fall back to interactive browser auth."
-            exit 1
-          fi
-          volcano login --token "$VOLCANO_TOKEN" --project "$VOLCANO_PROJECT"
+          VOLCANO_TOKEN: ${{ secrets.VOLCANO_TOKEN }}
+        run: volcano login --token "$VOLCANO_TOKEN" --project "$VOLCANO_PROJECT"
 
       # Not shared, so the project's functions never receive them; the frontend
       # selects them by name.
       - name: Set docs build variables
         env:
-          VOLCANO_TOKEN: ${{ secrets.VOLCANO_DEV_TOKEN }}
+          VOLCANO_TOKEN: ${{ secrets.VOLCANO_TOKEN }}
         run: |
           {
             printf 'DOCS_SITE_URL=%s\n' "$DOCS_SITE_URL"
@@ -92,11 +87,12 @@ jobs:
       - name: Deploy and wait for frontend
         id: frontend
         env:
-          VOLCANO_TOKEN: ${{ secrets.VOLCANO_DEV_TOKEN }}
-        run: node scripts/deploy-volcano-dev.mjs
+          VOLCANO_TOKEN: ${{ secrets.VOLCANO_TOKEN }}
+        run: node scripts/deploy-docs-frontend.mjs
 
       - name: Smoke test deployed frontend
         env:
+          ENVIRONMENT: ${{ inputs.environment }}
           FRONTEND_URL: ${{ steps.frontend.outputs.url }}
         run: |
           search_index_path="$(sed -n 's/^export const SEARCH_INDEX_PATH = "\(\/[^" ]*\)";$/\1/p' src/lib/search-index-client.mjs)"
@@ -105,7 +101,7 @@ jobs:
             curl -fsS -o /dev/null "$FRONTEND_URL$path"
           done
           {
-            echo "## volcano.dev docs frontend"
+            echo "## Docs frontend ($ENVIRONMENT)"
             echo "- $FRONTEND_URL/docs"
             echo "- Source: $GITHUB_SHA"
           } >> "$GITHUB_STEP_SUMMARY"

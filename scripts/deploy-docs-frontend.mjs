@@ -1,6 +1,6 @@
-// Deploys this repository as the `docs` frontend of the project that serves
-// volcano.dev, which mounts it at /docs, /blog, and /cookbooks with Frontend
-// routes. The docs project deploys the same commit through Git auto-deploy;
+// Deploys this repository as the `docs` frontend of volcano-web's project,
+// which mounts it at /docs, /blog, and /cookbooks with Frontend routes. The
+// docs project deploys the same commit through Git auto-deploy;
 // this copy exists because Frontend routes mount only a Frontend of the same
 // Project. Run from a checkout after `volcano login`.
 import { appendFileSync } from "node:fs";
