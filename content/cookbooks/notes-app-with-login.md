@@ -7,6 +7,8 @@ tags:
   - row-level-security
   - nextjs
 cover: /cookbooks/notes-app-with-login-cover.webp
+kind: app
+uses: [auth, database]
 ---
 
 Tested on Volcano CLI 0.54.0, SDK 2.2.0, Node 24.9.0, next 16.4.3, react 19.3.1; last verified 2026-10-29 on CLI 0.54.0.

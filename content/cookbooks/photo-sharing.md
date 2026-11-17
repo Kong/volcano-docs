@@ -8,6 +8,8 @@ tags:
   - row-level-security
   - nextjs
 cover: /cookbooks/photo-sharing-cover.webp
+kind: app
+uses: [storage, auth, database]
 ---
 
 Tested on Volcano CLI 0.66.0, SDK 2.2.0, Node 26.11.1, next 16.4.5, react 19.3.1; last verified 2026-11-04 on CLI 0.66.0.

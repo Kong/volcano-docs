@@ -26,7 +26,23 @@
     "cover": {
       "type": "string",
       "pattern": "^/[^/]",
-      "description": "Card cover image for a blog post or cookbook, as a site-absolute path under public/."
+      "description": "Card cover image for a blog post or recipe, as a site-absolute path under public/."
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["agent", "app"],
+      "description": "What a cookbook recipe builds, shown as a pill on its card and header."
+    },
+    "uses": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["functions", "durable-functions", "database", "auth", "storage", "realtime", "sandboxes"]
+      },
+      "minItems": 1,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "description": "The Volcano resources a cookbook recipe leans on most, most important first, shown as pills."
     },
     "published": {
       "type": "string",

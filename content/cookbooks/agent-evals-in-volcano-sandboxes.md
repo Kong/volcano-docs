@@ -8,6 +8,8 @@ tags:
   - harbor
   - realtime
 cover: /cookbooks/agent-evals-in-volcano-sandboxes-cover.webp
+kind: agent
+uses: [sandboxes, realtime, database]
 ---
 
 Tested on Volcano CLI 0.62.0, SDK 2.2.0, Harbor 0.26.0, Claude Code 2.1.326, Codex 0.169.0, OpenCode 1.19.5, Node 22.23.5, next 16.4.6; last verified 2026-11-16 on CLI 0.62.0.

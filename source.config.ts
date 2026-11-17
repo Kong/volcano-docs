@@ -2,6 +2,11 @@ import { defineConfig, defineDocs } from "fumadocs-mdx/config";
 import { pageSchema } from "fumadocs-core/source/schema";
 import { remarkRelocatedIndex } from "./scripts/relocated-index.mjs";
 import { BLOG_CATEGORY_SLUGS } from "./src/lib/blog-categories.mjs";
+import { RECIPE_KIND_SLUGS, RECIPE_RESOURCE_SLUGS, RECIPE_USES_MAX } from "./src/lib/recipe-meta.mjs";
+
+function oneOf(slugs: string[]) {
+  return pageSchema.shape.title.regex(new RegExp(`^(${slugs.join("|")})$`));
+}
 
 // Reads the docs tree. Every page is authored in this repository.
 export const docs = defineDocs({
@@ -11,7 +16,9 @@ export const docs = defineDocs({
       author: pageSchema.shape.title.optional(),
       cover: pageSchema.shape.title.regex(/^\/[^/]/).optional(),
       published: pageSchema.shape.title.regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-      category: pageSchema.shape.title.regex(new RegExp(`^(${BLOG_CATEGORY_SLUGS.join("|")})$`)).optional(),
+      category: oneOf(BLOG_CATEGORY_SLUGS).optional(),
+      kind: oneOf(RECIPE_KIND_SLUGS).optional(),
+      uses: oneOf(RECIPE_RESOURCE_SLUGS).array().min(1).max(RECIPE_USES_MAX).optional(),
       tags: pageSchema.shape.title.array().optional(),
       draft: pageSchema.shape.full,
     }),
