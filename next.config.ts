@@ -36,7 +36,14 @@ const config: NextConfig = {
         permanent: true,
       },
       // search-index.gz too: tabs opened before the move still fetch it there.
-      { source: "/:file(llms.txt|llms-full.txt|sitemap.xml|search-index.gz)", destination: "/docs/:file", permanent: true },
+      // The social cards and design assets moved with the docs; shared links
+      // and cached previews still name the old paths.
+      {
+        source: "/:file(llms.txt|llms-full.txt|sitemap.xml|search-index.gz|opengraph-image|twitter-image)",
+        destination: "/docs/:file",
+        permanent: true,
+      },
+      { source: "/design/:path*", destination: "/docs/design/:path*", permanent: true },
       // Short links volcano.dev redirected itself before it mounted /docs.
       ...Object.entries({
         "/docs/api/sdk": "/docs/sdk/js",

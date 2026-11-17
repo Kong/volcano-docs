@@ -69,6 +69,11 @@ test("a degraded frontend takes a new deployment", async () => {
   assert.equal(commands.filter(command => command.includes("deploy")).length, 1);
 });
 
+test("a deployment that ends degraded fails with its own reason", () => {
+  assert.throws(() => deploymentState({ current: expected, status: "degraded" }, expected, old), /current but degraded/);
+  assert.throws(() => deploymentState({ current: old, status: "degraded" }, expected, old), /old-deployment is still serving/);
+});
+
 test("unknown status prevents an ambiguous submission", async () => {
   for (const status of ["", "unknown"]) {
     await assert.rejects(deployFrontend({ run: () => output(old, "", status) }), /not ready for submission/);

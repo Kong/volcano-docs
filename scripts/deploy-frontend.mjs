@@ -32,6 +32,9 @@ export function deploymentState(frontend, expected, previous) {
     if (frontend.status === "failed") throw new Error(`Deployment ${expected} failed`);
     if (frontend.status === "active") return "ready";
     if (frontend.status === "provisioning") return "waiting";
+    if (frontend.status === "degraded") {
+      throw new Error(`Deployment ${expected} is current but degraded: its edge recovery gave up, and another deployment retries it`);
+    }
   }
   // Hosting keeps serving the previous deployment when a new one fails, so
   // finding that deployment still current means this one failed, usually in
@@ -39,7 +42,7 @@ export function deploymentState(frontend, expected, previous) {
   // A failed previous deployment can be current without serving anything.
   if (frontend.current && frontend.current === previous) {
     let previousState = "current";
-    if (frontend.status === "active") previousState = "serving";
+    if (["active", "degraded"].includes(frontend.status)) previousState = "serving";
     throw new Error(`Deployment ${expected} did not become active; ${previous} is still ${previousState}. ${expected}'s build logs show why.`);
   }
   throw new Error(`Deployment ${expected} is no longer pending and did not become active`);
