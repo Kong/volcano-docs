@@ -3,6 +3,7 @@
     "index",
     "agent-evals-in-volcano-sandboxes",
     "support-agent",
+    "spend-request-agent",
     "mcp-server",
     "pixel-board",
     "realtime-chat",
