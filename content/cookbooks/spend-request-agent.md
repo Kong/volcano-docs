@@ -16,7 +16,7 @@ A budget request usually reaches finance half-built: two more support hires or a
 
 This agent asks those questions before finance sees the request. It checks every figure against company data, scores how ready the case is, and files it. The reviewer gets a case with answers and checked numbers, and approves it, pushes it back or denies it.
 
-One Volcano project holds all of it. Postgres, with row-level security, holds the cases, the conversation and a ledger of every figure. A plain function runs each agent turn and owns every rule and number. A durable function holds each filed case open until a reviewer decides, an hour later or two weeks later. A push back and a refile resume the same execution, and waiting isn't billed as compute: the execution below had been open 55 seconds and had run code for under 1 second. There is no queue, cron job, status-polling worker or second service.
+One Volcano project holds all of it. Postgres, with row-level security, holds the cases, the conversation and a ledger of every figure. A plain function runs each agent turn and owns every rule and number. A durable function holds each filed case open until a reviewer decides, an hour later or two weeks later. A push back and a refile resume the same execution, and waiting isn't billed as compute: the execution in the screenshot further down had been open 55 seconds and had run code for under 1 second. There is no queue, cron job, status-polling worker or second service.
 
 ![The agent catches a contradicted ticket count, scores the case at 36%, and the requester files it with a written reason](/cookbooks/spend-request-agent-run.gif)
 
@@ -73,7 +73,7 @@ for (let attempt = 0; attempt <= MAX_REWRITES; attempt++) {
 }
 ```
 
-This keeps an invented figure from reaching the reviewer. Tested across five models, with the prompt already forbidding unchecked numbers, the check still fired on 4 of 60 replies, and what it caught was confident and wrong: 154% utilization where the math gave 113%, a readiness of 45% where code had computed 43%. Each caught reply passed after one rewrite.
+This keeps an invented figure from reaching the reviewer. Tested across five models, with the prompt already forbidding unchecked numbers, the check still fired on 4 of 60 turns, and what it caught was confident and wrong: 154% utilization where the math gave 113%, a readiness of 45% where code had computed 43%. Each caught reply passed after one rewrite.
 
 ## Waiting for the reviewer
 
@@ -99,15 +99,8 @@ if (msg === null) {
   await ctx.step(`expire-${round}`, () => updateCase(caseId, { status: 'expired' }));
   return { case_id: caseId, decision: 'expired', rounds: round };
 }
-const { decision, note, reviewer_id: reviewerId } = msg.data;
-await ctx.step(`record-${round}`, async () => {
-  await check((await db()).insert('reviews', { case_id: caseId, reviewer_id: reviewerId, decision, note: note ?? '' }), 'insert review');
-  await updateCase(caseId, { status: STATUS[decision], review_decision: decision, review_note: note ?? '' });
-});
+// ... record the decision on the case
 if (decision !== 'push_back') return { case_id: caseId, decision, rounds: round };
-
-// Back with the requester. spend-api sends "refiled" once the filing gate passes again.
-const refiled = await trusted(ctx, 'refiled', '30d');
 ```
 
 Only the app's own function holds the service key, and it sends a decision after reading the reviewer role from the signed-in session, through row-level security, never from the request body:
