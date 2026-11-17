@@ -495,3 +495,11 @@ Diagnosis
 
 `show --json` and `list --json` print the run as Volcano's API returned it,
 including fields newer than your CLI.
+
+### Waiting for required approval
+
+In Merge mode, `volcano lavaflow show <run-id>` reports **waiting for required
+approval** when CI has passed and GitHub still requires a human review. Approve
+the pull request in GitHub. LavaFlow continues automatically once the required
+approvals and CI pass; you do not need to restart the run or merge it yourself.
+A held or stopped run remains yours to merge.

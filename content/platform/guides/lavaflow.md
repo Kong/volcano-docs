@@ -1070,7 +1070,17 @@ doesn't turn merging on again: turn it on again yourself.
 
 ### Waiting and held
 
-A fix that only waits, for its checks or a merge queue slot, keeps moving, and
+When your repository requires a human approval, Merge mode waits for it. After
+CI passes, the run shows `waiting_for_approval`. Approve the pull request in
+GitHub; LavaFlow merges automatically once GitHub reports all required approvals
+and CI passes, using the repository's merge queue when required. Code-owner
+requirements and dismissed approvals still apply. LavaFlow checks at least every
+five minutes while running. Waiting for approval has no CI timeout, but repeated
+failures to read GitHub can stop the watch. A change request or another hold
+still hands the fix over to you. Runs already held for approval remain yours to
+merge.
+
+A fix that waits for checks, required human approval or a merge queue slot keeps moving, and
 LavaFlow merges it when the wait ends. A held fix is yours for good: LavaFlow
 never merges, pushes to, rebases or dequeues it again. The run's
 `hold_reasons` say why. Review it and merge it on GitHub if you want it, or
@@ -1089,7 +1099,6 @@ starts it the way it starts CI on a fix nothing holds (see
 its checks, and its hold comment says whether it did. Those reasons are:
 
 - `billing` and `breaks_contract` from LavaFlow's reviewers
-- `repository_requires_approval`
 - `rules_bypass`
 - `commit_convention`
 - `no_test`
@@ -1122,7 +1131,7 @@ LavaFlow holds a fix for these reasons:
 | `required_check_skipped`       | A required check was skipped                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `no_required_checks`           | The base branch requires no check, so passing checks alone don't vouch for the fix                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `changes_requested`            | A reviewer requested changes on GitHub                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `repository_requires_approval` | The repository requires an approving review                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `repository_requires_approval` | A historical run held for human approval. It remains yours to merge; new runs wait automatically instead. |
 | `person_commits`               | Someone other than LavaFlow pushed to the fix's branch                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `rules_bypass`                 | The Volcano GitHub App can bypass a ruleset on the base branch                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `unchecked_rules`              | The base branch has a rule LavaFlow doesn't check, such as required signatures. On a fix you merge, it names only rules that kept LavaFlow from starting its CI, such as `code_scanning` or `workflows`, or says LavaFlow couldn't read the rules                                                                                                                                                                                                                                                                                                                   |
@@ -1226,6 +1235,7 @@ A run that may merge carries `merge`:
 
 | `status`             | Meaning                                                                                                                      |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `waiting_for_approval` | Waits for GitHub's required human approval, then continues automatically when approval and CI pass |
 | `waiting_for_checks` | Waits for the checks on the fix's commit                                                                                     |
 | `queued`             | In the repository's merge queue                                                                                              |
 | `merged`             | Merged; the run's `pull_request.state` is `merged`                                                                           |
