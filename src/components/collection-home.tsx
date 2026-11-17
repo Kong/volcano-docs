@@ -7,6 +7,7 @@ import { Hero } from "@/components/home/hero";
 import { FeatureCard } from "@/components/home/feature-card";
 import { Footer } from "@/components/home/footer";
 import { BlogHome } from "@/components/blog-home";
+import { RecipePills } from "@/components/recipe-pills";
 import "@/components/home/index.css";
 import "./collection-home.css";
 
@@ -42,6 +43,7 @@ export function CollectionHome({ section, page }: CollectionHomeProps) {
               variant="cover"
               icon={icon}
               image={image}
+              eyebrow={<RecipePills kind={entry.data.kind} uses={entry.data.uses} />}
               title={entry.data.title}
               description={entry.data.description ?? ""}
               href={entry.url}

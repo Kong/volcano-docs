@@ -1,5 +1,5 @@
 ---
-title: Cookbooks
+title: Cookbook
 description: Build working agents and apps with compact Volcano recipes, each with a tested coding-agent prompt.
 ---
 

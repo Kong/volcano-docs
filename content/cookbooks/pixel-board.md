@@ -3,6 +3,8 @@ title: Pixelboard
 description: Create a shared pixel canvas with anonymous sign-in, persistent colors, and live updates using Volcano.
 tags: [database, realtime, authentication]
 cover: /cookbooks/pixel-board-cover.webp
+kind: app
+uses: [realtime, database, auth]
 ---
 
 ## What it does

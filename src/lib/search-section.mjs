@@ -11,7 +11,7 @@ export function getSearchSection(pathname) {
 
 /** @param {ReturnType<typeof getSearchSection>} section */
 export function getSearchLabel(section) {
-  if (section === "cookbooks") return "Search cookbooks";
+  if (section === "cookbooks") return "Search the cookbook";
   if (section === "blog") return "Search blog";
   return "Search docs";
 }

@@ -8,6 +8,8 @@ tags:
   - row-level-security
   - nextjs
 cover: /cookbooks/ecommerce-store-cover.webp
+kind: app
+uses: [functions, database, auth]
 ---
 
 Tested on Volcano CLI 0.66.0, SDK 2.2.0, Node 26.11.1, next 16.4.5, react 19.3.1, pg 8.23.1; last verified 2026-11-05 on CLI 0.66.0.

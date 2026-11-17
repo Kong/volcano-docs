@@ -8,6 +8,8 @@ tags:
   - row-level-security
   - openrouter
 cover: /cookbooks/spend-request-agent-cover.webp
+kind: agent
+uses: [durable-functions, database, auth]
 ---
 
 Tested on Volcano CLI 0.62.0, SDK 2.2.0, Node 24.9.0, next 16.4.5, react 19.3.1, model anthropic/claude-haiku-5.5 on OpenRouter; last verified 2026-11-09 on CLI 0.62.0.

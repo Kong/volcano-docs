@@ -7,6 +7,7 @@ import { socialMetadata } from "@/lib/social-card";
 import { CollectionHome } from "@/components/collection-home";
 import { MarkdownContent } from "@/components/markdown-content";
 import { CopyPageDropdown } from "@/components/copy-page-dropdown";
+import { RecipePills } from "@/components/recipe-pills";
 
 type CookbooksPageProps = { params: Promise<{ slug?: string[] }> };
 
@@ -24,6 +25,7 @@ export default async function CookbooksPage({ params }: CookbooksPageProps) {
         <CopyPageDropdown url={page.url} />
       </div>
       <DocsDescription>{page.data.description}</DocsDescription>
+      <RecipePills kind={page.data.kind} uses={page.data.uses} />
       <MarkdownContent page={page} />
     </DocsPage>
   );

@@ -6,6 +6,8 @@ tags:
   - mcp
   - database
 cover: /cookbooks/mcp-server-cover.webp
+kind: agent
+uses: [functions, database]
 ---
 
 Tested on Volcano CLI 0.54.0, SDK 2.2.0, Node 24.9.0, @modelcontextprotocol/sdk 1.32.2, zod 4.6.7; last verified 2026-10-30 on CLI 0.54.0.

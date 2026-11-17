@@ -1,0 +1,46 @@
+/* A recipe's kind and the Volcano resources it leans on most: one row of
+   labels above a card's title and under a recipe's description. */
+
+.recipe-pills {
+  --cmp-gap: var(--spacing-control-gap);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cmp-gap);
+  margin: var(--spacing-none);
+  padding: var(--spacing-none);
+  list-style: none;
+}
+
+.recipe-pill {
+  --cmp-fg: var(--text-neutral-strong);
+  --cmp-bg: transparent;
+  --cmp-border: var(--border-divider);
+  --cmp-padding-block: var(--spacing-label-block);
+  --cmp-padding-inline: var(--spacing-label-inline);
+  --cmp-font: var(--system-font);
+  --cmp-size: var(--type-meta);
+  --cmp-weight: var(--type-navigation-weight);
+
+  display: inline-flex;
+  align-items: center;
+  margin: var(--spacing-none);
+  padding: var(--cmp-padding-block) var(--cmp-padding-inline);
+  border: var(--cmp-border);
+  background: var(--cmp-bg);
+  color: var(--cmp-fg);
+  font-family: var(--cmp-font);
+  font-size: var(--cmp-size);
+  font-weight: var(--cmp-weight);
+  line-height: var(--type-navigation-leading);
+  white-space: nowrap;
+}
+
+/* The kind leads the row and reads as the recipe's category, in the blog
+   category's monospace label style with the primary tint. */
+.recipe-pill[data-variant="kind"] {
+  --cmp-fg: var(--color-primary-text);
+  --cmp-bg: var(--surface-primary-weak);
+  --cmp-border: var(--border-width-thin) solid transparent;
+  --cmp-font: var(--system-mono-font);
+}

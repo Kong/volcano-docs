@@ -93,7 +93,7 @@ Structure:
 - `source.config.ts` — Fumadocs MDX config; `.source/` is generated (gitignored).
 - Custom UI uses the design tokens in `src/app/theme.css` alongside Fumadocs primitives.
 
-### Docs, Cookbooks, and Blog
+### Docs, Cookbook, and Blog
 
 The shared header links three sections. They are served under `/docs`,
 `/cookbooks`, and `/blog` only, so the site can be mounted at those paths of
@@ -110,7 +110,7 @@ links in the Markdown routes resolve.
 Author recipes in `content/cookbooks/` and posts in `content/blog/`.
 Each section's `index.md` provides its introduction, and `meta.json` controls the card and navigation order.
 Keep `"..."` at the end of each section's `meta.json` page list so new Markdown pages appear automatically after explicitly ordered pages in the listing and navigation tree, using their frontmatter title and description.
-Cookbooks uses that tree for its sidebar; Blog lists its categories there.
+The Cookbook uses that tree for its sidebar; Blog lists its categories there.
 All sections share search, sitemap generation, relative Markdown link handling, and the raw Markdown API.
 Search is scoped to the active section.
 The Blog listing and each category page show their title and then the post cards — no introduction, no post count — so `content/blog/index.md` carries only the title and description the page, its metadata and its search entry use.
