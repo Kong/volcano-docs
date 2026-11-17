@@ -342,7 +342,7 @@ curl -X DELETE "https://api.volcano.dev/lavaflow/connector-bindings/$BINDING_ID"
 | `404`  |                            | The project doesn't exist or you can't read it; binding, you're not in the channel, or it's a private channel the app isn't in; unbinding, there's no such binding                                                               |
 | `404`  | `feature_unavailable`      | Binding: the project's `lavaflow.slack` capability is unavailable                                                                                                                                                                |
 | `502`  |                            | Binding: Slack did not answer while checking or joining the channel; try again                                                                                                                                                   |
-| `502`  | `slack_reinstall_required` | Binding: Slack refused the app's token, or a permission its installation lacks; add the app to the workspace again, once a workspace admin approves it if needed                                                                 |
+| `502`  | `slack_reinstall_required` | Binding: Slack refused the app's token, or a permission other than joining channels that its installation lacks; add the app to the workspace again, once a workspace admin approves it if needed                                |
 
 Unbinding and reading the bindings work even while `lavaflow.slack` is
 unavailable. Any credential that can read the project reads its bindings.
