@@ -262,10 +262,13 @@ Fix:
 
 ### Allow ungated workflows
 
-By default, LavaFlow doesn't open a fix's pull request where a workflow in
-the repository could run it, or put its text into a command, with the
-repository's secrets before a person approves it: the fix stays on its run
-instead. Only the project's owner can turn that on, signed in as a person:
+Allow normal repository CI for initial PRs a person merges when the project's `lavaflow.repository_ci` capability is available.
+This is the same permission as **Allow repository CI** in the dashboard's LavaFlow settings.
+It changes only this permission; autonomy, Code Quality, and merge settings stay as they are.
+See [Review and merge fixes yourself](/platform/guides/lavaflow#review-and-merge-fixes-yourself).
+
+On the guarded publication path, this permission instead allows a PR to open past workflows that could use repository secrets before human approval.
+Only the project's owner can turn it on, signed in as a person:
 with `volcano login`, or another platform token that expires. It applies to the
 repository the project is connected to now, while their GitHub account can push
 to it:
@@ -274,15 +277,16 @@ to it:
 volcano cloud lavaflow settings set --allow-ungated-workflows true
 ```
 
-Workflows in the repository may then run LavaFlow's pull requests, or put
-their text into commands, with the repository's secrets before a person
-reviews them. LavaFlow writes those changes from the project's error logs,
-which its users can influence. Turn it on only if those workflows keep secrets
-away from untrusted code; gating them on a label a person adds is safer.
+CI and previews may run generated code with the credentials those jobs receive before human review.
+This includes draft PRs, fixes whose LavaFlow review did not pass, and fixes held for a person to review.
+Issue descriptions and logs can influence that code.
+On the normal path LavaFlow does not check workflow gates as a prerequisite to opening the PR; see the [permission disclosure](/platform/guides/lavaflow#allow-ungated-workflows).
+Keep credentials away from untrusted code or require human approval in the repository when needed.
 
-Connecting the project to another repository, or disconnecting it, turns the
-setting off, and connecting the first repository again doesn't turn it back
-on.
+Changing the connected repository or GitHub installation, or disconnecting it, turns the setting off.
+Changing back does not restore permission.
+An existing grant stays on otherwise; a saved `false` stays false.
+Turning it off stops later publication writes and retries from using normal CI, while existing PRs and CI already started remain.
 
 `settings set` prints that warning and asks before it turns the setting on.
 `--yes` skips the question but still prints the warning, on stderr, so
