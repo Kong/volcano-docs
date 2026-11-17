@@ -1,13 +1,15 @@
 {
   "pages": [
     "index",
+    "agent-evals-in-volcano-sandboxes",
+    "support-agent",
+    "mcp-server",
     "pixel-board",
     "realtime-chat",
     "photo-sharing",
     "ecommerce-store",
     "notes-app-with-login",
     "petstore-api",
-    "mcp-server",
     "..."
   ]
 }

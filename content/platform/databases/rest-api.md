@@ -26,8 +26,12 @@ the branch in the path: `POST
 this page applies unchanged. See [Branching](branching.md).
 
 A request body can be up to 4 MiB. A larger one is refused with `413` and
-`{"error": "request body too large"}`. Keep large files in
-[Storage](/platform/storage/overview) and store their path in the row instead.
+`{"error": "request body too large"}`. A smaller body that packs in very many
+small JSON values, such as more than about 27,000 small objects or 340,000
+numbers, is refused with `413` and
+`{"error": "request body has too many JSON objects, arrays or values"}`. Keep
+large files in [Storage](/platform/storage/overview) and store their path in the
+row instead.
 
 ---
 
