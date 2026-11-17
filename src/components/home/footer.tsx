@@ -36,8 +36,8 @@ const LINK_COLUMNS = [
   {
     heading: "Resources",
     links: [
-      { label: "Getting started", href: "/get-started" },
-      { label: "Documentation", href: "/" },
+      { label: "Getting started", href: "/docs/get-started" },
+      { label: "Documentation", href: "/docs" },
     ],
   },
   {
@@ -79,6 +79,16 @@ export function Footer() {
           <div key={column.heading} className="home-footer-column">
             <h3 className="home-footer-column-heading">{column.heading}</h3>
             {column.links.map(function renderLink(link) {
+              // volcano.dev links get a plain anchor: once this site is
+              // mounted there they are same-origin, and next/link would try a
+              // client-side navigation into another Next.js app.
+              if (/^https?:/.test(link.href)) {
+                return (
+                  <a key={link.label} href={link.href} className="home-footer-link">
+                    {link.label}
+                  </a>
+                );
+              }
               return (
                 <Link
                   key={link.label}

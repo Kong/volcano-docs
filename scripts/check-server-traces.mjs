@@ -8,8 +8,8 @@ import fs from "node:fs";
 import path from "node:path";
 
 const required = {
-  "app/opengraph-image/route.js": ["public/design/logo-mark.svg"],
-  "app/twitter-image/route.js": ["public/design/logo-mark.svg"],
+  "app/docs/opengraph-image/route.js": ["public/docs/design/logo-mark.svg"],
+  "app/docs/twitter-image/route.js": ["public/docs/design/logo-mark.svg"],
 };
 
 let failed = false;

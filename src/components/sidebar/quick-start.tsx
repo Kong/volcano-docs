@@ -6,11 +6,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const QUICK_START_LINKS = [
-  { label: "What is Volcano", href: "/get-started/what-is-volcano" },
-  { label: "Install", href: "/get-started/install" },
-  { label: "Quickstart", href: "/get-started/quickstart" },
-  { label: "JS SDK", href: "/sdk/js" },
-  { label: "CLI Setup", href: "/cli/setup" },
+  { label: "What is Volcano", href: "/docs/get-started/what-is-volcano" },
+  { label: "Install", href: "/docs/get-started/install" },
+  { label: "Quickstart", href: "/docs/get-started/quickstart" },
+  { label: "JS SDK", href: "/docs/sdk/js" },
+  { label: "CLI Setup", href: "/docs/cli/setup" },
 ];
 
 export function QuickStart() {

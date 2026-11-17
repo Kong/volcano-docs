@@ -59,6 +59,18 @@ commit it was built from. The build settings live in each project's **Project
 settings → Git** page in the Volcano dashboard, and `DOCS_SITE_URL` is a project
 variable there.
 
+volcano.dev serves the same site at `/docs`, `/blog`, and `/cookbooks` by
+mounting a `docs` frontend with Frontend routes, which mount only a frontend of
+the same project. So [`deploy-volcano-dev.yml`](.github/workflows/deploy-volcano-dev.yml)
+also uploads each push to `main` to volcano.dev's production project, with
+`DOCS_SITE_URL=https://volcano.dev`. LavaFlow stays on the `volcano-docs`
+project, whose Git deployments it can read; a commit that fails to build fails
+in both, and volcano.dev keeps serving its last good build. The workflow's
+`volcano-dev` environment, limited to `main`, holds `VOLCANO_DEV_PROJECT_ID`,
+the docs project's `NEXT_PUBLIC_POSTHOG_KEY` and `NEXT_PUBLIC_POSTHOG_HOST`
+(the Blog header link waits on a PostHog flag), and the project access token
+`VOLCANO_DEV_TOKEN`.
+
 ## Site (Fumadocs)
 
 The site is a [Fumadocs](https://fumadocs.dev) app that reads the assembled
@@ -76,16 +88,22 @@ make          # list all targets
 
 Structure:
 
-- `src/app` — App Router (`layout.tsx`, `(docs)` group, `[[...slug]]` renderer, `api/search`).
+- `src/app` — App Router (`layout.tsx`, `docs/` with the `[[...slug]]` renderer and the docs-wide agent files, `api/search`).
 - `src/lib/source.ts` — Fumadocs loader over `content/` (mounted at `/`).
 - `source.config.ts` — Fumadocs MDX config; `.source/` is generated (gitignored).
 - Custom UI uses the design tokens in `src/app/theme.css` alongside Fumadocs primitives.
 
 ### Docs, Cookbooks, and Blog
 
-The shared header links three sections while preserving existing docs URLs:
+The shared header links three sections. They are served under `/docs`,
+`/cookbooks`, and `/blog` only, so the site can be mounted at those paths of
+another host (see `src/lib/site-routes.mjs`). Content files keep their paths:
+`content/cli/setup.md` is `/docs/cli/setup`. Content still links another docs
+section by its content path (`/cli/setup`); rendered pages link the `/docs`
+URL, and `/` and the unprefixed docs paths redirect to `/docs`, which is how
+links in the Markdown routes resolve.
 
-- `/` and the existing guide routes use the documentation sidebar.
+- `/docs` and the guide routes under it use the documentation sidebar.
 - `/cookbooks` lists recipes; recipe pages use their own sidebar and table of contents.
 - `/blog` lists posts; both the listing and articles share a Blog sidebar with search, All posts, and the categories with counts.
 

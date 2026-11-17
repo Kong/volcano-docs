@@ -9,33 +9,32 @@ import {
   PopoverTrigger,
 } from "fumadocs-ui/components/ui/popover";
 import { Copy, ChevronDown, Bot, Sparkles, Terminal, Box } from "lucide-react";
+import { markdownPath } from "@/lib/site-routes.mjs";
 
 type CopyPageDropdownProps = {
-  slug: string[];
+  /** The page's route, such as "/docs/cli/setup". */
+  url: string;
 };
 
 // Derive the page URL from the current origin rather than a hardcoded host, so
 // the AI-tool links point at whatever environment (prod/staging/local) is being
 // viewed instead of always deep-linking to production.
-function getPageUrl(slug: string[]) {
-  return `${window.location.origin}/${slug.join("/")}`;
+function getPageUrl(url: string) {
+  return `${window.location.origin}${url}`;
 }
 
-function getLlmApiUrl(slug: string[]) {
-  return `/api/llm/${slug.join("/")}`;
-}
 
 function triggerLabel(copied: boolean) {
   if (copied) return "Copied!";
   return "Copy page";
 }
 
-export function CopyPageDropdown({ slug }: CopyPageDropdownProps) {
+export function CopyPageDropdown({ url }: CopyPageDropdownProps) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
   async function copyForLlm() {
-    const res = await fetch(getLlmApiUrl(slug));
+    const res = await fetch(markdownPath(url));
     const markdown = await res.text();
     await navigator.clipboard.writeText(markdown);
     setCopied(true);
@@ -46,26 +45,26 @@ export function CopyPageDropdown({ slug }: CopyPageDropdownProps) {
   }
 
   function openInChatGPT() {
-    const url = `https://chatgpt.com/?q=${encodeURIComponent(`Read this documentation page and help me understand it: ${getPageUrl(slug)}`)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
+    const href = `https://chatgpt.com/?q=${encodeURIComponent(`Read this documentation page and help me understand it: ${getPageUrl(url)}`)}`;
+    window.open(href, "_blank", "noopener,noreferrer");
     setOpen(false);
   }
 
   function openInClaude() {
-    const url = `https://claude.ai/new?q=${encodeURIComponent(`Read this documentation page and help me understand it: ${getPageUrl(slug)}`)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
+    const href = `https://claude.ai/new?q=${encodeURIComponent(`Read this documentation page and help me understand it: ${getPageUrl(url)}`)}`;
+    window.open(href, "_blank", "noopener,noreferrer");
     setOpen(false);
   }
 
   function openInCodex() {
-    const url = `https://chatgpt.com/codex?q=${encodeURIComponent(`Review this documentation: ${getPageUrl(slug)}`)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
+    const href = `https://chatgpt.com/codex?q=${encodeURIComponent(`Review this documentation: ${getPageUrl(url)}`)}`;
+    window.open(href, "_blank", "noopener,noreferrer");
     setOpen(false);
   }
 
   function openInCursor() {
-    const url = `https://cursor.com/docs?url=${encodeURIComponent(getPageUrl(slug))}`;
-    window.open(url, "_blank", "noopener,noreferrer");
+    const href = `https://cursor.com/docs?url=${encodeURIComponent(getPageUrl(url))}`;
+    window.open(href, "_blank", "noopener,noreferrer");
     setOpen(false);
   }
 

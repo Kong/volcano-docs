@@ -12,7 +12,7 @@ import "./site-header.css";
 type SiteHeaderProps = { children?: ReactNode };
 
 const LINKS = [
-  { label: "Docs", href: "/", section: "docs" },
+  { label: "Docs", href: "/docs", section: "docs" },
   { label: "Cookbooks", href: "/cookbooks", section: "cookbooks" },
   { label: "Blog", href: "/blog", section: "blog" },
 ];

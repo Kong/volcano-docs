@@ -9,9 +9,9 @@ import type { Metadata } from "next";
 
 const SITE_NAME = "Volcano docs";
 
-/** The generated default card — see src/app/opengraph-image.tsx. */
+/** The generated default card — see src/app/docs/opengraph-image.tsx. */
 const DEFAULT_CARD = {
-  url: "/opengraph-image",
+  url: "/docs/opengraph-image",
   width: 1200,
   height: 630,
   alt: SITE_NAME,

@@ -17,7 +17,7 @@ export const revalidate = false;
 
 export function GET() {
   const index = llms(markdownSource).index();
-  const content = `${index}\n\nThe full text of every page above, in this order: ${absoluteUrl("/llms-full.txt")}\n`;
+  const content = `${index}\n\nThe full text of every page above, in this order: ${absoluteUrl("/docs/llms-full.txt")}\n`;
 
   return new Response(content, {
     headers: { "Content-Type": "text/plain; charset=utf-8" },

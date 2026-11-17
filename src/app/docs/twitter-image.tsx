@@ -3,4 +3,4 @@ export {
   socialCardContentType as contentType,
   socialCardSize as size,
   renderSocialCard as default,
-} from "./_og/social-card";
+} from "../_og/social-card";

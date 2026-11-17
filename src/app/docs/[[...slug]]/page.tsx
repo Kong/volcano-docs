@@ -23,7 +23,7 @@ export default async function Page(props: PageProps) {
   const params = await props.params;
   if (isStandaloneSection(params.slug)) notFound();
 
-  // The site root renders the custom Figma landing page edge-to-edge inside
+  // The docs home renders the custom Figma landing page edge-to-edge inside
   // the docs layout, so it keeps the real header + sidebar but skips the
   // article padding that DocsPage would add.
   if (isHome(params.slug)) {
@@ -37,7 +37,7 @@ export default async function Page(props: PageProps) {
     <DocsPage toc={page.data.toc} full={page.data.full}>
       <div className="docs-title-row">
         <DocsTitle>{page.data.title}</DocsTitle>
-        <CopyPageDropdown slug={params.slug!} />
+        <CopyPageDropdown url={page.url} />
       </div>
       <DocsDescription>{page.data.description}</DocsDescription>
       <MarkdownContent page={page} />
@@ -60,15 +60,15 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
       description:
         "Build AI agents and modern applications with the platform for the AI era, fully integrated with your agentic coding tools.",
       ...socialMetadata({
-        url: "/",
+        url: "/docs",
         // The landing page's social title names the product, not the section.
         title: "Volcano - AI infrastructure for agents and applications",
         description:
           "Build AI agents and modern applications with the platform for the AI era, fully integrated with your agentic coding tools.",
       }),
       alternates: {
-        canonical: "/",
-        types: { "text/markdown": markdownUrl("/") },
+        canonical: "/docs",
+        types: { "text/markdown": markdownUrl("/docs") },
       },
     };
   }

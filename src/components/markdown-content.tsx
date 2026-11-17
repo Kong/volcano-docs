@@ -3,6 +3,7 @@ import { DocsBody } from "fumadocs-ui/page";
 import type { ComponentProps } from "react";
 import { source } from "@/lib/source";
 import { resolveRelativeMdHref } from "@/lib/relative-md-href.mjs";
+import { siteHref } from "@/lib/site-routes.mjs";
 
 export type ContentPage = NonNullable<ReturnType<typeof source.getPage>>;
 type MarkdownContentProps = { page: ContentPage };
@@ -18,7 +19,7 @@ export function MarkdownContent({ page }: MarkdownContentProps) {
         </video>
       );
     }
-    return <ResolvedLink href={resolveRelativeMdHref(href, source, page)} {...props} />;
+    return <ResolvedLink href={siteHref(resolveRelativeMdHref(href, source, page))} {...props} />;
   }
   return (
     <DocsBody>
