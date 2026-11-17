@@ -704,7 +704,7 @@ starts a new run when it's seen again a few minutes after the deploy; see
 LavaFlow opens a draft pull request after its first safe patch, before its AI review begins.
 The run links to that draft while it is reviewing and revising the change.
 After the review loop finishes, LavaFlow updates the title and description to summarize the resulting implementation and its reason, including any revisions.
-The draft becomes ready only when the existing review and project policy allow it; an unresolved review leaves it as a draft.
+The draft becomes ready only when the review and project policy allow it; an unresolved review leaves it as a draft.
 The description distinguishes test changes from verification results and links to the LavaFlow run in the Volcano dashboard.
 Private repositories also get test details, the review summary and findings, and a fixed caution when LavaFlow is less sure of the diagnosis; other repositories keep those details in the run.
 Read the diagnosis and detailed evidence in that run, with `volcano cloud lavaflow show <run-id>`, or from [`GET /lavaflow/runs/{run_id}`](#follow-runs).
@@ -924,8 +924,7 @@ your base branch, and opens a draft when that check finds any such service,
 or when LavaFlow can't complete it. This way only CI that GitHub Actions gates
 sees the fix as ready for review. Where your repository can't have draft pull
 requests, such as a private repository on a plan without them, LavaFlow
-finishes its AI review before using the existing regular pull request
-fallback. It never substitutes an unreviewed regular pull request for the
+finishes its AI review before opening a regular pull request and runs no CI on it. It never substitutes an unreviewed regular pull request for the
 first draft.
 LavaFlow runs this check on every attempt to open the fix. If an earlier
 attempt already opened it ready for review and a later check finds such a
@@ -1682,7 +1681,7 @@ cancelled. Match on the code.
 | `diagnose_only`            | `autonomy` was `diagnose_only` when the run was queued, or became it before a pull request opened. Read the diagnosis. For later runs to open pull requests, run `volcano cloud lavaflow settings set --autonomy open_pr`, or send `"autonomy": "open_pr"` to `PATCH /lavaflow/settings`                                                                                                                                                                  |
 | `not_fixable`              | The diagnosis found no change in the code that fixes the error, for example because the cause is outside it. Read the diagnosis                                                                                                                                                                                                                                                                                                                           |
 | `low_confidence`           | The diagnosis isn't confident enough to propose a fix. Read the diagnosis                                                                                                                                                                                                                                                                                                                                                                                 |
-| `no_patch`                 | LavaFlow proposed no change, or its reviewed fix changes no file. Read the diagnosis                                                                                                                                                                                                                                                                                                                                                                      |
+| `no_patch`                 | LavaFlow proposed no change, or a reviewed fallback changes no file and no draft exists. Read the diagnosis                                                                                                                                                                                                                                                                                                                                                                      |
 | `possible_credential`      | The fix held what looks like a credential or a project secret, so LavaFlow pushed nothing. Apply the fix yourself from the diagnosis                                                                                                                                                                                                                                                                                                                      |
 | `possible_personal_data`   | The fix adds an email address the repository lacks, and the repository isn't private, so LavaFlow pushed nothing. Apply the fix yourself                                                                                                                                                                                                                                                                                                                  |
 | `ungated_workflows`        | A workflow could run the fix with the repository's secrets before a person approves it. The run's `held_workflows` lists every such job. See [Gate workflows that run a fix](#gate-workflows-that-run-a-fix), or [open the fix yourself](#open-a-held-fix-yourself)                                                                                                                                                                                       |
@@ -1991,7 +1990,7 @@ the revision, up to 3 rounds.
 - LavaFlow's own checks hold back a revision that changes no file, and one
   that deletes a whole test file your repository has, unless it moves the
   file or also empties a source file, whose tests may go with it. LavaFlow
-  revises it again, or opens it for a person when the rounds run out.
+  revises it again, or leaves the draft for a person when the rounds run out.
 - Reviewers are asked to check every other sign that a fix weakens your
   tests: a test that's deleted or renamed, a skip added to a test that ran
   (as `t.Skip`, `it.skip` or `@pytest.mark.skip` do), a removed assertion,
@@ -2614,7 +2613,7 @@ in the first example.
 ## Read the review on the pull request
 
 Issue-fix runs open the first safe patch as a draft, then review that draft's exact commit.
-Code Quality keeps its existing review-before-publication flow.
+Code Quality reviews fixes before publication.
 Repositories without draft support finish AI review before a regular pull request can open.
 Each completed review posts findings on changed lines where GitHub permits inline comments.
 Findings that cannot be anchored to the diff appear in the review summary and the Volcano run instead.
@@ -2633,9 +2632,9 @@ Your branch protection still decides whether unresolved conversations block a me
 Inline findings and fixer replies describe repository code on private, internal, and public repositories.
 The reviewers that produce those comments receive code and review history, without runtime logs, reports, or the diagnosis.
 Text that cannot safely be published is replaced by a short note linking to the authenticated Volcano run.
-The pull request description keeps its existing visibility rules: detailed investigation and private review summaries remain in the run for repositories that are not private.
+The pull request description uses the visibility rules below: detailed investigation and private review summaries remain in the run for repositories that are not private.
 
-The initial loop stays on the run's existing time, model, and round budgets, and shares the limit of 20 posted reviews per project per hour.
+The initial loop uses the run's time, model, and round budgets, and shares the limit of 20 posted reviews per project per hour.
 An interrupted loop resumes from its saved progress and reconciles completed GitHub writes before trying them again.
 If publication cannot finish within its retry allowance, the run reports the failure and leaves the discoverable draft for you.
 

@@ -34,10 +34,6 @@ doesn't include it" before it asks anything, and exits with code 4. It says
 the same when the owner's plan couldn't be read.
 `settings set` exits with the plan's code 5 or code 4, as above.
 
-A run can show a draft pull request link while its progress is `reviewing`.
-Open that link to follow LavaFlow's inline findings, fixer replies, and verified thread resolutions.
-The first draft is a work in progress; read the final run result and GitHub checks before treating the change as ready.
-
 ## How it relates
 
 - Belongs to a **project**. It reads the runtime errors of the project's
@@ -380,6 +376,10 @@ the run doesn't start, the command says what to do:
 
 ## Follow the runs
 
+A run can show a draft pull request link while its progress is `reviewing`.
+Open that link to follow LavaFlow's inline findings, fixer replies, and verified thread resolutions.
+The first draft is a work in progress; read the final run result and GitHub checks before treating the change as ready.
+
 A run works on one issue. `list` shows the newest first, with the resource,
 the run's title, and the fix pull request. A run's title is the title of the
 fix it proposed, or its diagnosis summary; until LavaFlow has either, the
@@ -471,7 +471,8 @@ The `Fix:` block always says what happened to the run's fix:
   the diagnosis or reviewing another LavaFlow pull request that is still
   open. A run that finished without a recorded reason says
   `No fix pull request was opened. LavaFlow didn't record why.`
-- While the run is queued or working: `No fix yet: LavaFlow is still working on this run.`
+- While the run is queued or has no published draft yet: `No fix yet: LavaFlow is still working on this run.`
+- While reviewing a published draft, the block links to that work in progress.
 
 ```bash
 volcano cloud lavaflow show 9c1e4f2a-7b3d-4e8f-a1c2-5d6e7f8a9b0c
