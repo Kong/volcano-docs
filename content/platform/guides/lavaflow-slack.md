@@ -27,7 +27,10 @@ Set up Slack in the dashboard; the CLI does not manage it yet.
    **Add to Slack**. Slack asks you to install the Volcano app in your
    workspace. The installation becomes a Slack connector, which everyone
    connected to that workspace can bind channels with. Only you, as the one
-   who installed it, can remove it from Volcano.
+   who installed it, can remove it from Volcano. If your workspace's admins
+   approve apps, Slack sends them a request instead, and again whenever
+   Volcano asks for a permission they haven't approved. Choose
+   **Add to Slack** again once they approve it.
 2. **Connect.** Everyone who will report problems opens account settings and
    chooses **Connect Slack**, while signed in to the Volcano account that owns
    the projects. Slack confirms who they are with Sign in with Slack, and the
@@ -324,14 +327,15 @@ curl -X DELETE "https://api.volcano.dev/lavaflow/connector-bindings/$BINDING_ID"
   -H "Authorization: Bearer $VOLCANO_TOKEN"
 ```
 
-| Status | Code                  | Why                                                                                                                                                                                                 |
-| ------ | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `400`  |                       | A field is missing or malformed, the connector's workspace is not one you connected to in this session, the channel is archived, a Slack Connect channel or shared, or the app isn't in the channel |
-| `403`  | `person_required`     | A project access token or MCP tried to change the bindings                                                                                                                                          |
-| `403`  | `plan_required`       | Binding: the owner's plan does not include LavaFlow                                                                                                                                                 |
-| `404`  |                       | The project doesn't exist or you can't read it; binding, you're not in the channel, or it's a private channel the app isn't in; unbinding, there's no such binding                                  |
-| `404`  | `feature_unavailable` | Binding: the project's `lavaflow.slack` capability is unavailable                                                                                                                                   |
-| `502`  |                       | Binding: Slack did not answer whether you're in the channel; try again                                                                                                                              |
+| Status | Code                       | Why                                                                                                                                                                                                 |
+| ------ | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `400`  |                            | A field is missing or malformed, the connector's workspace is not one you connected to in this session, the channel is archived, a Slack Connect channel or shared, or the app isn't in the channel |
+| `403`  | `person_required`          | A project access token or MCP tried to change the bindings                                                                                                                                          |
+| `403`  | `plan_required`            | Binding: the owner's plan does not include LavaFlow                                                                                                                                                 |
+| `404`  |                            | The project doesn't exist or you can't read it; binding, you're not in the channel, or it's a private channel the app isn't in; unbinding, there's no such binding                                  |
+| `404`  | `feature_unavailable`      | Binding: the project's `lavaflow.slack` capability is unavailable                                                                                                                                   |
+| `502`  |                            | Binding: Slack did not answer whether you're in the channel; try again                                                                                                                              |
+| `502`  | `slack_reinstall_required` | Binding: Slack refused the app's token, or a permission its installation lacks; add the app to the workspace again, once a workspace admin approves it if needed                                    |
 
 Unbinding and reading the bindings work even while `lavaflow.slack` is
 unavailable. Any credential that can read the project reads its bindings.
