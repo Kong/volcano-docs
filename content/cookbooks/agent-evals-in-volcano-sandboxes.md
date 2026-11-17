@@ -206,7 +206,7 @@ This is one easy task and one attempt per agent, so it doesn't rank the agents. 
 
 ## Make it yours
 
-Copy `csv-export/` and replace the repo, the instruction and the tests with a real task from your own backlog: a bug that was fixed last month, with the test that proved the fix. Add more folders under `tasks:` to cover more kinds of work. Set `n_attempts: 5` on the job to run each agent five times per task; a single attempt can't tell a better agent from a lucky one. Because the run is one command with keys from the environment, it fits in a nightly CI job, and a new agent release or model shows up as a change in your own numbers.
+Point the job at a real task from your own backlog in `tasks/<your-task>/`: a bug that was fixed last month, with the test that proved the fix. Add more folders under `tasks:` to cover more kinds of work. Set `n_attempts: 5` on the job to run each agent five times per task; a single attempt can't tell a better agent from a lucky one. Because the run is one command with keys from the environment, it fits in a nightly CI job, and a new agent release or model shows up as a change in your own numbers.
 
 A public leaderboard measures how agents do on tasks chosen to be hard for everyone. Your repo has its own conventions, test setup and edge cases, and an agent's score on someone else's tasks says little about those. In this run the one failure was a blank line: the logic was right, and the output for an empty list was wrong. A hidden test catches that kind of mistake, and a quick review often doesn't. A handful of tasks from your own backlog, graded by your own tests, is a better guide to which agent to trust with that backlog.
 
