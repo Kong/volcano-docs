@@ -659,7 +659,9 @@ deployment runs, `400` when a variable the frontend declares has no value or the
 resolved variables are too large, `404` with `feature_unavailable` while the gate
 is off, `413` when the upload exceeds the archive limit, and `409` when the name
 is taken
-(`candidate_name_taken`), the frontend already has 20 live previews
+(`candidate_name_taken`), the account already holds the live frontend previews
+its plan allows across all of its projects and frontends, 20 on HOBBY and 1000
+on SUPERAGENT, or the frontend already has 100
 (`candidate_limit_reached`), the frontend's variables changed during the deploy
 (`configuration_changed`; retry), or the frontend or project is being deleted
 (`frontend_deleting`, `project_deleting`).
