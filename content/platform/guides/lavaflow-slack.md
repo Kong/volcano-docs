@@ -34,7 +34,11 @@ Set up Slack in the dashboard; the CLI does not manage it yet.
    connection is tied to the Volcano session they connected in. Several people
    can connect to one account, and one Slack account can connect to several
    Volcano accounts.
-3. **Bind.** In LavaFlow settings, the owner picks which channels report
+3. **Invite Volcano to private channels.** Binding a public channel adds the
+   app to it, so public channels need nothing here. In Slack, invite the app to
+   each private channel that will report problems, for example with
+   `/invite @Volcano`, so the picker lists it.
+4. **Bind.** In LavaFlow settings, the owner picks which channels report
    problems for which projects. The picker lists the public channels the Slack
    account you connected in this Volcano session is in, and the private
    channels it and the app are both in. You can bind only such a channel, so on
@@ -42,12 +46,11 @@ Set up Slack in the dashboard; the CLI does not manage it yet.
    signing in to Volcano again, connect Slack again to pick channels. Archived,
    Slack Connect and shared channels can't report. A channel reports for
    nothing until it is bound.
-4. **Add Volcano to private channels.** Binding a public channel adds the app
-   to it. For a private channel, invite the app in Slack first, for example
-   with `/invite @Volcano`, so the picker lists it. If binding a public channel
-   answers `400` because the app can't join it on its own, invite the app the
-   same way, or choose **Add to Slack** again: an installation from before the
-   app could join channels gets that permission when it is added again.
+
+   If binding a public channel answers `400` because the app can't join it on
+   its own, invite the app the same way, or choose **Add to Slack** again: an
+   installation from before the app could join channels gets that permission
+   when it is added again.
 
 ## Report a problem
 
