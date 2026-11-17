@@ -104,7 +104,7 @@ try {
     // ranking changes for broad terms cannot invalidate this assertion.
     for (const [section, query, expected] of [
       ["docs", searchTerm, expectedUrl],
-      ["cookbooks", "Cookbooks", "/cookbooks"],
+      ["cookbooks", "Cookbook", "/cookbooks"],
       ["blog", "Blog", "/blog"],
     ]) {
       const scoped = searchIndexClient(`http://127.0.0.1:${port}/${mode}${SEARCH_INDEX_PATH}`, section);

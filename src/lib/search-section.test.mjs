@@ -10,8 +10,9 @@ test("search scope follows section boundaries for landing pages and articles", (
     for (const suffix of ["", "/", "/article", "/article#heading", "?query=photo"]) {
       assert.equal(getSearchSection(`/${section}${suffix}`), section);
     }
-    assert.equal(getSearchLabel(section), `Search ${section}`);
   }
+  assert.equal(getSearchLabel("cookbooks"), "Search the cookbook");
+  assert.equal(getSearchLabel("blog"), "Search blog");
   assert.equal(getSearchLabel("docs"), "Search docs");
 });
 
