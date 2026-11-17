@@ -2,7 +2,9 @@
 // /api/llm/<slug>, /<slug>.md, and /docs/llms-full.txt so the three never drift.
 
 import { fromMarkdown } from "mdast-util-from-markdown";
-import { routeSlugs } from "./site-routes.mjs";
+import { markdownPath, routeSlugs } from "./site-routes.mjs";
+
+export { markdownPath };
 
 /**
  * A page's markdown: its title (and, when given, its URL) and description as a
@@ -71,19 +73,6 @@ export function rewriteMarkdownLinks(text, rewriteHref) {
     out = out.slice(0, at) + next + out.slice(at + length);
   }
   return out;
-}
-
-/**
- * The `.md` path that serves a page's markdown. A section landing such as
- * /docs is served as /docs/index.md, because the site is mounted by path
- * prefix and /docs.md would fall outside /docs. The site root is /index.md.
- *
- * @param {string} pageUrl a page route such as "/docs/cli/installation"
- */
-export function markdownPath(pageUrl) {
-  const trimmed = pageUrl.replace(/\/+$/, "");
-  if (!trimmed.slice(1).includes("/")) return `${trimmed}/index.md`;
-  return `${trimmed}.md`;
 }
 
 /**

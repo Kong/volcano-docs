@@ -66,8 +66,10 @@ also uploads each push to `main` to volcano.dev's production project, with
 `DOCS_SITE_URL=https://volcano.dev`. LavaFlow stays on the `volcano-docs`
 project, whose Git deployments it can read; a commit that fails to build fails
 in both, and volcano.dev keeps serving its last good build. The workflow's
-`volcano-dev` environment, limited to `main`, holds `VOLCANO_DEV_PROJECT_ID` and
-the project access token `VOLCANO_DEV_TOKEN`.
+`volcano-dev` environment, limited to `main`, holds `VOLCANO_DEV_PROJECT_ID`,
+the docs project's `NEXT_PUBLIC_POSTHOG_KEY` and `NEXT_PUBLIC_POSTHOG_HOST`
+(the Blog header link waits on a PostHog flag), and the project access token
+`VOLCANO_DEV_TOKEN`.
 
 ## Site (Fumadocs)
 

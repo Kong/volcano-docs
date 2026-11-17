@@ -35,7 +35,8 @@ const config: NextConfig = {
         destination: "/docs/:section.md",
         permanent: true,
       },
-      { source: "/:file(llms.txt|llms-full.txt|sitemap.xml)", destination: "/docs/:file", permanent: true },
+      // search-index.gz too: tabs opened before the move still fetch it there.
+      { source: "/:file(llms.txt|llms-full.txt|sitemap.xml|search-index.gz)", destination: "/docs/:file", permanent: true },
       // Short links volcano.dev redirected itself before it mounted /docs.
       ...Object.entries({
         "/docs/api/sdk": "/docs/sdk/js",

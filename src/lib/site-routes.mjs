@@ -51,3 +51,16 @@ export function siteHref(href) {
   if (!DOCS_SECTIONS.includes(section)) return href;
   return /** @type {T} */ (DOCS_PREFIX + href);
 }
+
+/**
+ * The `.md` path that serves a page's markdown. A section landing such as
+ * /docs is served as /docs/index.md, because the site is mounted by path
+ * prefix and /docs.md would fall outside /docs. The site root is /index.md.
+ *
+ * @param {string} pageUrl a page route such as "/docs/cli/installation"
+ */
+export function markdownPath(pageUrl) {
+  const trimmed = pageUrl.replace(/\/+$/, "");
+  if (!trimmed.slice(1).includes("/")) return `${trimmed}/index.md`;
+  return `${trimmed}.md`;
+}

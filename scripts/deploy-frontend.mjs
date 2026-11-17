@@ -112,7 +112,9 @@ export async function deployFrontend({ name = "web", allowCreate = false, appRoo
     }
   }
   if (before.pending) throw new Error(`Frontend already has pending deployment ${before.pending}`);
-  if (!["active", "failed"].includes(before.status)) {
+  // A degraded frontend serves, but its edge recovery gave up; a new
+  // deployment is what retries it.
+  if (!["active", "degraded", "failed"].includes(before.status)) {
     throw new Error(`Frontend is not ready for submission (status: ${before.status || "unknown"})`);
   }
   const variableArgs = [];

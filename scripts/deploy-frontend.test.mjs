@@ -62,6 +62,13 @@ test("pending deployment times out", async () => {
   await assert.rejects(deployFrontend({ run: () => responses.shift(), sleep: async () => {}, attempts: 1 }), /timeout/);
 });
 
+test("a degraded frontend takes a new deployment", async () => {
+  const responses = [output(old, "", "degraded"), "Deployment started", output(expected, "", "provisioning"), output(expected)];
+  const commands = [];
+  await deployFrontend({ run: command => { commands.push(command); return responses.shift(); }, sleep: async () => {} });
+  assert.equal(commands.filter(command => command.includes("deploy")).length, 1);
+});
+
 test("unknown status prevents an ambiguous submission", async () => {
   for (const status of ["", "unknown"]) {
     await assert.rejects(deployFrontend({ run: () => output(old, "", status) }), /not ready for submission/);

@@ -9,6 +9,7 @@ import {
   PopoverTrigger,
 } from "fumadocs-ui/components/ui/popover";
 import { Copy, ChevronDown, Bot, Sparkles, Terminal, Box } from "lucide-react";
+import { markdownPath } from "@/lib/site-routes.mjs";
 
 type CopyPageDropdownProps = {
   /** The page's route, such as "/docs/cli/setup". */
@@ -22,11 +23,6 @@ function getPageUrl(url: string) {
   return `${window.location.origin}${url}`;
 }
 
-// The page's .md route, which stays under the page's own prefix when the site
-// is mounted on another host.
-function getMarkdownUrl(url: string) {
-  return `${url}.md`;
-}
 
 function triggerLabel(copied: boolean) {
   if (copied) return "Copied!";
@@ -38,7 +34,7 @@ export function CopyPageDropdown({ url }: CopyPageDropdownProps) {
   const [copied, setCopied] = useState(false);
 
   async function copyForLlm() {
-    const res = await fetch(getMarkdownUrl(url));
+    const res = await fetch(markdownPath(url));
     const markdown = await res.text();
     await navigator.clipboard.writeText(markdown);
     setCopied(true);
