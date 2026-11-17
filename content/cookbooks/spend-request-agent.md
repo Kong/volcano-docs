@@ -73,7 +73,7 @@ for (let attempt = 0; attempt <= MAX_REWRITES; attempt++) {
 }
 ```
 
-This keeps an invented figure from reaching the reviewer. Tested across five models, with the prompt already forbidding unchecked numbers, the check still fired on 4 of 60 turns, and what it caught was confident and wrong: 154% utilization where the math gave 113%, a readiness of 45% where code had computed 43%. Each caught reply passed after one rewrite.
+The check covers figures with a unit. If two rewrites don't fix a reply, the reply is saved anyway, and the case page marks it "still unsourced" under the message, so the reviewer sees the flag. Tested across five models, with the prompt already forbidding unchecked numbers, the check still fired on 4 of 60 turns, and what it caught was confident and wrong: 154% utilization where the math gave 113%, a readiness of 45% where code had computed 43%. Each caught reply passed after one rewrite.
 
 ## Waiting for the reviewer
 
@@ -103,6 +103,8 @@ if (msg === null) {
 if (decision !== 'push_back') return { case_id: caseId, decision, rounds: round };
 ```
 
+An ignored message restarts the wait with the full timeout. If the 14-day deadline has to hold exactly, store it in a step and wait only for the time left.
+
 Only the app's own function holds the service key, and it sends a decision after reading the reviewer role from the signed-in session, through row-level security, never from the request body:
 
 ```js
@@ -114,7 +116,7 @@ if (c.user_id === auth.user_id) throw new HttpError(403, "reviewers can't decide
 
 A requester can't approve their own case by claiming a reviewer role in the request, and a reviewer can't decide a case they filed. A push back sends the case back to the requester, and the same execution waits up to 30 days for the refile.
 
-The wait uses `waitForMessage` rather than `waitForApproval`, because approvals are decided by Volcano project members in the dashboard and have two outcomes. Here the reviewer is a user of the app, and push back is a third outcome.
+The wait uses [`waitForMessage`](/platform/functions/durable-messages) rather than [`waitForApproval`](/platform/functions/durable-approvals), because approvals are decided by Volcano project members in the dashboard and have two outcomes. Here the reviewer is a user of the app, and push back is a third outcome.
 
 Clients only read, and row-level security decides what they see. A requester sees their own cases; a reviewer sees filed ones:
 
@@ -133,7 +135,7 @@ If a bug in the app asked for another team's case, the database would still retu
 
 ## Build it with your coding agent
 
-You need a Volcano account on SUPERAGENT, since agent turns run up to 35 seconds and HOBBY stops a function at 30, and an OpenRouter API key with a credit limit. Paste this into Claude Code, Codex or Cursor with the Volcano skills, in an empty folder:
+You need a Volcano account on SUPERAGENT, since agent turns run up to 35 seconds and [HOBBY stops a function at 30](/platform/guides/plans-and-limits), and an OpenRouter API key with a credit limit. Paste this into Claude Code, Codex or Cursor with the Volcano skills, in an empty folder:
 
 ```text
 Build and deploy a Volcano app called "Spend requests" in a new Volcano project named spend-requests. Use the Volcano skills and the volcano CLI. Next.js frontend, plain JavaScript functions, @volcano.dev/sdk 2.2.0, model calls through OpenRouter with fetch (OPENROUTER_API_KEY is in my environment), model anthropic/claude-haiku-5.5.
