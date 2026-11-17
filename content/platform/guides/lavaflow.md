@@ -890,7 +890,10 @@ logged errors. LavaFlow never adds a fix you merge to a merge queue, or takes
 it out of one you added it to, and the fix stays yours if merging becomes
 available later.
 
-How such a fix opens depends on the project's `lavaflow.open_pr_ci_start`
+During the initial inline-review loop, every new fix stays a draft.
+The readiness and CI behavior below applies after that loop settles; where it says a fix opens ready, a new initial draft is marked ready at that point.
+
+How such a settled fix is presented depends on the project's `lavaflow.open_pr_ci_start`
 capability, which `GET /projects/{id}/capabilities` lists; see
 [Capabilities for one project](../api-reference/overview.md#capabilities-for-one-project). It is rolling out environment
 by environment.
@@ -920,8 +923,10 @@ the fix opens, LavaFlow runs the check it runs before it starts CI (see
 your base branch, and opens a draft when that check finds any such service,
 or when LavaFlow can't complete it. This way only CI that GitHub Actions gates
 sees the fix as ready for review. Where your repository can't have draft pull
-requests, such as a private repository on a plan without them, the fix opens
-as a regular pull request instead, and LavaFlow still runs no CI on it.
+requests, such as a private repository on a plan without them, the initial
+review loop reports that it could not open its required draft and creates no
+regular pull request as a fallback. Older runs using the previous publication
+flow may still open a regular pull request instead, without starting CI.
 LavaFlow runs this check on every attempt to open the fix. If an earlier
 attempt already opened it ready for review and a later check finds such a
 service, the pull request stays as it is, and LavaFlow runs no CI on it.
@@ -1985,8 +1990,8 @@ the revision, up to 3 rounds.
   `fdescribe` do). Each reviewer gives each sign a verdict, and one that finds a
   test weakened reports a `major` finding, which sends the fix back.
 
-A fix that still changes no file when the review ends opens no pull request:
-the run ends with `pull_request_skipped` `no_patch`.
+A first patch that changes no file opens no pull request: the run ends with `pull_request_skipped` `no_patch`.
+If a later revision cannot be applied or published, the initial loop preserves its existing draft and reports the failure instead of claiming that the empty revision was published.
 
 ### Failure codes
 
@@ -2456,8 +2461,10 @@ hold the fix, and every other check still applies.
 The setting covers opening a fix's pull request. LavaFlow never starts CI on a
 fix it opened past ungated workflows, or merges it: where LavaFlow may merge,
 it holds the fix with `ungated_workflows`, and the fix's commit keeps skipping
-CI. While an ungated workflow is there, LavaFlow doesn't push revisions to that
-pull request either.
+CI. During the initial draft-review loop, LavaFlow may push its own review
+revisions while the owner's permission remains enabled; it checks that
+permission again before writing. After the loop settles, LavaFlow does not
+push later review or CI revisions past ungated workflows.
 
 The setting applies only to the repository the owner turned it on for. Pointing
 the project at another repository, or at none, turns it off, and pointing back
