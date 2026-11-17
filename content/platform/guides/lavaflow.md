@@ -496,7 +496,9 @@ own project.
 
 ## Check availability
 
-LavaFlow is in preview and needs the SUPERAGENT plan. LavaFlow fixes never
+LavaFlow is in preview, and both plans include it: HOBBY stops after its
+monthly allowance of runs (see
+[Plans and limits](plans-and-limits.md#lavaflow)). LavaFlow fixes never
 count toward the project's Sandbox usage. Check the project's
 capabilities before you offer it; `lavaflow` accounts for the owner's plan:
 
@@ -1398,18 +1400,19 @@ read-only project access token is refused as read-only first. Every start
 counts toward the run limits: 5 runs per issue and 200 per project in any 24
 hours. A start that doesn't run answers a code:
 
-| Status | `code`                      | Why                                                                                  | What to do                                             |
-| ------ | --------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------ |
-| `400`  | `feature_unavailable`       | The issue is a Code Quality issue, and Code Quality is not available                 | Wait until `lavaflow.code_quality` is available        |
-| `403`  | `plan_required`             | The issue is a Code Quality issue, and the owner's plan doesn't include Code Quality | Upgrade the owner's plan                               |
-| `404`  | `issue_not_found`           | The project has no issue with that ID                                                | Copy the ID from [the project's issues](issues.md)     |
-| `409`  | `lavaflow_disabled`         | LavaFlow is off for the project                                                      | Turn LavaFlow on                                       |
-| `409`  | `lavaflow_disabled`         | The issue is a Code Quality issue, and Code Quality is off for the project           | [Turn Code Quality on](#turn-code-quality-on)          |
-| `409`  | `repository_required`       | The project no longer links the repository LavaFlow was turned on for                | Link it again, or turn LavaFlow on again               |
-| `409`  | `repository_changed`        | The project links another repository than LavaFlow was turned on for                 | Turn LavaFlow on again to fix issues in the linked one |
-| `409`  | `lavaflow_run_in_progress`  | The issue has a run in progress                                                      | Follow that run                                        |
-| `429`  | `issue_run_limit_reached`   | The issue started 5 runs in the last 24 hours                                        | Try again after `Retry-After`                          |
-| `429`  | `project_run_limit_reached` | The project started 200 runs in the last 24 hours                                    | Try again after `Retry-After`                          |
+| Status | `code`                         | Why                                                                                  | What to do                                                                            |
+| ------ | ------------------------------ | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| `400`  | `feature_unavailable`          | The issue is a Code Quality issue, and Code Quality is not available                 | Wait until `lavaflow.code_quality` is available                                       |
+| `403`  | `plan_required`                | The issue is a Code Quality issue, and the owner's plan doesn't include Code Quality | Upgrade the owner's plan                                                              |
+| `404`  | `issue_not_found`              | The project has no issue with that ID                                                | Copy the ID from [the project's issues](issues.md)                                    |
+| `409`  | `lavaflow_disabled`            | LavaFlow is off for the project                                                      | Turn LavaFlow on                                                                      |
+| `409`  | `lavaflow_disabled`            | The issue is a Code Quality issue, and Code Quality is off for the project           | [Turn Code Quality on](#turn-code-quality-on)                                         |
+| `409`  | `repository_required`          | The project no longer links the repository LavaFlow was turned on for                | Link it again, or turn LavaFlow on again                                              |
+| `409`  | `repository_changed`           | The project links another repository than LavaFlow was turned on for                 | Turn LavaFlow on again to fix issues in the linked one                                |
+| `409`  | `lavaflow_run_in_progress`     | The issue has a run in progress                                                      | Follow that run                                                                       |
+| `429`  | `issue_run_limit_reached`      | The issue started 5 runs in the last 24 hours                                        | Try again after `Retry-After`                                                         |
+| `429`  | `project_run_limit_reached`    | The project started 200 runs in the last 24 hours                                    | Try again after `Retry-After`                                                         |
+| `429`  | `lavaflow_allowance_exhausted` | The owner is on HOBBY and used this month's LavaFlow runs                            | Upgrade the owner's plan, or try again after `Retry-After`, when the allowance renews |
 
 ## Follow runs
 
@@ -1999,28 +2002,30 @@ result under the existing ownership checks; unknown results remain outstanding. 
 from the merge queue when LavaFlow can reach it. This is separate from the
 run-execution pause; either pause can give a run the `feature_paused` code.
 
-| Code                     | Why the run stopped or waits                                                                                                        |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `feature_unavailable`    | Waits: LavaFlow isn't available. The run starts when it is                                                                          |
-| `feature_paused`         | Waits: LavaFlow is paused. The run continues when it resumes                                                                        |
-| `pull_request_limit`     | Waits: the project's open Code Quality pull requests are at its plan's allowance                                                    |
-| `spend_limit`            | Waits: Code Quality is at the project's daily spend limit                                                                           |
-| `code_quality_disabled`  | Code Quality was turned off                                                                                                         |
-| `lavaflow_disabled`      | LavaFlow was turned off, or the project is being deleted                                                                            |
-| `plan_required`          | The owner's plan no longer includes LavaFlow, or Code Quality                                                                       |
-| `account_held`           | The owner's account is read-only or inactive                                                                                        |
-| `issue_not_found`        | The issue no longer exists                                                                                                          |
-| `security_finding`       | The finding has security impact, and the repository isn't private                                                                   |
-| `no_diagnosis`           | LavaFlow couldn't find a root cause                                                                                                 |
-| `budget_exhausted`       | The run reached its usage limit                                                                                                     |
-| `timed_out`              | The run didn't finish in time                                                                                                       |
-| `attempts_exhausted`     | LavaFlow retried the run up to its limit and couldn't finish it. [Start a new run](#start-a-run)                                    |
-| `model_unavailable`      | LavaFlow couldn't reach its AI service                                                                                              |
-| `model_refused`          | LavaFlow's AI service declined to diagnose the issue                                                                                |
-| `model_request_rejected` | LavaFlow's AI service rejected the request                                                                                          |
-| `lineage_waiting`        | Waits: LavaFlow can't yet tell whether a recent fix caused the issue. A new run starts when it can. See [Fix lineage](#fix-lineage) |
-| `lineage_covered`        | A fix for the change the issue was traced to covers it, so the run opened nothing. See [Fix lineage](#fix-lineage)                  |
-| `internal_error`         | Something else went wrong                                                                                                           |
+| Code                           | Why the run stopped or waits                                                                                                        |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `feature_unavailable`          | Waits: LavaFlow isn't available. The run starts when it is                                                                          |
+| `feature_paused`               | Waits: LavaFlow is paused. The run continues when it resumes                                                                        |
+| `pull_request_limit`           | Waits: the project's open Code Quality pull requests are at its plan's allowance                                                    |
+| `spend_limit`                  | Waits: Code Quality is at the project's daily spend limit                                                                           |
+| `code_quality_disabled`        | Code Quality was turned off                                                                                                         |
+| `lavaflow_disabled`            | LavaFlow was turned off, or the project is being deleted                                                                            |
+| `plan_required`                | The owner's plan no longer includes LavaFlow, or Code Quality                                                                       |
+| `account_held`                 | The owner's account is read-only or inactive                                                                                        |
+| `lavaflow_allowance_exhausted` | The owner is on HOBBY and used this month's LavaFlow runs. The run asked LavaFlow's AI service nothing                              |
+| `free_spend_limit`             | Waits: LavaFlow is under high demand on HOBBY. The run starts when there is room                                                    |
+| `issue_not_found`              | The issue no longer exists                                                                                                          |
+| `security_finding`             | The finding has security impact, and the repository isn't private                                                                   |
+| `no_diagnosis`                 | LavaFlow couldn't find a root cause                                                                                                 |
+| `budget_exhausted`             | The run reached its usage limit                                                                                                     |
+| `timed_out`                    | The run didn't finish in time                                                                                                       |
+| `attempts_exhausted`           | LavaFlow retried the run up to its limit and couldn't finish it. [Start a new run](#start-a-run)                                    |
+| `model_unavailable`            | LavaFlow couldn't reach its AI service                                                                                              |
+| `model_refused`                | LavaFlow's AI service declined to diagnose the issue                                                                                |
+| `model_request_rejected`       | LavaFlow's AI service rejected the request                                                                                          |
+| `lineage_waiting`              | Waits: LavaFlow can't yet tell whether a recent fix caused the issue. A new run starts when it can. See [Fix lineage](#fix-lineage) |
+| `lineage_covered`              | A fix for the change the issue was traced to covers it, so the run opened nothing. See [Fix lineage](#fix-lineage)                  |
+| `internal_error`               | Something else went wrong                                                                                                           |
 
 ## Fix lineage
 
@@ -2083,7 +2088,8 @@ from making things worse without a person:
   ends with `lineage_waiting`, opens nothing, bills nothing, and a new run
   starts on its own. A run you start yourself never waits.
 
-Follow-up runs aren't billed.
+Follow-up runs aren't billed. On HOBBY, each still counts toward the plan's
+[monthly runs](plans-and-limits.md#lavaflow).
 
 ### Read a lineage
 
