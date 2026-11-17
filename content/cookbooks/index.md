@@ -9,6 +9,7 @@ Build agents and apps with Volcano using focused code, a coding-agent prompt, an
 
 - [Agent evals in Volcano sandboxes](./agent-evals-in-volcano-sandboxes.md): Harbor runs six coding agents on the same task, one Volcano sandbox per trial, grades them with hidden tests, and a scoreboard on the same project shows the results live.
 - [Support agent](./support-agent.md): a Claude agent in a durable function triages each ticket with tools that run under row-level security, retries failed model calls, and streams its progress to the page.
+- [Finance agent for budget requests](./spend-request-agent.md): a chat agent checks each figure in a budget request against company data and scores the case, and a durable function holds it until a reviewer approves, pushes back or denies it.
 - [Remote MCP server with Postgres tools](./mcp-server.md): an MCP server on a public HTTPS URL, with bookmark tools behind a bearer token, called from Insomnia or Claude Code.
 
 ## Apps
