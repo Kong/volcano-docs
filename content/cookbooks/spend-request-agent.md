@@ -159,7 +159,7 @@ Claude Code 2.1.319 (claude-opus-5-5) built and deployed the app from this promp
 
 ## What it costs
 
-On anthropic/claude-haiku-5.5, a conversation of 3 to 5 turns cost $0.009 to $0.017 in model spend on the live deploy, about $1 to $2 for 100 requests a month. Each filing is one durable execution of about 4 operations, plus 2 per decision, and a case waiting two weeks for a reviewer isn't billed as compute. Code caps agent turns per case and per user per day.
+On anthropic/claude-haiku-5.5, a conversation of 3 to 5 turns cost $0.009 to $0.017 in model spend on the live deploy, about $1 to $2 for 100 requests a month. Each filing is one durable execution of about 4 operations, plus 2 per decision and 1 more for the wait on each refile after a push back, and a case waiting two weeks for a reviewer isn't billed as compute. Code caps agent turns per case and per user per day.
 
 ## Make it yours
 
