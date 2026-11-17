@@ -1074,8 +1074,7 @@ When your repository requires a human approval, Merge mode waits for it. After
 CI passes, the run shows `waiting_for_approval`. Approve the pull request in
 GitHub; LavaFlow merges automatically once GitHub reports all required approvals
 and CI passes, using the repository's merge queue when required. Code-owner
-requirements and dismissed approvals still apply. LavaFlow checks at least every
-five minutes while running. Waiting for approval has no CI timeout, but repeated
+requirements and dismissed approvals still apply. LavaFlow checks every five minutes initially, slowing gradually to hourly after a day of waiting. Waiting for approval has no CI timeout, but repeated
 failures to read GitHub can stop the watch. A change request or another hold
 still hands the fix over to you. Runs already held for approval remain yours to
 merge.
