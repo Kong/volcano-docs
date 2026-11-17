@@ -37,7 +37,7 @@ csv-export/
 
 The agent sees only `instruction.md` and the repo in `/app`. After it stops, Harbor copies `tests/` in and runs `test.sh`. Here that is six Node tests, including edge cases the instruction states but an agent may skip, such as an empty list producing only the header line.
 
-The repo in `environment/ledger/` is a small TypeScript CLI that reads expenses from a JSON file and runs on Node 22 with no dependencies. For your own evals, put your own repo there. The instruction:
+Bring your own task: a folder in this format built from your repo, with a `solution/` so Harbor's `oracle` agent can check the task is solvable. The csv-export files below are the task from the GIF, shown for illustration. Its repo, `environment/ledger/`, is a small TypeScript CLI that reads expenses from a JSON file. The instruction:
 
 ```markdown
 Add a CSV export to ledger.
@@ -80,16 +80,7 @@ test('header and basic row', () => {
   assert.equal(toCsv([{ date: '2026-01-01', category: 'food', amount: 12.5, note: 'x' }]), 'date,category,amount,note\n2026-01-01,food,12.50,x\n');
 });
 test('empty list is just the header', () => assert.equal(toCsv([]), 'date,category,amount,note\n'));
-test('missing note is empty field', () => {
-  assert.equal(toCsv([{ date: '2026-01-02', category: 'gas', amount: 40 }]).split('\n')[1], '2026-01-02,gas,40.00,');
-});
-test('commas and quotes are escaped', () => {
-  const row = toCsv([{ date: '2026-01-03', category: 'travel', amount: 220, note: 'flight to "SFO", window' }]).split('\n')[1];
-  assert.equal(row, '2026-01-03,travel,220.00,"flight to ""SFO"", window"');
-});
-test('newline in a field is quoted', () => {
-  assert.ok(toCsv([{ date: '2026-01-04', category: 'x', amount: 1, note: 'a\nb' }]).includes('"a\nb"'));
-});
+// Three more tests (missing note, quotes and commas, newlines) are omitted here.
 test('cli export respects --month', () => {
   const out = execFileSync('node', ['--no-warnings', '--experimental-strip-types', 'src/cli.ts', 'export', '--month=2026-11'], { encoding: 'utf8' });
   assert.equal(out.trim().split('\n').length, 3);
@@ -100,10 +91,10 @@ test('cli export respects --month', () => {
 
 ## Build it with your coding agent
 
-You need Python 3.12 with [uv](https://docs.astral.sh/uv/), the [Volcano CLI](/get-started/install), a Volcano account (tested on SUPERAGENT), and a key for each model provider. Set `VOLCANO_TOKEN` (a service key with sandbox access), `VOLCANO_PROJECT_ID`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` and `OPENROUTER_API_KEY`. Put the task folder in `tasks-harbor/csv-export/` in an empty folder, then paste this into Claude Code, Codex or Cursor with the Volcano skills (`volcano setup`):
+You need Python 3.12 with [uv](https://docs.astral.sh/uv/), the [Volcano CLI](/get-started/install), a Volcano account (tested on SUPERAGENT), and a key for each model provider. Set `VOLCANO_TOKEN` (a service key with sandbox access), `VOLCANO_PROJECT_ID`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` and `OPENROUTER_API_KEY`. Put your task folder in `tasks/<your-task>/` in an empty folder, then paste this into Claude Code, Codex or Cursor with the Volcano skills (`volcano setup`):
 
 ```text
-Build a Harbor environment provider that runs each trial of a Harbor eval in its own Volcano sandbox, plus the sandbox template and a job file, in this folder. The task to run is in tasks-harbor/csv-export.
+Build a Harbor environment provider that runs each trial of a Harbor eval in its own Volcano sandbox, plus the sandbox template and a job file, in this folder. The task to run is my own, in Harbor's task format, in tasks/<your-task>.
 
 Harbor is the eval harness (github.com/harbor-framework/harbor). Install it with `uv tool install harbor==0.26.0` and read its installed source: `harbor/environments/base.py` (BaseEnvironment, the class to implement) and the Docker environment next to it. For Volcano, use `volcano docs search` and `volcano docs get`. Call the sandbox REST API with VOLCANO_TOKEN and VOLCANO_PROJECT_ID from the environment.
 
@@ -120,18 +111,18 @@ Facts about Volcano sandboxes to build on:
 - Volcano doesn't build the task's Dockerfile. Upload the files its COPY lines name to their destinations, apply WORKDIR, and run its RUN lines in the session, best effort.
 - A template is a Dockerfile fragment on Amazon Linux 2023 arm64: no FROM, USER or ARG, only RUN, COPY, ENV, WORKDIR and CMD. Build steps run as root. ENV doesn't reach session commands.
 
-The template needs Node 22 and the claude, codex and opencode CLIs installed globally, so Harbor's version check passes and it skips its root-only install. Codex is a Rust binary and needs a CA bundle; point SSL_CERT_FILE at /etc/pki/tls/certs/ca-bundle.crt in the exec environment if it can't find one. Create /installed-agent, /logs/agent, /logs/verifier, /logs/artifacts, /tests, /solution and /app owned by uid 1000 (Harbor runs chmod and chown on them), and add a passwd entry for uid 1000. OpenCode fails with EPIPE unless its working directory is a git repo; the example task's Dockerfile runs `git init` in /app for that reason.
+The template needs Node 22 and the claude, codex and opencode CLIs installed globally, so Harbor's version check passes and it skips its root-only install. Codex is a Rust binary and needs a CA bundle; point SSL_CERT_FILE at /etc/pki/tls/certs/ca-bundle.crt in the exec environment if it can't find one. Create /installed-agent, /logs/agent, /logs/verifier, /logs/artifacts, /tests, /solution and /app owned by uid 1000 (Harbor runs chmod and chown on them), and add a passwd entry for uid 1000. OpenCode fails with EPIPE unless its working directory is a git repo, so the task's Dockerfile should run `git init` in /app.
 
 Deploy the template with `volcano cloud sandboxes templates deploy` and wait until it is active; the first deploy can take 20 to 30 minutes.
 
 Done when, with the template id set:
-- `harbor run -p tasks-harbor/csv-export -e volcano_harbor:VolcanoEnvironment -a oracle` scores 1.0,
+- `harbor run -p tasks/<your-task> -e volcano_harbor:VolcanoEnvironment -a oracle` scores 1.0,
 - the same command with `-a nop` scores 0.0,
 - one real trial, `-a opencode -m openrouter/qwen/qwen3-coder-next --ak skip_install=true`, finishes with a reward,
 - and no sandbox session is left running.
 ```
 
-Tested with a fresh Claude Code agent (Claude Code 2.1.326, claude-sonnet-5-5) with the Volcano plugin 0.2.55, in a folder that held only this prompt and the example task. To skip the template deploy, it was given the id of a template already deployed from the same Dockerfile and told to write `template/Dockerfile` without deploying it. It finished on the first try in about 22 minutes for $1.56. Its provider scored 1.0 with Harbor's `oracle` agent, 0.0 with `nop` and 1.0 with OpenCode on qwen3-coder-next, and every session it started was terminated. Its template Dockerfile built locally behind `FROM amazonlinux:2023`, and the CLIs it installed run as uid 1000 at the versions above. Claude Code and Codex weren't run against its provider, since the test machine gave it only an OpenRouter key.
+Tested with a fresh Claude Code agent (Claude Code 2.1.326, claude-sonnet-5-5) with the Volcano plugin 0.2.55, in a folder that held only this prompt and the csv-export example task, with the prompt's task path pointing at that task. To skip the template deploy, it was given the id of a template already deployed from the same Dockerfile and told to write `template/Dockerfile` without deploying it. It finished on the first try in about 22 minutes for $1.56. Its provider scored 1.0 with Harbor's `oracle` agent, 0.0 with `nop` and 1.0 with OpenCode on qwen3-coder-next, and every session it started was terminated. Its template Dockerfile built locally behind `FROM amazonlinux:2023`, and the CLIs it installed run as uid 1000 at the versions above. Claude Code and Codex weren't run against its provider, since the test machine gave it only an OpenRouter key.
 
 ### What the agent builds
 
@@ -141,6 +132,8 @@ The provider is one Python class. `start()` creates a session from the template 
 session = await self._api("POST", f"/projects/{self._project_id}/sandbox-sessions", json=body, idempotent=True)
 self._session_id = session["id"]
 while session["state"] != "running":
+    if session["state"] in ("terminating", "terminated", "unknown", "failed"):
+        raise VolcanoError(f"session {self._session_id} is {session['state']}: {session.get('last_error_code')}")
     await asyncio.sleep(1)
     session = await self._api("GET", f"/sandbox-sessions/{self._session_id}")
 # ...
@@ -180,7 +173,13 @@ The two template deploys for this recipe took about 21 and 27 minutes from submi
 
 ### Run the lineup
 
-The job file lists the task and one entry per agent. `skip_install` tells Harbor to use the CLIs already in the template. Run it:
+The job file lists the task and one entry per agent. `skip_install` tells Harbor to use the CLIs already in the template. The prompt's job file runs three agents; to run the six from the recorded run, add an `opencode` entry for each other OpenRouter model under `agents:`, such as:
+
+```yaml
+  - {name: opencode, model_name: openrouter/z-ai/glm-4.7, kwargs: {skip_install: true}}
+```
+
+Run it:
 
 ```bash
 harbor run -c bake-off.yaml
@@ -220,7 +219,7 @@ ALTER TABLE trials ENABLE ROW LEVEL SECURITY;
 CREATE POLICY trials_public_read ON trials FOR SELECT USING (true);
 ```
 
-The page signs each viewer in anonymously and subscribes to changes:
+The page signs each viewer in anonymously, creates the realtime client with `volcanoClient` set so each event carries the changed row in `c.record`, and subscribes to changes:
 
 ```js
 const ch = realtime.channel("public:trials", { type: "postgres" });
@@ -228,15 +227,8 @@ ch.onPostgresChanges("*", "public", "trials", (c) => upsertTrial(c.record));
 await ch.subscribe();
 ```
 
-Deploy it from `scoreboard/`. The watcher needs the `report` URL and a shared secret in `SCOREBOARD_URL` and `SCOREBOARD_SECRET`; start it before the job:
-
-```sh
-volcano cloud deploy --env-file volcano/cloud.env --with-migrations -d app
-node watch.mjs --jobs-dir ../jobs --latest   # waits for the next Harbor job and follows it
-```
-
-Updates reached the browser 1 to 3 seconds after each write.
+Realtime needs anonymous sign-ins turned on for the project and an anon key with `realtime.connect` and `realtime.subscribe`, since a project's default anon key has auth permissions only. Updates reached the browser 1 to 3 seconds after each write. The scoreboard isn't part of the tested prompt. To add one, give your coding agent this section as the description and point it at the job folder Harbor writes.
 
 ## Limits
 
-Volcano sandboxes don't run as root and don't take a custom base image yet; the template is built on Amazon Linux 2023 and adds what Harbor needs. Memory tops out at 2 GiB. The provider doesn't build the task's Docker image: it uploads the task files, applies `COPY` and `WORKDIR`, and runs `RUN` lines as the session user, so `git init` or `npm ci` work and `apt-get install` doesn't. Most Terminal-Bench tasks don't run as is for that reason: 82 of 89 install packages in their verifier, and 18 ask for 4 to 8 GiB. Tasks written for your own repo, like the one here, avoid both.
+Volcano sandboxes don't run as root and don't take a custom base image yet; the template is built on Amazon Linux 2023 and adds what Harbor needs. Memory tops out at 2 GiB on SUPERAGENT. On HOBBY a session gets 1 GiB and at most 5 run at once, so set `n_concurrent_trials` to 5 or less there. The provider doesn't build the task's Docker image: it uploads the task files, applies `COPY` and `WORKDIR`, and runs `RUN` lines as the session user, so `git init` or `npm ci` work and `apt-get install` doesn't. Most Terminal-Bench tasks don't run as is for that reason: 82 of 89 install packages in their verifier, and 18 ask for 4 to 8 GiB. Tasks written for your own repo, like the one here, avoid both.
