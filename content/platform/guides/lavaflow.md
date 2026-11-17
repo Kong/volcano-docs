@@ -949,7 +949,7 @@ does.
 ## Merge fixes
 
 With `autonomy: merge`, LavaFlow merges a fix's pull request once its
-reviewers pass it, its required checks pass, and nothing holds it. It merges
+reviewers pass it, GitHub's required approvals are present, its required checks pass, and nothing holds it. It merges
 only into a base branch that requires at least one status check: on any other,
 it holds every fix with `no_required_checks`. See
 [Require a status check before LavaFlow merges](#require-a-status-check-before-lavaflow-merges).

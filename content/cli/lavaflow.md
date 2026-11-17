@@ -241,7 +241,7 @@ volcano cloud lavaflow settings set --human-review-path 'infra/**' --human-revie
 ```
 
 `show` prints `Merge:` in its `Fix:` block with where the merge is:
-`waiting for CI`, `queued to merge`, `merged`, `held` or `stopped`. A merged
+`waiting for CI`, `waiting for required approval`, `queued to merge`, `merged`, `held` or `stopped`. A merged
 fix says `merged by LavaFlow`, or `merged by someone else` when a person
 merged it while LavaFlow waited. While merging is paused, a
 waiting fix says `paused while merging is off` instead. `held` and
@@ -502,7 +502,7 @@ including fields newer than your CLI.
 
 ### Waiting for required approval
 
-In Merge mode, `volcano lavaflow show <run-id>` reports **waiting for required
+In Merge mode, `volcano cloud lavaflow show <run-id>` reports **waiting for required
 approval** when CI has passed and GitHub still requires a human review. Approve
 the pull request in GitHub. LavaFlow continues automatically once the required
 approvals and CI pass; you do not need to restart the run or merge it yourself.
