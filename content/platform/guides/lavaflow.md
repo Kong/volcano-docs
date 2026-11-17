@@ -923,10 +923,10 @@ the fix opens, LavaFlow runs the check it runs before it starts CI (see
 your base branch, and opens a draft when that check finds any such service,
 or when LavaFlow can't complete it. This way only CI that GitHub Actions gates
 sees the fix as ready for review. Where your repository can't have draft pull
-requests, such as a private repository on a plan without them, the initial
-review loop reports that it could not open its required draft and creates no
-regular pull request as a fallback. Older runs using the previous publication
-flow may still open a regular pull request instead, without starting CI.
+requests, such as a private repository on a plan without them, LavaFlow
+finishes its AI review before using the existing regular pull request
+fallback. It never substitutes an unreviewed regular pull request for the
+first draft.
 LavaFlow runs this check on every attempt to open the fix. If an earlier
 attempt already opened it ready for review and a later check finds such a
 service, the pull request stays as it is, and LavaFlow runs no CI on it.
@@ -2604,7 +2604,9 @@ in the first example.
 
 ## Read the review on the pull request
 
-LavaFlow opens the first safe patch as a draft, then reviews that draft's exact commit.
+Issue-fix runs open the first safe patch as a draft, then review that draft's exact commit.
+Code Quality keeps its existing review-before-publication flow.
+Repositories without draft support finish AI review before a regular pull request can open.
 Each completed review posts findings on changed lines where GitHub permits inline comments.
 Findings that cannot be anchored to the diff appear in the review summary and the Volcano run instead.
 A posted review is a comment by Volcano's GitHub App: it never approves the pull request or requests changes, and never counts as a required human approval.
