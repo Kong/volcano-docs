@@ -183,29 +183,55 @@ test("the consented instance drops every event once consent lapses", () => {
   assert.equal(config.before_send({ event: "$pageleave", properties: { distinct_id: "user-1" } }), null);
 });
 
-test("stopConsentedAnalytics stops capture, and clears storage only on docs-only hosts", () => {
-  const key = postHogPersistenceKey("phc_test");
-  function setup() {
-    const items = new Map([[key, JSON.stringify({ distinct_id: "user-1" })]]);
-    const configs = [];
+test("stopConsentedAnalytics stops capture and storage writes, keeping volcano-web's records", () => {
+  const id = postHogPersistenceKey("phc_test");
+  const sessionProps = "ph_phc_test_session_registered_properties";
+  function memoryStorage(entries) {
+    const items = new Map(entries);
     return {
       items,
-      configs,
-      storage: {
-        getItem: function getItem(k) { return items.get(k) ?? null; },
-        removeItem: function removeItem(k) { items.delete(k); },
-      },
-      instance: { set_config: function setConfig(config) { configs.push(config); } },
+      getItem: function getItem(k) { return items.get(k) ?? null; },
+      setItem: function setItem(k, v) { items.set(k, String(v)); },
+      removeItem: function removeItem(k) { items.delete(k); },
     };
   }
-  const docs = setup();
-  stopConsentedAnalytics(docs.instance, "phc_test", "docs.volcano.dev", docs.storage);
-  assert.deepEqual(docs.configs, [{ capture_pageview: false, capture_pageleave: false }, { disable_persistence: true }]);
-  assert.equal(docs.items.has(key), false);
-  for (const host of ["volcano.dev", "staging.volcano.dev"]) {
-    const web = setup();
-    stopConsentedAnalytics(web.instance, "phc_test", host, web.storage);
-    assert.deepEqual(web.configs, [{ capture_pageview: false, capture_pageleave: false }]);
-    assert.equal(web.items.has(key), true);
+  // Behaves like posthog-js: disabling persistence deletes the instance's records.
+  function fakeInstance(stores) {
+    const configs = [];
+    return {
+      configs,
+      set_config: function setConfig(config) {
+        configs.push(config);
+        if (!config.disable_persistence) return;
+        for (const store of stores) {
+          store.removeItem(id);
+          store.removeItem(sessionProps);
+        }
+      },
+    };
   }
+  const stopped = { capture_pageview: false, capture_pageleave: false, disable_persistence: true };
+
+  const docsLocal = memoryStorage([[id, "docs-id"]]);
+  const docsSession = memoryStorage([[id, "docs-id"], [sessionProps, "{}"]]);
+  const docs = fakeInstance([docsLocal, docsSession]);
+  stopConsentedAnalytics(docs, "phc_test", "docs.volcano.dev", [docsLocal, docsSession]);
+  assert.deepEqual(docs.configs, [stopped]);
+  assert.equal(docsLocal.items.size, 0);
+  assert.equal(docsSession.items.size, 0);
+
+  for (const host of ["volcano.dev", "staging.volcano.dev"]) {
+    const local = memoryStorage([[id, "web-id"], ["other", "x"]]);
+    const session = memoryStorage([[sessionProps, "{\"surface\":\"web\"}"]]);
+    const web = fakeInstance([local, session]);
+    stopConsentedAnalytics(web, "phc_test", host, [local, session]);
+    assert.deepEqual(web.configs, [stopped]);
+    assert.deepEqual(Object.fromEntries(local.items), { [id]: "web-id", other: "x" });
+    assert.deepEqual(Object.fromEntries(session.items), { [sessionProps]: "{\"surface\":\"web\"}" });
+  }
+
+  // volcano-web already cleared its id on a reject: it stays cleared.
+  const cleared = memoryStorage([]);
+  stopConsentedAnalytics(fakeInstance([cleared]), "phc_test", "volcano.dev", [cleared]);
+  assert.equal(cleared.items.size, 0);
 });

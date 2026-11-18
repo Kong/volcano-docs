@@ -38,10 +38,22 @@ export function isPlaceholderDistinctId(distinctId) {
   return typeof distinctId === "string" && PLACEHOLDER_DISTINCT_IDS.has(distinctId.trim().toLowerCase());
 }
 
+function safeToken(token) {
+  return token.replace(/\+/g, "PL").replace(/\//g, "SL").replace(/=/g, "EQ");
+}
+
 /** posthog-js's localStorage key for a token, built the way the SDK builds it. */
 export function postHogPersistenceKey(token) {
-  const safe = token.replace(/\+/g, "PL").replace(/\//g, "SL").replace(/=/g, "EQ");
-  return `ph_${safe}_posthog`;
+  return `ph_${safeToken(token)}_posthog`;
+}
+
+/**
+ * Every record posthog-js removes when an instance's persistence is disabled:
+ * the stored id and properties (in localStorage, and a per-tab copy in
+ * sessionStorage) and the session-scoped super properties.
+ */
+function persistenceRecordKeys(token) {
+  return [postHogPersistenceKey(token), `ph_${safeToken(token)}_session_registered_properties`];
 }
 
 /**
@@ -131,19 +143,56 @@ export function consentGuard(stillConsented, onLapse) {
 }
 
 /**
- * Stops a running consented instance once consent lapses. Pageviews and page
- * exits stop. On a docs-only origin the instance also stops writing storage
- * and its stored id is removed (see `forgetDocsHostId`). On volcano-web's own
- * origins the stored id is volcano-web's to manage and is left as it is;
- * with capture off this instance writes nothing more to it.
+ * Stops a running consented instance once consent lapses, for the rest of the
+ * page load: no more pageviews or page exits, and no more writes to storage.
+ * Persistence must be disabled, not just capture: while it is on, any save
+ * (a session touch, a property update) writes the instance's in-memory copy
+ * of the id back, even after volcano-web cleared it on a reject.
+ *
+ * posthog-js deletes the stored records when persistence is disabled. On a
+ * docs-only origin that is the point (see `forgetDocsHostId`). On
+ * volcano-web's own origins those records are volcano-web's to manage, so
+ * they are put back exactly as they were just before: whatever volcano-web
+ * holds stays, and a record it already cleared stays cleared.
+ *
+ * `stores` are the browser storages to protect (localStorage, and
+ * sessionStorage where available).
  */
-export function stopConsentedAnalytics(instance, token, hostname, storage) {
-  instance.set_config({ capture_pageview: false, capture_pageleave: false });
+export function stopConsentedAnalytics(instance, token, hostname, stores) {
+  const kept = [];
+  if (isVolcanoWebHost(hostname)) {
+    for (const store of stores) {
+      for (const key of persistenceRecordKeys(token)) {
+        const value = readStoredItem(store, key);
+        if (value !== undefined) kept.push({ store, key, value });
+      }
+    }
+  }
+  instance.set_config({ capture_pageview: false, capture_pageleave: false, disable_persistence: true });
+  for (const { store, key, value } of kept) restoreStoredItem(store, key, value);
   if (isVolcanoWebHost(hostname)) return;
-  // posthog-js removes the instance's stored record when persistence is
-  // disabled, and saves nothing after.
-  instance.set_config({ disable_persistence: true });
-  if (storage) forgetDocsHostId(token, hostname, storage);
+  for (const store of stores) forgetDocsHostId(token, hostname, store);
+}
+
+/** A stored value, null when absent, or undefined when storage is blocked. */
+function readStoredItem(store, key) {
+  try {
+    return store.getItem(key);
+  } catch {
+    return undefined;
+  }
+}
+
+function restoreStoredItem(store, key, value) {
+  try {
+    if (value === null) {
+      store.removeItem(key);
+      return;
+    }
+    store.setItem(key, value);
+  } catch {
+    // Storage blocked: nothing was written either.
+  }
 }
 
 function alwaysConsented() {

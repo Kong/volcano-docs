@@ -83,7 +83,7 @@ function startConsentedAnalytics(posthog: PostHog, key: string, apiHost: string 
     document.removeEventListener("visibilitychange", recheck);
     const hostname = window.location.hostname;
     if (analytics) {
-      stopConsentedAnalytics(analytics, key, hostname, storage);
+      stopConsentedAnalytics(analytics, key, hostname, availableStores(storage));
       return;
     }
     forgetDocsHostId(key, hostname, storage);
@@ -114,6 +114,23 @@ function browserLocalStorage(): Storage | null {
   } catch {
     return null;
   }
+}
+
+// sessionStorage, or null where the browser blocks it.
+function browserSessionStorage(): Storage | null {
+  try {
+    return window.sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
+// The storages posthog-js keeps the consented instance's records in.
+function availableStores(local: Storage): Storage[] {
+  const stores = [local];
+  const session = browserSessionStorage();
+  if (session) stores.push(session);
+  return stores;
 }
 
 // Analytics never stops the flags instance from loading: a failure here is
