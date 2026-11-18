@@ -7,7 +7,7 @@ tags:
   - auth
   - row-level-security
   - nextjs
-cover: /cookbooks/ecommerce-store-cover.webp
+cover: /cookbook/ecommerce-store-cover.webp
 kind: app
 uses: [functions, database, auth]
 ---
@@ -22,9 +22,9 @@ Placing an order runs in a Volcano function, in one database transaction. The fu
 
 There's no payment provider. Placing an order records it and reserves the stock, and nothing is charged. [Why it's built this way](#why-its-built-this-way) shows where a payment step would go.
 
-![ada's view of the catalog: six products with prices and stock, the Eruption poster marked "Last one" and already in her cart, and 3 items in the cart badge](/cookbooks/ecommerce-store-catalog.png)
+![ada's view of the catalog: six products with prices and stock, the Eruption poster marked "Last one" and already in her cart, and 3 items in the cart badge](/cookbook/ecommerce-store-catalog.png)
 
-![sam checks out a moment after ada bought the last poster. The order is refused with "Eruption poster just sold out", and the cart marks the poster sold out](/cookbooks/ecommerce-store-sold-out.png)
+![sam checks out a moment after ada bought the last poster. The order is refused with "Eruption poster just sold out", and the cart marks the poster sold out](/cookbook/ecommerce-store-sold-out.png)
 
 ## What you need
 

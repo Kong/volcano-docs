@@ -7,7 +7,7 @@ tags:
   - sandboxes
   - harbor
   - realtime
-cover: /cookbooks/agent-evals-in-volcano-sandboxes-cover.webp
+cover: /cookbook/agent-evals-in-volcano-sandboxes-cover.webp
 kind: agent
 uses: [sandboxes, realtime, database]
 ---
@@ -20,7 +20,7 @@ This recipe runs agent evals in Volcano sandboxes. [Harbor](https://github.com/h
 
 The sandboxes are the part Harbor needs. The rest of the project is what makes the results useful: the same Volcano project holds a Postgres table of trials, a function that records them, realtime that pushes each change to the browser, and the frontend that shows the scoreboard in the GIF. The results page doesn't need a second service or another set of keys.
 
-![Six agents work on the same task in six Volcano sandboxes while a live scoreboard fills in](/cookbooks/agent-evals-in-volcano-sandboxes-run.gif)
+![Six agents work on the same task in six Volcano sandboxes while a live scoreboard fills in](/cookbook/agent-evals-in-volcano-sandboxes-run.gif)
 
 One real run, six agents on one task, sped up 12×. The terminal on the left is Harbor and each agent's live output; the scoreboard on the right is a Volcano frontend fed by realtime.
 

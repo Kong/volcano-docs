@@ -2,7 +2,7 @@
 title: Pixelboard
 description: Create a shared pixel canvas with anonymous sign-in, persistent colors, and live updates using Volcano.
 tags: [database, realtime, authentication]
-cover: /cookbooks/pixel-board-cover.webp
+cover: /cookbook/pixel-board-cover.webp
 kind: app
 uses: [realtime, database, auth]
 ---
@@ -12,7 +12,7 @@ uses: [realtime, database, auth]
 Paint a shared 400×240 canvas and watch other people draw, move their cursors, and chat live.
 This is the Pixel canvas onboarding template (`pixel-board`): PostgreSQL stores colors; realtime carries live interactions.
 
-![Pixelboard showing a shared canvas, color palette, and live collaborators](/cookbooks/pixel-board-poster.png)
+![Pixelboard showing a shared canvas, color palette, and live collaborators](/cookbook/pixel-board-poster.png)
 
 ## What you need
 

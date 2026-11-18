@@ -59,17 +59,19 @@ commit it was built from. The build settings live in each project's **Project
 settings → Git** page in the Volcano dashboard, and `DOCS_SITE_URL` is a project
 variable there.
 
-volcano.dev serves the same site at `/docs`, `/blog`, and `/cookbooks` by
+volcano.dev serves the same site at `/docs`, `/blog`, and `/cookbook` by
 mounting a `docs` frontend with Frontend routes, which mount only a frontend of
-the same project. So [`deploy-volcano-dev.yml`](.github/workflows/deploy-volcano-dev.yml)
-also uploads each push to `main` to volcano.dev's production project, with
-`DOCS_SITE_URL=https://volcano.dev`. LavaFlow stays on the `volcano-docs`
-project, whose Git deployments it can read; a commit that fails to build fails
-in both, and volcano.dev keeps serving its last good build. The workflow's
-`volcano-dev` environment, limited to `main`, holds `VOLCANO_DEV_PROJECT_ID`,
-the docs project's `NEXT_PUBLIC_POSTHOG_KEY` and `NEXT_PUBLIC_POSTHOG_HOST`
-(the Blog header link waits on a PostHog flag), and the project access token
-`VOLCANO_DEV_TOKEN`.
+the same project. So [`deploy-docs-frontend.yml`](.github/workflows/deploy-docs-frontend.yml)
+also uploads each push to `main` to volcano-web's project, on
+[staging.volcano.dev](https://staging.volcano.dev) first and then, once staging
+succeeds, on [volcano.dev](https://volcano.dev), with `DOCS_SITE_URL` set to
+that site. LavaFlow stays on the `volcano-docs` projects, whose Git deployments
+it can read; a commit that fails to build fails in both, and each site keeps
+serving its last good build. The `staging` and `production` environments,
+limited to `main`, hold volcano-web's `VOLCANO_API_URL`, `VOLCANO_PROJECT_ID`,
+and a project access token `VOLCANO_TOKEN` as secrets, and the docs project's
+`NEXT_PUBLIC_POSTHOG_KEY` and `NEXT_PUBLIC_POSTHOG_HOST` as variables (the
+Blog header link waits on a PostHog flag).
 
 ## Site (Fumadocs)
 
@@ -96,7 +98,7 @@ Structure:
 ### Docs, Cookbook, and Blog
 
 The shared header links three sections. They are served under `/docs`,
-`/cookbooks`, and `/blog` only, so the site can be mounted at those paths of
+`/cookbook`, and `/blog` only, so the site can be mounted at those paths of
 another host (see `src/lib/site-routes.mjs`). Content files keep their paths:
 `content/cli/setup.md` is `/docs/cli/setup`. Content still links another docs
 section by its content path (`/cli/setup`); rendered pages link the `/docs`
@@ -104,10 +106,11 @@ URL, and `/` and the unprefixed docs paths redirect to `/docs`, which is how
 links in the Markdown routes resolve.
 
 - `/docs` and the guide routes under it use the documentation sidebar.
-- `/cookbooks` lists recipes; recipe pages use their own sidebar and table of contents.
+- `/cookbook` lists recipes; recipe pages use their own sidebar and table of contents. `/cookbooks` redirects there.
 - `/blog` lists posts; both the listing and articles share a Blog sidebar with search, All posts, and the categories with counts.
 
-Author recipes in `content/cookbooks/` and posts in `content/blog/`.
+Author recipes in `content/cookbooks/` and posts in `content/blog/`. Recipe
+images live in `public/cookbook/` and are linked as `/cookbook/<file>`.
 Each section's `index.md` provides its introduction, and `meta.json` controls the card and navigation order.
 Keep `"..."` at the end of each section's `meta.json` page list so new Markdown pages appear automatically after explicitly ordered pages in the listing and navigation tree, using their frontmatter title and description.
 The Cookbook uses that tree for its sidebar; Blog lists its categories there.

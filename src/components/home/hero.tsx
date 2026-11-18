@@ -39,7 +39,7 @@ export function Hero({
       <InlineLink href="/docs/cli/docs-search"><code>volcano docs</code></InlineLink>.
       <br />
       For step-by-step recipes you can build, explore the{" "}
-      <InlineLink href="/cookbooks">Cookbook</InlineLink>.
+      <InlineLink href="/cookbook">Cookbook</InlineLink>.
       <br />
       For application design ideas and practical perspectives, visit the{" "}
       <InlineLink href="/blog">Blog</InlineLink>.

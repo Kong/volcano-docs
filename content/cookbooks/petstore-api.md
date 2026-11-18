@@ -9,7 +9,7 @@ tags:
   - auth
   - row-level-security
   - insomnia
-cover: /cookbooks/petstore-api-cover.webp
+cover: /cookbook/petstore-api-cover.webp
 kind: app
 uses: [functions, database, auth]
 ---
@@ -20,7 +20,7 @@ Tested on Volcano CLI 0.54.0, Node 24.9.0, pg 8.23.1; last verified 2026-10-30 o
 
 Your coding agent turns the Swagger Petstore OpenAPI spec into a live API on Postgres, deployed to Volcano, that you call from Insomnia. Reads are public. Only the registered user who created a pet can change or delete it.
 
-![Swagger UI calling the deployed API, function host shown as a placeholder: GET /pet/findByStatus?status=available answers 200 with the seeded pets](/cookbooks/petstore-api.png)
+![Swagger UI calling the deployed API, function host shown as a placeholder: GET /pet/findByStatus?status=available answers 200 with the seeded pets](/cookbook/petstore-api.png)
 
 ## What you need
 

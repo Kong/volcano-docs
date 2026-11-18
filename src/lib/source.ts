@@ -5,8 +5,8 @@ import { pageUrl } from "./site-routes.mjs";
 
 const content = docs.toFumadocsSource();
 
-// Docs pages are served under /docs; blog and cookbooks keep their own prefix
-// (see site-routes.mjs).
+// Docs pages are served under /docs, the blog under /blog, and cookbooks under
+// /cookbook (see site-routes.mjs).
 export const source = loader({
   baseUrl: "/",
   url: pageUrl,

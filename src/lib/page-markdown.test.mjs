@@ -154,7 +154,7 @@ assert.equal(markdownPath("/docs/sdk"), "/docs/sdk.md");
 assert.equal(markdownPath("/docs/sdk/"), "/docs/sdk.md");
 assert.equal(markdownPath("/docs"), "/docs/index.md");
 assert.equal(markdownPath("/blog"), "/blog/index.md");
-assert.equal(markdownPath("/cookbooks/"), "/cookbooks/index.md");
+assert.equal(markdownPath("/cookbook/"), "/cookbook/index.md");
 assert.equal(markdownPath("/"), "/index.md");
 
 // Every .md path, nested ones included, reaches the markdown route. Resolve the

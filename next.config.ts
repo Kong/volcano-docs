@@ -19,9 +19,9 @@ const config: NextConfig = {
     "/docs/opengraph-image": socialCardFiles,
     "/docs/twitter-image": socialCardFiles,
   },
-  // Docs pages moved under /docs so the site can be mounted on volcano.dev at
-  // /docs, /blog, and /cookbooks (see src/lib/site-routes.mjs). Keep links to
-  // the old paths working.
+  // Docs pages moved under /docs and recipes to /cookbook so the site can be
+  // mounted on volcano.dev at /docs, /blog, and /cookbook (see
+  // src/lib/site-routes.mjs). Keep links to the old paths working.
   async redirects() {
     return [
       { source: "/", destination: "/docs", permanent: true },
@@ -44,6 +44,8 @@ const config: NextConfig = {
         permanent: true,
       },
       { source: "/design/:path*", destination: "/docs/design/:path*", permanent: true },
+      { source: "/cookbooks", destination: "/cookbook", permanent: true },
+      { source: "/cookbooks/:path*", destination: "/cookbook/:path*", permanent: true },
       // Short links volcano.dev redirected itself before it mounted /docs.
       ...Object.entries({
         "/docs/api/sdk": "/docs/sdk/js",

@@ -7,7 +7,7 @@ tags:
   - database
   - row-level-security
   - nextjs
-cover: /cookbooks/photo-sharing-cover.webp
+cover: /cookbook/photo-sharing-cover.webp
 kind: app
 uses: [storage, auth, database]
 ---
@@ -20,9 +20,9 @@ A shared photo wall for a group. People sign up with an email and password, uplo
 
 The files live in a Volcano Storage bucket, and each photo's caption, size and uploader live in a Postgres table. Bucket policies decide who can view, upload and delete each file. Row-level security does the same for the table. Neither depends on the app code getting it right.
 
-![ada's gallery: five photos from ada and sam, and a lava photo chosen and captioned, ready to upload](/cookbooks/photo-sharing-gallery.png)
+![ada's gallery: five photos from ada and sam, and a lava photo chosen and captioned, ready to upload](/cookbook/photo-sharing-gallery.png)
 
-![sam opens ada's "Lava at dusk" at its full 1600×1067 size. There's a Close button but no Delete, because the photo isn't sam's](/cookbooks/photo-sharing-viewer.png)
+![sam opens ada's "Lava at dusk" at its full 1600×1067 size. There's a Close button but no Delete, because the photo isn't sam's](/cookbook/photo-sharing-viewer.png)
 
 ## What you need
 

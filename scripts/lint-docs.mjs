@@ -16,6 +16,10 @@ const schema = JSON.parse(
 );
 const config = yaml.load(fs.readFileSync(path.join(here, "..", "docs.config.yaml"), "utf8"));
 const siteSections = new Set(config.nav);
+// Images live in public/ under the path the site serves them at, such as
+// /cookbook/<file> for recipes in content/cookbooks/.
+const publicDir = path.join(here, "..", "public");
+const isPublicAsset = (route) => fs.statSync(path.join(publicDir, route), { throwIfNoEntry: false })?.isFile() === true;
 const ajv = new Ajv({ allErrors: true });
 addFormats(ajv);
 const validate = ajv.compile(schema);
@@ -57,7 +61,7 @@ function checkBody(file, body, offset) {
     const route = routePath(link.url);
     if (route === "/") continue;
     const section = route.split("/", 2)[1];
-    if (!siteSections.has(section)) {
+    if (!siteSections.has(section) && !isPublicAsset(route)) {
       err(file, `site-absolute link must start with a docs section at line ${offset + link.line}: ${link.url}`);
     }
   }
