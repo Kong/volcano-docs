@@ -126,6 +126,15 @@ test("never sends person properties or first-touch snapshots", () => {
     },
   });
   assert.deepEqual(event.properties, { $lib: "web" });
+
+  const topLevel = scrubCookielessEvent({
+    event: "$pageview",
+    properties: {},
+    $set: { email: "ada@example.com" },
+    $set_once: { $initial_current_url: "https://docs.volcano.dev/?gclid=1" },
+  });
+  assert.equal("$set" in topLevel, false);
+  assert.equal("$set_once" in topLevel, false);
 });
 
 test("the config stores nothing, captures nothing else and creates no person", () => {

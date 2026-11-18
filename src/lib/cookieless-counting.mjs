@@ -161,7 +161,9 @@ export function scrubCookielessEvent(event) {
     const scrubbed = scrubbedUrl(key, value);
     if (scrubbed !== null) properties[key] = scrubbed;
   }
-  return { ...event, properties };
+  // posthog-js attaches person updates at the top level of the event too.
+  const { $set: _set, $set_once: _setOnce, ...rest } = event;
+  return { ...rest, properties };
 }
 
 /**
