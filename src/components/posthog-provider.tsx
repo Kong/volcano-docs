@@ -6,8 +6,13 @@ import type { PostHog } from "posthog-js";
 import {
   COOKIELESS_INSTANCE_NAME,
   cookielessPostHogConfig,
-  shouldCountCookieless,
+  docsAnalyticsMode,
 } from "@/lib/cookieless-counting.mjs";
+import {
+  CONSENTED_INSTANCE_NAME,
+  consentedPostHogConfig,
+  forgetStoredPlaceholderId,
+} from "@/lib/consented-analytics.mjs";
 
 type PostHogProviderProps = {
   children: ReactNode;
@@ -26,17 +31,26 @@ function dropFlagsInstanceEvents() {
 
 type NavigatorWithPrivacyControl = Navigator & { globalPrivacyControl?: boolean };
 
-// Starts the anonymous visitor counter (see cookieless-counting.mjs) when the
-// build switch is on and the browser has not opted out with Global Privacy
-// Control. It is a separate instance; nothing else ever captures through it.
-function startCookielessCounter(posthog: PostHog, key: string) {
-  const countable = shouldCountCookieless({
+// Starts this visitor's analytics, decided once per page load from the switch,
+// Global Privacy Control and volcano.dev's consent cookie (see
+// cookieless-counting.mjs). A visitor who accepted on volcano.dev gets pageview
+// analytics under the PostHog id volcano.dev stored; anyone else is counted
+// anonymously. Each is a separate instance; nothing else captures through them.
+function startVisitorAnalytics(posthog: PostHog, key: string) {
+  const mode = docsAnalyticsMode({
     enabled: process.env.NEXT_PUBLIC_POSTHOG_COOKIELESS_COUNTING,
     globalPrivacyControl: (navigator as NavigatorWithPrivacyControl).globalPrivacyControl,
     cookieHeader: document.cookie,
   });
-  if (!countable) return;
-  posthog.init(key, cookielessPostHogConfig(process.env.NEXT_PUBLIC_POSTHOG_HOST), COOKIELESS_INSTANCE_NAME);
+  const apiHost = process.env.NEXT_PUBLIC_POSTHOG_HOST;
+  if (mode === "consented") {
+    forgetStoredPlaceholderId(key, window.localStorage);
+    posthog.init(key, consentedPostHogConfig(apiHost), CONSENTED_INSTANCE_NAME);
+    return;
+  }
+  if (mode === "cookieless") {
+    posthog.init(key, cookielessPostHogConfig(apiHost), COOKIELESS_INSTANCE_NAME);
+  }
 }
 
 // Loads posthog-js on demand: builds with no key never download the SDK, and
@@ -88,7 +102,7 @@ function PostHogProvider({ children }: PostHogProviderProps) {
           persistence: "memory",
           before_send: dropFlagsInstanceEvents,
         });
-        startCookielessCounter(posthog, key as string);
+        startVisitorAnalytics(posthog, key as string);
       }
       unsubscribe = posthog.onFeatureFlags(function flagsLoaded() {
         bump(posthog);
