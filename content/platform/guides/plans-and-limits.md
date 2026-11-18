@@ -212,8 +212,8 @@ Revoked and expired tokens do not count against it, so cycling short-lived token
 LavaFlow is in preview on both plans. Project owners can turn it on in their
 project settings.
 
-| Feature                | HOBBY     | SUPERAGENT | Scope       |
-| ---------------------- | --------- | ---------- | ----------- |
+| Feature                 | HOBBY     | SUPERAGENT | Scope       |
+| ----------------------- | --------- | ---------- | ----------- |
 | [LavaFlow](lavaflow.md) | Available | Available  | Per project |
 
 No plan includes [Code Quality](lavaflow.md#code-quality) yet. Where it is
