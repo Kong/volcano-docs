@@ -5,11 +5,14 @@ name: Deploy frontend docs route for volcano web to one environment
 #   secrets   VOLCANO_API_URL, VOLCANO_WEB_PROJECT_ID (volcano-web's project,
 #             not the docs project), VOLCANO_WEB_TOKEN (a project access
 #             token for it)
-#   variables NEXT_PUBLIC_POSTHOG_KEY, NEXT_PUBLIC_POSTHOG_HOST (the docs
-#             project's values; the build inlines them, and the Blog header
-#             link waits on a PostHog flag), and optionally
-#             NEXT_PUBLIC_POSTHOG_COOKIELESS_COUNTING (`true` turns on the
-#             anonymous visitor counter; unset or anything else leaves it off)
+#   variables NEXT_PUBLIC_POSTHOG_KEY, NEXT_PUBLIC_POSTHOG_HOST (the same
+#             PostHog project token volcano-web uses in this environment, so
+#             visitors who accepted cookies keep volcano.dev's stored id; the
+#             build inlines them, and the Blog header link waits on a PostHog
+#             flag), and optionally NEXT_PUBLIC_POSTHOG_COOKIELESS_COUNTING
+#             (`true` turns on docs visitor analytics: consented pageviews for
+#             visitors who accepted, the anonymous counter for everyone else;
+#             unset or anything else leaves it off)
 on:
   workflow_call:
     inputs:
