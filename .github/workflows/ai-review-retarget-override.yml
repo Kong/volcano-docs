@@ -11,6 +11,9 @@ jobs:
   retarget-or-override:
     if: github.event.changes.base || github.event.label.name == 'ai-review-override'
     uses: Kong/volcano-actions/.github/workflows/ai-review.yml@main
+    with:
+      # Match the bot allowlist in ai-review.yml for retargeted pull requests.
+      allowed_bots: dependabot[bot],kong[bot],kong-volcano-app[bot],volcano-staging[bot]
     permissions:
       actions: write
       contents: read
