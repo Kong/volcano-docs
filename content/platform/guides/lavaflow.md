@@ -496,9 +496,10 @@ own project.
 
 ## Check availability
 
-Project owners on HOBBY and SUPERAGENT can turn on LavaFlow in their
-project settings. LavaFlow fixes never count toward the project's Sandbox
-usage. Check the project's `lavaflow` capability before offering the feature.
+LavaFlow is in preview on HOBBY and SUPERAGENT. Project owners can turn it on
+in their project settings. LavaFlow fixes never count toward the project's
+Sandbox usage. Check the project's `lavaflow` capability before offering the
+feature.
 
 ```bash
 curl "https://api.volcano.dev/projects/$PROJECT_ID/capabilities" \
@@ -509,9 +510,8 @@ While `lavaflow` is `available`, every LavaFlow route answers. Where it is not:
 
 - A project that never used LavaFlow lists it `unavailable` and is refused by
   every route: `404` with code `feature_unavailable` while LavaFlow is not
-  offered to the project, and `403` with code `plan_required` when it is but
-  the owner's plan does not include it. The list then gives `lavaflow` the
-  `code` `plan_required`.
+  offered to the project. The API also defines a `403 plan_required` refusal
+  for plans that exclude LavaFlow. Both current cloud plans include LavaFlow.
 - A project with saved settings, runs, or bound Slack channels lists it `read_only`. It keeps its
   reads, and can still turn LavaFlow off with `{"enabled": false}`, Code
   Quality off with `{"code_quality": {"enabled": false}}`, or both in one save,

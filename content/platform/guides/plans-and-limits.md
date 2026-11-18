@@ -209,7 +209,8 @@ Revoked and expired tokens do not count against it, so cycling short-lived token
 
 ## LavaFlow
 
-Project owners can turn on LavaFlow in their project settings.
+LavaFlow is in preview on both plans. Project owners can turn it on in their
+project settings.
 
 | Feature                | HOBBY     | SUPERAGENT | Scope       |
 | ---------------------- | --------- | ---------- | ----------- |
@@ -257,7 +258,6 @@ moment you upgrade. You do not have to set them up twice.
 | Database query logs                                                                 | Kept; new queries stop being recorded, and query insights stop being readable                 |
 | Database compute size                                                               | Shrunk to the HOBBY size, and restored when you upgrade. No downtime, no data loss            |
 | [Custom domains](../frontends/overview.md#custom-domains) past one per frontend     | Kept; only one serves                                                                         |
-| [LavaFlow](lavaflow.md) settings                                                    | Kept; no run or Code Quality scan starts, and a fix waiting to merge stops and is left to you |
 
 A frontend with more custom domains than HOBBY allows keeps all of them, with
 their certificates and redirects. Its oldest active domain that serves the
