@@ -23,9 +23,13 @@ test("the build switch is on only for the exact string true", () => {
   }
 });
 
-test("counts every visitor without a Global Privacy Control opt-out", () => {
-  for (const cookieHeader of ["", consentCookie("volcano_cookie_consent", rejectRecord), consentCookie("volcano_cookie_consent", acceptRecord)]) {
-    assert.equal(shouldCountCookieless({ enabled: "true", globalPrivacyControl: false, cookieHeader }), true);
+test("counts visitors who have not accepted under the current policy", () => {
+  // acceptRecord names a Cookie Policy version other than the current one, so
+  // it counts as unanswered; a current accept gets consented analytics instead
+  // (see consented-analytics.test.mjs).
+  const staleAccept = consentCookie("volcano_cookie_consent", acceptRecord);
+  for (const cookieHeader of ["", consentCookie("volcano_cookie_consent", rejectRecord), staleAccept]) {
+    assert.equal(shouldCountCookieless({ enabled: "true", globalPrivacyControl: false, cookieHeader, hostname: "volcano.dev" }), true);
   }
 });
 

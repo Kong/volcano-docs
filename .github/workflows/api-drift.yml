@@ -13,6 +13,8 @@ on:
       - content/platform/databases/overview.md
       - content/platform/databases/creating-databases.md
       - scripts/check-api-drift.mjs
+      - scripts/check-cookie-policy-version.mjs
+      - src/lib/consent.mjs
       - .github/workflows/api-drift.yml
   schedule:
     - cron: "17 14 * * *"
@@ -46,3 +48,10 @@ jobs:
 
       - name: Check pages against the production API
         run: pnpm check:api
+
+      # The docs give full analytics only under consent to this Cookie Policy
+      # version (src/lib/consent.mjs), so it must match what volcano.dev publishes.
+      - name: Check the Cookie Policy version against volcano.dev
+        # Runs even when the API check fails, so one never hides the other.
+        if: ${{ !cancelled() }}
+        run: pnpm check:cookie-policy

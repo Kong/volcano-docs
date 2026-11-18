@@ -6,8 +6,17 @@ import type { PostHog } from "posthog-js";
 import {
   COOKIELESS_INSTANCE_NAME,
   cookielessPostHogConfig,
-  shouldCountCookieless,
+  docsAnalyticsMode,
 } from "@/lib/cookieless-counting.mjs";
+import {
+  CONSENTED_INSTANCE_NAME,
+  consentGuard,
+  consentedPostHogConfig,
+  forgetDocsHostId,
+  forgetStoredPlaceholderId,
+  postHogPersistenceKey,
+  stopConsentedAnalytics,
+} from "@/lib/consented-analytics.mjs";
 
 type PostHogProviderProps = {
   children: ReactNode;
@@ -26,17 +35,142 @@ function dropFlagsInstanceEvents() {
 
 type NavigatorWithPrivacyControl = Navigator & { globalPrivacyControl?: boolean };
 
-// Starts the anonymous visitor counter (see cookieless-counting.mjs) when the
-// build switch is on and the browser has not opted out with Global Privacy
-// Control. It is a separate instance; nothing else ever captures through it.
-function startCookielessCounter(posthog: PostHog, key: string) {
-  const countable = shouldCountCookieless({
+// This visitor's analytics mode, read from the switch, Global Privacy Control
+// and volcano.dev's consent cookie (see cookieless-counting.mjs).
+function currentAnalyticsMode() {
+  return docsAnalyticsMode({
     enabled: process.env.NEXT_PUBLIC_POSTHOG_COOKIELESS_COUNTING,
     globalPrivacyControl: (navigator as NavigatorWithPrivacyControl).globalPrivacyControl,
     cookieHeader: document.cookie,
+    hostname: window.location.hostname,
   });
-  if (!countable) return;
-  posthog.init(key, cookielessPostHogConfig(process.env.NEXT_PUBLIC_POSTHOG_HOST), COOKIELESS_INSTANCE_NAME);
+}
+
+function stillConsented() {
+  return currentAnalyticsMode() === "consented";
+}
+
+// Starts this visitor's analytics, chosen once per page load. A visitor who
+// accepted on volcano.dev gets pageview analytics under the PostHog id
+// volcano.dev stored; anyone else is counted anonymously. Each is a separate
+// instance; nothing else captures through them.
+function startVisitorAnalytics(posthog: PostHog, key: string) {
+  const hostname = window.location.hostname;
+  const storage = browserLocalStorage();
+  let mode = currentAnalyticsMode();
+  // Without storage there is no volcano.dev id to share: count anonymously.
+  if (mode === "consented" && !storage) mode = "cookieless";
+  if (mode !== "consented" && storage) forgetDocsHostId(key, hostname, storage);
+  const apiHost = process.env.NEXT_PUBLIC_POSTHOG_HOST;
+  if (mode === "consented" && storage) {
+    forgetStoredPlaceholderId(key, storage);
+    startConsentedAnalytics(posthog, key, apiHost, storage);
+    return;
+  }
+  if (mode === "cookieless") {
+    posthog.init(key, cookielessPostHogConfig(apiHost), COOKIELESS_INSTANCE_NAME);
+  }
+}
+
+// The consented instance stops for the rest of the page load as soon as
+// consent lapses (the visitor may reject on volcano.dev in another tab, even
+// while this tab is hidden). Every check stops it synchronously, before
+// posthog-js can save its in-memory id again:
+// - a `storage` event, which reaches hidden tabs too. One removing the shared
+//   PostHog record (volcano-web clearing it on a reject) stops it whatever
+//   the consent cookie says yet;
+// - `pagehide`, registered before posthog-js's own handler so the stop runs
+//   before the page-exit capture;
+// - the tab coming back into view, and every event (`before_send`).
+function startConsentedAnalytics(posthog: PostHog, key: string, apiHost: string | undefined, storage: Storage) {
+  const recordKey = postHogPersistenceKey(key);
+  let analytics: PostHog | undefined;
+  let sharedRecordRemoved = false;
+
+  function consentHolds() {
+    return !sharedRecordRemoved && stillConsented();
+  }
+
+  function stop() {
+    window.removeEventListener("storage", recheckOnStorage);
+    window.removeEventListener("pagehide", recheck, true);
+    window.removeEventListener("focus", recheckWhenVisible);
+    window.removeEventListener("pageshow", recheckWhenVisible);
+    document.removeEventListener("visibilitychange", recheckWhenVisible);
+    const hostname = window.location.hostname;
+    if (analytics) {
+      stopConsentedAnalytics(analytics, key, hostname, availableStores(storage));
+      return;
+    }
+    forgetDocsHostId(key, hostname, storage);
+  }
+
+  const consentStillApplies = consentGuard(consentHolds, stop);
+
+  function recheck() {
+    consentStillApplies();
+  }
+
+  function recheckWhenVisible() {
+    if (document.visibilityState === "visible") consentStillApplies();
+  }
+
+  function recheckOnStorage(event: StorageEvent) {
+    if (event.storageArea !== storage) return;
+    if (sharedRecordRemovedBy(event, recordKey)) sharedRecordRemoved = true;
+    consentStillApplies();
+  }
+
+  window.addEventListener("storage", recheckOnStorage);
+  window.addEventListener("pagehide", recheck, true);
+  window.addEventListener("focus", recheckWhenVisible);
+  window.addEventListener("pageshow", recheckWhenVisible);
+  document.addEventListener("visibilitychange", recheckWhenVisible);
+  analytics = posthog.init(key, consentedPostHogConfig(apiHost, consentStillApplies), CONSENTED_INSTANCE_NAME);
+}
+
+// Whether a storage event removed the shared PostHog record (or cleared all
+// of localStorage).
+function sharedRecordRemovedBy(event: StorageEvent, recordKey: string) {
+  if (event.key === null) return true;
+  return event.key === recordKey && event.newValue === null;
+}
+
+// localStorage, or null where the browser blocks it (reading the property
+// itself can throw).
+function browserLocalStorage(): Storage | null {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+// sessionStorage, or null where the browser blocks it.
+function browserSessionStorage(): Storage | null {
+  try {
+    return window.sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
+// The storages posthog-js keeps the consented instance's records in.
+function availableStores(local: Storage): Storage[] {
+  const stores = [local];
+  const session = browserSessionStorage();
+  if (session) stores.push(session);
+  return stores;
+}
+
+// Analytics never stops the flags instance from loading: a failure here is
+// swallowed so flag consumers (the Blog header link) still get their flags.
+function startVisitorAnalyticsSafely(posthog: PostHog, key: string) {
+  try {
+    startVisitorAnalytics(posthog, key);
+  } catch {
+    // Analytics stays off for this page load.
+  }
 }
 
 // Loads posthog-js on demand: builds with no key never download the SDK, and
@@ -67,11 +201,12 @@ function PostHogProvider({ children }: PostHogProviderProps) {
           defaults: "2026-01-30",
           // Flags only: no analytics capture, replay, surveys or browser storage,
           // and before_send drops the $feature_flag_called event a flag read
-          // would otherwise send. Visitor counts come from the cookieless
-          // counter instead. With no storage there is no stable visitor id, so each page load is a
-          // new anonymous visitor. Use flags here as all-or-nothing switches (0% or
-          // 100%, or property targeting); a partial percentage rollout would show
-          // or hide a feature at random on each load. Switch persistence to
+          // would otherwise send. Visitor analytics run in their own
+          // instances (startVisitorAnalytics). With no storage there is no
+          // stable visitor id, so each page load is a new anonymous visitor.
+          // Use flags here as all-or-nothing switches (0% or 100%, or
+          // property targeting); a partial percentage rollout would show or
+          // hide a feature at random on each load. Switch persistence to
           // "localStorage" if stable percentage rollouts are needed.
           autocapture: false,
           capture_pageview: false,
@@ -88,7 +223,7 @@ function PostHogProvider({ children }: PostHogProviderProps) {
           persistence: "memory",
           before_send: dropFlagsInstanceEvents,
         });
-        startCookielessCounter(posthog, key as string);
+        startVisitorAnalyticsSafely(posthog, key as string);
       }
       unsubscribe = posthog.onFeatureFlags(function flagsLoaded() {
         bump(posthog);

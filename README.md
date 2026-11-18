@@ -69,14 +69,21 @@ that site. LavaFlow stays on the `volcano-docs` projects, whose Git deployments
 it can read; a commit that fails to build fails in both, and each site keeps
 serving its last good build. The `staging` and `production` environments,
 limited to `main`, hold volcano-web's `VOLCANO_API_URL`, `VOLCANO_WEB_PROJECT_ID`,
-and a project access token `VOLCANO_WEB_TOKEN` as secrets, and the docs project's
+and a project access token `VOLCANO_WEB_TOKEN` as secrets, and
 `NEXT_PUBLIC_POSTHOG_KEY` and `NEXT_PUBLIC_POSTHOG_HOST` as variables (the
-Blog header link waits on a PostHog flag), and optionally
-`NEXT_PUBLIC_POSTHOG_COOKIELESS_COUNTING`: `true` turns on the anonymous
-visitor counter in [`src/lib/cookieless-counting.mjs`](src/lib/cookieless-counting.mjs),
-and unset or anything else leaves it off. To count visitors on
-docs.volcano.dev and docs.staging.volcano.dev too, set the same variable on the
-`volcano-docs` projects, next to `DOCS_SITE_URL`.
+Blog header link waits on a PostHog flag). The key must be the PostHog project
+token volcano-web uses in the same environment: visitors who accepted cookies
+on volcano.dev keep its stored PostHog id on the docs only when the tokens
+match. Optionally there is also
+`NEXT_PUBLIC_POSTHOG_COOKIELESS_COUNTING`: `true` turns on docs visitor
+analytics. Visitors who accepted analytics cookies on volcano.dev get pageview
+analytics under the PostHog id volcano.dev stored
+([`src/lib/consented-analytics.mjs`](src/lib/consented-analytics.mjs)), everyone
+else is counted anonymously
+([`src/lib/cookieless-counting.mjs`](src/lib/cookieless-counting.mjs)), and
+Global Privacy Control turns both off. Unset or anything else leaves all of it
+off. To cover docs.volcano.dev and docs.staging.volcano.dev too, set the same
+variable on the `volcano-docs` projects, next to `DOCS_SITE_URL`.
 
 ## Site (Fumadocs)
 

@@ -3,9 +3,10 @@
  *
  * Counsel approved counting visitors who have not accepted analytics cookies,
  * on two conditions: no personal data is captured and nothing is stored in
- * the browser. The docs site has no analytics instance and no cookie banner of
- * its own, so this counter covers every docs visitor, except one sending
- * Global Privacy Control.
+ * the browser. The docs have no cookie banner of their own, so this counter
+ * covers every docs visitor who has not accepted on volcano.dev, except one
+ * sending Global Privacy Control. Visitors who accepted get the consented
+ * analytics in `consented-analytics.mjs` instead, so nobody is counted twice.
  *
  * It is a separate posthog-js instance in `cookieless_mode: "always"`:
  * posthog-js stores nothing in cookies, localStorage or sessionStorage, and
@@ -19,17 +20,14 @@
  * and fragment, referrers keep only their origin, and ad click identifiers
  * are removed.
  *
- * Off unless the build sets `NEXT_PUBLIC_POSTHOG_COOKIELESS_COUNTING=true`.
+ * Off unless the build sets `NEXT_PUBLIC_POSTHOG_COOKIELESS_COUNTING=true`,
+ * which turns on both the counter and the consented analytics.
  */
+
+import { consentForHost } from "./consent.mjs";
 
 /** Named PostHog instance, kept apart from the flags instance. */
 export const COOKIELESS_INSTANCE_NAME = "volcano_docs_cookieless";
-
-/**
- * Consent cookies volcano-web writes: the production name (shared across
- * .volcano.dev) and the host-only name it uses on other volcano.dev hosts.
- */
-const CONSENT_COOKIE_NAMES = ["volcano_cookie_consent", "volcano_cookie_consent_host"];
 
 /** The only events the counter may send. */
 const COUNTED_EVENTS = new Set(["$pageview", "$pageleave"]);
@@ -50,7 +48,7 @@ const CLICK_ID_PROPERTIES = new Set([
   "igshid",
   "irclid",
   "li_fat_id",
-  "mc_cid",
+  "mc_eid",
   "msclkid",
   "qclid",
   "rdt_cid",
@@ -81,34 +79,39 @@ export function cookielessCountingEnabled(value) {
 /**
  * Whether volcano-web recorded a Global Privacy Control opt-out for this
  * browser. A recorded one keeps counting off after the browser stops sending
- * the signal, matching volcano-web. Malformed cookies are ignored.
+ * the signal, matching volcano-web. Every consent cookie is checked.
  */
 export function hasRecordedGlobalPrivacyControl(cookieHeader) {
-  if (typeof cookieHeader !== "string" || cookieHeader === "") return false;
-  for (const entry of cookieHeader.split(";")) {
-    const separator = entry.indexOf("=");
-    if (separator === -1) continue;
-    const name = entry.slice(0, separator).trim();
-    if (!CONSENT_COOKIE_NAMES.includes(name)) continue;
-    try {
-      const record = JSON.parse(decodeURIComponent(entry.slice(separator + 1).trim()));
-      if (record && record.source === "gpc") return true;
-    } catch {
-      // Not a consent record volcano-web wrote.
-    }
-  }
-  return false;
+  return consentForHost(cookieHeader, "").gpcRecorded;
 }
 
 /**
- * Whether this visitor may be counted: the switch is on and the browser has
- * neither a live nor a recorded Global Privacy Control opt-out.
+ * Which analytics the docs run for this visitor, chosen at page load (a
+ * running consented instance re-checks and stops if consent lapses; see
+ * `consentGuard` in `consented-analytics.mjs`):
+ *
+ * - `"consented"`: accepted analytics cookies on volcano.dev against the
+ *   current Cookie Policy. Full pageview analytics with the same stored
+ *   PostHog id as volcano.dev (see `consented-analytics.mjs`).
+ * - `"cookieless"`: everyone else, counted anonymously by this module.
+ * - `"off"`: the switch is off, or Global Privacy Control is live or
+ *   recorded in any consent cookie.
+ *
+ * `hostname` picks which consent cookie holds the choice for this host (see
+ * `consentCookieNameForHost`); a recorded reject in any of them wins.
  */
-export function shouldCountCookieless({ enabled, globalPrivacyControl, cookieHeader }) {
-  if (!cookielessCountingEnabled(enabled)) return false;
-  if (globalPrivacyControl === true) return false;
-  if (hasRecordedGlobalPrivacyControl(cookieHeader)) return false;
-  return true;
+export function docsAnalyticsMode({ enabled, globalPrivacyControl, cookieHeader, hostname }) {
+  if (!cookielessCountingEnabled(enabled)) return "off";
+  if (globalPrivacyControl === true) return "off";
+  const consent = consentForHost(cookieHeader, hostname);
+  if (consent.gpcRecorded) return "off";
+  if (consent.accepted) return "consented";
+  return "cookieless";
+}
+
+/** Whether this visitor is counted by the cookieless counter. */
+export function shouldCountCookieless(input) {
+  return docsAnalyticsMode(input) === "cookieless";
 }
 
 function withoutQueryOrFragment(value) {
