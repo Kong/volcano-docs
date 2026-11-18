@@ -68,8 +68,8 @@ succeeds, on [volcano.dev](https://volcano.dev), with `DOCS_SITE_URL` set to
 that site. LavaFlow stays on the `volcano-docs` projects, whose Git deployments
 it can read; a commit that fails to build fails in both, and each site keeps
 serving its last good build. The `staging` and `production` environments,
-limited to `main`, hold volcano-web's `VOLCANO_API_URL`, `VOLCANO_PROJECT_ID`,
-and a project access token `VOLCANO_TOKEN` as secrets, and the docs project's
+limited to `main`, hold volcano-web's `VOLCANO_API_URL`, `VOLCANO_WEB_PROJECT_ID`,
+and a project access token `VOLCANO_WEB_TOKEN` as secrets, and the docs project's
 `NEXT_PUBLIC_POSTHOG_KEY` and `NEXT_PUBLIC_POSTHOG_HOST` as variables (the
 Blog header link waits on a PostHog flag).
 
