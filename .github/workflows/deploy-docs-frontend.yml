@@ -1,5 +1,5 @@
-name: Deploy docs frontend
-run-name: Docs frontend — ${{ github.sha }}
+name: Deploy frontend docs route for volcano web
+run-name: Deploy frontend docs route for volcano web — ${{ github.sha }}
 
 # Deploys this repository as the `docs` frontend of volcano-web's project,
 # which mounts it at /docs, /blog, and /cookbook with Frontend routes:

@@ -1,4 +1,4 @@
-name: Deploy docs frontend to one environment
+name: Deploy frontend docs route for volcano web to one environment
 
 # Called by deploy-docs-frontend.yml, once for staging and once for production.
 # Each GitHub environment must allow only the main branch and holds:
