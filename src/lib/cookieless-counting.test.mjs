@@ -73,16 +73,59 @@ test("removes query strings, fragments and referrer paths", () => {
     $current_url: "https://docs.volcano.dev/sdk/js",
     $prev_pageview_url: "https://docs.volcano.dev/cli",
     $referrer: "https://mail.example.com",
-    $initial_referrer: "$direct",
     $pathname: "/sdk/js",
     utm_source: "newsletter",
   });
+  const direct = scrubCookielessEvent({ event: "$pageview", properties: { $referrer: "$direct" } });
+  assert.deepEqual(direct.properties, { $referrer: "$direct" });
   assert.equal(JSON.stringify(event).includes("ada@example.com"), false);
 });
 
-test("drops a URL property it cannot parse instead of sending it raw", () => {
+test("drops a referrer it cannot parse instead of sending it raw", () => {
   const event = scrubCookielessEvent({ event: "$pageview", properties: { $referrer: "not a url ada@example.com" } });
   assert.equal("$referrer" in event.properties, false);
+});
+
+test("drops ad click identifiers and keeps campaign names", () => {
+  const event = scrubCookielessEvent({
+    event: "$pageview",
+    properties: { gclid: "Cj0KCQ", fbclid: "IwAR1", msclkid: "abc", li_fat_id: "x", utm_source: "google", utm_campaign: "launch" },
+  });
+  assert.deepEqual(event.properties, { utm_source: "google", utm_campaign: "launch" });
+});
+
+test("cleans every URL-valued property, whatever posthog-js calls it", () => {
+  const event = scrubCookielessEvent({
+    event: "$pageleave",
+    properties: {
+      $session_entry_url: "https://docs.volcano.dev/cli?code=secret#a",
+      $session_entry_referrer: "https://mail.example.com/u/ada@example.com",
+      some_future_url: "http://docs.volcano.dev/x?y=1",
+      $prev_pageview_pathname: "/cli",
+      $prev_pageview_duration: 12,
+    },
+  });
+  assert.deepEqual(event.properties, {
+    $session_entry_url: "https://docs.volcano.dev/cli",
+    $session_entry_referrer: "https://mail.example.com",
+    some_future_url: "http://docs.volcano.dev/x",
+    $prev_pageview_pathname: "/cli",
+    $prev_pageview_duration: 12,
+  });
+});
+
+test("never sends person properties or first-touch snapshots", () => {
+  const event = scrubCookielessEvent({
+    event: "$pageview",
+    properties: {
+      $set: { email: "ada@example.com" },
+      $set_once: { $initial_referrer: "https://x.example" },
+      $initial_current_url: "https://docs.volcano.dev/?gclid=1",
+      $initial_campaign_params: { gclid: "1" },
+      $lib: "web",
+    },
+  });
+  assert.deepEqual(event.properties, { $lib: "web" });
 });
 
 test("the config stores nothing, captures nothing else and creates no person", () => {
@@ -91,6 +134,7 @@ test("the config stores nothing, captures nothing else and creates no person", (
   assert.equal(config.persistence, "memory");
   assert.equal(config.disable_persistence, true);
   assert.equal(config.person_profiles, "never");
+  assert.equal(config.mask_personal_data_properties, true);
   assert.equal(config.autocapture, false);
   assert.equal(config.disable_session_recording, true);
   assert.equal(config.capture_performance, false);

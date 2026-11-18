@@ -15,8 +15,9 @@
  * The PostHog project's "cookieless server hash mode" setting must be on, or
  * PostHog discards these events.
  *
- * It sends `$pageview` and `$pageleave` only, with the query string and
- * fragment removed from page URLs and the referrer cut to its origin.
+ * It sends `$pageview` and `$pageleave` only. Every URL loses its query string
+ * and fragment, referrers keep only their origin, and ad click identifiers
+ * are removed.
  *
  * Off unless the build sets `NEXT_PUBLIC_POSTHOG_COOKIELESS_COUNTING=true`.
  */
@@ -33,11 +34,44 @@ const CONSENT_COOKIE_NAMES = ["volcano_cookie_consent", "volcano_cookie_consent_
 /** The only events the counter may send. */
 const COUNTED_EVENTS = new Set(["$pageview", "$pageleave"]);
 
-/** Properties holding a page URL: query string and fragment are removed. */
-const PAGE_URL_PROPERTIES = ["$current_url", "$prev_pageview_url"];
+/**
+ * Ad click identifiers posthog-js copies from the landing URL into their own
+ * properties. Each one names a single ad click, so it is personal data and is
+ * never sent. `mask_personal_data_properties` already masks them; the
+ * scrubber drops them as well, so a later SDK default cannot bring them back.
+ */
+const CLICK_ID_PROPERTIES = new Set([
+  "_kx",
+  "dclid",
+  "epik",
+  "fbclid",
+  "gbraid",
+  "gclid",
+  "igshid",
+  "irclid",
+  "li_fat_id",
+  "mc_cid",
+  "msclkid",
+  "qclid",
+  "rdt_cid",
+  "sccid",
+  "ttclid",
+  "twclid",
+  "wbraid",
+]);
 
-/** Properties holding a referrer URL: cut to the origin. */
-const REFERRER_PROPERTIES = ["$referrer", "$initial_referrer"];
+/** Person-property payloads and first-touch snapshots: never sent. */
+function isPersonOrInitialProperty(key) {
+  return key === "$set" || key === "$set_once" || key.startsWith("$initial_");
+}
+
+function isUrlString(value) {
+  return typeof value === "string" && /^https?:\/\//i.test(value);
+}
+
+function isReferrerProperty(key) {
+  return key.includes("referrer");
+}
 
 /** Whether the build switch is on. Only the exact string `true` turns it on. */
 export function cookielessCountingEnabled(value) {
@@ -95,28 +129,38 @@ function originOnly(value) {
   }
 }
 
-function scrubProperty(properties, key, scrub) {
-  const value = properties[key];
-  if (typeof value !== "string" || value === "") return;
-  const scrubbed = scrub(value);
-  if (scrubbed === null) {
-    delete properties[key];
-    return;
-  }
-  properties[key] = scrubbed;
+function scrubbedUrl(key, value) {
+  if (isReferrerProperty(key)) return originOnly(value);
+  return withoutQueryOrFragment(value);
 }
 
 /**
  * The counter's `before_send`: drops every event except pageview and
- * pageleave, and removes the query string and fragment from page URLs and
- * everything but the origin from referrers. Campaign parameters posthog-js
- * already copied into their own properties (`utm_source` and the rest) stay.
+ * pageleave, then cleans what is left.
+ *
+ * - Ad click identifiers, person-property payloads and `$initial_*`
+ *   snapshots are removed.
+ * - Every property whose value is a URL, whatever posthog-js names it now or
+ *   in a later version, loses its query string and fragment; a referrer keeps
+ *   only its origin. A referrer that is not a URL (`$direct`) stays, and one
+ *   that cannot be parsed is removed.
+ *
+ * Campaign names posthog-js copies into their own properties (`utm_source`,
+ * `utm_campaign` and the rest) stay: they name a campaign, not a person.
  */
 export function scrubCookielessEvent(event) {
   if (!event || !COUNTED_EVENTS.has(event.event)) return null;
-  const properties = { ...event.properties };
-  for (const key of PAGE_URL_PROPERTIES) scrubProperty(properties, key, withoutQueryOrFragment);
-  for (const key of REFERRER_PROPERTIES) scrubProperty(properties, key, originOnly);
+  const properties = {};
+  for (const [key, value] of Object.entries(event.properties ?? {})) {
+    if (CLICK_ID_PROPERTIES.has(key) || isPersonOrInitialProperty(key)) continue;
+    if (isReferrerProperty(key) && typeof value === "string" && value !== "$direct" && !isUrlString(value)) continue;
+    if (!isUrlString(value)) {
+      properties[key] = value;
+      continue;
+    }
+    const scrubbed = scrubbedUrl(key, value);
+    if (scrubbed !== null) properties[key] = scrubbed;
+  }
   return { ...event, properties };
 }
 
@@ -160,6 +204,9 @@ export function cookielessPostHogConfig(apiHost) {
     disable_external_dependency_loading: true,
     // Never create or update a person.
     person_profiles: "never",
+    // Masks ad click identifiers and other personal-data URL parameters;
+    // the scrubber then drops the click identifiers outright.
+    mask_personal_data_properties: true,
     before_send: scrubCookielessEvent,
   };
 }
