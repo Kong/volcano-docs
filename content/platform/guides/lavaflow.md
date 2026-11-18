@@ -1657,9 +1657,10 @@ waits for a person to mark it ready; `draft_reason` says why it is one, and is
 ### Check pull request delivery
 
 Read `delivery` in the run list or run details to see whether LavaFlow opened a pull request, verified coverage by another run, or still needs a prerequisite.
-A completed diagnosis can have a `terminal_miss` when LavaFlow finished without a pull request or a recorded recovery action.
+A completed diagnosis can have a `terminal_miss` if this run finished without delivery and can't resume.
 Diagnosis-only runs show `stopped`. Runs still in progress show `pending`.
-A run in `waiting_for_prerequisite` gives the recorded `reason` and, when known, the `next_action`.
+A run in `waiting_for_prerequisite` can resume once you address the recorded `reason`, such as authorizing a held fix.
+For a terminal miss, `next_action`, when present, suggests what to do before starting new work.
 A run that resumed can still show earlier blockers in `prior_skips`.
 
 A `pr_created` result includes drafts.
