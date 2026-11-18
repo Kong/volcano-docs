@@ -1,5 +1,5 @@
-name: Deploy docs frontend
-run-name: Docs frontend — ${{ github.sha }}
+name: Deploy frontend docs route for volcano web
+run-name: Deploy frontend docs route for volcano web — ${{ github.sha }}
 
 # Deploys this repository as the `docs` frontend of volcano-web's project,
 # which mounts it at /docs, /blog, and /cookbook with Frontend routes:
@@ -27,6 +27,12 @@ jobs:
     with:
       environment: staging
       site_url: https://staging.volcano.dev
+    # A called workflow sees its job environment's secrets only under names
+    # the caller passes; the environment's values replace the caller's.
+    secrets:
+      VOLCANO_API_URL: ${{ secrets.VOLCANO_API_URL }}
+      VOLCANO_WEB_PROJECT_ID: ${{ secrets.VOLCANO_WEB_PROJECT_ID }}
+      VOLCANO_WEB_TOKEN: ${{ secrets.VOLCANO_WEB_TOKEN }}
 
   production:
     name: Production
@@ -35,3 +41,7 @@ jobs:
     with:
       environment: production
       site_url: https://volcano.dev
+    secrets:
+      VOLCANO_API_URL: ${{ secrets.VOLCANO_API_URL }}
+      VOLCANO_WEB_PROJECT_ID: ${{ secrets.VOLCANO_WEB_PROJECT_ID }}
+      VOLCANO_WEB_TOKEN: ${{ secrets.VOLCANO_WEB_TOKEN }}

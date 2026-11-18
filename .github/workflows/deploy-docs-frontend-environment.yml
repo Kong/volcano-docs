@@ -1,10 +1,10 @@
-name: Deploy docs frontend to one environment
+name: Deploy frontend docs route for volcano web to one environment
 
 # Called by deploy-docs-frontend.yml, once for staging and once for production.
-# Each GitHub environment must allow only the main branch and holds, under the
-# same names volcano-web uses for its project:
-#   secrets   VOLCANO_API_URL, VOLCANO_PROJECT_ID (volcano-web's project),
-#             VOLCANO_TOKEN (a project access token for it)
+# Each GitHub environment must allow only the main branch and holds:
+#   secrets   VOLCANO_API_URL, VOLCANO_WEB_PROJECT_ID (volcano-web's project,
+#             not the docs project), VOLCANO_WEB_TOKEN (a project access
+#             token for it)
 #   variables NEXT_PUBLIC_POSTHOG_KEY, NEXT_PUBLIC_POSTHOG_HOST (the docs
 #             project's values; the build inlines them, and the Blog header
 #             link waits on a PostHog flag)
@@ -17,6 +17,14 @@ on:
       site_url:
         required: true
         type: string
+    # The caller names these, and the job's environment supplies the values.
+    secrets:
+      VOLCANO_API_URL:
+        required: false
+      VOLCANO_WEB_PROJECT_ID:
+        required: false
+      VOLCANO_WEB_TOKEN:
+        required: false
 
 permissions:
   contents: read
@@ -33,7 +41,7 @@ jobs:
     timeout-minutes: 25
     env:
       VOLCANO_API_URL: ${{ secrets.VOLCANO_API_URL }}
-      VOLCANO_PROJECT: ${{ secrets.VOLCANO_PROJECT_ID }}
+      VOLCANO_PROJECT: ${{ secrets.VOLCANO_WEB_PROJECT_ID }}
       DOCS_SITE_URL: ${{ inputs.site_url }}
       NEXT_PUBLIC_POSTHOG_KEY: ${{ vars.NEXT_PUBLIC_POSTHOG_KEY }}
       NEXT_PUBLIC_POSTHOG_HOST: ${{ vars.NEXT_PUBLIC_POSTHOG_HOST }}
@@ -41,12 +49,12 @@ jobs:
       - name: Check project configuration
         env:
           ENVIRONMENT: ${{ inputs.environment }}
-          VOLCANO_PROJECT_ID: ${{ secrets.VOLCANO_PROJECT_ID }}
-          VOLCANO_TOKEN: ${{ secrets.VOLCANO_TOKEN }}
+          VOLCANO_WEB_PROJECT_ID: ${{ secrets.VOLCANO_WEB_PROJECT_ID }}
+          VOLCANO_WEB_TOKEN: ${{ secrets.VOLCANO_WEB_TOKEN }}
         # Checks the names as the environment holds them, so the error names
         # the secret or variable to set.
         run: |
-          for name in VOLCANO_API_URL VOLCANO_PROJECT_ID VOLCANO_TOKEN NEXT_PUBLIC_POSTHOG_KEY NEXT_PUBLIC_POSTHOG_HOST; do
+          for name in VOLCANO_API_URL VOLCANO_WEB_PROJECT_ID VOLCANO_WEB_TOKEN NEXT_PUBLIC_POSTHOG_KEY NEXT_PUBLIC_POSTHOG_HOST; do
             if [ -z "${!name}" ]; then
               echo "::error::$name is empty; set it on the $ENVIRONMENT environment."
               exit 1
@@ -71,14 +79,14 @@ jobs:
 
       - name: Authenticate with Volcano
         env:
-          VOLCANO_TOKEN: ${{ secrets.VOLCANO_TOKEN }}
+          VOLCANO_TOKEN: ${{ secrets.VOLCANO_WEB_TOKEN }}
         run: volcano login --token "$VOLCANO_TOKEN" --project "$VOLCANO_PROJECT"
 
       # Not shared, so the project's functions never receive them; the frontend
       # selects them by name.
       - name: Set docs build variables
         env:
-          VOLCANO_TOKEN: ${{ secrets.VOLCANO_TOKEN }}
+          VOLCANO_TOKEN: ${{ secrets.VOLCANO_WEB_TOKEN }}
         run: |
           {
             printf 'DOCS_SITE_URL=%s\n' "$DOCS_SITE_URL"
@@ -90,7 +98,7 @@ jobs:
       - name: Deploy and wait for frontend
         id: frontend
         env:
-          VOLCANO_TOKEN: ${{ secrets.VOLCANO_TOKEN }}
+          VOLCANO_TOKEN: ${{ secrets.VOLCANO_WEB_TOKEN }}
         run: node scripts/deploy-docs-frontend.mjs
 
       - name: Smoke test deployed frontend
