@@ -1663,6 +1663,7 @@ A run in `waiting_for_prerequisite` gives the recorded `reason` and, when known,
 A run that resumed can still show earlier blockers in `prior_skips`.
 
 A `pr_created` result includes drafts.
+When an open proposal still needs external setup or an operator action, `delivery.reason` is `external_prerequisite` and `delivery.next_action` says what to do before proceeding.
 When another run covers the issue, `delivery.coverage` links its pull request and shows its merge and deployment timestamps when known.
 When a run finds an existing pull request for the same issue on the connected repository, the run links to that pull request and identifies its owning run.
 A closed pull request that did not merge no longer covers the issue.
