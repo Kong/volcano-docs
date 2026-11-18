@@ -41,9 +41,12 @@ jobs:
       - name: Check project configuration
         env:
           ENVIRONMENT: ${{ inputs.environment }}
+          VOLCANO_PROJECT_ID: ${{ secrets.VOLCANO_PROJECT_ID }}
           VOLCANO_TOKEN: ${{ secrets.VOLCANO_TOKEN }}
+        # Checks the names as the environment holds them, so the error names
+        # the secret or variable to set.
         run: |
-          for name in VOLCANO_API_URL VOLCANO_PROJECT VOLCANO_TOKEN NEXT_PUBLIC_POSTHOG_KEY NEXT_PUBLIC_POSTHOG_HOST; do
+          for name in VOLCANO_API_URL VOLCANO_PROJECT_ID VOLCANO_TOKEN NEXT_PUBLIC_POSTHOG_KEY NEXT_PUBLIC_POSTHOG_HOST; do
             if [ -z "${!name}" ]; then
               echo "::error::$name is empty; set it on the $ENVIRONMENT environment."
               exit 1
