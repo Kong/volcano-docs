@@ -1,7 +1,7 @@
 name: CI
 
-# Site-level validation for every PR: the docs-format lint, a route-aware link
-# check, and a real Next build.
+# Site-level validation for every PR: ESLint, the docs-format lint, a
+# route-aware link check, and a real Next build.
 on:
   pull_request:
   merge_group:
@@ -34,6 +34,9 @@ jobs:
         run: |
           corepack enable
           pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
 
       - name: Lint docs format
         run: pnpm lint:docs content
