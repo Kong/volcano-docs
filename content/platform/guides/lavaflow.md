@@ -496,9 +496,9 @@ own project.
 
 ## Check availability
 
-LavaFlow is in preview and needs the SUPERAGENT plan. LavaFlow fixes never
-count toward the project's Sandbox usage. Check the project's
-capabilities before you offer it; `lavaflow` accounts for the owner's plan:
+Project owners on HOBBY and SUPERAGENT can turn on LavaFlow in their
+project settings. LavaFlow fixes never count toward the project's Sandbox
+usage. Check the project's `lavaflow` capability before offering the feature.
 
 ```bash
 curl "https://api.volcano.dev/projects/$PROJECT_ID/capabilities" \

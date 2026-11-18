@@ -209,11 +209,11 @@ Revoked and expired tokens do not count against it, so cycling short-lived token
 
 ## LavaFlow
 
-LavaFlow is in preview. During the preview, it needs the SUPERAGENT plan.
+Project owners can turn on LavaFlow in their project settings.
 
-| Limit                   | HOBBY       | SUPERAGENT | Scope       |
-| ----------------------- | ----------- | ---------- | ----------- |
-| [LavaFlow](lavaflow.md) | Unavailable | Available  | Per project |
+| Feature                | HOBBY     | SUPERAGENT | Scope       |
+| ---------------------- | --------- | ---------- | ----------- |
+| [LavaFlow](lavaflow.md) | Available | Available  | Per project |
 
 No plan includes [Code Quality](lavaflow.md#code-quality) yet. Where it is
 offered, the project's `lavaflow.code_quality` capability reads `unavailable`
