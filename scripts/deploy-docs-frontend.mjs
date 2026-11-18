@@ -11,7 +11,7 @@ try {
     name: "docs",
     allowCreate: true,
     appRoot: "",
-    variables: ["DOCS_SITE_URL", "NEXT_PUBLIC_POSTHOG_KEY", "NEXT_PUBLIC_POSTHOG_HOST"],
+    variables: ["DOCS_SITE_URL", "NEXT_PUBLIC_POSTHOG_KEY", "NEXT_PUBLIC_POSTHOG_HOST", "NEXT_PUBLIC_POSTHOG_COOKIELESS_COUNTING"],
   });
   if (!frontend.url) throw new Error("The docs frontend has no site URL");
   console.log(`Frontend URL: ${frontend.url}`);
