@@ -1411,6 +1411,16 @@ hours. A start that doesn't run answers a code:
 | `429`  | `issue_run_limit_reached`   | The issue started 5 runs in the last 24 hours                                        | Try again after `Retry-After`                          |
 | `429`  | `project_run_limit_reached` | The project started 200 runs in the last 24 hours                                    | Try again after `Retry-After`                          |
 
+## Ask about repository CI
+
+In a project report, ask LavaFlow for the current CI status of the tracked branch.
+The diagnosis includes the exact commit and observation time when LavaFlow can read them.
+It identifies passing, failing, pending, skipped, missing, partial, or access-denied results.
+Passing means all observed checks passed. Missing or partial results leave overall CI health unknown.
+
+For a failing check, ask LavaFlow to investigate the issue on the run's commit. LavaFlow can read check results and a sample of failure summaries, then propose a source fix if it identifies a code defect.
+A CI status question produces a report. Workflow changes or a new CI run require a separate action.
+
 ## Follow runs
 
 List the project's runs, newest first. Each run names its category, the issue
