@@ -3,6 +3,7 @@
 // only to visitors whose volcano.dev consent names that version, so when
 // counsel publishes a new policy the constant must follow it: until it does,
 // an accept given under the old policy would still count here.
+import { fileURLToPath } from "node:url";
 import { COOKIE_POLICY_VERSION } from "../src/lib/consent.mjs";
 
 const POLICY_URL = process.env.COOKIE_POLICY_URL ?? "https://volcano.dev/legal/cookies.md";
@@ -27,7 +28,7 @@ async function main() {
   console.log(`check-cookie-policy: version ${version} matches`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   main().catch(function fail(error) {
     console.error(`check-cookie-policy: ${error.message}`);
     process.exitCode = 1;

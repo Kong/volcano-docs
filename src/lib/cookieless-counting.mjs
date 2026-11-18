@@ -24,11 +24,7 @@
  * which turns on both the counter and the consented analytics.
  */
 
-import {
-  analyticsAccepted,
-  globalPrivacyControlOptOut,
-  readConsentRecord,
-} from "./consent.mjs";
+import { consentForHost } from "./consent.mjs";
 
 /** Named PostHog instance, kept apart from the flags instance. */
 export const COOKIELESS_INSTANCE_NAME = "volcano_docs_cookieless";
@@ -83,10 +79,10 @@ export function cookielessCountingEnabled(value) {
 /**
  * Whether volcano-web recorded a Global Privacy Control opt-out for this
  * browser. A recorded one keeps counting off after the browser stops sending
- * the signal, matching volcano-web. Malformed cookies are ignored.
+ * the signal, matching volcano-web. Every consent cookie is checked.
  */
 export function hasRecordedGlobalPrivacyControl(cookieHeader) {
-  return readConsentRecord(cookieHeader)?.source === "gpc";
+  return consentForHost(cookieHeader, "").gpcRecorded;
 }
 
 /**
@@ -96,13 +92,18 @@ export function hasRecordedGlobalPrivacyControl(cookieHeader) {
  *   current Cookie Policy. Full pageview analytics with the same stored
  *   PostHog id as volcano.dev (see `consented-analytics.mjs`).
  * - `"cookieless"`: everyone else, counted anonymously by this module.
- * - `"off"`: the switch is off, or Global Privacy Control is live or recorded.
+ * - `"off"`: the switch is off, or Global Privacy Control is live or
+ *   recorded in any consent cookie.
+ *
+ * `hostname` picks which consent cookie holds the choice for this host (see
+ * `consentCookieNameForHost`); a recorded reject in any of them wins.
  */
-export function docsAnalyticsMode({ enabled, globalPrivacyControl, cookieHeader }) {
+export function docsAnalyticsMode({ enabled, globalPrivacyControl, cookieHeader, hostname }) {
   if (!cookielessCountingEnabled(enabled)) return "off";
-  const consent = readConsentRecord(cookieHeader);
-  if (globalPrivacyControlOptOut({ globalPrivacyControl, consent })) return "off";
-  if (analyticsAccepted({ globalPrivacyControl, consent })) return "consented";
+  if (globalPrivacyControl === true) return "off";
+  const consent = consentForHost(cookieHeader, hostname);
+  if (consent.gpcRecorded) return "off";
+  if (consent.accepted) return "consented";
   return "cookieless";
 }
 

@@ -52,4 +52,6 @@ jobs:
       # The docs give full analytics only under consent to this Cookie Policy
       # version (src/lib/consent.mjs), so it must match what volcano.dev publishes.
       - name: Check the Cookie Policy version against volcano.dev
+        # Runs even when the API check fails, so one never hides the other.
+        if: ${{ !cancelled() }}
         run: pnpm check:cookie-policy

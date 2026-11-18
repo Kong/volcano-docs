@@ -73,6 +73,29 @@ export function forgetStoredPlaceholderId(token, storage) {
   return true;
 }
 
+/** Origins whose stored PostHog id belongs to volcano-web's own analytics. */
+const VOLCANO_WEB_HOSTS = new Set(["volcano.dev", "www.volcano.dev", "staging.volcano.dev", "localhost"]);
+
+/**
+ * Remove the PostHog id the consented instance stored on a docs-only origin
+ * (docs.volcano.dev, docs.staging.volcano.dev) once the visitor no longer has
+ * consented analytics: they rejected, their accept is for an older policy, or
+ * Global Privacy Control applies. volcano-web cannot clear storage on those
+ * origins, so the docs do. On volcano-web's own origins the stored id is
+ * volcano-web's to manage, and is left alone. Returns whether it removed one.
+ */
+export function forgetDocsHostId(token, hostname, storage) {
+  if (VOLCANO_WEB_HOSTS.has(String(hostname ?? "").toLowerCase())) return false;
+  try {
+    const key = postHogPersistenceKey(token);
+    if (storage.getItem(key) === null) return false;
+    storage.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * The consented instance's `before_send`: the cookieless counter's scrub
  * (pageview and page exit only, URLs without query or fragment, no ad click

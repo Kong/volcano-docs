@@ -11,6 +11,7 @@ import {
 import {
   CONSENTED_INSTANCE_NAME,
   consentedPostHogConfig,
+  forgetDocsHostId,
   forgetStoredPlaceholderId,
 } from "@/lib/consented-analytics.mjs";
 
@@ -37,19 +38,45 @@ type NavigatorWithPrivacyControl = Navigator & { globalPrivacyControl?: boolean 
 // analytics under the PostHog id volcano.dev stored; anyone else is counted
 // anonymously. Each is a separate instance; nothing else captures through them.
 function startVisitorAnalytics(posthog: PostHog, key: string) {
-  const mode = docsAnalyticsMode({
+  const hostname = window.location.hostname;
+  const storage = browserLocalStorage();
+  let mode = docsAnalyticsMode({
     enabled: process.env.NEXT_PUBLIC_POSTHOG_COOKIELESS_COUNTING,
     globalPrivacyControl: (navigator as NavigatorWithPrivacyControl).globalPrivacyControl,
     cookieHeader: document.cookie,
+    hostname,
   });
+  // Without storage there is no volcano.dev id to share: count anonymously.
+  if (mode === "consented" && !storage) mode = "cookieless";
+  if (mode !== "consented" && storage) forgetDocsHostId(key, hostname, storage);
   const apiHost = process.env.NEXT_PUBLIC_POSTHOG_HOST;
-  if (mode === "consented") {
-    forgetStoredPlaceholderId(key, window.localStorage);
+  if (mode === "consented" && storage) {
+    forgetStoredPlaceholderId(key, storage);
     posthog.init(key, consentedPostHogConfig(apiHost), CONSENTED_INSTANCE_NAME);
     return;
   }
   if (mode === "cookieless") {
     posthog.init(key, cookielessPostHogConfig(apiHost), COOKIELESS_INSTANCE_NAME);
+  }
+}
+
+// localStorage, or null where the browser blocks it (reading the property
+// itself can throw).
+function browserLocalStorage(): Storage | null {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+// Analytics never stops the flags instance from loading: a failure here is
+// swallowed so flag consumers (the Blog header link) still get their flags.
+function startVisitorAnalyticsSafely(posthog: PostHog, key: string) {
+  try {
+    startVisitorAnalytics(posthog, key);
+  } catch {
+    // Analytics stays off for this page load.
   }
 }
 
@@ -102,7 +129,7 @@ function PostHogProvider({ children }: PostHogProviderProps) {
           persistence: "memory",
           before_send: dropFlagsInstanceEvents,
         });
-        startVisitorAnalytics(posthog, key as string);
+        startVisitorAnalyticsSafely(posthog, key as string);
       }
       unsubscribe = posthog.onFeatureFlags(function flagsLoaded() {
         bump(posthog);
