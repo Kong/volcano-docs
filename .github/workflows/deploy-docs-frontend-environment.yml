@@ -17,6 +17,14 @@ on:
       site_url:
         required: true
         type: string
+    # The caller names these, and the job's environment supplies the values.
+    secrets:
+      VOLCANO_API_URL:
+        required: false
+      VOLCANO_WEB_PROJECT_ID:
+        required: false
+      VOLCANO_WEB_TOKEN:
+        required: false
 
 permissions:
   contents: read
