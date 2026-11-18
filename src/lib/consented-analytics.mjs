@@ -117,9 +117,10 @@ export function forgetDocsHostId(token, hostname, storage) {
  * mounted across App Router navigations, so one page load can last as long
  * as the tab is open, and the visitor can reject on volcano.dev in another
  * tab meanwhile. Returns a check that is true while `stillConsented()` is.
- * The first time it is not (or it throws), `onLapse` runs once and every
- * later check is false, even if consent comes back: a new accept takes
- * effect on the next page load.
+ * The first time it is not (or it throws), `onLapse` runs once, synchronously
+ * (posthog-js saves its record when it builds an event, so a stop must not
+ * wait), and every later check is false, even if consent comes back: a new
+ * accept takes effect on the next page load.
  */
 export function consentGuard(stillConsented, onLapse) {
   let lapsed = false;

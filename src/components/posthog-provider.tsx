@@ -14,6 +14,7 @@ import {
   consentedPostHogConfig,
   forgetDocsHostId,
   forgetStoredPlaceholderId,
+  postHogPersistenceKey,
   stopConsentedAnalytics,
 } from "@/lib/consented-analytics.mjs";
 
@@ -71,16 +72,31 @@ function startVisitorAnalytics(posthog: PostHog, key: string) {
   }
 }
 
-// The consented instance re-checks consent before every event and whenever
-// the tab comes back into view (the visitor may have rejected on volcano.dev
-// in another tab). Once consent lapses it stops for the rest of the page load.
+// The consented instance stops for the rest of the page load as soon as
+// consent lapses (the visitor may reject on volcano.dev in another tab, even
+// while this tab is hidden). Every check stops it synchronously, before
+// posthog-js can save its in-memory id again:
+// - a `storage` event, which reaches hidden tabs too. One removing the shared
+//   PostHog record (volcano-web clearing it on a reject) stops it whatever
+//   the consent cookie says yet;
+// - `pagehide`, registered before posthog-js's own handler so the stop runs
+//   before the page-exit capture;
+// - the tab coming back into view, and every event (`before_send`).
 function startConsentedAnalytics(posthog: PostHog, key: string, apiHost: string | undefined, storage: Storage) {
+  const recordKey = postHogPersistenceKey(key);
   let analytics: PostHog | undefined;
+  let sharedRecordRemoved = false;
+
+  function consentHolds() {
+    return !sharedRecordRemoved && stillConsented();
+  }
 
   function stop() {
-    window.removeEventListener("focus", recheck);
-    window.removeEventListener("pageshow", recheck);
-    document.removeEventListener("visibilitychange", recheck);
+    window.removeEventListener("storage", recheckOnStorage);
+    window.removeEventListener("pagehide", recheck, true);
+    window.removeEventListener("focus", recheckWhenVisible);
+    window.removeEventListener("pageshow", recheckWhenVisible);
+    document.removeEventListener("visibilitychange", recheckWhenVisible);
     const hostname = window.location.hostname;
     if (analytics) {
       stopConsentedAnalytics(analytics, key, hostname, availableStores(storage));
@@ -89,21 +105,35 @@ function startConsentedAnalytics(posthog: PostHog, key: string, apiHost: string 
     forgetDocsHostId(key, hostname, storage);
   }
 
-  // Stops outside posthog-js's capture call, which may be what found the lapse.
-  function stopSoon() {
-    window.setTimeout(stop, 0);
-  }
-
-  const consentStillApplies = consentGuard(stillConsented, stopSoon);
+  const consentStillApplies = consentGuard(consentHolds, stop);
 
   function recheck() {
+    consentStillApplies();
+  }
+
+  function recheckWhenVisible() {
     if (document.visibilityState === "visible") consentStillApplies();
   }
 
-  window.addEventListener("focus", recheck);
-  window.addEventListener("pageshow", recheck);
-  document.addEventListener("visibilitychange", recheck);
+  function recheckOnStorage(event: StorageEvent) {
+    if (event.storageArea !== storage) return;
+    if (sharedRecordRemovedBy(event, recordKey)) sharedRecordRemoved = true;
+    consentStillApplies();
+  }
+
+  window.addEventListener("storage", recheckOnStorage);
+  window.addEventListener("pagehide", recheck, true);
+  window.addEventListener("focus", recheckWhenVisible);
+  window.addEventListener("pageshow", recheckWhenVisible);
+  document.addEventListener("visibilitychange", recheckWhenVisible);
   analytics = posthog.init(key, consentedPostHogConfig(apiHost, consentStillApplies), CONSENTED_INSTANCE_NAME);
+}
+
+// Whether a storage event removed the shared PostHog record (or cleared all
+// of localStorage).
+function sharedRecordRemovedBy(event: StorageEvent, recordKey: string) {
+  if (event.key === null) return true;
+  return event.key === recordKey && event.newValue === null;
 }
 
 // localStorage, or null where the browser blocks it (reading the property
