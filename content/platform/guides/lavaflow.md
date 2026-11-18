@@ -91,7 +91,7 @@ occurrence. A resolved issue that reopens starts a new run too; see
 starts none, and neither does an error issue with `exception: false`.
 
 An issue you [write](issues.md#write-an-issue) starts a run as you write it,
-and only then. The run reads your description as what to change, with no logs,
+and only then. The run reads your description as what to change, with no runtime logs,
 at the head of the project's production branch, and follows your settings as
 any run does, with one exception: under `autonomy: merge`, LavaFlow doesn't
 merge its fix. The branch head is no push Volcano saw deploy, so the fix waits
@@ -154,6 +154,12 @@ traces the failing request through your code. An error message, stack line,
 or version in the logs that differs from your code isn't enough on its own:
 logs span every deployment, a bug can survive a release, and libraries throw
 messages your repository doesn't contain.
+
+## Check existing CI
+
+You can ask LavaFlow to check whether CI is passing. When the run has repository source, it can read check results and commit statuses for the exact commit it is diagnosing, including links to the checks. With GitHub Actions read access granted to the Volcano App installation, it can also inspect job logs for that commit to investigate a failure. LavaFlow masks detected credentials before reading CI output.
+
+These reads do not start or rerun CI. External CI contributes its reported status and output; LavaFlow does not fetch its job logs. Pending or skipped checks, missing results, expired logs and missing permissions are reported as unavailable or incomplete evidence, not as a pass. A request to check healthy CI needs no PR. LavaFlow proposes a change only when the evidence supports one.
 
 ## Match your commit conventions
 
