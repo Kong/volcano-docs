@@ -71,7 +71,12 @@ serving its last good build. The `staging` and `production` environments,
 limited to `main`, hold volcano-web's `VOLCANO_API_URL`, `VOLCANO_WEB_PROJECT_ID`,
 and a project access token `VOLCANO_WEB_TOKEN` as secrets, and the docs project's
 `NEXT_PUBLIC_POSTHOG_KEY` and `NEXT_PUBLIC_POSTHOG_HOST` as variables (the
-Blog header link waits on a PostHog flag).
+Blog header link waits on a PostHog flag), and optionally
+`NEXT_PUBLIC_POSTHOG_COOKIELESS_COUNTING`: `true` turns on the anonymous
+visitor counter in [`src/lib/cookieless-counting.mjs`](src/lib/cookieless-counting.mjs),
+and unset or anything else leaves it off. To count visitors on
+docs.volcano.dev and docs.staging.volcano.dev too, set the same variable on the
+`volcano-docs` projects, next to `DOCS_SITE_URL`.
 
 ## Site (Fumadocs)
 

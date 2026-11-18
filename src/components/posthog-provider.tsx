@@ -3,6 +3,11 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import type { PostHog } from "posthog-js";
+import {
+  COOKIELESS_INSTANCE_NAME,
+  cookielessPostHogConfig,
+  shouldCountCookieless,
+} from "@/lib/cookieless-counting.mjs";
 
 type PostHogProviderProps = {
   children: ReactNode;
@@ -12,6 +17,27 @@ type PostHogProviderProps = {
 type FlagsState = { client: PostHog | null; version: number };
 
 const FlagsContext = createContext<FlagsState>({ client: null, version: 0 });
+
+// Drops every event the flags instance would send (`$feature_flag_called`
+// carries the visitor's IP address). Flag evaluation itself still works.
+function dropFlagsInstanceEvents() {
+  return null;
+}
+
+type NavigatorWithPrivacyControl = Navigator & { globalPrivacyControl?: boolean };
+
+// Starts the anonymous visitor counter (see cookieless-counting.mjs) when the
+// build switch is on and the browser has not opted out with Global Privacy
+// Control. It is a separate instance; nothing else ever captures through it.
+function startCookielessCounter(posthog: PostHog, key: string) {
+  const countable = shouldCountCookieless({
+    enabled: process.env.NEXT_PUBLIC_POSTHOG_COOKIELESS_COUNTING,
+    globalPrivacyControl: (navigator as NavigatorWithPrivacyControl).globalPrivacyControl,
+    cookieHeader: document.cookie,
+  });
+  if (!countable) return;
+  posthog.init(key, cookielessPostHogConfig(process.env.NEXT_PUBLIC_POSTHOG_HOST), COOKIELESS_INSTANCE_NAME);
+}
 
 // Loads posthog-js on demand: builds with no key never download the SDK, and
 // builds with one load it after the page is interactive. With no key configured
@@ -39,9 +65,10 @@ function PostHogProvider({ children }: PostHogProviderProps) {
         posthog.init(key as string, {
           api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
           defaults: "2026-01-30",
-          // Flags only: no analytics capture, replay, surveys or browser storage.
-          // Flag evaluation still emits $feature_flag_called when a flag is read.
-          // With no storage there is no stable visitor id, so each page load is a
+          // Flags only: no analytics capture, replay, surveys or browser storage,
+          // and before_send drops the $feature_flag_called event a flag read
+          // would otherwise send. Visitor counts come from the cookieless
+          // counter instead. With no storage there is no stable visitor id, so each page load is a
           // new anonymous visitor. Use flags here as all-or-nothing switches (0% or
           // 100%, or property targeting); a partial percentage rollout would show
           // or hide a feature at random on each load. Switch persistence to
@@ -59,7 +86,9 @@ function PostHogProvider({ children }: PostHogProviderProps) {
           disable_product_tours: true,
           person_profiles: "identified_only",
           persistence: "memory",
+          before_send: dropFlagsInstanceEvents,
         });
+        startCookielessCounter(posthog, key as string);
       }
       unsubscribe = posthog.onFeatureFlags(function flagsLoaded() {
         bump(posthog);

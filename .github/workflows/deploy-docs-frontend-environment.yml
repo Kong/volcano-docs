@@ -7,7 +7,9 @@ name: Deploy frontend docs route for volcano web to one environment
 #             token for it)
 #   variables NEXT_PUBLIC_POSTHOG_KEY, NEXT_PUBLIC_POSTHOG_HOST (the docs
 #             project's values; the build inlines them, and the Blog header
-#             link waits on a PostHog flag)
+#             link waits on a PostHog flag), and optionally
+#             NEXT_PUBLIC_POSTHOG_COOKIELESS_COUNTING (`true` turns on the
+#             anonymous visitor counter; unset or anything else leaves it off)
 on:
   workflow_call:
     inputs:
@@ -45,6 +47,7 @@ jobs:
       DOCS_SITE_URL: ${{ inputs.site_url }}
       NEXT_PUBLIC_POSTHOG_KEY: ${{ vars.NEXT_PUBLIC_POSTHOG_KEY }}
       NEXT_PUBLIC_POSTHOG_HOST: ${{ vars.NEXT_PUBLIC_POSTHOG_HOST }}
+      NEXT_PUBLIC_POSTHOG_COOKIELESS_COUNTING: ${{ vars.NEXT_PUBLIC_POSTHOG_COOKIELESS_COUNTING || 'false' }}
     steps:
       - name: Check project configuration
         env:
@@ -92,6 +95,7 @@ jobs:
             printf 'DOCS_SITE_URL=%s\n' "$DOCS_SITE_URL"
             printf 'NEXT_PUBLIC_POSTHOG_KEY=%s\n' "$NEXT_PUBLIC_POSTHOG_KEY"
             printf 'NEXT_PUBLIC_POSTHOG_HOST=%s\n' "$NEXT_PUBLIC_POSTHOG_HOST"
+            printf 'NEXT_PUBLIC_POSTHOG_COOKIELESS_COUNTING=%s\n' "$NEXT_PUBLIC_POSTHOG_COOKIELESS_COUNTING"
           } > "$RUNNER_TEMP/docs.env"
           volcano cloud variables deploy --file "$RUNNER_TEMP/docs.env" --shared=false
 
