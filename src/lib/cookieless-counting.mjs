@@ -86,7 +86,9 @@ export function hasRecordedGlobalPrivacyControl(cookieHeader) {
 }
 
 /**
- * Which analytics the docs run for this visitor, decided once per page load:
+ * Which analytics the docs run for this visitor, chosen at page load (a
+ * running consented instance re-checks and stops if consent lapses; see
+ * `consentGuard` in `consented-analytics.mjs`):
  *
  * - `"consented"`: accepted analytics cookies on volcano.dev against the
  *   current Cookie Policy. Full pageview analytics with the same stored

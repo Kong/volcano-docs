@@ -3,11 +3,13 @@ import { test } from "node:test";
 import { publishedVersion } from "../../scripts/check-cookie-policy-version.mjs";
 import { COOKIE_POLICY_VERSION, analyticsAccepted, consentCookieNameForHost, consentForHost } from "./consent.mjs";
 import {
+  consentGuard,
   consentedPostHogConfig,
   forgetDocsHostId,
   forgetStoredPlaceholderId,
   postHogPersistenceKey,
   scrubConsentedEvent,
+  stopConsentedAnalytics,
 } from "./consented-analytics.mjs";
 import { docsAnalyticsMode, shouldCountCookieless } from "./cookieless-counting.mjs";
 
@@ -81,7 +83,9 @@ test("the consented instance shares volcano.dev's stored id and sends nothing el
   assert.equal(config.disable_session_recording, true);
   assert.equal(config.capture_performance, false);
   assert.equal(config.advanced_disable_flags, true);
-  assert.equal(config.before_send, scrubConsentedEvent);
+  const pageview = { event: "$pageview", properties: { distinct_id: "user-1" } };
+  assert.deepEqual(config.before_send(pageview), scrubConsentedEvent(pageview));
+  assert.equal(config.before_send({ event: "$autocapture", properties: {} }), null);
   assert.equal(postHogPersistenceKey("phc_a+b/c="), "ph_phc_aPLbSLcEQ_posthog");
 });
 
@@ -141,4 +145,67 @@ test("forgetDocsHostId clears a docs-host id but never volcano-web's", () => {
   }
   const broken = { getItem: function getItem() { throw new Error("blocked"); }, removeItem: function removeItem() {} };
   assert.equal(forgetDocsHostId("phc_test", "docs.volcano.dev", broken), false);
+});
+
+test("consentGuard stops once, at the first check where consent no longer holds", () => {
+  let consented = true;
+  let lapses = 0;
+  function onLapse() {
+    lapses += 1;
+  }
+  const check = consentGuard(function stillConsented() { return consented; }, onLapse);
+  assert.equal(check(), true);
+  assert.equal(lapses, 0);
+  consented = false;
+  assert.equal(check(), false);
+  assert.equal(check(), false);
+  assert.equal(lapses, 1);
+  // A new accept takes effect on the next page load, not in this one.
+  consented = true;
+  assert.equal(check(), false);
+  assert.equal(lapses, 1);
+
+  const throwing = consentGuard(function stillConsented() { throw new Error("no cookies"); }, onLapse);
+  assert.equal(throwing(), false);
+  assert.equal(lapses, 2);
+  const throwingLapse = consentGuard(function stillConsented() { return false; }, function onLapseThrows() { throw new Error("x"); });
+  assert.equal(throwingLapse(), false);
+});
+
+test("the consented instance drops every event once consent lapses", () => {
+  let consented = true;
+  function noop() {}
+  const config = consentedPostHogConfig("https://us.i.posthog.com", consentGuard(function stillConsented() { return consented; }, noop));
+  const pageview = { event: "$pageview", properties: { distinct_id: "user-1" } };
+  assert.notEqual(config.before_send(pageview), null);
+  consented = false;
+  assert.equal(config.before_send(pageview), null);
+  assert.equal(config.before_send({ event: "$pageleave", properties: { distinct_id: "user-1" } }), null);
+});
+
+test("stopConsentedAnalytics stops capture, and clears storage only on docs-only hosts", () => {
+  const key = postHogPersistenceKey("phc_test");
+  function setup() {
+    const items = new Map([[key, JSON.stringify({ distinct_id: "user-1" })]]);
+    const configs = [];
+    return {
+      items,
+      configs,
+      storage: {
+        getItem: function getItem(k) { return items.get(k) ?? null; },
+        removeItem: function removeItem(k) { items.delete(k); },
+      },
+      instance: { set_config: function setConfig(config) { configs.push(config); } },
+    };
+  }
+  const docs = setup();
+  stopConsentedAnalytics(docs.instance, "phc_test", "docs.volcano.dev", docs.storage);
+  assert.deepEqual(docs.configs, [{ capture_pageview: false, capture_pageleave: false }, { disable_persistence: true }]);
+  assert.equal(docs.items.has(key), false);
+  for (const host of ["volcano.dev", "staging.volcano.dev"]) {
+    const web = setup();
+    stopConsentedAnalytics(web.instance, "phc_test", host, web.storage);
+    assert.deepEqual(web.configs, [{ capture_pageview: false, capture_pageleave: false }]);
+    assert.equal(web.items.has(key), true);
+  }
 });

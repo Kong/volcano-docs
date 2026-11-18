@@ -10,9 +10,11 @@ import {
 } from "@/lib/cookieless-counting.mjs";
 import {
   CONSENTED_INSTANCE_NAME,
+  consentGuard,
   consentedPostHogConfig,
   forgetDocsHostId,
   forgetStoredPlaceholderId,
+  stopConsentedAnalytics,
 } from "@/lib/consented-analytics.mjs";
 
 type PostHogProviderProps = {
@@ -32,32 +34,76 @@ function dropFlagsInstanceEvents() {
 
 type NavigatorWithPrivacyControl = Navigator & { globalPrivacyControl?: boolean };
 
-// Starts this visitor's analytics, decided once per page load from the switch,
-// Global Privacy Control and volcano.dev's consent cookie (see
-// cookieless-counting.mjs). A visitor who accepted on volcano.dev gets pageview
-// analytics under the PostHog id volcano.dev stored; anyone else is counted
-// anonymously. Each is a separate instance; nothing else captures through them.
-function startVisitorAnalytics(posthog: PostHog, key: string) {
-  const hostname = window.location.hostname;
-  const storage = browserLocalStorage();
-  let mode = docsAnalyticsMode({
+// This visitor's analytics mode, read from the switch, Global Privacy Control
+// and volcano.dev's consent cookie (see cookieless-counting.mjs).
+function currentAnalyticsMode() {
+  return docsAnalyticsMode({
     enabled: process.env.NEXT_PUBLIC_POSTHOG_COOKIELESS_COUNTING,
     globalPrivacyControl: (navigator as NavigatorWithPrivacyControl).globalPrivacyControl,
     cookieHeader: document.cookie,
-    hostname,
+    hostname: window.location.hostname,
   });
+}
+
+function stillConsented() {
+  return currentAnalyticsMode() === "consented";
+}
+
+// Starts this visitor's analytics, chosen once per page load. A visitor who
+// accepted on volcano.dev gets pageview analytics under the PostHog id
+// volcano.dev stored; anyone else is counted anonymously. Each is a separate
+// instance; nothing else captures through them.
+function startVisitorAnalytics(posthog: PostHog, key: string) {
+  const hostname = window.location.hostname;
+  const storage = browserLocalStorage();
+  let mode = currentAnalyticsMode();
   // Without storage there is no volcano.dev id to share: count anonymously.
   if (mode === "consented" && !storage) mode = "cookieless";
   if (mode !== "consented" && storage) forgetDocsHostId(key, hostname, storage);
   const apiHost = process.env.NEXT_PUBLIC_POSTHOG_HOST;
   if (mode === "consented" && storage) {
     forgetStoredPlaceholderId(key, storage);
-    posthog.init(key, consentedPostHogConfig(apiHost), CONSENTED_INSTANCE_NAME);
+    startConsentedAnalytics(posthog, key, apiHost, storage);
     return;
   }
   if (mode === "cookieless") {
     posthog.init(key, cookielessPostHogConfig(apiHost), COOKIELESS_INSTANCE_NAME);
   }
+}
+
+// The consented instance re-checks consent before every event and whenever
+// the tab comes back into view (the visitor may have rejected on volcano.dev
+// in another tab). Once consent lapses it stops for the rest of the page load.
+function startConsentedAnalytics(posthog: PostHog, key: string, apiHost: string | undefined, storage: Storage) {
+  let analytics: PostHog | undefined;
+
+  function stop() {
+    window.removeEventListener("focus", recheck);
+    window.removeEventListener("pageshow", recheck);
+    document.removeEventListener("visibilitychange", recheck);
+    const hostname = window.location.hostname;
+    if (analytics) {
+      stopConsentedAnalytics(analytics, key, hostname, storage);
+      return;
+    }
+    forgetDocsHostId(key, hostname, storage);
+  }
+
+  // Stops outside posthog-js's capture call, which may be what found the lapse.
+  function stopSoon() {
+    window.setTimeout(stop, 0);
+  }
+
+  const consentStillApplies = consentGuard(stillConsented, stopSoon);
+
+  function recheck() {
+    if (document.visibilityState === "visible") consentStillApplies();
+  }
+
+  window.addEventListener("focus", recheck);
+  window.addEventListener("pageshow", recheck);
+  document.addEventListener("visibilitychange", recheck);
+  analytics = posthog.init(key, consentedPostHogConfig(apiHost, consentStillApplies), CONSENTED_INSTANCE_NAME);
 }
 
 // localStorage, or null where the browser blocks it (reading the property
@@ -108,11 +154,12 @@ function PostHogProvider({ children }: PostHogProviderProps) {
           defaults: "2026-01-30",
           // Flags only: no analytics capture, replay, surveys or browser storage,
           // and before_send drops the $feature_flag_called event a flag read
-          // would otherwise send. Visitor counts come from the cookieless
-          // counter instead. With no storage there is no stable visitor id, so each page load is a
-          // new anonymous visitor. Use flags here as all-or-nothing switches (0% or
-          // 100%, or property targeting); a partial percentage rollout would show
-          // or hide a feature at random on each load. Switch persistence to
+          // would otherwise send. Visitor analytics run in their own
+          // instances (startVisitorAnalytics). With no storage there is no
+          // stable visitor id, so each page load is a new anonymous visitor.
+          // Use flags here as all-or-nothing switches (0% or 100%, or
+          // property targeting); a partial percentage rollout would show or
+          // hide a feature at random on each load. Switch persistence to
           // "localStorage" if stable percentage rollouts are needed.
           autocapture: false,
           capture_pageview: false,

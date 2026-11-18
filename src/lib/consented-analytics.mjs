@@ -76,6 +76,10 @@ export function forgetStoredPlaceholderId(token, storage) {
 /** Origins whose stored PostHog id belongs to volcano-web's own analytics. */
 const VOLCANO_WEB_HOSTS = new Set(["volcano.dev", "www.volcano.dev", "staging.volcano.dev", "localhost"]);
 
+function isVolcanoWebHost(hostname) {
+  return VOLCANO_WEB_HOSTS.has(String(hostname ?? "").toLowerCase());
+}
+
 /**
  * Remove the PostHog id the consented instance stored on a docs-only origin
  * (docs.volcano.dev, docs.staging.volcano.dev) once the visitor no longer has
@@ -85,7 +89,7 @@ const VOLCANO_WEB_HOSTS = new Set(["volcano.dev", "www.volcano.dev", "staging.vo
  * volcano-web's to manage, and is left alone. Returns whether it removed one.
  */
 export function forgetDocsHostId(token, hostname, storage) {
-  if (VOLCANO_WEB_HOSTS.has(String(hostname ?? "").toLowerCase())) return false;
+  if (isVolcanoWebHost(hostname)) return false;
   try {
     const key = postHogPersistenceKey(token);
     if (storage.getItem(key) === null) return false;
@@ -94,6 +98,56 @@ export function forgetDocsHostId(token, hostname, storage) {
   } catch {
     return false;
   }
+}
+
+/**
+ * Re-checks consent while the consented instance runs. The docs layout stays
+ * mounted across App Router navigations, so one page load can last as long
+ * as the tab is open, and the visitor can reject on volcano.dev in another
+ * tab meanwhile. Returns a check that is true while `stillConsented()` is.
+ * The first time it is not (or it throws), `onLapse` runs once and every
+ * later check is false, even if consent comes back: a new accept takes
+ * effect on the next page load.
+ */
+export function consentGuard(stillConsented, onLapse) {
+  let lapsed = false;
+  return function consentStillApplies() {
+    if (lapsed) return false;
+    let consented = false;
+    try {
+      consented = stillConsented() === true;
+    } catch {
+      consented = false;
+    }
+    if (consented) return true;
+    lapsed = true;
+    try {
+      onLapse();
+    } catch {
+      // The guard already drops every later event.
+    }
+    return false;
+  };
+}
+
+/**
+ * Stops a running consented instance once consent lapses. Pageviews and page
+ * exits stop. On a docs-only origin the instance also stops writing storage
+ * and its stored id is removed (see `forgetDocsHostId`). On volcano-web's own
+ * origins the stored id is volcano-web's to manage and is left as it is;
+ * with capture off this instance writes nothing more to it.
+ */
+export function stopConsentedAnalytics(instance, token, hostname, storage) {
+  instance.set_config({ capture_pageview: false, capture_pageleave: false });
+  if (isVolcanoWebHost(hostname)) return;
+  // posthog-js removes the instance's stored record when persistence is
+  // disabled, and saves nothing after.
+  instance.set_config({ disable_persistence: true });
+  if (storage) forgetDocsHostId(token, hostname, storage);
+}
+
+function alwaysConsented() {
+  return true;
 }
 
 /**
@@ -110,9 +164,15 @@ export function scrubConsentedEvent(event) {
 
 /**
  * @param {string | undefined} apiHost
+ * @param {() => boolean} [consentStillApplies] a `consentGuard` check; every
+ *   event is dropped once it returns false.
  * @returns {Partial<import("posthog-js").PostHogConfig>}
  */
-export function consentedPostHogConfig(apiHost) {
+export function consentedPostHogConfig(apiHost, consentStillApplies = alwaysConsented) {
+  function beforeSend(event) {
+    if (!consentStillApplies()) return null;
+    return scrubConsentedEvent(event);
+  }
   return {
     api_host: apiHost,
     defaults: "2026-01-30",
@@ -141,6 +201,6 @@ export function consentedPostHogConfig(apiHost) {
     // Never creates a person here; events join the person volcano.dev
     // identified through the shared id.
     person_profiles: "identified_only",
-    before_send: scrubConsentedEvent,
+    before_send: beforeSend,
   };
 }
