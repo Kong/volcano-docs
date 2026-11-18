@@ -6,7 +6,7 @@ tags:
   - database
   - row-level-security
   - nextjs
-cover: /cookbooks/notes-app-with-login-cover.webp
+cover: /cookbook/notes-app-with-login-cover.webp
 kind: app
 uses: [auth, database]
 ---
@@ -17,9 +17,9 @@ Tested on Volcano CLI 0.54.0, SDK 2.2.0, Node 24.9.0, next 16.4.3, react 19.3.1;
 
 A notes app where people sign up with an email and password, and each person only ever sees their own notes. The rule lives in the database, not in the app code, so a bug in a page can't show one person's notes to another.
 
-![Two browsers side by side: alex@example.com sees two notes, sam@example.com sees "No notes yet."](/cookbooks/notes-app-with-login.png)
+![Two browsers side by side: alex@example.com sees two notes, sam@example.com sees "No notes yet."](/cookbook/notes-app-with-login.png)
 
-![Alex signs in and adds a note, signs out, then Sam signs in and sees an empty list](/cookbooks/notes-app-with-login-run.gif)
+![Alex signs in and adds a note, signs out, then Sam signs in and sees an empty list](/cookbook/notes-app-with-login-run.gif)
 
 Try the [live demo](https://e86d69db-a9e5-4022-b0f2-506a57cf3d44.frontends.volcano.run/). Its notes are wiped every day.
 

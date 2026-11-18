@@ -40,7 +40,7 @@ pnpm check:api       # pages listing API values match api.volcano.dev
 | Path | Purpose |
 |------|---------|
 | `content/` | The docs tree. Every page is authored here, including `platform`, `cli`, and `sdk/{js,python,ruby}`. Follow [`spec/writing.md`](spec/writing.md) for links, wording, and when to merge a page about a new release. |
-| `src/app/` | App Router: root layout, `docs/` (`[[...slug]]` renderer, llms.txt, sitemap, social cards), `blog/`, `cookbooks/`, `api/search`. |
+| `src/app/` | App Router: root layout, `docs/` (`[[...slug]]` renderer, llms.txt, sitemap, social cards), `blog/`, `cookbook/` (served at /cookbook from `content/cookbooks/`), `api/search`. |
 | `src/lib/` | `source.ts` (Fumadocs loader over `content/`), `layout.shared.tsx`. |
 | `source.config.ts` | Fumadocs MDX config; `.source/` is generated (gitignored). |
 | `spec/` | Docs format contract + JSON schema. |

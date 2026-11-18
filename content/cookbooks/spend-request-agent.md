@@ -7,7 +7,7 @@ tags:
   - human-in-the-loop
   - row-level-security
   - openrouter
-cover: /cookbooks/spend-request-agent-cover.webp
+cover: /cookbook/spend-request-agent-cover.webp
 kind: agent
 uses: [durable-functions, database, auth]
 ---
@@ -20,7 +20,7 @@ This agent asks those questions before finance sees the request. It checks every
 
 One Volcano project holds all of it. Postgres, with row-level security, holds the cases, the conversation and a ledger of every figure. A plain function runs each agent turn and owns every rule and number. A durable function holds each filed case open until a reviewer decides, an hour later or two weeks later. A push back and a refile resume the same execution, and waiting isn't billed as compute: the execution in the screenshot further down had been open 55 seconds and had run code for under 1 second. There is no queue, cron job, status-polling worker or second service.
 
-![The agent catches a contradicted ticket count, scores the case at 36%, and the requester files it with a written reason](/cookbooks/spend-request-agent-run.gif)
+![The agent catches a contradicted ticket count, scores the case at 36%, and the requester files it with a written reason](/cookbook/spend-request-agent-run.gif)
 
 One real run on the deployed app: a Support headcount request from claim to filed case.
 
@@ -79,7 +79,7 @@ The check covers figures with a unit. If two rewrites don't fix a reply, the rep
 
 ## Waiting for the reviewer
 
-![The filed case, and the Volcano dashboard showing its review execution suspended on the reviewer's decision](/cookbooks/spend-request-agent-screenshot.png)
+![The filed case, and the Volcano dashboard showing its review execution suspended on the reviewer's decision](/cookbook/spend-request-agent-screenshot.png)
 
 Filing starts a durable function, `review-case`, that waits up to 14 days for a decision and accepts only messages sent with the project's service key:
 

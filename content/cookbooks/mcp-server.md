@@ -5,7 +5,7 @@ tags:
   - functions
   - mcp
   - database
-cover: /cookbooks/mcp-server-cover.webp
+cover: /cookbook/mcp-server-cover.webp
 kind: agent
 uses: [functions, database]
 ---
@@ -16,7 +16,7 @@ Tested on Volcano CLI 0.54.0, SDK 2.2.0, Node 24.9.0, @modelcontextprotocol/sdk 
 
 Your coding agent can call your own tools over MCP, but a server on `localhost` only works on your laptop, and only while it's running. This puts a small MCP server on a public HTTPS URL as a Volcano function: three tools that save, search and delete bookmarks in the project's Postgres, behind a bearer token. Any client that speaks MCP over Streamable HTTP can connect, including Insomnia and Claude Code.
 
-![MCP Inspector 2.12.0 connected to the deployed function, showing the result of search_bookmarks with the query "mcp": two saved bookmarks as JSON](/cookbooks/mcp-server.png)
+![MCP Inspector 2.12.0 connected to the deployed function, showing the result of search_bookmarks with the query "mcp": two saved bookmarks as JSON](/cookbook/mcp-server.png)
 
 ## What you need
 

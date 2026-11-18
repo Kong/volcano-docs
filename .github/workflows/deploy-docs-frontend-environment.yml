@@ -97,7 +97,7 @@ jobs:
         run: |
           search_index_path="$(sed -n 's/^export const SEARCH_INDEX_PATH = "\(\/[^" ]*\)";$/\1/p' src/lib/search-index-client.mjs)"
           : "${search_index_path:?Docs search-index path is missing}"
-          for path in /docs /docs/get-started/what-is-volcano /docs/index.md /blog /cookbooks "$search_index_path"; do
+          for path in /docs /docs/get-started/what-is-volcano /docs/index.md /blog /cookbook "$search_index_path"; do
             curl -fsS -o /dev/null "$FRONTEND_URL$path"
           done
           {

@@ -7,7 +7,7 @@ tags:
   - auth
   - row-level-security
   - nextjs
-cover: /cookbooks/realtime-chat-cover.webp
+cover: /cookbook/realtime-chat-cover.webp
 kind: app
 uses: [realtime, database, auth]
 ---
@@ -18,9 +18,9 @@ Tested on Volcano CLI 0.66.0, SDK 2.2.0, Node 26.11.1, next 16.4.5, react 19.3.1
 
 A chat app where visitors pick a display name and talk in three rooms with no sign-up form. Messages are saved in Postgres, so a reload keeps the history. New messages, the online count and "ada is typing…" arrive live over Volcano Realtime.
 
-![Volcano Chat in #random: ada and sam trading messages, 2 online, and "ada is typing…" under the conversation](/cookbooks/realtime-chat-poster.png)
+![Volcano Chat in #random: ada and sam trading messages, 2 online, and "ada is typing…" under the conversation](/cookbook/realtime-chat-poster.png)
 
-![sam's view a moment later: ada's new message has arrived live, she is typing again, and sam has a reply drafted](/cookbooks/realtime-chat-typing.png)
+![sam's view a moment later: ada's new message has arrived live, she is typing again, and sam has a reply drafted](/cookbook/realtime-chat-typing.png)
 
 ## What you need
 

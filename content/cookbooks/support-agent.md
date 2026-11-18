@@ -11,7 +11,7 @@ tags:
   - nextjs
 kind: agent
 uses: [durable-functions, database, realtime]
-cover: /cookbooks/support-agent-cover.webp
+cover: /cookbook/support-agent-cover.webp
 ---
 
 Tested on Volcano CLI 0.66.0, SDK 2.2.0, @anthropic-ai/sdk 1.6.0, Node 26.11.1, next 16.4.5, react 19.3.1, pg 8.23.1; last verified 2026-11-06 on CLI 0.66.0.
@@ -22,9 +22,9 @@ A small support desk for an online shop. Customers sign up with an email and pas
 
 The agent runs in a Volcano [durable function](/platform/functions/durable-functions). Every model call and every tool call is its own checkpointed step, so a call that fails is retried without repeating the ones that finished. If the model stays down, the ticket goes to a person instead of hanging. The tools query Postgres as the customer who filed the ticket, so row-level security decides what the model can see, whatever the ticket asks it to do. The Claude API key is a variable only the agent can read, and the browser never sees it.
 
-![Ada's ticket about her hoodie, answered: the assistant looked up order VO-1042, found the "My order is late" article and drafted a reply, with Shipping and Priority: Normal tags](/cookbooks/support-agent-answered.png)
+![Ada's ticket about her hoodie, answered: the assistant looked up order VO-1042, found the "My order is late" article and drafted a reply, with Shipping and Priority: Normal tags](/cookbook/support-agent-answered.png)
 
-![Ada asks for an address change on VO-1057. The assistant checked her orders and the address article, and marked the ticket "Needs a person" because only a person can change an order](/cookbooks/support-agent-needs-person.png)
+![Ada asks for an address change on VO-1057. The assistant checked her orders and the address article, and marked the ticket "Needs a person" because only a person can change an order](/cookbook/support-agent-needs-person.png)
 
 ## What you need
 

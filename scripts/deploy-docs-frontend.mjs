@@ -1,5 +1,5 @@
 // Deploys this repository as the `docs` frontend of volcano-web's project,
-// which mounts it at /docs, /blog, and /cookbooks with Frontend routes. The
+// which mounts it at /docs, /blog, and /cookbook with Frontend routes. The
 // docs project deploys the same commit through Git auto-deploy;
 // this copy exists because Frontend routes mount only a Frontend of the same
 // Project. Run from a checkout after `volcano login`.

@@ -4,13 +4,15 @@ import { pageUrl, routeSlugs, siteHref } from "./site-routes.mjs";
 assert.equal(pageUrl([]), "/docs");
 assert.equal(pageUrl(["cli", "setup"]), "/docs/cli/setup");
 assert.equal(pageUrl(["blog"]), "/blog");
-assert.equal(pageUrl(["cookbooks", "chat-app"]), "/cookbooks/chat-app");
+assert.equal(pageUrl(["cookbooks", "chat-app"]), "/cookbook/chat-app");
+assert.equal(pageUrl(["cookbooks"]), "/cookbook");
 
 assert.deepEqual(routeSlugs("/docs"), []);
 assert.deepEqual(routeSlugs("/docs/cli/setup"), ["cli", "setup"]);
 assert.deepEqual(routeSlugs("/blog/post"), ["blog", "post"]);
+assert.deepEqual(routeSlugs("/cookbook/chat-app"), ["cookbooks", "chat-app"]);
 
-for (const slugs of [[], ["platform", "functions"], ["blog", "post"], ["cookbooks"]]) {
+for (const slugs of [[], ["platform", "functions"], ["blog", "post"], ["cookbooks"], ["cookbooks", "chat-app"]]) {
   assert.deepEqual(routeSlugs(pageUrl(slugs)), slugs);
 }
 
@@ -21,7 +23,10 @@ assert.equal(siteHref("/sdk#authentication"), "/docs/sdk#authentication");
 assert.equal(siteHref("/cli?tab=js"), "/docs/cli?tab=js");
 assert.equal(siteHref("/docs/cli"), "/docs/cli");
 assert.equal(siteHref("/blog/post"), "/blog/post");
-assert.equal(siteHref("/cookbooks"), "/cookbooks");
+assert.equal(siteHref("/cookbooks"), "/cookbook");
+assert.equal(siteHref("/cookbooks/chat-app#run"), "/cookbook/chat-app#run");
+assert.equal(siteHref("/cookbook"), "/cookbook");
+assert.equal(siteHref("/cookbooks-old"), "/cookbooks-old");
 assert.equal(siteHref("/platforms"), "/platforms");
 assert.equal(siteHref("https://volcano.dev/platform"), "https://volcano.dev/platform");
 assert.equal(siteHref("#anchor"), "#anchor");

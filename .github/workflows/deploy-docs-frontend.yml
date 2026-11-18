@@ -2,7 +2,7 @@ name: Deploy docs frontend
 run-name: Docs frontend — ${{ github.sha }}
 
 # Deploys this repository as the `docs` frontend of volcano-web's project,
-# which mounts it at /docs, /blog, and /cookbooks with Frontend routes:
+# which mounts it at /docs, /blog, and /cookbook with Frontend routes:
 # staging.volcano.dev first, then volcano.dev once staging succeeds. Git
 # auto-deploy keeps deploying the same commits to the docs projects, where
 # LavaFlow fixes them; Frontend routes mount only a Frontend of the same

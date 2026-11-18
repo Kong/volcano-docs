@@ -4,7 +4,7 @@
  */
 export function getSearchSection(pathname) {
   const path = pathname.split(/[?#]/, 1)[0];
-  if (path === "/cookbooks" || path.startsWith("/cookbooks/")) return "cookbooks";
+  if (path === "/cookbook" || path.startsWith("/cookbook/")) return "cookbooks";
   if (path === "/blog" || path.startsWith("/blog/")) return "blog";
   return "docs";
 }

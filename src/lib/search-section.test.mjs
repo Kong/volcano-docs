@@ -3,12 +3,12 @@ import { test } from "node:test";
 import { getSearchSection, getSearchLabel, getSearchTags } from "./search-section.mjs";
 
 test("search scope follows section boundaries for landing pages and articles", () => {
-  for (const pathname of ["/", "/sdk/js/authentication", "/platform", "/blogger", "/cookbooks-old"]) {
+  for (const pathname of ["/", "/sdk/js/authentication", "/platform", "/blogger", "/cookbooks-old", "/cookbooks"]) {
     assert.equal(getSearchSection(pathname), "docs");
   }
-  for (const section of ["cookbooks", "blog"]) {
+  for (const [path, section] of [["/cookbook", "cookbooks"], ["/blog", "blog"]]) {
     for (const suffix of ["", "/", "/article", "/article#heading", "?query=photo"]) {
-      assert.equal(getSearchSection(`/${section}${suffix}`), section);
+      assert.equal(getSearchSection(`${path}${suffix}`), section);
     }
   }
   assert.equal(getSearchLabel("cookbooks"), "Search the cookbook");

@@ -1,11 +1,17 @@
-// The site is mounted on volcano.dev at /docs, /blog, and /cookbooks, so blog
-// and cookbook pages keep their section as the first path segment and every
-// other page is served under /docs. Content files keep their paths: the CLI's
-// `volcano docs` reads content/ and takes a page's topic from its first folder.
+// The site is mounted on volcano.dev at /docs, /blog, and /cookbook, so blog
+// and cookbook pages are served under their section's path and every other
+// page under /docs. Content files keep their paths: the CLI's `volcano docs`
+// reads content/ and takes a page's topic from its first folder, so recipes
+// stay in content/cookbooks/ and are served at /cookbook.
 
 export const DOCS_PREFIX = "/docs";
 
-const ROOT_SECTIONS = new Set(["blog", "cookbooks"]);
+// The path each root section is served at, by its content folder.
+const ROOT_SECTIONS = new Map([
+  ["blog", "blog"],
+  ["cookbooks", "cookbook"],
+]);
+const ROOT_SECTION_FOLDERS = new Map([...ROOT_SECTIONS].map(([folder, path]) => [path, folder]));
 
 // Content links another docs section by its content path ("/platform/x"), as
 // the CLI and the Markdown routes show it. siteHref renders it as the served
@@ -19,7 +25,8 @@ export const DOCS_SECTIONS = ["get-started", "platform", "sdk", "cli"];
  * @param {string[]} slugs
  */
 export function pageUrl(slugs) {
-  if (ROOT_SECTIONS.has(slugs[0])) return `/${slugs.join("/")}`;
+  const sectionPath = ROOT_SECTIONS.get(slugs[0]);
+  if (sectionPath) return ["", sectionPath, ...slugs.slice(1)].join("/");
   return [DOCS_PREFIX, ...slugs].join("/");
 }
 
@@ -31,12 +38,15 @@ export function pageUrl(slugs) {
 export function routeSlugs(route) {
   const slugs = route.split("/").filter(Boolean);
   if (slugs[0] === DOCS_PREFIX.slice(1)) return slugs.slice(1);
+  const folder = ROOT_SECTION_FOLDERS.get(slugs[0]);
+  if (folder) return [folder, ...slugs.slice(1)];
   return slugs;
 }
 
 /**
  * The served URL of a link written in content: "/platform/x" becomes
- * "/docs/platform/x" and "/" the docs home. Other hrefs are unchanged.
+ * "/docs/platform/x", "/cookbooks/x" "/cookbook/x", and "/" the docs home.
+ * Other hrefs are unchanged.
  *
  * @template {string | undefined} T
  * @param {T} href
@@ -48,6 +58,8 @@ export function siteHref(href) {
     return /** @type {T} */ (DOCS_PREFIX + href.slice(1));
   }
   const section = href.slice(1).split(/[/?#]/, 1)[0];
+  const sectionPath = ROOT_SECTIONS.get(section);
+  if (sectionPath) return /** @type {T} */ (`/${sectionPath}${href.slice(1 + section.length)}`);
   if (!DOCS_SECTIONS.includes(section)) return href;
   return /** @type {T} */ (DOCS_PREFIX + href);
 }
