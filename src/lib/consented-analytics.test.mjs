@@ -3,6 +3,7 @@ import { test } from "node:test";
 import { publishedVersion } from "../../scripts/check-cookie-policy-version.mjs";
 import { COOKIE_POLICY_VERSION, analyticsAccepted, consentCookieNameForHost, consentForHost } from "./consent.mjs";
 import {
+  DOCS_SURFACE,
   consentGuard,
   consentedPostHogConfig,
   forgetDocsHostId,
@@ -94,7 +95,11 @@ test("the consented instance scrubs like the counter and never sends a placehold
     event: "$pageview",
     properties: { distinct_id: "user-1", $current_url: "https://volcano.dev/docs/cli?token=x", gclid: "1" },
   });
-  assert.deepEqual(sent.properties, { distinct_id: "user-1", $current_url: "https://volcano.dev/docs/cli" });
+  assert.deepEqual(sent.properties, {
+    distinct_id: "user-1",
+    $current_url: "https://volcano.dev/docs/cli",
+    surface: "marketing",
+  });
   assert.equal(scrubConsentedEvent({ event: "$autocapture", properties: {} }), null);
   assert.equal(
     scrubConsentedEvent({ event: "$pageview", properties: { distinct_id: "11111111-1111-1111-1111-111111111111" } }),
@@ -234,4 +239,16 @@ test("stopConsentedAnalytics stops capture and storage writes, keeping volcano-w
   const cleared = memoryStorage([]);
   stopConsentedAnalytics(fakeInstance([cleared]), "phc_test", "volcano.dev", [cleared]);
   assert.equal(cleared.items.size, 0);
+});
+
+test("docs events always say the marketing surface, whatever volcano-web registered", () => {
+  for (const registered of ["product", "marketing", undefined]) {
+    const properties = { distinct_id: "user-1", $current_url: "https://volcano.dev/docs" };
+    if (registered) properties.surface = registered;
+    const sent = scrubConsentedEvent({ event: "$pageview", properties });
+    assert.equal(sent.properties.surface, DOCS_SURFACE);
+    assert.equal(DOCS_SURFACE, "marketing");
+  }
+  const leave = scrubConsentedEvent({ event: "$pageleave", properties: { distinct_id: "user-1", surface: "product" } });
+  assert.equal(leave.properties.surface, "marketing");
 });

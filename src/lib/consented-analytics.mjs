@@ -17,7 +17,8 @@ import { scrubCookielessEvent } from "./cookieless-counting.mjs";
  * exits only, with the same URL and personal-data scrub as the cookieless
  * counter. No autocapture, session replay, web vitals, exceptions, surveys or
  * flags (the flags instance does flags), and it never identifies anyone; it
- * only reuses the id volcano.dev already identified.
+ * only reuses the id volcano.dev already identified. Every event says
+ * `surface: "marketing"` (see `DOCS_SURFACE`).
  */
 
 /** Named PostHog instance, kept apart from the flags instance. */
@@ -201,15 +202,28 @@ function alwaysConsented() {
 }
 
 /**
+ * volcano-web registers `surface` on every event as the legal basis it rests
+ * on: "marketing" (a cookie accept) or "product" (the customer agreement);
+ * see `Surface` in its `libs/data/src/consent.ts`. posthog-js attaches
+ * registered properties from the shared stored record to the docs' events
+ * too, so a visitor who was last in the product would otherwise send docs
+ * pageviews as "product". The docs rest on the volcano.dev cookie accept, so
+ * every docs event says "marketing". It is set per event, never registered,
+ * so volcano-web's own stored value is left alone.
+ */
+export const DOCS_SURFACE = "marketing";
+
+/**
  * The consented instance's `before_send`: the cookieless counter's scrub
  * (pageview and page exit only, URLs without query or fragment, no ad click
- * ids, no person properties), and nothing sent as a placeholder id.
+ * ids, no person properties), nothing sent as a placeholder id, and the
+ * docs' own `surface`.
  */
 export function scrubConsentedEvent(event) {
   const scrubbed = scrubCookielessEvent(event);
   if (!scrubbed) return null;
   if (isPlaceholderDistinctId(scrubbed.properties?.distinct_id)) return null;
-  return scrubbed;
+  return { ...scrubbed, properties: { ...scrubbed.properties, surface: DOCS_SURFACE } };
 }
 
 /**
