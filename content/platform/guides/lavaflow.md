@@ -1667,7 +1667,7 @@ When another run covers the issue, `delivery.coverage` links its pull request an
 When a run finds an existing pull request for the same issue on the connected repository, the run links to that pull request and identifies its owning run.
 A closed pull request that did not merge no longer covers the issue.
 A merged fix awaiting deployment can cover the issue for up to a week, and a verified live fix can remain linked.
-Switching repositories clears the old repository's coverage for these duplicate runs. The owning run still shows its original pull request.
+Switching repositories removes the old repository from current issue coverage. The owning run still shows its original pull request, and the recorded time to coverage stays in stats.
 A draft or a merged pull request can still await deployment.
 
 To review delivery across your project, run:
