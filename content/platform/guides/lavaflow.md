@@ -1830,8 +1830,8 @@ and the read.
 
 ### Why LavaFlow read no code
 
-A run that ended with `source_unavailable` says why in `source_unavailable`,
-and names the deployment that served the error when the reason is about it:
+Read `source_unavailable` to see why a run read no code.
+When LavaFlow identified the serving deployment, the response can name it.
 
 ```json
 {
@@ -1849,6 +1849,9 @@ in log messages or stack locations do not establish what code a deployment or
 commit added, removed, or changed; that needs a comparison of source versions
 or commit diffs.
 
+When a verified commit can't be read because of throttling, a provider outage, or an interrupted download, LavaFlow retries the same commit and occurrence within a bounded window.
+If the retries end before source becomes available, check the recorded cause before you start another run.
+
 | `reason`                          | Why, and what to do                                                                                                                                                                                                                                                                                                                                                                        |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `no_repository`                   | LavaFlow is on for no repository. [Link one](#link-a-repository)                                                                                                                                                                                                                                                                                                                           |
@@ -1857,16 +1860,19 @@ or commit diffs.
 | `unverified_commit`               | Volcano couldn't verify the deployment's commit against the linked repository. Push the commit to the production branch, then deploy it again                                                                                                                                                                                                                                              |
 | `other_repository`                | The commit LavaFlow would read is from a repository other than the one LavaFlow is on for, Volcano checked it under an earlier repository link, or the project no longer links that repository. For a deployment, deploy again from the linked one. For a reported problem or a Code Quality finding, start a new run while the project links the repository LavaFlow is on for            |
 | `repository_unreadable`           | LavaFlow couldn't read the repository at the commit, for example because the Volcano GitHub App lost access to it. Check the project's repository link and the App's access                                                                                                                                                                                                                |
+| `repository_rate_limited` | GitHub throttled reads of the verified commit past the retry budget. Start a new run once the limit resets. |
+| `repository_provider_unavailable` | GitHub didn't answer within the retry budget. Start a new run when the provider recovers. |
+| `repository_download_interrupted` | LavaFlow couldn't finish downloading the archive. Check that GitHub can serve the exact commit archive before starting a new run. |
+| `repository_access_denied` | GitHub refused access to the repository or archive. Restore the project's GitHub connection and read access to the commit. |
+| `repository_source_invalid` | The commit or its archive couldn't be read as valid repository source. Verify the linked repository can serve the archive, or deploy from a verified commit. |
 | `commit_not_on_production_branch` | The production branch no longer holds the commit the fix is on, so LavaFlow opened no pull request. Deploy from the production branch                                                                                                                                                                                                                                                      |
 | `deployment_unattributed`         | A newer deployment that may have changed the code was going live when the error happened, so LavaFlow couldn't tell which one threw it. If the error happens again, LavaFlow starts a new run once; if that run also ends `deployment_unattributed`, the next waits for a new deploy. A `deployment_unattributed` run right after another one, even one a deploy started, gets no such run |
 
-`deployment_id` names a deployment of the run's `resource` for `no_commit`,
-`uncommitted_changes`, `unverified_commit`, and `other_repository`, and is
-`null` for other reasons, including `deployment_unattributed`, and when no
-deployment was serving. Look it up in the
-resource's deployments. `source_unavailable` is `null` for any other run, for
-a run recorded before LavaFlow kept the reason, and when LavaFlow couldn't tell
-why. New reasons may appear.
+`deployment_id` identifies a deployment you can look up among the resource's deployments.
+The value can accompany an archive read failure when LavaFlow already verified which deployment served the error.
+It is `null` when no deployment can be identified.
+LavaFlow leaves `source_unavailable` null when no reason was recorded.
+New reasons may appear.
 
 ### Why a review stopped
 
