@@ -16,7 +16,7 @@ LavaFlow turns production errors into reviewed fixes.
 
 Volcano picks and runs the models, so there is no model or API key to set up.
 
-LavaFlow sends this project's logs and source code to an AI service that Volcano operates.
+LavaFlow sends this project's logs, source code and any CI output it reads to an AI service that Volcano operates.
 
 LavaFlow's fix commits skip CI until LavaFlow or a person starts it; see
 [Keep the CI skip out of your base branch](#keep-the-ci-skip-out-of-your-base-branch).
@@ -157,9 +157,9 @@ messages your repository doesn't contain.
 
 ## Check existing CI
 
-You can ask LavaFlow to check whether CI is passing. When the run has repository source, it can read check results and commit statuses for the exact commit it is diagnosing, including links to the checks. With GitHub Actions read access granted to the Volcano App installation, it can also inspect job logs for that commit to investigate a failure. LavaFlow masks detected credentials before reading CI output.
+Write an [issue](issues.md#write-an-issue) such as `Check whether CI is passing for this project`. When the run has repository source, it can read check results and commit statuses for the exact commit it is diagnosing, including links to the checks. With GitHub Actions read access granted to the Volcano GitHub App installation, it can also inspect job logs for that commit to investigate a failure. LavaFlow masks detected credentials before reading CI output.
 
-These reads do not start or rerun CI. External CI contributes its reported status and output; LavaFlow does not fetch its job logs. Pending or skipped checks, missing results, expired logs and missing permissions are reported as unavailable or incomplete evidence, not as a pass. A request to check healthy CI needs no PR. LavaFlow proposes a change only when the evidence supports one.
+These reads do not start or rerun CI. External CI contributes its reported status and output; LavaFlow does not fetch its job logs. Pending or skipped checks, missing results, expired logs and missing permissions are reported as unavailable or incomplete evidence, not as a pass. For healthy CI, the diagnosis reports the checked commit and outcomes, and no PR opens. LavaFlow proposes a change only when the evidence supports one.
 
 ## Match your commit conventions
 
