@@ -27,6 +27,9 @@ jobs:
     with:
       environment: staging
       site_url: https://staging.volcano.dev
+    # A called workflow sees its job environment's secrets only when the
+    # caller passes secrets.
+    secrets: inherit
 
   production:
     name: Production
@@ -35,3 +38,4 @@ jobs:
     with:
       environment: production
       site_url: https://volcano.dev
+    secrets: inherit
