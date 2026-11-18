@@ -495,3 +495,12 @@ Diagnosis
 
 `show --json` and `list --json` print the run as Volcano's API returned it,
 including fields newer than your CLI.
+
+
+## Check pull request delivery
+
+Run `volcano cloud lavaflow list` to see which runs are waiting, stopped, undelivered, or covered by another pull request.
+Use `volcano cloud lavaflow show <run-id>` for the covering pull request, current recovery action, and previous blockers when available.
+
+Run `volcano cloud lavaflow stats --days 30` to see how many runs lack their own pull request, how many issues have verified pull request coverage, and how long it took to open a pull request or record coverage.
+Add `--json` to get the delivery counts and latency sample sizes on the wire.

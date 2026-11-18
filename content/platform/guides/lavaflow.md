@@ -1654,6 +1654,28 @@ waits for a person to mark it ready; `draft_reason` says why it is one, and is
 | `review_unresolved`  | LavaFlow's review didn't pass the fix, so LavaFlow never merges it. Decide whether to finish it                                                                                                                                                                                                                                                                                                                                                                                              |
 | `converted_to_draft` | LavaFlow opened it ready for review, and someone made it a draft since                                                                                                                                                                                                                                                                                                                                                                                                                       |
 
+### Check pull request delivery
+
+Read `delivery` in the run list or run details to see whether LavaFlow opened a pull request, verified coverage by another run, or still needs a prerequisite.
+A completed diagnosis can have a `terminal_miss` when LavaFlow finished without a pull request or a recorded recovery action.
+Diagnosis-only runs show `stopped`. Runs still in progress show `pending`.
+A run in `waiting_for_prerequisite` gives the recorded `reason` and, when known, the `next_action`.
+A run that resumed can still show earlier blockers in `prior_skips`.
+
+A `pr_created` result includes drafts.
+When another run covers the issue, `delivery.coverage` links its pull request and shows its merge and deployment timestamps when known.
+A draft or a merged pull request can still await deployment.
+
+To review delivery across your project, run:
+
+```bash
+volcano cloud lavaflow stats --days 30
+```
+
+The `delivery` section of `GET /lavaflow/stats` groups runs by the UTC day they were created.
+It reports the raw number of runs without a pull request of their own, the number of distinct issues represented by those runs and other runs in the window that have verified pull request coverage, and time to open a pull request or record coverage.
+Each latency measure includes its sample count. Only runs with a known timestamp contribute to that measure.
+
 ### Runs that open no pull request
 
 A finished run that opened no pull request says why in `pull_request_skipped`,
