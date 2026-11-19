@@ -44,6 +44,7 @@ A path is refused when it:
 One leading `/` is dropped, so `/avatars/a.png` and `avatars/a.png` name the same object.
 A trailing `/` or a repeated `/` is part of the key, as in `folder/` or `a//b.txt`.
 A dot inside a segment is part of the name, as in `.hidden/notes.txt` or `v1.2/notes.txt`.
+Volcano also refuses any object key that contains `..`, even inside a segment, such as `notes..txt`.
 The `list` prefix is a query parameter, so these rules don't apply to it.
 
 A bucket name must be 1–64 letters, numbers, `_`, or `-`.
