@@ -585,9 +585,11 @@ run as the session user, so a write into a directory that user cannot write retu
 the session.
 
 A read of a path with no file returns `404` with code `sandbox_file_not_found`.
-A directory, symbolic link, or special file at the path returns `400` with code
-`sandbox_file_unreadable`, as does, in a cloud session, a file the session user
-does not own or that has more than one hard link. A file larger than 8 MiB
+A directory, symbolic link, socket, or other special file at the path returns
+`400` with code `sandbox_file_unreadable`, as does a file the session user can't
+read and, in a cloud session, a file another user owns or one with more than one
+hard link. Copy such a file to a new one with an exec command, then read the
+copy. A file larger than 8 MiB
 returns `413` with code `sandbox_file_too_large`. A session from an image built
 before these codes, such as a custom template not redeployed since, returns
 `503` instead; start a new session from a current preset, or redeploy the
