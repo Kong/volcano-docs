@@ -942,8 +942,8 @@ does.
 ## Merge fixes
 
 With `autonomy: merge`, LavaFlow merges a fix's pull request once its
-reviewers pass it, its required checks pass, and nothing holds it. It merges
-only into a base branch that requires at least one status check: on any other,
+reviewers pass it, its required checks pass, and nothing holds it. LavaFlow
+can push reviewed repairs to the fix branch it manages. It merges only into a base branch that requires at least one status check: on any other,
 it holds every fix with `no_required_checks`. See
 [Require a status check before LavaFlow merges](#require-a-status-check-before-lavaflow-merges).
 With
@@ -1278,15 +1278,17 @@ the required check times out again, the reason is `checks_failed`.
 hours.
 
 LavaFlow can revise an open pull request it manages under `autonomy: merge`
-when GitHub Actions reports a failure on its current commit, or GitHub
-reports a conflict with the target branch. LavaFlow reviews the whole
+when GitHub Actions reports a failure on its current commit, GitHub reports
+a conflict, or the target branch moves and the pull request needs an update.
+LavaFlow reviews the whole
 replacement against the current base and can attempt up to two repairs on
 the same pull request. It runs CI on each reviewed repair and continues to
 merge when the repository's requirements are met. A patch that fails review
-leaves the last published proposal open with `review_unresolved`. If the
-last repair's checks fail, the pull request stays open with `checks_failed`.
-A push by another contributor, a retarget, a redraft, or a closure stops
-automatic work on that pull request.
+leaves the last published version of the fix open with `review_unresolved`.
+If the last repair's checks fail, the pull request stays open with
+`checks_failed`. A push by another contributor holds the fix for
+`person_commits`. Retargeting, redrafting, or closing the pull request
+stops LavaFlow with `handed_off`.
 
 If GitHub removes the pull request from the merge queue because the checks
 on the combined changes failed, LavaFlow can queue the same pull request
