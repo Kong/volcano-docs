@@ -1278,15 +1278,17 @@ the required check times out again, the reason is `checks_failed`.
 hours.
 
 LavaFlow can revise an open pull request it manages under `autonomy: merge`
-when GitHub Actions reports a failure on its current commit, GitHub reports
-a conflict, or the target branch moves and the pull request needs an update.
-LavaFlow reviews the whole
-replacement against the current base and can attempt up to two repairs on
-the same pull request. It runs CI on each reviewed repair and continues to
-merge when the repository's requirements are met. If a repair cannot
-continue, the pull request stays open and the dashboard and Slack still
-show what blocks the published fix: failing checks, a conflict, or an
-outdated base. Earlier revision attempts count against the same budget.
+when CI reports a failure on its current commit, GitHub reports a conflict,
+or its target branch moves and the pull request needs an update. It can use
+GitHub Actions job logs, required GitHub App check output and annotations,
+and feedback published with required commit statuses.
+
+LavaFlow reviews the whole replacement against the current base and can
+attempt up to two repairs on the same pull request. It runs CI on each
+reviewed repair and continues to merge when the repository's requirements
+are met. If a repair cannot continue, the pull request stays open. The
+dashboard and Slack show the failing checks, conflict, or outdated base.
+Earlier revision attempts count against the same budget.
 A push by another contributor holds the fix for
 `person_commits`. Retargeting, redrafting, or closing the pull request
 stops LavaFlow with `handed_off`.
