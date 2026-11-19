@@ -29,7 +29,7 @@ An omitted `content_type:` uses filename-based MIME detection with an `applicati
 Explicit content types must be non-blank printable ASCII and may include MIME parameters.
 The following examples reuse an authenticated `client` and `bucket`.
 
-## Path rules
+## Use valid paths and bucket names
 
 Bucket names and object paths become URL path segments, so every storage method checks them before sending a request.
 That includes upload sessions and `get_public_url`.
