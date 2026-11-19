@@ -59,8 +59,8 @@
     },
     "discussion": {
       "type": "string",
-      "pattern": "^https://",
-      "description": "Blog post only: the URL of the post's public discussion (an X thread or profile). Shown as a link beside the byline and a card at the end of the post."
+      "pattern": "^https://(x|twitter)\\.com/",
+      "description": "Blog post only: the X post (or, until it exists, the X profile) where the post is discussed. Shown as a link beside the byline and a card at the end of the post."
     },
     "tags": {
       "type": "array",

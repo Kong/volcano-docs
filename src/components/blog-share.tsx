@@ -149,7 +149,7 @@ export function BlogPostFooter({ url, title, discussion }: BlogShareProps) {
           </span>
           <span className="blog-conversation-copy">
             <span className="blog-conversation-title">Join the conversation on X</span>
-            <span className="blog-conversation-body">Questions, feedback, or something you built? Reply to the thread.</span>
+            <span className="blog-conversation-body">Questions, feedback, or something you built? Tell us on X.</span>
           </span>
           <span className="blog-conversation-cta">
             Open on X

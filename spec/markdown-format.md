@@ -34,6 +34,7 @@ order: 3
 | `kind` | string | no | Recipe only, and required there: `agent` or `app`. Shown as a pill on the recipe's card and header. |
 | `uses` | string[] | no | Recipe only, and required there: the one to three Volcano resources the recipe leans on most, most important first, from `functions`, `durable-functions`, `database`, `auth`, `storage`, `realtime`, `sandboxes`. Shown as pills. |
 | `cover` | string | no | Card image for a blog post or recipe, also used as its social card, using a site-absolute path to an asset in `public/` (for example `/blog/sandbox-cover.png`). |
+| `discussion` | string | no | Blog post only: the X post where the post is discussed, or an X profile until that post exists (`https://x.com/...`). Adds a "Discuss on X" link beside the byline and a conversation card at the end of the post. |
 | `published` | date (`YYYY-MM-DD`) | no | Blog publication date; quote the value in YAML. |
 | `keywords` | string[] | no | Extra search synonyms not in the prose. |
 | `draft` | boolean | no | `true` hides the page, navigation entry, search results, and sitemap entry in production. Visible in local development for preview. |

@@ -19,7 +19,7 @@
 }
 
 .blog-share-actions {
-  --cmp-gap: var(--space-10);
+  --cmp-gap: var(--spacing-label-block);
   display: flex;
   align-items: center;
   gap: var(--cmp-gap);
@@ -29,7 +29,7 @@
 .blog-share-action {
   --cmp-fg: var(--text-neutral);
   --cmp-bg: transparent;
-  --cmp-size: var(--space-90);
+  --cmp-size: var(--layout-share-action-size);
   display: inline-flex;
   width: var(--cmp-size);
   height: var(--cmp-size);
@@ -58,7 +58,6 @@
   height: var(--layout-navigation-icon-size);
 }
 
-.blog-share-status,
 .blog-share-label {
   --cmp-fg: var(--text-neutral);
   font-family: var(--system-font);
@@ -67,8 +66,15 @@
   color: var(--cmp-fg);
 }
 
-.blog-share-status:empty {
-  display: none;
+/* The copy confirmation is for screen readers; the check icon shows it
+   visually. It stays in the accessibility tree so the change is announced. */
+.blog-share-status {
+  position: absolute;
+  width: var(--border-width-thin);
+  height: var(--border-width-thin);
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* Top-row link to the post's X thread. */
@@ -76,7 +82,7 @@
   --cmp-fg: var(--text-primary);
   --cmp-bg: transparent;
   --cmp-border: var(--border-divider);
-  --cmp-gap: var(--space-30);
+  --cmp-gap: var(--spacing-label-inline);
   display: inline-flex;
   align-items: center;
   gap: var(--cmp-gap);
@@ -132,11 +138,11 @@
 .blog-conversation:hover,
 .blog-conversation:focus-visible {
   --cmp-bg: var(--surface-primary-weak);
-  border-color: var(--color-primary);
+  --cmp-border: var(--border-width-thin) solid var(--color-primary);
 }
 
 .blog-conversation-mark {
-  --cmp-size: var(--space-110);
+  --cmp-size: var(--layout-conversation-mark-size);
   display: inline-flex;
   flex: none;
   width: var(--cmp-size);
@@ -148,15 +154,15 @@
 }
 
 .blog-conversation-glyph {
-  width: var(--space-70);
-  height: var(--space-70);
+  width: var(--layout-conversation-glyph-size);
+  height: var(--layout-conversation-glyph-size);
 }
 
 .blog-conversation-copy {
   display: flex;
-  flex: 1;
+  flex: 1 1 var(--layout-conversation-copy-min-width);
   flex-direction: column;
-  gap: var(--space-10);
+  gap: var(--spacing-label-block);
   min-width: 0;
   font-family: var(--system-font);
 }
@@ -176,7 +182,7 @@
 .blog-conversation-cta {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-20);
+  gap: var(--spacing-label-inline);
   color: var(--cmp-accent);
   font-family: var(--system-font);
   font-size: var(--type-meta);

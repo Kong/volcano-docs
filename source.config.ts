@@ -20,7 +20,7 @@ export const docs = defineDocs({
       kind: oneOf(RECIPE_KIND_SLUGS).optional(),
       uses: oneOf(RECIPE_RESOURCE_SLUGS).array().min(1).max(RECIPE_USES_MAX).optional(),
       tags: pageSchema.shape.title.array().optional(),
-      discussion: pageSchema.shape.title.regex(/^https:\/\//).optional(),
+      discussion: pageSchema.shape.title.regex(/^https:\/\/(x|twitter)\.com\//).optional(),
       draft: pageSchema.shape.full,
     }),
   },
