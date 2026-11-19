@@ -10,11 +10,14 @@ linked to it, in one command. Install the CLI first, because you keep using it
 to build and deploy after `connect`. See [installation.md](installation.md)
 for other ways to install.
 
+New to Volcano:
+
 ```bash
 npm install -g @volcano.dev/cli
-volcano connect --signup   # new to Volcano
-volcano connect            # you already have an account
+volcano connect --signup
 ```
+
+Already have an account? Run `volcano connect` instead.
 
 Run it yourself, or paste this prompt into a coding agent:
 
