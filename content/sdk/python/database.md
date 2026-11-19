@@ -28,7 +28,7 @@ for row in rows:
 ```
 
 `execute()` returns a list of row dictionaries, including an empty list when no rows match.
-Database names are lowercase letters, numbers, or `_`. Any other name raises `ValueError` before any request is sent. `client.realtime.set_database_name()` applies the same rule.
+Database names are 1–64 lowercase letters, numbers, or `_`. Any other name raises `ValueError` before any request is sent. `client.realtime.set_database_name()` applies the same rule.
 Builders are immutable; each chained operation returns a new builder, so a base query can be reused.
 The following examples reuse an authenticated `client` and the same table.
 
