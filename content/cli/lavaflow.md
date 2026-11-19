@@ -185,11 +185,11 @@ that changes a path, use `--human-review-path`; see [Merge fixes](#merge-fixes).
 
 ### Merge fixes
 
-At autonomy `merge`, LavaFlow can merge its fix pull requests. A fix built on
-a commit the deploy reported, at either
-[verification level](deploy.md#verification), is always held for a person.
-Only a fix on a commit that a push to the repository deployed is free of that
-hold. A fix it holds or stops is yours to review and merge on GitHub.
+At autonomy `merge`, LavaFlow can merge fixes built on verified source,
+including a frontend upload with [file verification](deploy.md#verification).
+For an upload with repository verification only, check the fix against the
+deployed code and merge it yourself. LavaFlow gives those fixes the
+`client_reported_commit` hold.
 
 ```bash
 volcano cloud lavaflow settings set --autonomy merge
@@ -237,7 +237,10 @@ volcano cloud lavaflow settings set --human-review-path 'infra/**' --human-revie
 ```
 
 `show` prints `Merge:` in its `Fix:` block with where the merge is:
-`waiting for CI`, `queued to merge`, `merged`, `held` or `stopped`. A merged
+`waiting for CI`, `queued to merge`, `merged`, `held` or `stopped`. When
+GitHub still requires an approval, the run's API status is
+`merge.status: waiting_for_approval`. LavaFlow continues after approval.
+A merged
 fix says `merged by LavaFlow`, or `merged by someone else` when a person
 merged it while LavaFlow waited. While merging is paused, a
 waiting fix says `paused while merging is off` instead. `held` and

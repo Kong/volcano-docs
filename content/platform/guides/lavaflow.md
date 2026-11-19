@@ -1226,6 +1226,7 @@ A run that may merge carries `merge`:
 | `status`             | Meaning                                                                                                                      |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `waiting_for_checks` | Waits for the checks on the fix's commit                                                                                     |
+| `waiting_for_approval` | Checks passed and GitHub requires an approving review. LavaFlow continues after approval. |
 | `queued`             | In the repository's merge queue                                                                                              |
 | `merged`             | Merged; the run's `pull_request.state` is `merged`                                                                           |
 | `held`               | Handed to you for good, for `hold_reasons`; each `question` says why LavaFlow holds it and what to check before you merge it |
@@ -1578,7 +1579,7 @@ While LavaFlow still works on a run, `progress` says how far it has come:
 | `diagnosing`         | Finding the root cause                             |
 | `fixing`             | Writing the fix                                    |
 | `reviewing`          | Reviewing the fix, often on an open draft PR       |
-| `waiting_for_checks` | Waiting for its pull request's checks to pass      |
+| `waiting_for_checks` | Waiting for required checks or GitHub approval. Read `merge.status` to tell which is pending. |
 | `merge_queued`       | Queued to merge                                    |
 
 `step` is the stage's place, from 1, among the run's `steps`: 2 for
@@ -2595,9 +2596,9 @@ in the first example.
 
 ## Read the review on the pull request
 
-With initial review enabled, LavaFlow opens a draft for a Live fix and posts
-review feedback there as it works. Code Quality and runs without initial
-review review the patch before opening a PR. The run's `review` contains the
+When LavaFlow opens a draft before its review, it posts feedback on that
+PR as it works. For Code Quality, LavaFlow reviews the patch before opening
+a PR. The run's `review` contains the
 verdict and
 [the findings](#read-a-reviews-findings), and on a private repository the pull
 request's description has the review's summary.
