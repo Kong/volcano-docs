@@ -29,7 +29,7 @@ print(bucket.download("examples/hello.txt", byte_range="bytes=1-3"))
 Uploads accept bytes or a binary file-like object; downloads return bytes.
 An omitted `content_type` uses `application/octet-stream`.
 Explicit content types must be non-blank printable ASCII and may include MIME parameters.
-Bucket names are 1–64 letters, numbers, `_`, or `-`. The SDK drops one leading `/` from an object path. A path with an empty, `.`, or `..` segment, such as `a//b.txt` or `../b.txt`, raises `ValueError` before any request is sent.
+Bucket names are 1–64 letters, numbers, `_`, or `-`. Any other bucket name raises `ValueError` before any request is sent. The SDK drops one leading `/` from an object path. A path with an empty, `.`, or `..` segment, such as `a//b.txt` or `../b.txt`, raises `ValueError` before any request is sent.
 The following examples reuse an authenticated `client` and `bucket`.
 
 ## List and manage objects
