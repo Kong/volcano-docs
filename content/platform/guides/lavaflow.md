@@ -1283,10 +1283,11 @@ a conflict, or the target branch moves and the pull request needs an update.
 LavaFlow reviews the whole
 replacement against the current base and can attempt up to two repairs on
 the same pull request. It runs CI on each reviewed repair and continues to
-merge when the repository's requirements are met. A patch that fails review
-leaves the last published version of the fix open with `review_unresolved`.
-If the last repair's checks fail, the pull request stays open with
-`checks_failed`. A push by another contributor holds the fix for
+merge when the repository's requirements are met. If a repair cannot
+continue, the pull request stays open and the dashboard and Slack still
+show what blocks the published fix: failing checks, a conflict, or an
+outdated base. Earlier revision attempts count against the same budget.
+A push by another contributor holds the fix for
 `person_commits`. Retargeting, redrafting, or closing the pull request
 stops LavaFlow with `handed_off`.
 
