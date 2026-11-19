@@ -663,8 +663,8 @@ The commit comes from one of these:
 
 For any other deployment, LavaFlow diagnoses from the logs alone. A fix on
 a `verification: repository` commit opens only while the production branch
-still holds that commit. The reason `client_reported_commit` asks you to review
-the proposal against the deployed code and merge it yourself.
+still holds that commit. LavaFlow holds the PR with `client_reported_commit`.
+Review the proposal against the deployed code, then merge it yourself.
 
 ### Deploy code LavaFlow can read
 
@@ -763,7 +763,7 @@ fixes or names that code, are held for you as `breaks_contract`. A listed choice
 covers only the behavior it describes: a reviewer still asks you about any
 other change in behavior that nothing justifies. A later round's `minor`
 problem, such as a decision the revision still doesn't list, doesn't send
-the fix back again, so the review can pass and the pull request opens. With
+the fix back again. The review can pass and the proposal stays available. With
 `autonomy: merge`, LavaFlow then holds the fix for you with `review_notes`
 rather than merging it.
 
@@ -1068,11 +1068,11 @@ doesn't turn merging on again: turn it on again yourself.
 
 ### Waiting and held
 
-A fix that only waits, for its checks or a merge queue slot, keeps moving, and
-LavaFlow merges it when the wait ends. A held fix is yours for good: LavaFlow
-never merges, pushes to, rebases or dequeues it again. The run's
-`hold_reasons` say why. Review it and merge it on GitHub if you want it, or
-close it.
+A fix waiting for required checks, GitHub approval, or the merge queue
+stays with LavaFlow. Once the requirements pass, LavaFlow finishes the merge.
+A fix in `waiting_for_approval` needs a required approving review on GitHub.
+A fix in `held` needs attention for a reason listed in `hold_reasons`. Review
+and merge it on GitHub, or close it.
 
 A fix that needs a person when its pull request opens shows
 `waiting_for_checks`, with no `hold_reasons`, until LavaFlow's first read
@@ -1121,7 +1121,7 @@ LavaFlow holds a fix for these reasons:
 | `required_check_skipped`       | A required check was skipped                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `no_required_checks`           | The base branch requires no check, so passing checks alone don't vouch for the fix                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `changes_requested`            | A reviewer requested changes on GitHub                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `repository_requires_approval` | The repository requires an approving review                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `repository_requires_approval` | A historical hold for missing approval. Current runs wait in `waiting_for_approval` while GitHub requires approval                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `person_commits`               | Someone other than LavaFlow pushed to the fix's branch                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `rules_bypass`                 | The Volcano GitHub App can bypass a ruleset on the base branch                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `unchecked_rules`              | The base branch has a rule LavaFlow doesn't check, such as required signatures. On a fix you merge, it names only rules that kept LavaFlow from starting its CI, such as `code_scanning` or `workflows`, or says LavaFlow couldn't read the rules                                                                                                                                                                                                                                                                                                                   |
@@ -1203,8 +1203,8 @@ repository that isn't private requires opens, and LavaFlow holds it with
 
 A required check passes only when it succeeds: `neutral` and `skipped` don't
 count, a check pinned to an app counts only as that app's check run, and
-Volcano's own checks never count. An approving review on GitHub doesn't
-release a hold.
+Volcano's own checks never count. An approval can resume a PR in
+`waiting_for_approval`. A PR in `held` stays with the person reviewing it.
 
 A run that may merge carries `merge`:
 
@@ -1644,8 +1644,9 @@ tell which first included it, and `deployed_at` is the merge time.
 
 `draft` says whether the pull request is a draft, as GitHub last reported it to
 LavaFlow, and is `null` for one opened before LavaFlow recorded it. An
-initial review draft can become ready automatically when reviews pass. After
-review finishes, `draft_reason` explains why the PR remains a draft.
+initial review draft can become ready automatically when reviews pass.
+`draft_reason` is `null` during initial review. If the PR remains a draft
+after review, `draft_reason` explains why.
 
 | `draft_reason`       | Why the pull request is a draft                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -2594,8 +2595,10 @@ in the first example.
 
 ## Read the review on the pull request
 
-LavaFlow's AI reviewers check each fix before its pull request opens. The
-run's `review` always has their verdict and
+With initial review enabled, LavaFlow opens a draft for a Live fix and posts
+review feedback there as it works. Code Quality and runs without initial
+review review the patch before opening a PR. The run's `review` contains the
+verdict and
 [the findings](#read-a-reviews-findings), and on a private repository the pull
 request's description has the review's summary.
 
