@@ -6,6 +6,7 @@ tags: [launch, ai-agents, lavaflow]
 author: Marco Palladino
 cover: /blog/introducing-volcano-agent-cloud/hero.png
 published: "2026-11-19"
+discussion: https://x.com/subnetmarco
 ---
 
 Building agents and applications in the AI era requires new primitives that we simply didn't need a few years ago. And even then, the pace of building has increased exponentially beyond what humans can do with traditional workflows. To make this worse, building agents became more of an exercise of composing together different services and platforms which compounds the complexity and maintenance requirements in the long run.

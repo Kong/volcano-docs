@@ -181,6 +181,10 @@
   --motion-cover-transition: transform 300ms ease;
   --layout-navigation-icon-size: var(--size-icon);
   --layout-theme-control-size: 2.25rem;
+  --layout-share-action-size: var(--size-8);
+  --layout-conversation-mark-size: var(--space-110);
+  --layout-conversation-glyph-size: var(--space-70);
+  --layout-conversation-copy-min-width: 14rem;
 
   /* Semantic spacing for shared navigation and standalone sections. */
   --spacing-page: var(--space-100);
