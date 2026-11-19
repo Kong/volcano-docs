@@ -200,7 +200,8 @@ hosted_url = client.auth.get_hosted_auth_url(
 ```
 
 Store `hosted_state` in the user's signed server-side session before redirecting
-to `hosted_url`. In the callback, atomically fetch and delete the stored state before validation,
+to `hosted_url`. `project_id` must be a single path segment; a value of `.` or
+`..`, or one containing `/`, raises `ArgumentError`. In the callback, atomically fetch and delete the stored state before validation,
 even if validation or adoption fails. Reject a missing or already-consumed state.
 After parsing the returned fragment into a `Volcano::Session`, validate and adopt it:
 

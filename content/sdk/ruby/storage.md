@@ -29,6 +29,34 @@ An omitted `content_type:` uses filename-based MIME detection with an `applicati
 Explicit content types must be non-blank printable ASCII and may include MIME parameters.
 The following examples reuse an authenticated `client` and `bucket`.
 
+## Path rules
+
+Bucket names and object paths become URL path segments, so every storage method checks them before sending a request.
+That includes upload sessions and `get_public_url`.
+A refused value raises `ArgumentError` without contacting Volcano.
+
+A path is refused when it:
+
+- is empty
+- has a `.` or `..` segment, such as `reports/./q1.pdf` or `reports/../q1.pdf`
+- has an empty segment: a trailing `/`, a repeated `//`, or more than one leading `/`
+
+One leading `/` is dropped, so `/avatars/a.png` and `avatars/a.png` name the same object.
+A dot inside a segment is part of the name, as in `.hidden/notes.txt` or `v1.2/notes.txt`.
+The `list` prefix is a query parameter, so these rules don't apply to it.
+
+A bucket name must be 1–64 letters, numbers, `_`, or `-`.
+
+```ruby
+bucket.download("reports/../q1.pdf")
+# ArgumentError: storage paths cannot contain empty, ".", or ".." segments
+
+client.storage.from("team/assets").download("q1.pdf")
+# ArgumentError: bucket name must be 1-64 letters, numbers, "_", or "-"
+```
+
+`get_public_url` also requires the project ID in the anon key to be a single path segment.
+
 ## List and manage objects
 
 ```ruby
