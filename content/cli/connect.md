@@ -12,10 +12,15 @@ for other ways to install.
 
 ```bash
 npm install -g @volcano.dev/cli
-volcano connect
+volcano connect --signup   # new to Volcano
+volcano connect            # you already have an account
 ```
 
-Run it yourself, or paste both lines into a coding agent.
+Run it yourself, or paste this prompt into a coding agent:
+
+```text
+Run `npm i -g @volcano.dev/cli && volcano connect --signup` and keep it running while I sign up.
+```
 
 It runs these steps. A rerun inside the linked directory, or with the same
 directory argument, keeps the project and updates the files in place. A rerun
@@ -29,7 +34,9 @@ characters in single quotes, so you can paste them as they are.
 1. **Signs in.** It signs in with `--device-code` when given.
    Otherwise it reuses a login that still works, or runs browser login.
    Browser login prints a code and a link. Open the link and approve, and the
-   command continues. See
+   command continues. That page signs in an existing account with GitHub,
+   Google, or email and password. It can't create an account by email, so
+   run `volcano connect --signup` if you're new. See
    [Device codes from the dashboard](#device-codes-from-the-dashboard).
 2. **Creates a project and its directory.** Unless `--project` names one, or
    the directory is already linked, it creates a new project.
