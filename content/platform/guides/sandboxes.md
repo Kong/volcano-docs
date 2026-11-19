@@ -584,6 +584,15 @@ run as the session user, so a write into a directory that user cannot write retu
 `409` with code `sandbox_path_conflict`. Files survive suspend/resume and are removed with
 the session.
 
+A read of a path with no file returns `404` with code `sandbox_file_not_found`.
+A directory, symbolic link, or special file at the path returns `400` with code
+`sandbox_file_unreadable`, as does, in a cloud session, a file the session user
+does not own or that has more than one hard link. A file larger than 8 MiB
+returns `413` with code `sandbox_file_too_large`. A session from an image built
+before these codes, such as a custom template not redeployed since, returns
+`503` instead; start a new session from a current preset, or redeploy the
+template.
+
 ### Upload a directory as a tar archive
 
 Create a file archive to write a whole tree in one request. Send
