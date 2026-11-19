@@ -46,7 +46,6 @@ if (error) {
 }
 
 console.log('User created:', user.id);
-console.log('Access token:', session.access_token);
 ```
 
 The response includes the user object and a session with tokens:
