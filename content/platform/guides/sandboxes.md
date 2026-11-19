@@ -584,6 +584,21 @@ run as the session user, so a write into a directory that user cannot write retu
 `409` with code `sandbox_path_conflict`. Files survive suspend/resume and are removed with
 the session.
 
+A read of a path with no file returns `404` with code `sandbox_file_not_found`.
+A directory, symbolic link, socket, or other special file at the path returns
+`400` with code `sandbox_file_unreadable`, as does a file the session user can't
+read and, in a cloud session, a file another user owns or one with more than one
+hard link. To read a file another user owns, a file with more than one hard
+link, or a symbolic link to a file, copy it to a new file with an exec command
+such as `cp`, then read the copy; this works only when the session user can read
+the original. For a file the session user owns with its read bit clear, run
+`chmod u+r` on it first. List a directory and read the files inside it instead.
+A file larger than 8 MiB
+returns `413` with code `sandbox_file_too_large`. A session from an image built
+before these codes, such as a custom template not redeployed since, returns
+`503` instead; start a new session from a current preset, or redeploy the
+template.
+
 ### Upload a directory as a tar archive
 
 Create a file archive to write a whole tree in one request. Send

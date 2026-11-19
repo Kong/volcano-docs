@@ -89,6 +89,8 @@ owner_client.durable.stop(project_id, "charge-order", handle.id)
 
 `get()`, `list()`, and `stop()` are owner-scoped. Call them from a trusted backend with the project owner's platform user token or a project access token; a `read_only` token can read and list but not stop. Auth-user sessions, anonymous keys, and service keys are not accepted. `stop()` returns after the stop request is accepted, so poll `get()` until `is_terminal` is true.
 
+A function name, project ID, execution ID, or approval ID that is `.` or `..` or contains `/` raises `ValueError` before any request is sent.
+
 ## Write a durable function
 
 Use `volcano_sdk.durable_authoring` in a durable function running on `python3.13` or `python3.14`:

@@ -4,8 +4,8 @@ description: Install the CLI, sign up, create a project, and start building.
 order: 3
 ---
 
-This gets you an account and an active project. From there, follow the
-surface-specific quickstart for what you are building.
+This gets you an account and a project linked to a local directory. From
+there, follow the surface-specific quickstart for what you are building.
 
 ## 1. Install the CLI
 
@@ -15,24 +15,29 @@ npm install -g @volcano.dev/cli
 
 See [install](./install.md) for other methods.
 
-## 2. Sign up
+## 2. Sign up and create a project
 
 ```bash
-volcano signup
+volcano connect --signup
 ```
 
-This prefills your email, opens the browser signup flow, and saves your
-credentials to `~/.volcano/config.json` — one command signs you up and logs
-you in.
+This opens the browser signup page with your global git email filled in.
+If that email is missing or private (such as a GitHub `noreply` address),
+`connect` stops and asks for one: run it again with
+`--email you@company.com`. When you finish signing up, the CLI is signed in,
+creates a cloud project, and sets up a directory linked to it. `cd` into the
+directory it prints before you run other `volcano` commands.
 
-## 3. Create and select a project
+Already have an account? Use the log-in link on the signup page, or run
+`volcano connect` instead. See [connect](/cli/connect) for the details.
 
-```bash
-volcano projects create my-first-project
-volcano use my-first-project
+To have a coding agent do it, paste this prompt:
+
+```text
+Run `npm i -g @volcano.dev/cli && volcano connect --signup` and keep it running while I sign up.
 ```
 
-## 4. Build
+## 3. Build
 
 Pick your path:
 

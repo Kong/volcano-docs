@@ -57,6 +57,11 @@
       "enum": ["product", "engineering", "research", "company"],
       "description": "Blog category. Exactly one per post; each has a page at /blog/category/<slug>."
     },
+    "discussion": {
+      "type": "string",
+      "pattern": "^https://(x|twitter)\\.com/",
+      "description": "Blog post only: the X post (or, until it exists, the X profile) where the post is discussed. Shown as a link beside the byline and a card at the end of the post."
+    },
     "tags": {
       "type": "array",
       "items": { "type": "string" },
