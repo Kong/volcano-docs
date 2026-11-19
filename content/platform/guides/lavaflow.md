@@ -717,13 +717,9 @@ different but understandable form is normalized. The fix adds no new error,
 validation, or limit for such a request, and drops or skips no records. If your
 code can't serve the request, such as one naming an order that doesn't exist,
 the fix answers with the error that condition calls for, such as not found or
-conflict, in the shape your code already uses. Where the fix must decide behavior your code leaves open, such as a
-response shape, a date, money or validation policy, which records to keep or
-drop, or wording your users read, it picks the option that changes least for
-existing callers and stored data, and lists each decision under
-**Choices to confirm**. A fix that only stops the error, or only restores
-behavior your code, tests, docs, or changelog already define, and that no later
-changelog entry or test removed, has no such section.
+conflict, in the shape your code already uses. When the request and repository evidence leave a material decision open, LavaFlow records it with the fix.
+The reviewers consider it as part of reviewing the patch.
+Choices that still need confirmation can appear under **Choices to confirm**.
 When bad data comes from code the fix doesn't change, such as a function that
 writes records in the wrong shape, **Not fixed here** names that code and why
 the fix leaves it:
@@ -779,25 +775,14 @@ requested change, not a fix, and its run's `diagnosis.requested` is `true`.
 Its `category` is usually `improvement`, or `dependency` or `configuration`
 when the change touches only those files.
 
-Each of LavaFlow's reviewers marks every listed choice as needing a person or
-not. A choice needs a person when it isn't the option that changes least, or
-when it changes a status, a response shape, input your code accepts, or
-another contract callers or users rely on, such as a new error that rejects a
-whole request your code used to process. A choice that only says how the fix stops the error, such as
-treating a missing optional value as absent where your code crashed reading
-it, doesn't, and neither does one that only restores behavior your code, tests,
-docs, or changelog already define, and that no later changelog entry or test
-removed, such as accepting a form they show callers sending. A choice a reviewer doesn't mark needs a
-person.
+LavaFlow reviews implementation decisions against the authorized request and the repository's established behavior.
+In Merge mode, ordinary implementation decisions proceed with a complete review.
+If a narrower fix can resolve a concern the reviewers raise, LavaFlow attempts a revision.
+If the choice needs your decision, the review asks a specific question.
 
-With `autonomy: merge`, LavaFlow doesn't merge a fix that lists a choice its
-reviewers didn't all mark as needing no person, including when a reviewer
-couldn't finish: it holds the fix for you with `choices_to_confirm` (see [Waiting and held](#waiting-and-held)), and
-may start its CI once as it holds it. Confirm each choice, then merge the fix.
-A fix whose reviewers all marked every choice as needing no person, or that
-lists none, merges as before, and its description still lists its choices. A
-fix you merge yourself, held with `person_merges` as under `open_pr`, isn't
-also held for its choices: confirm them as you review it.
+A saved fix can also show `choices_to_confirm` when its review did not clear all the choices or supply a specific question.
+See [Waiting and held](#waiting-and-held) for where to read those choices.
+When you choose to merge a fix yourself, you can review its recorded choices in the run.
 
 A public or internal repository's description leaves detailed choices in the run: it says the fix has choices to confirm and to
 read them with `volcano cloud lavaflow show <run-id> --json`. The run's
@@ -1134,7 +1119,7 @@ LavaFlow holds a fix for these reasons:
 | `lineage_held`                 | An earlier pull request in the fix's lineage was held, stopped or closed (one you merge holds it only when closed); see [Fix lineage](#fix-lineage)                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `recent_regressions`           | Fixes LavaFlow merged in the project recently caused new errors; see [Fix lineage](#fix-lineage)                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `no_test`                      | LavaFlow added no test, because testing the change needs test infrastructure your repository doesn't have or the change has no effect a test can observe, though your repository tests the code it changes. Check whether a test could cover the change; merge if the reason holds. See [Tests and claims](#tests-and-claims)                                                                                                                                                                                                                                       |
-| `choices_to_confirm`           | The fix decides behavior beyond stopping the error, such as a response shape or a validation policy, and LavaFlow's reviewers didn't all mark each decision as needing no person. A private repository's description lists each decision under **Choices to confirm**; on any repository, the run's `choices` lists them. Confirm each one, then merge                                                                                                                                                                                                              |
+| `choices_to_confirm` | The review left a choice open. Read the choices in the run. A private pull request can also list them under **Choices to confirm**. |
 | `risky_change`                 | The fix adds or removes a line that converts a value, such as with `float()` or `parseInt()`, in a file that names a rate limit or quota, authentication or authorization, or money; see below                                                                                                                                                                                                                                                                                                                                                                      |
 | `review_notes`                 | LavaFlow's reviewers passed the fix, but its review's last round left notes: `minor` problems a later round no longer sends back, such as a decision the fix makes without listing it. Read the run's review findings, then merge                                                                                                                                                                                                                                                                                                                                   |
 | `person_merges`                | You review and merge the fix: the project's autonomy is `open_pr`, merging was unavailable when it opened, or its run may only open a pull request. LavaFlow ran the fix's CI once first, unless another reason or the check before CI starts stopped it; see [Review and merge fixes yourself](#review-and-merge-fixes-yourself)                                                                                                                                                                                                                                   |
@@ -1933,10 +1918,9 @@ person: its `kind` (`irreversible`, `trust_boundary`, `breaks_contract`,
 `question` to answer. `observations` lists the reviewers' observations:
 follow-ups and other notes that don't hold the fix. Each is absent when there's nothing to list, and when the run saved no fix.
 
-Beside `review`, the run's `choices` lists each decision its fix states
-beyond stopping the error, which you confirm when a `choices_to_confirm` hold
-holds the fix or when you merge it yourself, and `not_fixed` says where the defect starts outside the fix, as the
-private description's **Choices to confirm** and **Not fixed here** do.
+Beside `review`, the run's `choices` lists material decisions the fix proposes, including decisions the review cleared.
+Read them if the run reports `choices_to_confirm` or when you review a fix you plan to merge yourself.
+`not_fixed` says where the defect starts outside the fix.
 `choices` is absent and `not_fixed` is null when the fix states none.
 
 Findings, questions, observations and statements are the reviewers' and the
