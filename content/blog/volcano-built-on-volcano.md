@@ -15,7 +15,7 @@ Here's what that stack looks like, piece by piece.
 
 ![Diagram: every part of volcano.dev runs on a Volcano primitive. Frontend hosts the web app (Next.js) and the docs site. Function hosts the REST API, the billing API, the support API, and the Stripe webhook, which receives events from Stripe. Database holds billing data. Scheduler runs billing operations.](/blog/volcano-built-on-volcano/stack.png)
 
-*Four primitives carry the whole product. Stripe is the only outside piece, and it talks to us through a Volcano Function.*
+*Volcano's own building blocks carry the whole product. Stripe is the only outside piece, and it talks to us through a Volcano Function.*
 
 ## Two frontends, shipped on their own schedules
 
@@ -37,11 +37,11 @@ That's the same primitive you get on day one. When it has a bad day, our revenue
 
 Some of volcano.dev's most critical data sits in Volcano's own [database](/platform/databases/overview). Billing is the part where a mistake costs real money.
 
-The Volcano scheduler runs our critical billing operations. Those jobs don't run on an outside cron service. They run on the same scheduler you'd use for your own jobs.
+The Volcano scheduler runs our critical billing operations as [scheduled function invocations](/platform/functions/scheduled-invocations). Those jobs don't run on an outside cron service. They run on the same schedules you'd set up for your own functions.
 
 ## Why we run on it first
 
-Frontends, Functions, the database, and the scheduler. Everything you touch on volcano.dev runs on the same four primitives we hand to you.
+Frontends, Functions and their schedules, and the database. Everything you touch on volcano.dev runs on the same building blocks we hand to you.
 
 That matters for one plain reason: we feel every rough edge before you do. A slow deploy slows down our releases. A flaky function breaks our billing. When we fix those things for ourselves, we've fixed them for you too.
 
