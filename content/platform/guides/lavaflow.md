@@ -990,10 +990,9 @@ branch ruleset:
 2. Name it, set **Enforcement status** to **Active**, and under **Target
    branches** add your production branch, such as `main`.
 3. Turn on **Require status checks to pass**, choose **Add checks**, and add
-   the name your pull request workflow's job reports, such as `test`. Leave
-   **Require branches to be up to date before merging** off: LavaFlow doesn't
-   update fix branches, so it stops a fix whose base branch requires that, with
-   `branch_behind`.
+   the name your pull request workflow's job reports, such as `test`. If you
+   enable **Require branches to be up to date before merging**, LavaFlow can
+   update its own fix branch, review the updated patch, and run the checks again.
 4. Leave the Volcano GitHub App off the ruleset's bypass list. LavaFlow holds
    every fix on a base branch whose rules it can bypass, with `rules_bypass`.
 5. Choose **Create**.
@@ -1252,7 +1251,7 @@ review the change, then merge or close the pull request yourself.
 | `checks_timed_out`         | The checks didn't all finish within 24 hours. A required check pinned to a GitHub App counts only as that App's check run                                                                                                                                                                                                                                                                                                                                             |
 | `blocked_by_rules`         | A rule of the repository that LavaFlow can't satisfy blocks the merge                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `not_mergeable`            | GitHub can't merge the pull request, for example because it conflicts with its base branch. Resolve the conflict first                                                                                                                                                                                                                                                                                                                                                |
-| `branch_behind`            | The base branch changed and the pull request still needs an update before it can merge                                                                                                                                                                                                                                                                                                              |
+| `branch_behind`            | The base branch moved and LavaFlow could not complete an update. Update the branch and run the checks again before merging                                                                                                                                                                                                                                                                                                              |
 | `removed_from_queue`       | The fix left the merge queue. Check the pull request timeline for the reason                                                                                                                                                                                                                                                                                                                                                |
 | `reads_failed`             | LavaFlow failed to read the pull request for about an hour while the fix may have been in the merge queue, so it took the fix out of the queue, or failed to read the project's settings or repository for about a day while merging was paused. When it couldn't reach the pull request to take it out, its comment says the fix may still merge from the queue. For a fix you merge, which LavaFlow never queues, only the latter applies, with its CI start paused |
 | `unreadable`               | The pull request has more checks, reviews, labels or commits than LavaFlow reads, so it can't judge the fix                                                                                                                                                                                                                                                                                                                                                           |
@@ -1278,12 +1277,14 @@ the required check times out again, the reason is `checks_failed`.
 `checks_timed_out` applies when the checks have not all finished within 24
 hours.
 
-When GitHub Actions reports a failure on the current commit, or GitHub
-reports a conflict with the target branch, LavaFlow can revise the same pull
-request. It reviews the complete change against the current base, keeps the
-last reviewed proposal if it cannot complete the repair, and allows up to
-two repair attempts. After a reviewed repair, LavaFlow runs CI on the new
-commit and continues to merge when the repository's requirements are met.
+LavaFlow can revise an open pull request it manages under `autonomy: merge`
+when GitHub Actions reports a failure on its current commit, or GitHub
+reports a conflict with the target branch. LavaFlow reviews the whole
+replacement against the current base and can attempt up to two repairs on
+the same pull request. It runs CI on each reviewed repair and continues to
+merge when the repository's requirements are met. A patch that fails review
+leaves the last published proposal open with `review_unresolved`. If the
+last repair's checks fail, the pull request stays open with `checks_failed`.
 A push by another contributor, a retarget, a redraft, or a closure stops
 automatic work on that pull request.
 
