@@ -27,6 +27,7 @@ finally:
 `acquire()` returns an immutable `LockLease` containing the key, ownership token, expiration, and fencing token.
 Release and renew using that lease; the ownership token identifies the holder.
 TTLs are integer seconds from 5 seconds through 90 days.
+Lock keys start with a letter or number and have at most 128 letters, numbers, `.`, `_`, `:`, or `-`. Any other key raises `ValueError` before any request is sent.
 A competing owner can cause `ConflictError`.
 
 ## Renew or inspect a lease
