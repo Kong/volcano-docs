@@ -54,7 +54,7 @@ const { user, session } = await volcano.auth.signUp({
 });
 
 console.log('User ID:', user.id); // This is what auth.uid() returns in database
-console.log('Access token:', session.access_token); // Automatically used for queries
+console.log('Signed in:', Boolean(session)); // The session's access token is automatically used for queries
 
 // Or sign in existing user
 await volcano.auth.signIn({
@@ -217,7 +217,6 @@ const response = await fetch('https://api.yourapp.com/auth/signup', {
 
 const { access_token, user } = await response.json();
 console.log('User ID:', user.id);
-console.log('Access Token:', access_token);
 // Save access_token for database queries!
 ```
 
