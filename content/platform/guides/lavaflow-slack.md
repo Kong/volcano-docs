@@ -108,11 +108,11 @@ retry after LavaFlow refused the report at a limit.
 
 LavaFlow then answers in the thread with the project it picked and a link to
 its repository, and posts the outcome as a new reply. It never edits an
-earlier reply, so the thread keeps each step of the report. A run from Slack goes as far as opening a fix
-pull request, even where the project lets LavaFlow merge, and so does a run
-someone starts again on the report's issue: merging a fix someone reported in
-Slack stays a person's step. The outcome is the pull request's link, or a
-fixed reason it opened none, and a link to the run in Volcano. The run link
+earlier reply, so the thread keeps each step of the report. A run from Slack usually leaves its fix pull request for you to merge.
+LavaFlow can merge a project owner's fix when it only removes credential logging from JavaScript documentation examples.
+The project must use `merge` autonomy, the owner must allow the linked repository to run its CI, and Volcano must verify that the exact base commit deployed the project's production frontend.
+The proposed change must still pass review and the repository's required checks.
+The outcome is the pull request's link, or a fixed reason it opened none, and a link to the run in Volcano. The run link
 opens the report's project in the same environment as the Slack app and still
 requires access to that project. It never holds the diagnosis:
 everyone in the channel reads the answer, including people who can't see the
@@ -166,9 +166,8 @@ what you're asking for:
 LavaFlow builds what the request asks for and nothing beyond it, and its
 reviewers hold anything else the change adds. The request can't change what
 LavaFlow may do: its permissions, the files it may not change, its review, and
-when it opens a pull request stay the same, and the run stops at a pull
-request for a person to review and merge. The pull request says it proposes a
-requested change, not a fix, and the run's `diagnosis.requested` is `true`.
+when it opens a pull request stay the same. A request follows the same merge rules as a report.
+The pull request identifies the requested change, and the run's `diagnosis.requested` is `true`.
 When the request is unclear, the result already exists, or the change lies
 outside the repository, LavaFlow opens nothing and says so in the thread.
 
