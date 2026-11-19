@@ -323,7 +323,6 @@ if (error) {
   window.location.href = '/login';
 } else {
   // Session refreshed, new tokens stored automatically
-  console.log('New access token:', session.access_token);
 }
 ```
 
