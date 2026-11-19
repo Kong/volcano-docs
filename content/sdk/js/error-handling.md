@@ -138,12 +138,12 @@ if (AuthRefreshDiscardedError.is(error)) {
   // Auth state changed while this request was pending. Read the current state
   // or ask the user to retry; do not automatically replay a mutation.
   const { data } = await volcano.auth.getSession();
-  console.log('Current session:', data.session);
+  console.log('Has current session:', Boolean(data.session));
 } else if (AuthSessionChangedError.is(error)) {
   // The user response belongs to a session that was replaced while the
   // request was pending.
   const { data } = await volcano.auth.getSession();
-  console.log('Current session:', data.session);
+  console.log('Has current session:', Boolean(data.session));
 } else if (error) {
   console.error('Unable to load the user:', error.message);
 } else {
@@ -167,7 +167,7 @@ const { user, error } = await volcano.auth.signIn({
 
 if (AuthSessionChangedError.is(error)) {
   const { data } = await volcano.auth.getSession();
-  console.log('Another auth operation established:', data.session);
+  console.log('Another auth operation established a session:', Boolean(data.session));
 } else if (error) {
   console.error('Sign-in failed:', error.message);
 } else {
