@@ -6,9 +6,10 @@ description: 'Connect an Aikido workspace so LavaFlow opens fix pull requests fo
 Connect your [Aikido](https://www.aikido.dev) workspace, bind a project, and
 each new code (SAST) issue Aikido finds on the project's GitHub repository
 starts a [LavaFlow](lavaflow.md) run. LavaFlow
-reads the issue, diagnoses it, and opens a pull request with the fix for you
-to review. It never merges an Aikido fix, and it writes nothing back to
-Aikido: follow the run in Volcano.
+reads the issue, diagnoses it, and opens a pull request when it can fix the
+problem. With `autonomy: merge`, LavaFlow follows the PR through review,
+required checks, and merge. Follow the run in Volcano. LavaFlow writes
+nothing back to Aikido.
 
 Aikido reports need the project's `lavaflow.aikido` capability. They are
 rolling out environment by environment, so check it first. It is available

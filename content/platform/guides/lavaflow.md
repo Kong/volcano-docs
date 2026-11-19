@@ -92,10 +92,8 @@ starts none, and neither does an error issue with `exception: false`.
 
 An issue you [write](issues.md#write-an-issue) starts a run as you write it,
 and only then. The run reads your description as what to change, with no logs,
-at the head of the project's production branch, and follows your settings as
-any run does, with one exception: under `autonomy: merge`, LavaFlow doesn't
-merge its fix. The branch head is no push Volcano saw deploy, so the fix waits
-for you to merge it, held under `client_reported_commit`.
+at the verified head of the project's production branch. The run follows
+your autonomy settings through review, checks, and merge.
 
 A [build issue](issues.md#failed-builds) starts a run the first time a deploy
 fails, since the build fails the same way until the code changes. The run reads
@@ -663,10 +661,10 @@ The commit comes from one of these:
   on the run. A redeploy of the same upload, such as one a variable change
   starts, carries no commit LavaFlow reads.
 
-For any other deployment, LavaFlow diagnoses from the logs alone. A fix on a
-reported commit is held for a person under `client_reported_commit`. A fix on a
-`verification: repository` commit opens only while the production branch still
-holds that commit.
+For any other deployment, LavaFlow diagnoses from the logs alone. A fix on
+a `verification: repository` commit opens only while the production branch
+still holds that commit. It stays held under `client_reported_commit` until
+someone verifies that it fixes the deployed code.
 
 ### Deploy code LavaFlow can read
 
@@ -1117,8 +1115,8 @@ LavaFlow holds a fix for these reasons:
 | `path`                         | It changes a path in `human_review_paths`, as the settings were when its pull request opened or as they are now, or deploy or infrastructure configuration                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `sensitive_path`               | It changes another path Volcano always holds: authentication code, secret files, agent instructions, CI, dependencies or configuration; see below                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `label`                        | The pull request has the `needs-human-review` label                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `client_reported_commit`       | The fix is built on a commit Volcano can't tie to a push                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `report_admission_lost`        | LavaFlow could no longer verify the Slack report's base or merge authorization. See [Slack reports](lavaflow-slack.md)                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `client_reported_commit`       | Volcano could not verify that the reported commit matches the deployed files                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `report_admission_lost`        | LavaFlow could no longer verify the report's base or merge authorization. Check the source connection and the proposed changes                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `no_checks`                    | No CI ran on it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `required_check_skipped`       | A required check was skipped                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `no_required_checks`           | The base branch requires no check, so passing checks alone don't vouch for the fix                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
@@ -1253,7 +1251,7 @@ review the change, then merge or close the pull request yourself.
 | `checks_timed_out`         | The checks didn't all finish within 24 hours. A required check pinned to a GitHub App counts only as that App's check run                                                                                                                                                                                                                                                                                                                                             |
 | `blocked_by_rules`         | A rule of the repository that LavaFlow can't satisfy blocks the merge                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `not_mergeable`            | GitHub can't merge the pull request, for example because it conflicts with its base branch. Resolve the conflict first                                                                                                                                                                                                                                                                                                                                                |
-| `branch_behind`            | The base moved after review and LavaFlow needs a current base for this merge. Update the branch and check the changes again                                                                                                                                                                                                                                                                                                                                           |
+| `branch_behind`            | The repository requires an up-to-date branch, or the base of a verified report moved after review. Update the PR branch and check the changes again                                                                                                                                                                                                                                                                                                                                           |
 | `removed_from_queue`       | The fix isn't in the merge queue, and LavaFlow can't tell why: its checks may have failed there, or someone removed it                                                                                                                                                                                                                                                                                                                                                |
 | `reads_failed`             | LavaFlow failed to read the pull request for about an hour while the fix may have been in the merge queue, so it took the fix out of the queue, or failed to read the project's settings or repository for about a day while merging was paused. When it couldn't reach the pull request to take it out, its comment says the fix may still merge from the queue. For a fix you merge, which LavaFlow never queues, only the latter applies, with its CI start paused |
 | `unreadable`               | The pull request has more checks, reviews, labels or commits than LavaFlow reads, so it can't judge the fix                                                                                                                                                                                                                                                                                                                                                           |
@@ -1645,9 +1643,9 @@ tell which first included it, and `deployed_at` is the merge time.
 ### Draft pull requests
 
 `draft` says whether the pull request is a draft, as GitHub last reported it to
-LavaFlow, and is `null` for one opened before LavaFlow recorded it. A draft
-waits for a person to mark it ready; `draft_reason` says why it is one, and is
-`null` otherwise.
+LavaFlow, and is `null` for one opened before LavaFlow recorded it. An
+initial review draft can become ready automatically when reviews pass. After
+review finishes, `draft_reason` explains why the PR remains a draft.
 
 | `draft_reason`       | Why the pull request is a draft                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -2813,11 +2811,10 @@ on, not the code that shipped while it was off.
 
 ### How Code Quality fixes open
 
-A Code Quality fix opens as a draft pull request, and LavaFlow never merges
-it, even with `autonomy: merge`. It opens only when LavaFlow's review passed
-the fix, and not while another project on the same repository has an open
-Code Quality pull request for the same finding. The issue keeps its diagnosis
-either way.
+LavaFlow opens a Code Quality PR once its review passes and the repository
+has no open Code Quality PR for the same finding. With `autonomy: merge`,
+LavaFlow follows the PR through the same controls as any other fix. With
+`autonomy: open_pr`, you merge the PR. The issue keeps its diagnosis either way.
 
 On a repository that isn't private, LavaFlow writes no fix for a finding with
 security impact, since the diff would disclose the problem before it is fixed.
