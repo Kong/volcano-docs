@@ -598,7 +598,6 @@ Use `console.log` for debugging - logs appear in the Volcano dashboard:
 
 ```javascript
 exports.handler = async (event) => {
-  console.log('Function invoked with:', JSON.stringify(event));
   console.log('User:', event.__volcano_auth?.user_id);
 
   try {

@@ -20,7 +20,7 @@ Functions invoked with an auth user token receive a special `__volcano_auth` obj
 
 ```javascript
 exports.handler = async (event) => {
-  console.log(event.__volcano_auth);
+  const auth = event.__volcano_auth;
   // {
   //   user_id: "550e8400-e29b-41d4-a716-446655440000",
   //   email: "user@example.com",
@@ -28,6 +28,7 @@ exports.handler = async (event) => {
   //   role: "authenticated",
   //   access_token: "eyJhbGci..."
   // }
+  console.log('User:', auth?.user_id);
 };
 ```
 

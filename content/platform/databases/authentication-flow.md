@@ -314,7 +314,7 @@ const volcano = new VolcanoAuth({
 const pool = volcano.database.createPool({ max: 2 });
 
 exports.handler = async (event) => {
-  console.log('Event auth context:', event.__volcano_auth);
+  console.log('Auth user:', event.__volcano_auth?.user_id);
 
   // Auth context comes from the user's access token
   // When user invokes function:
@@ -631,7 +631,7 @@ invoke(functionName, payload)
 
 ```javascript
 exports.handler = async (event) => {
-  console.log('Received event:', event);
+  console.log('Received action:', event.action);
 
   // Event contains:
   // {
