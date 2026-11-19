@@ -6,6 +6,7 @@ tags: [launch, ai-agents, lavaflow]
 author: Marco Palladino
 cover: /blog/introducing-volcano-agent-cloud/hero.png
 published: "2026-11-19"
+discussion: https://x.com/subnetmarco
 ---
 
 Building agents and applications in the AI era requires new primitives that we simply didn't need a few years ago. And even then, the pace of building has increased exponentially beyond what humans can do with traditional workflows. To make this worse, building agents became more of an exercise of composing together different services and platforms which compounds the complexity and maintenance requirements in the long run.
@@ -23,5 +24,3 @@ And then — once your agents, backends and frontends are running in Volcano —
 We decided to build Volcano as a result of our experience at Kong building agents for ourselves, and what we learned from the 1000+ largest enterprise organizations that we work with. Kong processed more than a quadrillion requests for its customers in the last 12 months, and today we are finally enabling everyone to build in the AI era the way it's supposed to be.
 
 Give it a try and let us know what you think, at [volcano.dev](https://volcano.dev/).
-
-[Join the conversation on X →](https://x.com/subnetmarco)

@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, Link2 } from "lucide-react";
+import { ArrowUpRight, Check, Link2 } from "lucide-react";
 import type { ComponentProps } from "react";
 import "./blog-share.css";
 
-type BlogShareProps = { url: string; title: string };
+type ShareTarget = { url: string; title: string };
 
 const COPIED_RESET_MS = 2000;
 
@@ -41,10 +41,10 @@ function shareOnLinkedIn(url: string) {
   return intent.toString();
 }
 
-// Share controls for a post: the two networks Volcano posts from, plus a copy
+// Icon-only share actions: the two networks Volcano posts from, plus a copy
 // link for everywhere else. Each network opens its own composer — nothing is
 // posted from here, and no third-party script is loaded to draw a button.
-export function BlogShare({ url, title }: BlogShareProps) {
+function ShareActions({ url, title }: ShareTarget) {
   const [copied, setCopied] = useState(false);
   const resetTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -73,13 +73,13 @@ export function BlogShare({ url, title }: BlogShareProps) {
   );
 
   return (
-    <div data-slot="blog-share" className="blog-share">
-      <span className="blog-share-label">Share</span>
+    <div className="blog-share-actions">
       <a
         href={shareOnX(url, title)}
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Share on X"
+        title="Share on X"
         className="blog-share-action"
       >
         <XMark className="blog-share-glyph" />
@@ -89,6 +89,7 @@ export function BlogShare({ url, title }: BlogShareProps) {
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Share on LinkedIn"
+        title="Share on LinkedIn"
         className="blog-share-action"
       >
         <LinkedInMark className="blog-share-glyph" />
@@ -97,6 +98,7 @@ export function BlogShare({ url, title }: BlogShareProps) {
         type="button"
         onClick={copyLink}
         aria-label="Copy link to this post"
+        title="Copy link"
         data-copied={copied}
         className="blog-share-action"
       >
@@ -107,5 +109,58 @@ export function BlogShare({ url, title }: BlogShareProps) {
         {copied && "Link copied"}
       </span>
     </div>
+  );
+}
+
+type BlogShareProps = ShareTarget & { discussion?: string };
+
+// The top of a post: a quiet row of share icons beside the byline, with a
+// link to the post's X thread when it has one.
+export function BlogShare({ url, title, discussion }: BlogShareProps) {
+  return (
+    <div data-slot="blog-share" className="blog-share">
+      {discussion && (
+        <a href={discussion} target="_blank" rel="noopener noreferrer" className="blog-share-discuss">
+          <XMark className="blog-share-glyph" />
+          Discuss on X
+          <ArrowUpRight aria-hidden className="blog-share-glyph" />
+        </a>
+      )}
+      <ShareActions url={url} title={title} />
+    </div>
+  );
+}
+
+// The end of a post: an invitation to the X thread when there is one, then the
+// share actions for readers who want to pass the post along.
+export function BlogPostFooter({ url, title, discussion }: BlogShareProps) {
+  return (
+    <footer data-slot="blog-post-footer" className="blog-post-footer-block">
+      {discussion && (
+        <a
+          href={discussion}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-slot="blog-conversation"
+          className="blog-conversation"
+        >
+          <span className="blog-conversation-mark">
+            <XMark className="blog-conversation-glyph" />
+          </span>
+          <span className="blog-conversation-copy">
+            <span className="blog-conversation-title">Join the conversation on X</span>
+            <span className="blog-conversation-body">Questions, feedback, or something you built? Reply to the thread.</span>
+          </span>
+          <span className="blog-conversation-cta">
+            Open on X
+            <ArrowUpRight aria-hidden className="blog-share-glyph" />
+          </span>
+        </a>
+      )}
+      <div className="blog-share-row">
+        <span className="blog-share-label">Share this post</span>
+        <ShareActions url={url} title={title} />
+      </div>
+    </footer>
   );
 }

@@ -8,7 +8,7 @@ import { CollectionHome } from "@/components/collection-home";
 import { MarkdownContent } from "@/components/markdown-content";
 import "@/components/collection.css";
 import { BlogMetadata } from "@/components/blog-metadata";
-import { BlogShare } from "@/components/blog-share";
+import { BlogPostFooter, BlogShare } from "@/components/blog-share";
 import { siteUrl } from "@/lib/site-url";
 import { socialMetadata } from "@/lib/social-card";
 import { Footer } from "@/components/home/footer";
@@ -22,16 +22,20 @@ export default async function BlogPage({ params }: BlogPageProps) {
   if (slug.length === 0) {
     return <CollectionHome section="blog" page={page} />;
   }
+  const shareUrl = new URL(page.url, siteUrl).toString();
   return (
     <div className="home-page">
       <div data-slot="blog-content" data-variant="article" className="blog-content">
         <article data-slot="collection-article" className="collection-article">
           <Link href="/blog" className="collection-back">← Back to posts</Link>
           <DocsTitle>{page.data.title}</DocsTitle>
-          <BlogMetadata data={page.data} />
+          <div className="blog-byline">
+            <BlogMetadata data={page.data} />
+            <BlogShare url={shareUrl} title={page.data.title} discussion={page.data.discussion} />
+          </div>
           <DocsDescription>{page.data.description}</DocsDescription>
-          <BlogShare url={new URL(page.url, siteUrl).toString()} title={page.data.title} />
           <MarkdownContent page={page} />
+          <BlogPostFooter url={shareUrl} title={page.data.title} discussion={page.data.discussion} />
         </article>
       </div>
       <Footer />

@@ -57,6 +57,11 @@
       "enum": ["product", "engineering", "research", "company"],
       "description": "Blog category. Exactly one per post; each has a page at /blog/category/<slug>."
     },
+    "discussion": {
+      "type": "string",
+      "pattern": "^https://",
+      "description": "Blog post only: the URL of the post's public discussion (an X thread or profile). Shown as a link beside the byline and a card at the end of the post."
+    },
     "tags": {
       "type": "array",
       "items": { "type": "string" },
