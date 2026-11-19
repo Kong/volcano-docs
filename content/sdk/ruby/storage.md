@@ -38,10 +38,11 @@ A refused value raises `ArgumentError` without contacting Volcano.
 A path is refused when it:
 
 - is empty
+- starts with more than one `/`
 - has a `.` or `..` segment, such as `reports/./q1.pdf` or `reports/../q1.pdf`
-- has an empty segment: a trailing `/`, a repeated `//`, or more than one leading `/`
 
 One leading `/` is dropped, so `/avatars/a.png` and `avatars/a.png` name the same object.
+A trailing `/` or a repeated `/` is part of the key, as in `folder/` or `a//b.txt`.
 A dot inside a segment is part of the name, as in `.hidden/notes.txt` or `v1.2/notes.txt`.
 The `list` prefix is a query parameter, so these rules don't apply to it.
 
@@ -49,7 +50,7 @@ A bucket name must be 1–64 letters, numbers, `_`, or `-`.
 
 ```ruby
 bucket.download("reports/../q1.pdf")
-# ArgumentError: storage paths cannot contain empty, ".", or ".." segments
+# ArgumentError: storage paths cannot be empty, start with "//", or contain "." or ".." segments
 
 client.storage.from("team/assets").download("q1.pdf")
 # ArgumentError: bucket name must be 1-64 letters, numbers, "_", or "-"
