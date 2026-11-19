@@ -897,7 +897,7 @@ commit to the branch to run your CI, mark the pull request ready for review,
 then review and merge it, and
 [keep the CI skip out of your base branch](#keep-the-ci-skip-out-of-your-base-branch).
 
-**Once it is available,** a fix whose review passed opens ready for review.
+**Once it is available,** LavaFlow can make a fix ready after its review passes.
 Its commit skips CI at first. About a minute later, LavaFlow's first read of
 the pull request runs your repository's CI on it once, the way it starts CI
 under `merge` (see [Check before CI starts](#check-before-ci-starts)): where
@@ -2596,9 +2596,10 @@ in the first example.
 
 ## Read the review on the pull request
 
-When LavaFlow opens a draft before its review, it posts feedback on that
-PR as it works. For Code Quality, LavaFlow reviews the patch before opening
-a PR. The run's `review` contains the
+In environments where review on a draft PR has rolled out, LavaFlow first
+opens a draft for Live fixes and posts feedback there as it works. Elsewhere,
+it completes its review before opening the PR. Code Quality always reviews
+the patch before opening a PR. The run's `review` contains the
 verdict and
 [the findings](#read-a-reviews-findings), and on a private repository the pull
 request's description has the review's summary.

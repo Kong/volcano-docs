@@ -109,17 +109,19 @@ retry after LavaFlow refused the report at a limit.
 LavaFlow replies with the project it picked and its repository. With
 [`autonomy: merge`](lavaflow.md#merge-fixes), LavaFlow can take an issue from
 Slack to a merge on the project's production branch. It pins the repository
-revision, reviews and revises the draft PR, and marks it ready once review
-clears. It follows the required checks and approvals and merges the PR when
+revision and reviews the fix. Where review on a draft PR is available, it
+revises that draft and marks it ready once review clears. It follows the required checks and approvals and merges the PR when
 they pass. It uses the repository's merge queue when required. With
 `autonomy: open_pr`, you review and merge the resulting PR.
 
 The thread receives a link to the run in Volcano and a link to the PR when
 one opens. LavaFlow replies when GitHub records the merge or LavaFlow needs
 help. If no PR opens, the thread gives a reason.
-LavaFlow can follow an active report until its 10-day retention window ends.
-If the project connection, base, or merge authorization changes, the run
-shows `report_admission_lost`. Check the connection and PR before retrying.
+LavaFlow follows an active report within its retention window, at most 10 days
+from the report. If the report expires before the merge, or LavaFlow loses
+access or can no longer verify the base, the run holds the PR with
+`report_admission_lost`. Review and merge the open PR on GitHub if it is
+still applicable.
 
 The run link opens the report's project in the same environment as the Slack app and still
 requires access to that project. It never holds the diagnosis:
