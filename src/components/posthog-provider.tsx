@@ -51,8 +51,8 @@ function stillConsented() {
 }
 
 // Starts this visitor's analytics, chosen once per page load. A visitor who
-// accepted on volcano.dev gets pageview analytics under the PostHog id
-// volcano.dev stored; anyone else is counted anonymously. Each is a separate
+// accepted on volcano.dev gets pageview and heatmap analytics under the PostHog
+// id volcano.dev stored; anyone else is counted anonymously. Each is a separate
 // instance; nothing else captures through them.
 function startVisitorAnalytics(posthog: PostHog, key: string) {
   const hostname = window.location.hostname;
