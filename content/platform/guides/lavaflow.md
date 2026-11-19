@@ -1202,6 +1202,8 @@ and opens no pull request, with `pull_request_skipped` set to
 repository that isn't private requires opens, and LavaFlow holds it with
 `commit_convention` before its checks start.
 
+LavaFlow treats an optional pending commit status from a GitHub user as advisory. Required statuses and pending checks from GitHub Apps and workflows still count toward merge.
+
 A required check passes only when it succeeds: `neutral` and `skipped` don't
 count, a check pinned to an app counts only as that app's check run, and
 Volcano's own checks never count. An approving review on GitHub doesn't
