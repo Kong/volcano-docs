@@ -1270,6 +1270,11 @@ review the change, then merge or close the pull request yourself.
 
 New reasons may appear.
 
+In Merge mode, LavaFlow can restart CI once on the same pull request when a
+required GitHub Actions check times out and the other checks are settled. The
+new commit keeps the same changes. LavaFlow waits for GitHub's checks and any
+required approvals on that commit.
+
 If GitHub removes a LavaFlow pull request from the merge queue because the
 merge group's checks failed, LavaFlow can queue the same pull request again
 once. Its current head must still pass CI and satisfy the repository's merge
