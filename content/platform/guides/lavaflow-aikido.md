@@ -117,8 +117,9 @@ A new issue starts a run when all of these hold:
 - Its code repository is on GitHub, and is the bound project's repository.
 
 LavaFlow reads the issue's title, rule, file and lines, and Aikido's advice
-for fixing it, then runs its usual diagnosis, fix and review. The run stops at
-a pull request, whatever the project's own autonomy.
+for fixing it, then runs its usual diagnosis, fix, and review. The project's
+autonomy determines whether LavaFlow follows the fix through merge or leaves
+the merge to you.
 If several bound projects share the repository, the first one bound that
 LavaFlow can run on gets the issue.
 

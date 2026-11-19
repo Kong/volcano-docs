@@ -114,8 +114,9 @@ clears. It follows the required checks and approvals and merges the PR when
 they pass. It uses the repository's merge queue when required. With
 `autonomy: open_pr`, you review and merge the resulting PR.
 
-LavaFlow links to the PR and the Volcano run. It replies when GitHub records
-the merge or LavaFlow needs help. If it opens no PR, the thread gives a reason.
+The thread receives a link to the run in Volcano and a link to the PR when
+one opens. LavaFlow replies when GitHub records the merge or LavaFlow needs
+help. If no PR opens, the thread gives a reason.
 LavaFlow can follow an active report until its 10-day retention window ends.
 If the project connection, base, or merge authorization changes, the run
 shows `report_admission_lost`. Check the connection and PR before retrying.
@@ -174,7 +175,7 @@ LavaFlow builds what the request asks for and nothing beyond it, and its
 reviewers hold anything else the change adds. Your project settings and
 repository rules determine whether LavaFlow can merge. To stop after opening
 the PR, write `@Volcano add hello.md containing "hello world". Open a PR and
-leave the merge to me.` LavaFlow keeps the run at `pull_request`. To keep it
+leave the merge to me.` LavaFlow opens the PR and leaves the merge to you. To keep it
 as a draft, say "leave the PR as a draft." Asking to open a draft PR still
 lets LavaFlow mark it ready when reviews pass.
 The pull request describes the requested change, and the run sets

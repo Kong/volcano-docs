@@ -663,8 +663,8 @@ The commit comes from one of these:
 
 For any other deployment, LavaFlow diagnoses from the logs alone. A fix on
 a `verification: repository` commit opens only while the production branch
-still holds that commit. It stays held under `client_reported_commit` until
-someone verifies that it fixes the deployed code.
+still holds that commit. The reason `client_reported_commit` asks you to review
+the proposal against the deployed code and merge it yourself.
 
 ### Deploy code LavaFlow can read
 
@@ -1577,7 +1577,7 @@ While LavaFlow still works on a run, `progress` says how far it has come:
 | `queued`             | Waiting to start                                   |
 | `diagnosing`         | Finding the root cause                             |
 | `fixing`             | Writing the fix                                    |
-| `reviewing`          | Reviewing the fix; the pull request opens after it |
+| `reviewing`          | Reviewing the fix, often on an open draft PR       |
 | `waiting_for_checks` | Waiting for its pull request's checks to pass      |
 | `merge_queued`       | Queued to merge                                    |
 
@@ -1649,7 +1649,7 @@ review finishes, `draft_reason` explains why the PR remains a draft.
 
 | `draft_reason`       | Why the pull request is a draft                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `open_pr`            | LavaFlow doesn't merge the fix, because autonomy is `open_pr`, merging was unavailable when it opened, or the run may only open a pull request, and its review didn't pass, LavaFlow's CI start for fixes you merge wasn't available, or your repository may run CI or previews outside GitHub Actions (or LavaFlow couldn't check; see [Review and merge fixes yourself](#review-and-merge-fixes-yourself)); or it was already a draft when the run took it on. Review it and mark it ready |
+| `open_pr`            | LavaFlow doesn't merge the fix, because autonomy is `open_pr`, merging was unavailable when it opened, or the run may only open a pull request, and its review didn't pass, LavaFlow's CI start for fixes you merge wasn't available, or your repository may run CI or previews outside GitHub Actions (or LavaFlow couldn't check; see [Review and merge fixes yourself](#review-and-merge-fixes-yourself)); or the reporter asked LavaFlow to keep it as a draft. Review it and mark it ready when appropriate |
 | `review_unresolved`  | LavaFlow's review didn't pass the fix, so LavaFlow never merges it. Decide whether to finish it                                                                                                                                                                                                                                                                                                                                                                                              |
 | `converted_to_draft` | LavaFlow opened it ready for review, and someone made it a draft since                                                                                                                                                                                                                                                                                                                                                                                                                       |
 
@@ -2910,16 +2910,16 @@ off, and any credential that reads the project's runs reads them.
 
 People in your Slack workspace can report a problem by mentioning `@Volcano`
 in a channel bound to the project, and LavaFlow diagnoses it like an issue. The
-person who mentions it can also ask, in their own words, for new content or
-functionality, which LavaFlow proposes as a pull request for a person to
-review. The thread gets the outcome; the diagnosis stays in Volcano. See
+person who mentions it can also use their own words to request a change.
+The project's autonomy governs how far LavaFlow follows the PR. The thread
+gets the outcome and the diagnosis stays in Volcano. See
 [Report problems from Slack](lavaflow-slack.md).
 
 ## Fix Aikido issues
 
 Connect an Aikido workspace and bind the project, and each new code (SAST)
-issue Aikido finds on its repository starts a run that stops at a fix pull
-request. See
+issue Aikido finds on its repository starts a LavaFlow run. Fixes follow
+the project's autonomy. See
 [Fix Aikido issues with LavaFlow](lavaflow-aikido.md).
 
 ## Agents
