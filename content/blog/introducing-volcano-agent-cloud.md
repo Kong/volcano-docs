@@ -23,3 +23,5 @@ And then — once your agents, backends and frontends are running in Volcano —
 We decided to build Volcano as a result of our experience at Kong building agents for ourselves, and what we learned from the 1000+ largest enterprise organizations that we work with. Kong processed more than a quadrillion requests for its customers in the last 12 months, and today we are finally enabling everyone to build in the AI era the way it's supposed to be.
 
 Give it a try and let us know what you think, at [volcano.dev](https://volcano.dev/).
+
+[Join the conversation on X →](https://x.com/subnetmarco)
