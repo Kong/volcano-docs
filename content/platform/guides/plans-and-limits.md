@@ -210,7 +210,7 @@ Revoked and expired tokens do not count against it, so cycling short-lived token
 ## Builder prompts
 
 The daily Builder allowance is 20 prompts on HOBBY and 200 on SUPERAGENT. It resets at 00:00 UTC.
-On HOBBY, you can submit more prompts after the reset. On SUPERAGENT, each additional prompt costs 50 credits if your subscription uses pricing revision 18. A SUPERAGENT subscription that retains an earlier revision still pays 1 credit per additional prompt.
+On HOBBY, you can submit more prompts after the reset. On SUPERAGENT, each additional prompt costs 50 credits, including on older subscriptions.
 A prompt that already has a credit reservation settles at its original rate.
 
 ## LavaFlow
