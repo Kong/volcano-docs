@@ -1270,15 +1270,18 @@ review the change, then merge or close the pull request yourself.
 
 New reasons may appear.
 
-In Merge mode, LavaFlow can restart CI once on the same pull request when a
-required GitHub Actions check times out and the other checks are settled. The
-new commit keeps the same changes. LavaFlow waits for GitHub's checks and any
-required approvals on that commit.
+With `autonomy: merge`, LavaFlow can restart CI once on the same pull request
+when GitHub Actions reports `timed_out` for a required check and the other
+checks have finished. The new commit keeps the same changes. LavaFlow
+evaluates the new checks and the repository's merge requirements again. If
+the required check times out again, the reason is `checks_failed`.
+`checks_timed_out` applies when the checks have not all finished within 24
+hours.
 
-If GitHub removes a LavaFlow pull request from the merge queue because the
-merge group's checks failed, LavaFlow can queue the same pull request again
-once. Its current head must still pass CI and satisfy the repository's merge
-rules. A manual removal ends the watch.
+If GitHub removes the pull request from the merge queue because the checks
+on the combined changes failed, LavaFlow can queue the same pull request
+again once. Its current head must still pass CI and satisfy the repository's
+merge rules. A manual removal stops automatic merging.
 
 While merging is paused, a waiting merge gets `reason` `paused`. LavaFlow takes
 a queued fix out of the merge queue, so it shows `waiting_for_checks`, and
