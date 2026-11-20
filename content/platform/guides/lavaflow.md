@@ -12,7 +12,8 @@ LavaFlow turns production errors into reviewed fixes.
 5. **Pull request**: LavaFlow opens a pull request with the fix in the project's [linked repository](#link-a-repository).
 6. **Review**: you review the pull request like any other, unless you let LavaFlow merge.
 7. **Merge**: you merge it, or [let LavaFlow merge it](#merge-fixes) once LavaFlow's reviewers and the required checks pass.
-8. **Deployed**: when a deployment Volcano confirmed has the fix goes live, LavaFlow [resolves the issue](#after-a-fix-merges).
+
+LavaFlow finishes work on the pull request when it merges.
 
 Volcano picks and runs the models, so there is no model or API key to set up.
 
@@ -1305,10 +1306,11 @@ in your repository's Actions tab.
 
 ## After a fix merges
 
-Once a fix's pull request merges, by you or by LavaFlow, LavaFlow watches the
-resource's deployments from the repository, including deployments more than a
-week later. Verification has bounded retries for each deployment; another
-deployment starts fresh attempts. When LavaFlow verifies that a live deployment
+The project's deployment workflow runs independently of the pull request.
+After the merge, Volcano tracks the resource's deployments from the repository
+to determine when to resolve the issue. This includes deployments more than a
+week later. Verification has bounded retries for each deployment, and another
+deployment starts fresh attempts. When Volcano verifies that a live deployment
 includes the merge, it records the recurrence cutoff as the run's
 `pull_request.deployed_at` and resolves the [issue](issues.md) as of that
 moment, unless the error was seen after it. Where
@@ -1318,8 +1320,7 @@ code don't keep it open; `resolved_at` is 2 minutes after `deployed_at`. A
 deployment whose
 [reported commit](deployment-source.md#commit) has `verification: repository`
 never counts, because Volcano didn't match its files against the commit.
-[Resolve the issue](issues.md#resolve-or-ignore-an-issue) yourself, or deploy
-the merge with a push to the repository.
+You can also [resolve the issue yourself](issues.md#resolve-or-ignore-an-issue).
 
 If the error happens again, the issue reopens, as any resolved issue does. For
 an issue with `exception: true`, LavaFlow then starts a new run on it, no
