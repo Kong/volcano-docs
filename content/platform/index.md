@@ -208,6 +208,7 @@ Step-by-step guides for common tasks.
 | [LavaFlow](guides/lavaflow.md)                             | Turn production errors into reviewed fixes, from diagnosis to pull request to merge |
 | [Report problems from Slack](guides/lavaflow-slack.md)     | Mention Volcano in Slack to report a problem or request a change                    |
 | [Fix Aikido issues](guides/lavaflow-aikido.md)             | Have LavaFlow open fixes for the vulnerabilities Aikido finds                       |
+| [AI gateway](guides/ai-gateway.md)                         | Give an agent run a capped, expiring run token instead of a model provider key      |
 
 ## Examples
 

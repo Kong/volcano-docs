@@ -197,11 +197,11 @@ account being anonymous, not the address it carries — `anonymous.volcano.inter
 is reserved for accounts the platform mints, and a signup asking for an address
 inside it is refused with the same 403 whatever the mode, including `disabled`.
 
-Builder debug users (`*@volcano.local`, created by the project owner from the
-dashboard) are provisioned directly and never pass through the signup check.
-Under `signup_and_signin` their sessions are checked like any other account's,
-so a debug run acting as one is refused. To debug as one, add `volcano.local`
-to `allowed_email_domains`.
+Builder debug users (`*@volcano.local`, created by an earlier version of the
+dashboard's AI Builder) were provisioned directly and never passed through the
+signup check. Under `signup_and_signin` their sessions are checked like any
+other account's, so they are refused unless `volcano.local` is in
+`allowed_email_domains`.
 
 `volcano.local` is reserved like `anonymous.volcano.internal`: a signup, email
 change or OAuth account at that domain is refused with 403 in every project and
@@ -279,9 +279,9 @@ listed by `GET /auth/user/identities`. Add the domain, or switch the mode back
 to `signup` to let existing accounts in.
 
 **Signup returns 403 for an `@anonymous.volcano.internal` or `@volcano.local` address**
-Those domains are reserved for the anonymous and Builder debug accounts the
-platform creates. No project can accept a signup at either, whatever the
-allowlist says.
+Those domains are reserved: the first for anonymous accounts, the second for
+the debug accounts an earlier Builder created (Volcano no longer creates them).
+No project can accept a signup at either, whatever the allowlist says.
 
 **Users were signed out after a config change**
 Expected under `signup_and_signin`: saving the policy revokes every session the
