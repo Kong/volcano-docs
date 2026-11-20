@@ -1956,17 +1956,10 @@ the revision, up to 3 rounds.
 
 - In the first round, any `minor`, `major` or `critical` finding sends the fix
   back for a revision.
-- Once LavaFlow has revised the fix, reviewers check that the earlier
-  findings are fixed and review the lines the revision changed. Only a
-  reviewer's `major` or `critical` finding sends the fix back. A `minor`
-  finding is a note wherever it is, even one an earlier round found: it
-  doesn't send the fix back or count as an open finding, and the pull
-  request's description and review say how many notes the last round left.
-  This applies to every reviewer, even one whose earlier review failed or
-  couldn't read the whole fix, and after a round where only LavaFlow's own
-  checks sent the fix back. With `autonomy: merge`, LavaFlow holds a fix
-  whose last round left a note for you with `review_notes` rather than
-  merging it.
+- Once LavaFlow has revised the fix, reviewers check the earlier findings and the lines the revision changed.
+  Findings rated `major` or `critical` require another revision. A `minor` finding becomes a note.
+  If every note names a file and suggests a change, no reviewer asks for a decision, and another round can run, LavaFlow tries one more revision and reviews it.
+  With `autonomy: merge`, LavaFlow waits for a person when review notes remain and records the `review_notes` hold.
 - LavaFlow answers each finding as it revises the fix, saying what it
   changed or why the finding is wrong, and reviewers read those answers.
   A revision that leaves a finding unanswered is asked once for the
