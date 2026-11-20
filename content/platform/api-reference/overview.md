@@ -422,7 +422,7 @@ Issues are in preview. See [Issues](../guides/issues.md).
 | `GET`   | `/lavaflow/scans`         | List Code Quality scans, the waiting one first                                                                                                                                               |
 
 Each endpoint names one project with `project_id`: a query parameter on reads,
-a body field on writes. LavaFlow is in preview and needs the SUPERAGENT plan. See [LavaFlow](../guides/lavaflow.md).
+a body field on writes. LavaFlow is in preview on HOBBY and SUPERAGENT. See [LavaFlow](../guides/lavaflow.md).
 
 ### Notifications
 

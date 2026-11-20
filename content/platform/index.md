@@ -142,7 +142,7 @@ Next.js, static or server-rendered, served from the edge. A failed build never r
 
 ### LavaFlow
 
-[LavaFlow](guides/lavaflow.md) turns production errors into reviewed fixes: it diagnoses the issue, opens a pull request with the fix, and, when you allow it, merges it. In preview on SUPERAGENT.
+[LavaFlow](guides/lavaflow.md) turns production errors into reviewed fixes: it diagnoses the issue, opens a pull request with the fix, and, when you allow it, merges it. In preview on HOBBY and SUPERAGENT.
 
 | Guide                                                  | Description                                                         |
 | ------------------------------------------------------ | ------------------------------------------------------------------- |
