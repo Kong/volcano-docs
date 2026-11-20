@@ -172,6 +172,15 @@ requested change, not a fix, and the run's `diagnosis.requested` is `true`.
 When the request is unclear, the result already exists, or the change lies
 outside the repository, LavaFlow opens nothing and says so in the thread.
 
+## Follow a fix through merge
+
+When LavaFlow can merge a Slack fix, follow the replies in the original thread.
+LavaFlow posts when it starts recovering a failed check or updating the PR, when it returns to checking the PR, and when the PR enters the merge queue.
+A pending optional commit status can stay open while LavaFlow recovers a failed check. The repository's merge requirements still apply.
+
+If GitHub requires approval, review the linked PR. LavaFlow keeps following it while the report is retained.
+If LavaFlow exhausts recovery, it posts the remaining blocker and links to the PR and run so you can take over.
+
 ## Who can report
 
 A mention starts work only when all of these hold:
