@@ -209,11 +209,27 @@ Revoked and expired tokens do not count against it, so cycling short-lived token
 
 ## LavaFlow
 
-LavaFlow is in preview. During the preview, it needs the SUPERAGENT plan.
+[LavaFlow](lavaflow.md) is in preview, and both plans include it.
 
-| Limit                   | HOBBY       | SUPERAGENT | Scope       |
-| ----------------------- | ----------- | ---------- | ----------- |
-| [LavaFlow](lavaflow.md) | Unavailable | Available  | Per project |
+| Limit                    | HOBBY                          | SUPERAGENT                                          | Scope   |
+| ------------------------ | ------------------------------ | --------------------------------------------------- | ------- |
+| LavaFlow runs            | 5 / month, then LavaFlow stops | Unlimited                                           | Account |
+| Diagnosed issues         | Covered by runs                | 10 / month, then 50 credits (US$1) per issue        | Account |
+| Opened fix pull requests | Covered by runs                | 2 / month, then 250 credits (US$5) per pull request | Account |
+
+On HOBBY, a run counts once LavaFlow first asks its AI service about the
+issue, whether you started it or LavaFlow did: re-runs and
+[follow-up runs](lavaflow.md#fix-lineage) count too. The count is your
+account's, so deleting a project does not reset it. Once you have used the 5
+runs, LavaFlow starts no more until the next allowance window or an upgrade:
+starting one returns `429` with code `lavaflow_allowance_exhausted`, a queued
+run ends `cancelled` with that code, and errors that would have started a run
+start none, including when the allowance renews. A run that already saved a
+fix still opens its pull request. HOBBY runs may also wait during high demand.
+
+On SUPERAGENT, runs are unlimited. Each issue LavaFlow diagnoses and each
+fix pull request it opens counts when its run succeeds, and past the allowance
+is charged as overage. LavaFlow does not charge for merges or follow-up runs.
 
 No plan includes [Code Quality](lavaflow.md#code-quality) yet. Where it is
 offered, the project's `lavaflow.code_quality` capability reads `unavailable`
@@ -248,16 +264,16 @@ exhausted; upgrading or a new cycle requires an explicit resume.
 These stay in the database, stop taking effect on HOBBY, and take effect again the
 moment you upgrade. You do not have to set them up twice.
 
-| Setting                                                                             | On HOBBY                                                                                      |
-| ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| [Email domain allowlist](../authentication/configuration/email-domain-allowlist.md) | Kept, not enforced: anyone can sign up and sign in again                                      |
-| Custom email templates                                                              | Kept; the default templates are sent                                                          |
-| Custom managed auth pages                                                           | Kept; the built-in pages are served, with Volcano branding                                    |
-| Scheduled functions                                                                 | Kept; they stop running, and their next run time keeps advancing                              |
-| Database query logs                                                                 | Kept; new queries stop being recorded, and query insights stop being readable                 |
-| Database compute size                                                               | Shrunk to the HOBBY size, and restored when you upgrade. No downtime, no data loss            |
-| [Custom domains](../frontends/overview.md#custom-domains) past one per frontend     | Kept; only one serves                                                                         |
-| [LavaFlow](lavaflow.md) settings                                                    | Kept; no run or Code Quality scan starts, and a fix waiting to merge stops and is left to you |
+| Setting                                                                             | On HOBBY                                                                                        |
+| ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| [Email domain allowlist](../authentication/configuration/email-domain-allowlist.md) | Kept, not enforced: anyone can sign up and sign in again                                        |
+| Custom email templates                                                              | Kept; the default templates are sent                                                            |
+| Custom managed auth pages                                                           | Kept; the built-in pages are served, with Volcano branding                                      |
+| Scheduled functions                                                                 | Kept; they stop running, and their next run time keeps advancing                                |
+| Database query logs                                                                 | Kept; new queries stop being recorded, and query insights stop being readable                   |
+| Database compute size                                                               | Shrunk to the HOBBY size, and restored when you upgrade. No downtime, no data loss              |
+| [Custom domains](../frontends/overview.md#custom-domains) past one per frontend     | Kept; only one serves                                                                           |
+| [LavaFlow](lavaflow.md) settings                                                    | Kept; LavaFlow keeps running on HOBBY within its run allowance, and no Code Quality scan starts |
 
 A frontend with more custom domains than HOBBY allows keeps all of them, with
 their certificates and redirects. Its oldest active domain that serves the
