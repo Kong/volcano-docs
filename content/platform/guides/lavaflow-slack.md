@@ -106,14 +106,24 @@ report. A later mention in the thread starts a new report, which reads the
 thread again: for example, a request for a change after the run's result, or a
 retry after LavaFlow refused the report at a limit.
 
-LavaFlow then answers in the thread with the project it picked and a link to
-its repository, and posts the outcome as a new reply. It never edits an
-earlier reply, so the thread keeps each step of the report. A run from Slack goes as far as opening a fix
-pull request, even where the project lets LavaFlow merge, and so does a run
-someone starts again on the report's issue: merging a fix someone reported in
-Slack stays a person's step. The outcome is the pull request's link, or a
-fixed reason it opened none, and a link to the run in Volcano. The run link
-opens the report's project in the same environment as the Slack app and still
+LavaFlow replies with the project it picked and its repository. With
+[`autonomy: merge`](lavaflow.md#merge-fixes), LavaFlow can take an issue from
+Slack to a merge on the project's production branch. It pins the repository
+revision and reviews the fix. Where review on a draft PR is available, it
+revises that draft and marks it ready once review clears. It follows the required checks and approvals and merges the PR when
+they pass. It uses the repository's merge queue when required. With
+`autonomy: open_pr`, you review and merge the resulting PR.
+
+The thread receives a link to the run in Volcano and a link to the PR when
+one opens. LavaFlow replies when GitHub records the merge or LavaFlow needs
+help. If no PR opens, the thread gives a reason.
+LavaFlow follows an active report within its retention window, at most 10 days
+from the report. If the report expires before the merge, or LavaFlow loses
+access or can no longer verify the base, the run holds the PR with
+`report_admission_lost`. Review and merge the open PR on GitHub if it is
+still applicable.
+
+The run link opens the report's project in the same environment as the Slack app and still
 requires access to that project. It never holds the diagnosis:
 everyone in the channel reads the answer, including people who can't see the
 project's runs. Read the diagnosis in Volcano, and follow the run like any
@@ -164,11 +174,14 @@ what you're asking for:
   run and asks you to say what to change in your own message.
 
 LavaFlow builds what the request asks for and nothing beyond it, and its
-reviewers hold anything else the change adds. The request can't change what
-LavaFlow may do: its permissions, the files it may not change, its review, and
-when it opens a pull request stay the same, and the run stops at a pull
-request for a person to review and merge. The pull request says it proposes a
-requested change, not a fix, and the run's `diagnosis.requested` is `true`.
+reviewers hold anything else the change adds. Your project settings and
+repository rules determine whether LavaFlow can merge. To stop after opening
+the PR, write `@Volcano add hello.md containing "hello world". Open a PR and
+leave the merge to me.` LavaFlow opens the PR and leaves the merge to you. To keep it
+as a draft, say "leave the PR as a draft." Asking to open a draft PR still
+lets LavaFlow mark it ready when reviews pass.
+The pull request describes the requested change, and the run sets
+`diagnosis.requested` to `true`.
 When the request is unclear, the result already exists, or the change lies
 outside the repository, LavaFlow opens nothing and says so in the thread.
 

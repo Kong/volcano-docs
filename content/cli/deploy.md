@@ -343,10 +343,9 @@ A reported commit Volcano can't confirm is recorded with `verification: none`,
 and LavaFlow diagnoses that deployment from the logs alone. That includes a
 frontend upload that doesn't match its commit, and a workflow run for a pull
 request, which deploys GitHub's merge commit on no branch. At autonomy
-`merge`, LavaFlow holds a fix built on a reported commit, at either level, for
-a person to merge. A fix built on a commit that a
-[push to the repository deployed](#cloud-projects-that-deploy-from-git) has no
-such hold. `frontends deploy --from` keeps the commit of the build it
+`merge`, fixes on file-verified uploads can merge after the required reviews
+and checks. LavaFlow holds a fix with repository-only verification for you to
+check against the deployed code and merge. `frontends deploy --from` keeps the commit of the build it
 publishes. A frontend redeploy reports no commit of its own, and LavaFlow
 reads it as the commit of the build that made its artifact.
 
