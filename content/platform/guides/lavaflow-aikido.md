@@ -22,7 +22,11 @@ curl "https://api.volcano.dev/projects/$PROJECT_ID/capabilities" \
 
 ## Set up
 
-Set up Aikido with the API; the dashboard and the CLI do not manage it yet.
+Set up Aikido in the dashboard or with the API; the CLI does not manage it
+yet. In the dashboard, the project's owner sets it up in the **Aikido** card
+of the project's LavaFlow settings. The card shows while the project's
+`lavaflow.aikido` capability is available; everyone else who can read the
+project sees which workspaces report for it.
 
 ### 1. Create credentials in Aikido
 
@@ -36,9 +40,14 @@ As an Aikido workspace admin:
 
 ### 2. Connect the workspace
 
-Send the three values and your workspace's region: `eu` for app.aikido.dev,
-`us` for app.us.aikido.dev, `au` for app.au.aikido.dev, or `me` for
-app.me.aikido.dev.
+In the **Aikido** card, choose your workspace's region, enter the client ID,
+client secret and signing secret, and choose **Connect Aikido**. Once a
+workspace is connected, choose **Connect another Aikido workspace** to add
+more.
+
+With the API, send the three values and your workspace's region: `eu` for
+app.aikido.dev, `us` for app.us.aikido.dev, `au` for app.au.aikido.dev, or
+`me` for app.me.aikido.dev.
 
 ```bash
 curl -X POST "https://api.volcano.dev/connectors" \
@@ -55,8 +64,8 @@ curl -X POST "https://api.volcano.dev/connectors" \
   }'
 ```
 
-Volcano checks the client with Aikido, reads which workspace it belongs to,
-and stores the three values encrypted. It never returns them:
+Either way, Volcano checks the client with Aikido, reads which workspace it
+belongs to, and stores the three values encrypted. It never returns them:
 
 ```json
 {
@@ -75,6 +84,8 @@ and stores the three values encrypted. It never returns them:
 | `422`  | Aikido refused the client, or it can't read the workspace. Check the region and scopes. |
 | `502`  | Aikido didn't answer. Nothing was saved; try again.                                     |
 
+The card explains the same refusals in its own words.
+
 A workspace connects to one Volcano account, and only that account sees its
 connector.
 
@@ -82,12 +93,20 @@ connector.
 
 In Aikido's webhooks settings, add a webhook for new issues
 (`issue.open.created`) with the URL `https://api.volcano.dev/webhooks/aikido`.
+The **Aikido** card shows this address once a workspace is connected.
 
 ### 4. Bind a project
 
-As the project's owner, bind the connector. `min_severity` is the lowest
-severity that starts a run, and defaults to `high`, since each run counts
-against the project's LavaFlow runs:
+As the project's owner, bind the workspace to the project with the lowest
+severity that starts a run. It defaults to high, since each run counts against
+the project's LavaFlow runs.
+
+In the **Aikido** card, pick the workspace if you connected several, pick the
+lowest severity (**High and above** by default), and choose **Add workspace**.
+The card lists the project's workspaces with their severity. To change a
+workspace's severity there, remove it and add it again.
+
+With the API, bind the connector with `min_severity`:
 
 ```bash
 curl -X POST "https://api.volcano.dev/lavaflow/connector-bindings" \
@@ -130,8 +149,13 @@ sends it again; it retries a delivery five times.
 
 ## Remove Aikido
 
-Remove a project's binding with
-`DELETE /lavaflow/connector-bindings/{binding_id}`. Remove the connector with
-`DELETE /connectors/{connector_id}`: its credentials and bindings are deleted,
-and issues still waiting are canceled. Then delete the webhook in Aikido,
-since Volcano refuses its deliveries from then on.
+To stop a workspace reporting for one project, the project's owner chooses
+**Remove** next to it in the **Aikido** card. With the API, remove the
+binding with `DELETE /lavaflow/connector-bindings/{binding_id}`.
+
+To remove a workspace from Volcano, open account settings: the **Aikido**
+section of **Your account** lists the workspaces you connected, each with
+**Remove**. With the API, remove the connector with
+`DELETE /connectors/{connector_id}`. Its credentials and every project's
+binding to it are deleted, and issues still waiting are canceled. Then delete
+the webhook in Aikido, since Volcano refuses its deliveries from then on.
