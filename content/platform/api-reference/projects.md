@@ -241,7 +241,9 @@ changing anything.
 - `skipped` / `missing` are coverage warnings for functions, frontends,
   databases, and buckets (the manifest never creates or deletes them).
 - Validation failures return **422** with the full error list; nothing is applied.
-- A concurrent apply for the same project returns **409**.
+- An apply that overlaps another apply, a variable write or a deploy waits up
+  to 20 seconds, then runs against the project as it stands. It returns **409**
+  only if the project is still busy after that wait.
 - Apply-phase failures surface as per-entry `action: "error"` with
   `summary.errors > 0`; applied changes are not rolled back.
 - The request body is capped at **4 MiB** (hosted pages, template bodies, and
