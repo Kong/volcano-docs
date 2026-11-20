@@ -267,6 +267,12 @@ curl "https://api.volcano.dev/user/git/connections" \
 }
 ```
 
+`last_authenticated_at` records when you connected or reconnected GitHub.
+Routine token rotation preserves it.
+Disconnecting or reconnecting takes effect even if a token refresh is running.
+
+If the Git connection changes while Volcano is checking repositories, connecting a project, choosing its default branch, exporting source or checking an import, the request can return `409` with code `git_connection_changed`. Reload the current connection state before trying again. This response does not mean that the connection was deleted or that you need to reconnect GitHub. Owner-push checks instead return their existing temporary `503` response with `Retry-After` when the connection changes during the check.
+
 ### Installing from GitHub
 
 You can also install the Volcano GitHub App from GitHub itself: from the App's
