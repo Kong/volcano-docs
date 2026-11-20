@@ -22,8 +22,10 @@ local host the same way. The commands below show the cloud form.
 volcano cloud frontends preview create web --name redesign --path ./apps/web
 ```
 
-`--name` is required and unique within the frontend, and a frontend can have at
-most 20 live previews. `--ttl` deletes the preview
+`--name` is required and unique within the frontend. Your account can hold at
+most 20 live frontend previews on HOBBY and 1000 on SUPERAGENT, across all of
+your projects and frontends; a preview counts until its deletion completes, and
+Function previews do not count. `--ttl` deletes the preview
 after that long, up to 720 hours; without it the preview lives until you delete
 it. The first deployment starts at once. Read the URL when it is ready:
 
