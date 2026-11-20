@@ -12,8 +12,8 @@ jobs:
     uses: Kong/volcano-actions/.github/workflows/ai-review.yml@main
     with:
       hand_off: true
-      # The default list plus the staging App, which opens LavaFlow fix PRs.
-      allowed_bots: dependabot[bot],kong[bot],kong-volcano-app[bot],volcano-staging[bot]
+      # The default list plus the Volcano Apps that open LavaFlow fix PRs.
+      allowed_bots: dependabot[bot],kong[bot],kong-volcano-app[bot],volcano-staging[bot],volcano-github-app[bot]
     permissions:
       actions: write
       contents: read
