@@ -251,6 +251,21 @@ Its startup command may already have started and can run until the session
 would have expired; Volcano can't reach it. Closing new-session admission does not prevent
 termination or grant revocation.
 
+### Release an idle session after 20 minutes
+
+When work finishes, tell Volcano to start the idle timer. Use a credential with the `sandboxes.sessions.activity` permission.
+
+```bash
+curl --fail-with-body -i -X PATCH "$VOLCANO_API_URL/sandbox-sessions/$SESSION_ID" \
+  -H "Authorization: Bearer $SERVICE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"activity":{"sequence":1,"idle":true}}'
+```
+
+Volcano returns HTTP 204. To use the same VM again, send `{"activity":{"sequence":2,"idle":false}}` before the deadline. When work finishes again, send an idle event with the next sequence number. Keep one sequence per VM across all attempts. An exact retry preserves the deadline. A stale sequence or an update after expiry returns HTTP 409.
+
+After 20 idle minutes, Volcano refuses new live access and schedules the VM for termination. Polling and file reads leave the timer alone. The session’s original lifetime still applies while it is active.
+
 ## Turn off outbound network
 
 Set `network.egress` to `deny_all` to create a session with no outbound network
