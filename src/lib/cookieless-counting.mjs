@@ -114,7 +114,8 @@ export function shouldCountCookieless(input) {
   return docsAnalyticsMode(input) === "cookieless";
 }
 
-function withoutQueryOrFragment(value) {
+/** A URL's origin and path, without query or fragment; null if it cannot be parsed. */
+export function withoutQueryOrFragment(value) {
   try {
     const url = new URL(value);
     return `${url.origin}${url.pathname}`;
@@ -153,6 +154,14 @@ function scrubbedUrl(key, value) {
  */
 export function scrubCookielessEvent(event) {
   if (!event || !COUNTED_EVENTS.has(event.event)) return null;
+  return scrubEventProperties(event);
+}
+
+/**
+ * The cleaning `scrubCookielessEvent` applies, for any event name. Callers
+ * decide which events may be sent at all.
+ */
+export function scrubEventProperties(event) {
   const properties = {};
   for (const [key, value] of Object.entries(event.properties ?? {})) {
     if (CLICK_ID_PROPERTIES.has(key) || isPersonOrInitialProperty(key)) continue;

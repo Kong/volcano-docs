@@ -1,4 +1,4 @@
-import { scrubCookielessEvent } from "./cookieless-counting.mjs";
+import { scrubCookielessEvent, scrubEventProperties, withoutQueryOrFragment } from "./cookieless-counting.mjs";
 
 /**
  * Pageview analytics for docs visitors who accepted analytics cookies on
@@ -13,12 +13,15 @@ import { scrubCookielessEvent } from "./cookieless-counting.mjs";
  * stores its own id; redirecting that host to volcano.dev/docs is what joins
  * the two.
  *
- * Deliberately narrower than volcano-web's instance: pageviews and page
- * exits only, with the same URL and personal-data scrub as the cookieless
- * counter. No autocapture, session replay, web vitals, exceptions, surveys or
- * flags (the flags instance does flags), and it never identifies anyone; it
- * only reuses the id volcano.dev already identified. Every event says
- * `surface: "marketing"` (see `DOCS_SURFACE`).
+ * Deliberately narrower than volcano-web's instance: pageviews, page exits
+ * and heatmaps only, with the same URL and personal-data scrub as the
+ * cookieless counter. Heatmap points are positions on the page (see
+ * `scrubHeatmapData`), so volcano.dev/docs and docs.volcano.dev show in
+ * PostHog's heatmaps like volcano.dev's own pages. No autocapture, session
+ * replay, web vitals, exceptions, surveys or flags (the flags instance does
+ * flags), and it never identifies anyone; it only reuses the id volcano.dev
+ * already identified. Every event says `surface: "marketing"` (see
+ * `DOCS_SURFACE`).
  */
 
 /** Named PostHog instance, kept apart from the flags instance. */
@@ -146,7 +149,9 @@ export function consentGuard(stillConsented, onLapse) {
 
 /**
  * Stops a running consented instance once consent lapses, for the rest of the
- * page load: no more pageviews or page exits, and no more writes to storage.
+ * page load: no more pageviews, page exits or heatmap points (posthog-js
+ * removes its heatmap listeners and drops points not yet sent), and no more
+ * writes to storage.
  * Persistence must be disabled, not just capture: while it is on, any save
  * (a session touch, a property update) writes the instance's in-memory copy
  * of the id back, even after volcano-web cleared it on a reject.
@@ -170,7 +175,7 @@ export function stopConsentedAnalytics(instance, token, hostname, stores) {
       }
     }
   }
-  instance.set_config({ capture_pageview: false, capture_pageleave: false, disable_persistence: true });
+  instance.set_config({ capture_pageview: false, capture_pageleave: false, capture_heatmaps: false, disable_persistence: true });
   for (const { store, key, value } of kept) restoreStoredItem(store, key, value);
   if (isVolcanoWebHost(hostname)) return;
   for (const store of stores) forgetDocsHostId(token, hostname, store);
@@ -213,14 +218,65 @@ function alwaysConsented() {
  */
 export const DOCS_SURFACE = "marketing";
 
+/** The event posthog-js batches heatmap points in, keyed by page URL. */
+const HEATMAP_EVENT = "$$heatmap";
+
+/** The fields of a posthog-js heatmap point; anything else is dropped. */
+const HEATMAP_POINT_FIELDS = ["x", "y", "target_fixed", "type"];
+
+function heatmapPoint(point) {
+  if (!point || typeof point !== "object") return null;
+  if (typeof point.x !== "number" || typeof point.y !== "number") return null;
+  const kept = {};
+  for (const field of HEATMAP_POINT_FIELDS) {
+    if (field in point) kept[field] = point[field];
+  }
+  return kept;
+}
+
 /**
- * The consented instance's `before_send`: the cookieless counter's scrub
- * (pageview and page exit only, URLs without query or fragment, no ad click
- * ids, no person properties), nothing sent as a placeholder id, and the
- * docs' own `surface`.
+ * Heatmap points keyed by the page they were recorded on. posthog-js keys
+ * them by the full page URL, so each key loses its query string and fragment
+ * like every other URL, and points from one page merge under its path. Each
+ * point keeps only its position, whether its element was fixed, and its type
+ * (click, mouse move, rage click). Returns null when nothing is left.
+ */
+export function scrubHeatmapData(data) {
+  if (!data || typeof data !== "object") return null;
+  const pages = {};
+  for (const [url, points] of Object.entries(data)) {
+    const page = withoutQueryOrFragment(url);
+    if (page === null || !Array.isArray(points)) continue;
+    const kept = points.map(heatmapPoint).filter(Boolean);
+    if (kept.length === 0) continue;
+    pages[page] = [...(pages[page] ?? []), ...kept];
+  }
+  if (Object.keys(pages).length === 0) return null;
+  return pages;
+}
+
+function scrubHeatmapEvent(event) {
+  const { $heatmap_data: data, ...properties } = event.properties ?? {};
+  const heatmapData = scrubHeatmapData(data);
+  if (!heatmapData) return null;
+  const scrubbed = scrubEventProperties({ ...event, properties });
+  return { ...scrubbed, properties: { ...scrubbed.properties, $heatmap_data: heatmapData } };
+}
+
+function scrubSendableEvent(event) {
+  if (event?.event === HEATMAP_EVENT) return scrubHeatmapEvent(event);
+  return scrubCookielessEvent(event);
+}
+
+/**
+ * The consented instance's `before_send`: pageviews and page exits get the
+ * cookieless counter's scrub (URLs without query or fragment, no ad click
+ * ids, no person properties), heatmap points get the same scrub plus
+ * `scrubHeatmapData`, and every other event is dropped. Nothing is sent as a
+ * placeholder id, and every event carries the docs' own `surface`.
  */
 export function scrubConsentedEvent(event) {
-  const scrubbed = scrubCookielessEvent(event);
+  const scrubbed = scrubSendableEvent(event);
   if (!scrubbed) return null;
   if (isPlaceholderDistinctId(scrubbed.properties?.distinct_id)) return null;
   return { ...scrubbed, properties: { ...scrubbed.properties, surface: DOCS_SURFACE } };
@@ -248,8 +304,11 @@ export function consentedPostHogConfig(apiHost, consentStillApplies = alwaysCons
     capture_pageview: "history_change",
     capture_pageleave: true,
     autocapture: false,
-    rageclick: false,
-    capture_heatmaps: false,
+    // Heatmap clicks, mouse moves and rage clicks, as on volcano.dev. Rage
+    // clicks only add a point type to the heatmap here: `before_send` drops
+    // every event but pageviews, page exits and heatmaps.
+    rageclick: true,
+    capture_heatmaps: true,
     capture_dead_clicks: false,
     capture_performance: false,
     capture_exceptions: false,

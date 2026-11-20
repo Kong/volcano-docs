@@ -10,9 +10,10 @@ import {
   forgetStoredPlaceholderId,
   postHogPersistenceKey,
   scrubConsentedEvent,
+  scrubHeatmapData,
   stopConsentedAnalytics,
 } from "./consented-analytics.mjs";
-import { docsAnalyticsMode, shouldCountCookieless } from "./cookieless-counting.mjs";
+import { cookielessPostHogConfig, docsAnalyticsMode, scrubCookielessEvent, shouldCountCookieless } from "./cookieless-counting.mjs";
 
 function consentCookie(record, name = "volcano_cookie_consent") {
   return `${name}=${encodeURIComponent(JSON.stringify(record))}`;
@@ -81,12 +82,15 @@ test("the consented instance shares volcano.dev's stored id and sends nothing el
   assert.equal(config.persistence, "localStorage");
   assert.equal(config.cross_subdomain_cookie, false);
   assert.equal(config.autocapture, false);
+  assert.equal(config.capture_heatmaps, true);
+  assert.equal(config.capture_dead_clicks, false);
   assert.equal(config.disable_session_recording, true);
   assert.equal(config.capture_performance, false);
   assert.equal(config.advanced_disable_flags, true);
   const pageview = { event: "$pageview", properties: { distinct_id: "user-1" } };
   assert.deepEqual(config.before_send(pageview), scrubConsentedEvent(pageview));
   assert.equal(config.before_send({ event: "$autocapture", properties: {} }), null);
+  assert.equal(config.before_send({ event: "$rageclick", properties: {} }), null);
   assert.equal(postHogPersistenceKey("phc_a+b/c="), "ph_phc_aPLbSLcEQ_posthog");
 });
 
@@ -105,6 +109,55 @@ test("the consented instance scrubs like the counter and never sends a placehold
     scrubConsentedEvent({ event: "$pageview", properties: { distinct_id: "11111111-1111-1111-1111-111111111111" } }),
     null,
   );
+});
+
+test("heatmap points keep only their position, keyed by the page without query or fragment", () => {
+  const sent = scrubConsentedEvent({
+    event: "$$heatmap",
+    properties: {
+      distinct_id: "user-1",
+      $current_url: "https://volcano.dev/docs/cli?token=x",
+      gclid: "1",
+      $heatmap_data: {
+        "https://volcano.dev/docs/cli?token=x#install": [{ x: 10, y: 20, target_fixed: false, type: "click", text: "secret" }],
+        "https://volcano.dev/docs/cli": [{ x: 1, y: 2, target_fixed: true, type: "mousemove" }],
+        "https://volcano.dev/docs/sdk?gclid=1": [{ x: 3, y: 4, target_fixed: false, type: "rageclick" }],
+        "not a url": [{ x: 5, y: 6, target_fixed: false, type: "click" }],
+      },
+    },
+  });
+  assert.deepEqual(sent.properties, {
+    distinct_id: "user-1",
+    $current_url: "https://volcano.dev/docs/cli",
+    $heatmap_data: {
+      "https://volcano.dev/docs/cli": [
+        { x: 10, y: 20, target_fixed: false, type: "click" },
+        { x: 1, y: 2, target_fixed: true, type: "mousemove" },
+      ],
+      "https://volcano.dev/docs/sdk": [{ x: 3, y: 4, target_fixed: false, type: "rageclick" }],
+    },
+    surface: "marketing",
+  });
+});
+
+test("a heatmap event with no usable points is not sent", () => {
+  for (const data of [undefined, null, "x", {}, { "https://volcano.dev/docs": [] }, { "https://volcano.dev/docs": [{ x: "1", y: 2 }] }, { "/docs": [{ x: 1, y: 2 }] }]) {
+    assert.equal(scrubHeatmapData(data), null);
+    assert.equal(scrubConsentedEvent({ event: "$$heatmap", properties: { distinct_id: "user-1", $heatmap_data: data } }), null);
+  }
+  assert.equal(
+    scrubConsentedEvent({
+      event: "$$heatmap",
+      properties: { distinct_id: "11111111-1111-1111-1111-111111111111", $heatmap_data: { "https://volcano.dev/docs": [{ x: 1, y: 2 }] } },
+    }),
+    null,
+  );
+});
+
+test("the anonymous counter still never sends heatmap points", () => {
+  const heatmap = { event: "$$heatmap", properties: { $heatmap_data: { "https://volcano.dev/docs": [{ x: 1, y: 2 }] } } };
+  assert.equal(scrubCookielessEvent(heatmap), null);
+  assert.equal(cookielessPostHogConfig("https://us.i.posthog.com").capture_heatmaps, false);
 });
 
 test("forgetStoredPlaceholderId clears only a stored placeholder", () => {
@@ -215,7 +268,7 @@ test("stopConsentedAnalytics stops capture and storage writes, keeping volcano-w
       },
     };
   }
-  const stopped = { capture_pageview: false, capture_pageleave: false, disable_persistence: true };
+  const stopped = { capture_pageview: false, capture_pageleave: false, capture_heatmaps: false, disable_persistence: true };
 
   const docsLocal = memoryStorage([[id, "docs-id"]]);
   const docsSession = memoryStorage([[id, "docs-id"], [sessionProps, "{}"]]);
