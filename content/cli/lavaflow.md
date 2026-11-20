@@ -443,6 +443,8 @@ A reason your CLI doesn't know shows as `Other` with its code. When no
 reviewer could run, the review reads `Review: error; no reviewer could run`,
 followed by `Review stopped:` with the reason.
 
+For an issue covered by an existing pull request, the `Fix:` block shows that pull request and its GitHub state.
+
 The `Source:` line gives the commit's short SHA and where it came from:
 
 | Shown | Meaning |
