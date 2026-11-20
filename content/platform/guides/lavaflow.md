@@ -1272,9 +1272,7 @@ New reasons may appear.
 
 While merging is paused, a waiting merge gets `reason` `paused`. LavaFlow takes
 a queued fix out of the merge queue, so it shows `waiting_for_checks`, and
-queues it again when merging resumes. A fix that merged into a project that
-doesn't deploy it automatically gets `reason` `manual_deploy`: deploy it to
-ship the fix.
+queues it again when merging resumes. LavaFlow records a successful merge as `merged`.
 
 LavaFlow doesn't bill merges.
 
