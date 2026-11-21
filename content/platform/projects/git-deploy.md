@@ -422,6 +422,11 @@ curl -X PUT "https://api.volcano.dev/projects/$PROJECT_ID/git-connection/root-di
 
 - The path is relative to the repository root. `""`, `.` and `/` mean the root
   itself.
+- It names the folder that contains `volcano/`, not `volcano/` itself: functions
+  deploy from `volcano/functions/` under it. A push whose root directory holds
+  `functions/` but no `volcano/` deploys nothing. Its run is `skipped` with
+  `nothing_to_deploy`, `error.message` names the root directory to set, and
+  [project health](health.md) reports it.
 - The response shows the path the way a deploy reads it, so `./apps/storefront/`
   comes back as `apps/storefront`.
 - An absolute path, or one that climbs out of the repository with `..`, returns
