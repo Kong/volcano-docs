@@ -299,9 +299,10 @@ From there, pick the project and connect the repository. The dashboard starts
 the connect flow above, which finds the installation you just made. If you
 asked an organization owner to install the App, connect after they approve it.
 
-A first connection from an account with no installation ends here too: Volcano
-stores the connection, sends you to the App's install page, and GitHub returns
-you to this page, where the new installation is listed.
+Authorizing from an account with no installation ends here too, whether you
+are connecting for the first time or reconnecting: Volcano stores the
+connection, sends you to the App's install page, and GitHub returns you to this
+page, where the new installation is listed.
 
 ## 2. Pick an installation and repository
 
