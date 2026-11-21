@@ -146,7 +146,7 @@ The status summarizes the findings and does not describe the whole project. A `c
 
 A project connected to a repository also reports its newest push when it failed (`git_deployment_failed`) or deployed nothing (`git_deployment_nothing_to_deploy`), scoped to the project. The check's `id` is `deployment.git.` followed by the run ID; read the run at [`GET /projects/{id}/git-deployment-runs/{runId}`](git-deploy.md#check-deployment-runs) for its `error`. A push that deployed nothing most often means the root directory names `volcano/` itself; see [Change the root directory](git-deploy.md#change-the-root-directory).
 
-An empty project can retain a failed project record or an unfinished cleanup task. Its label remains `empty`; its findings still identify operations that need review. `empty` describes what the project contains and does not mean there is nothing to review, so show the findings beside it. A failed project record alone does not identify which operation failed.
+An empty project can retain a failed project record, an unfinished cleanup task, or a push that failed or deployed nothing. Its label remains `empty`; its findings still identify operations that need review. `empty` describes what the project contains and does not mean there is nothing to review, so show the findings beside it. A failed project record alone does not identify which operation failed.
 
 ## How long a finding lasts
 
