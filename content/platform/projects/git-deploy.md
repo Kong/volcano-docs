@@ -208,8 +208,16 @@ asks for a push credential. With the repository pushed, continue below.
 
 ## 1. Connect GitHub
 
-Start the connection flow and send the user to the returned URL to install the
-Volcano GitHub App:
+Start the connection flow and send the user to the returned URL:
+
+- **No GitHub connection yet, or one that needs reconnecting:** the URL is
+  GitHub's page for authorizing the Volcano GitHub App. A connection needs
+  reconnecting when its token has expired and GitHub refuses to refresh it.
+  Once you authorize, an account that can reach no installation of the App
+  goes on to its install page; see
+  [Installing from GitHub](#installing-from-github).
+- **A working connection:** the URL is the App's install page, where you
+  install it on another account or change which repositories it can access.
 
 ```bash
 curl -X POST "https://api.volcano.dev/user/git/connect?provider=github" \
@@ -217,7 +225,7 @@ curl -X POST "https://api.volcano.dev/user/git/connect?provider=github" \
 ```
 
 ```json
-{ "authorization_url": "https://github.com/apps/volcano/installations/new?state=..." }
+{ "authorization_url": "https://github.com/login/oauth/authorize?client_id=...&state=..." }
 ```
 
 The curl command illustrates the direct API flow. To complete it interactively,
@@ -290,6 +298,11 @@ Referrer-Policy: no-referrer
 From there, pick the project and connect the repository. The dashboard starts
 the connect flow above, which finds the installation you just made. If you
 asked an organization owner to install the App, connect after they approve it.
+
+Authorizing from an account with no installation ends here too, whether you
+are connecting for the first time or reconnecting: Volcano stores the
+connection, sends you to the App's install page, and GitHub returns you to this
+page, where the new installation is listed.
 
 ## 2. Pick an installation and repository
 
