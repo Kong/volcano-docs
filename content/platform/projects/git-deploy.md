@@ -210,11 +210,13 @@ asks for a push credential. With the repository pushed, continue below.
 
 Start the connection flow and send the user to the returned URL:
 
-- **No GitHub connection yet:** the URL is GitHub's page for authorizing the
-  Volcano GitHub App. Once you authorize, an account that can reach no
-  installation of the App goes on to its install page; see
+- **No GitHub connection yet, or one that needs reconnecting:** the URL is
+  GitHub's page for authorizing the Volcano GitHub App. A connection needs
+  reconnecting when its token has expired and GitHub refuses to refresh it.
+  Once you authorize, an account that can reach no installation of the App
+  goes on to its install page; see
   [Installing from GitHub](#installing-from-github).
-- **A connection already stored:** the URL is the App's install page, where you
+- **A working connection:** the URL is the App's install page, where you
   install it on another account or change which repositories it can access.
 
 ```bash
