@@ -311,7 +311,9 @@ A `502` carries the SMTP server's reply when the server answered, such as an
 authentication or recipient rejection. When Volcano could not reach an SMTP
 server at all, the message is fixed and doesn't include the network error:
 `could not reach an SMTP server at smtp_host and smtp_port; check that the host
-is public and the port is the server's SMTP port`.
+is public and the port is the server's SMTP port`. In local mode, the `502`
+includes the network error instead, such as `connection refused` when Mailpit
+isn't running.
 
 The endpoint uses the project's stored credentials, so save before testing.
 Supplying `html_body`/`text_body` (with an optional `subject`) instead renders a
