@@ -438,6 +438,12 @@ if (data) {
 
 ## Error Handling
 
+When a database request is refused before SQL dispatch for temporary capacity pressure, `error.status` is 503, `error.message` is `Database capacity temporarily unavailable; query was not executed`, and `error.retryAfter` is 1 second.
+The SDK does not automatically replay this response.
+For this specific error, wait at least `error.retryAfter` seconds, add jitter, and bound any application retries.
+Do not replay mutations solely because their status is 503; other service failures can have an unknown execution outcome.
+
+
 All database operations return an `error` object instead of throwing:
 
 ```javascript
