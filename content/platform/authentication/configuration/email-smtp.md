@@ -80,7 +80,7 @@ Leading and trailing whitespace in previously saved sender settings is trimmed i
 **Default:** null  
 **Required:** Yes
 
-SMTP server hostname.
+SMTP server host name or IP address. Volcano connects only to public internet addresses. A host that is, or resolves to, a loopback, private, link-local, or other non-public address fails delivery, and the test email returns `502`. In local mode, Volcano can also reach a loopback or private host, such as a Mailpit container.
 
 **Common providers:**
 
@@ -304,9 +304,14 @@ curl -X POST https://api.volcano.dev/projects/PROJECT_ID/auth/config/test-email 
   -H "Authorization: Bearer TOKEN" \
   -d '{"to_email":"you@yourdomain.com"}'
 # 200 {"success":true} on delivery; 400 if email_enabled/smtp_host unset or the
-# saved smtp_password can't be read; 502 if SMTP delivery fails (see the error
-# message for the SMTP-level reason)
+# saved smtp_password can't be read; 502 if SMTP delivery fails
 ```
+
+A `502` carries the SMTP server's reply when the server answered, such as an
+authentication or recipient rejection. When Volcano could not reach an SMTP
+server at all, the message is fixed and doesn't include the network error:
+`could not reach an SMTP server at smtp_host and smtp_port; check that the host
+is public and the port is the server's SMTP port`.
 
 The endpoint uses the project's stored credentials, so save before testing.
 Supplying `html_body`/`text_body` (with an optional `subject`) instead renders a
@@ -332,11 +337,12 @@ scalars. A remaining interior line break returns `400` with
 
 **Symptoms:**
 
-- Error: "failed to connect to SMTP server"
+- Error: "could not reach an SMTP server at smtp_host and smtp_port"
 
 **Solutions:**
 
 - Verify `smtp_host` and `smtp_port` are correct
+- Use a host that resolves to a public address; loopback, private, and link-local hosts are refused outside local mode
 - Check firewall allows outbound connections on SMTP port
 - Verify provider's SMTP service is enabled
 
