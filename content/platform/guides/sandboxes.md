@@ -125,6 +125,7 @@ no reason is known.
 | `sandbox_run_hook_timeout`              | The startup hook timed out.                                                                                                                      |
 | `sandbox_start_rejected`                | The runtime rejected the start.                                                                                                                  |
 | `sandbox_authority_or_expiry`           | Session authority ended or its lifetime expired.                                                                                                 |
+| `sandbox_idle_expired`                  | The idle deadline passed and Volcano terminated the VM.                                                                                          |
 | `sandbox_allowance_exhausted`           | The runtime allowance was exhausted.                                                                                                             |
 | `sandbox_allowance_retention_expired`   | Retention after allowance exhaustion expired.                                                                                                    |
 | `project_deleting`                      | The project is being deleted.                                                                                                                    |
@@ -283,7 +284,7 @@ extends it. Pick a value that covers your job's longest run; see
 
 ### Choose an idle timeout for a session
 
-When work finishes, set `idle_timeout_seconds` to the number of seconds Volcano should keep the idle VM. Use a positive whole number. This example requests 5 minutes. Use a credential with the `sandboxes.sessions.activity` permission.
+When work finishes, set `idle_timeout_seconds` to the number of seconds Volcano should keep the idle VM. Use a positive whole number. This example requests 5 minutes. If you use a scoped service key, grant it the `sandboxes.sessions.activity` permission.
 
 ```bash
 curl --fail-with-body -i -X PATCH "$VOLCANO_API_URL/sandbox-sessions/$SESSION_ID" \
@@ -292,9 +293,13 @@ curl --fail-with-body -i -X PATCH "$VOLCANO_API_URL/sandbox-sessions/$SESSION_ID
   -d '{"activity":{"sequence":1,"idle":true,"idle_timeout_seconds":300}}'
 ```
 
-Volcano returns HTTP 204. To use the same VM again, send `{"activity":{"sequence":2,"idle":false}}` before the deadline. When work finishes again, send an idle event with the next sequence number. Keep one sequence per VM across all attempts. An exact retry preserves the deadline. To change the timeout, send a new idle event with a higher sequence. Omit the timeout on active events. A stale sequence returns HTTP 409. After expiry, an activity update returns HTTP 409 with code `sandbox_session_expired`.
+Volcano returns HTTP 204. To use the same VM again, send `{"activity":{"sequence":2,"idle":false}}` before the deadline. Omit the timeout on active events. Send new events while the VM is running. Keep one sequence per VM across all attempts. To change the timeout, send a new idle event with a higher sequence.
 
-When the requested idle timeout expires, Volcano refuses new live access and schedules the VM for termination. Termination discards files on the VM. Suspending the VM preserves the idle deadline. You can resume it before the deadline and report active to clear the timer. After expiry, Volcano refuses resume. Polling and file reads leave the timer alone. The session’s original lifetime still applies while it is active.
+If a response is lost, you can retry the latest accepted event before expiry. The same sequence, state, and timeout return 204 and preserve the deadline. An older sequence or a different payload for the same sequence returns 409.
+
+Missing or invalid credentials return 401. A credential for the session's project without activity permission returns 403. An unknown session or a session outside the caller's project returns 404.
+
+When the idle deadline passes, Volcano closes live access and schedules the VM for termination. Termination discards local files. Suspending the VM preserves the idle deadline. To keep the VM, request resume, wait for the session to reach `running`, and report active before the idle deadline. After expiry, activity reports and resume requests return 409 with code `sandbox_session_expired`. Polling and file reads leave the timer alone. The session’s original lifetime still applies.
 
 ## Turn off outbound network
 
