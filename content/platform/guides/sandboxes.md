@@ -227,6 +227,17 @@ while it runs. With every slot in use, `exec` returns `429` with code
 before guest version `hosting-4` instead refuse every command after their 64th
 with `409`; rebuild the template to lift that limit.
 
+The exec request body takes these fields:
+
+| Field             | Required | Limits                                                                                                                                                                                                      |
+| ----------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `command`         | Yes      | The command to run. `stdout` and `stderr` each return the first 1 MiB (1,048,576 bytes); `stdout_truncated` or `stderr_truncated` is `true` when it wrote more.                                            |
+| `timeout_seconds` | No       | Cloud defaults to 60 seconds and accepts 1–28800 seconds. Local defaults to 0 (unlimited). The session's expiry takes precedence, and the public connection closes after 1000 seconds without a response. |
+| `keep_output`     | No       | Defaults to the session's `executions.keep_output`. `true` is refused in a session that keeps no output. See [Keep no command output](#keep-no-command-output).                                            |
+| `environment`     | No       | A map of environment variables for this command, such as a secret you don't want in the template.                                                                                                         |
+
+Every exec request also needs an `Idempotency-Key` header.
+
 File requests on a terminated session return `404`. On a session that is still
 starting or is suspended they return `503`; wait for `running`. An `exec` request
 on a session that is not running returns `409 sandbox_session_not_running` and
@@ -250,6 +261,25 @@ ending for, without confirming that its VM stopped. The session isn't billed.
 Its startup command may already have started and can run until the session
 would have expired; Volcano can't reach it. Closing new-session admission does not prevent
 termination or grant revocation.
+
+### Keep a CI session short
+
+In CI, set a short `max_duration_seconds` so a session ends on its own if the
+script crashes before terminating it, and terminate it when the script exits:
+
+```bash
+SESSION_ID=$(curl -s "$VOLCANO_API_URL/projects/$PROJECT_ID/sandbox-sessions" \
+  -H "Authorization: Bearer $SERVICE_KEY" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Content-Type: application/json" \
+  -d '{"preset":"python3.12","region":"us-east-1","max_duration_seconds":600}' | jq -r .id)
+
+trap 'curl -s -X DELETE "$VOLCANO_API_URL/sandbox-sessions/$SESSION_ID" -H "Authorization: Bearer $SERVICE_KEY"' EXIT
+```
+
+The lifetime includes startup, accepts at least 30 seconds, and activity never
+extends it. Pick a value that covers your job's longest run; see
+[Choose lifetime and memory](#choose-lifetime-and-memory).
 
 ### Choose an idle timeout for a session
 
