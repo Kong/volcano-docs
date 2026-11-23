@@ -251,20 +251,20 @@ Its startup command may already have started and can run until the session
 would have expired; Volcano can't reach it. Closing new-session admission does not prevent
 termination or grant revocation.
 
-### Release an idle session after 20 minutes
+### Choose an idle timeout for a session
 
-When work finishes, tell Volcano to start the idle timer. Use a credential with the `sandboxes.sessions.activity` permission.
+When work finishes, set `idle_timeout_seconds` to the number of seconds Volcano should keep the idle VM. Use a positive whole number. This example requests 5 minutes. Use a credential with the `sandboxes.sessions.activity` permission.
 
 ```bash
 curl --fail-with-body -i -X PATCH "$VOLCANO_API_URL/sandbox-sessions/$SESSION_ID" \
   -H "Authorization: Bearer $SERVICE_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"activity":{"sequence":1,"idle":true}}'
+  -d '{"activity":{"sequence":1,"idle":true,"idle_timeout_seconds":300}}'
 ```
 
-Volcano returns HTTP 204. To use the same VM again, send `{"activity":{"sequence":2,"idle":false}}` before the deadline. When work finishes again, send an idle event with the next sequence number. Keep one sequence per VM across all attempts. An exact retry preserves the deadline. A stale sequence returns HTTP 409. After expiry, an activity update returns HTTP 409 with code `sandbox_session_expired`.
+Volcano returns HTTP 204. To use the same VM again, send `{"activity":{"sequence":2,"idle":false}}` before the deadline. When work finishes again, send an idle event with the next sequence number. Keep one sequence per VM across all attempts. An exact retry preserves the deadline. To change the timeout, send a new idle event with a higher sequence. Omit the timeout on active events. A stale sequence returns HTTP 409. After expiry, an activity update returns HTTP 409 with code `sandbox_session_expired`.
 
-After 20 idle minutes, Volcano refuses new live access and schedules the VM for termination. Termination discards files on the VM. Suspending the VM preserves the idle deadline. You can resume it before the deadline and report active to clear the timer. After expiry, Volcano refuses resume. Polling and file reads leave the timer alone. The session’s original lifetime still applies while it is active.
+When the requested idle timeout expires, Volcano refuses new live access and schedules the VM for termination. Termination discards files on the VM. Suspending the VM preserves the idle deadline. You can resume it before the deadline and report active to clear the timer. After expiry, Volcano refuses resume. Polling and file reads leave the timer alone. The session’s original lifetime still applies while it is active.
 
 ## Turn off outbound network
 
