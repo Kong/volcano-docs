@@ -243,6 +243,9 @@ counting toward the project's open issues without being counted as fixed. If
 its fix pull request merges later, the issue resolves. Deleting a message in Slack does not delete
 the report sooner. Deleting the project deletes its reports at once.
 
+When the Slack thread asks for GitHub approval, have a reviewer approve the pull request.
+LavaFlow can keep watching for approval for up to 10 days after it receives the request in Slack.
+
 Replies that answer a clarification question are part of the report: they
 reach LavaFlow's AI with it, from whoever wrote them, and Volcano deletes them
 with it.
