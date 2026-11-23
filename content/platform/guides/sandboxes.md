@@ -262,9 +262,9 @@ curl --fail-with-body -i -X PATCH "$VOLCANO_API_URL/sandbox-sessions/$SESSION_ID
   -d '{"activity":{"sequence":1,"idle":true}}'
 ```
 
-Volcano returns HTTP 204. To use the same VM again, send `{"activity":{"sequence":2,"idle":false}}` before the deadline. When work finishes again, send an idle event with the next sequence number. Keep one sequence per VM across all attempts. An exact retry preserves the deadline. A stale sequence or an update after expiry returns HTTP 409.
+Volcano returns HTTP 204. To use the same VM again, send `{"activity":{"sequence":2,"idle":false}}` before the deadline. When work finishes again, send an idle event with the next sequence number. Keep one sequence per VM across all attempts. An exact retry preserves the deadline. A stale sequence returns HTTP 409. After expiry, an activity update returns HTTP 409 with code `sandbox_session_expired`.
 
-After 20 idle minutes, Volcano refuses new live access and schedules the VM for termination. Termination discards files on the VM. Suspending the VM preserves the idle deadline. You can resume it before the deadline and report active to clear the timer. Hosting refuses resume after expiry. Polling and file reads leave the timer alone. The session’s original lifetime still applies while it is active.
+After 20 idle minutes, Volcano refuses new live access and schedules the VM for termination. Termination discards files on the VM. Suspending the VM preserves the idle deadline. You can resume it before the deadline and report active to clear the timer. After expiry, Volcano refuses resume. Polling and file reads leave the timer alone. The session’s original lifetime still applies while it is active.
 
 ## Turn off outbound network
 
