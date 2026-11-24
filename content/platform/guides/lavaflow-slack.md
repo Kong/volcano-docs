@@ -101,10 +101,11 @@ and the original channel binding must remain valid. The report keeps up to the t
 clarification replies within its 8,200-character limit. Other people's replies
 are left out first; the original description is shortened only to make room
 for the reporter's own replies. Waiting for an answer does not
-start a run. Once diagnosis starts, later replies no longer change that
-report. A later mention in the thread starts a new report, which reads the
-thread again: for example, a request for a change after the run's result, or a
-retry after LavaFlow refused the report at a limit.
+start a run. Once diagnosis starts, LavaFlow keeps the thread tied to that
+run. Leave feedback on its pull request when one is available. To ask for a
+separate change, start a new Slack thread and mention `@Volcano` there. If
+LavaFlow refused the report before starting a run, you can try again in the
+same thread.
 
 LavaFlow then answers in the thread with the project it picked and a link to
 its repository, and posts the outcome as a new reply. It never edits an
@@ -146,9 +147,9 @@ that person wrote can ask for one: the original message when they wrote it,
 the reply that mentions `@Volcano`, and their replies LavaFlow asked about. An
 original message someone else wrote is read only as a description of the
 problem, so mentioning `@Volcano` under another person's feature request
-doesn't ask for it; write the request in your own reply instead. Replies to a
-clarification question, the reporter's included, only describe the problem;
-to ask for a change after the run's result, mention `@Volcano` again.
+doesn't ask for it. Write the request in your own reply. Replies to a
+clarification question, including the reporter's, describe the problem. For
+a separate change after the run starts, mention `@Volcano` in a new thread.
 
 Before any run starts, LavaFlow reads what you wrote, and only that, to tell
 what you're asking for:
@@ -248,7 +249,8 @@ reach LavaFlow's AI with it, from whoever wrote them, and Volcano deletes them
 with it.
 
 The run itself is kept like any other LavaFlow run, and its diagnosis may quote
-the report.
+the report. Volcano keeps a hash of the thread's identifiers with the run so
+another mention in that thread can't start a duplicate.
 
 ## API
 
