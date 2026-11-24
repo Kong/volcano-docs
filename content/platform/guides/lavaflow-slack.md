@@ -62,14 +62,14 @@ In a bound channel, reply to the message that describes the problem with
 project:
 
 - **One bound project:** it uses that project.
-- **Several, and your reply names one:** Reply with the project name, full repository name, or a unique repository shorthand.
-  For the repository `Kong/volcano-docs`, you can reply with `@Volcano volcano-docs` or `@Volcano docs`.
-  Quotes, backticks, and trailing punctuation are ignored.
-- **Several, and you only mention `@Volcano`:** LavaFlow uses the project named in the original message, tries to identify it from the report, or asks you to choose.
+- **Several, and your reply names one:** Give the project name, the repository name, or a unique part of either name.
+  For a repository named `acme/customer-payments`, you can reply with `@Volcano please use payments`.
+  LavaFlow ignores surrounding quotes, backticks, and trailing punctuation.
+- **Several, and you only mention `@Volcano`:** LavaFlow uses the project or repository named in the original message, tries to identify it from the report, or asks you to choose.
 
-An exact project name takes priority.
-If your selection matches several projects or names a project LavaFlow can't work on, it asks you to choose again.
-Reply in the same thread with only the project or repository name.
+An exact project-name reply takes priority.
+If you reply with just a name or shorthand, LavaFlow can recognize a single typo when only one project matches.
+If several projects match or the matching project is unavailable, reply with the exact project or repository name.
 If you described the problem
 in replies rather than in the original message, the answer keeps them, up to
 your ten newest in the thread. If they don't all fit a report's limit of 8,200
