@@ -35,7 +35,7 @@ POST /auth/signup-anonymous
 Authorization: Bearer <anon_key>
 ```
 
-Response:
+Response (201 Created):
 
 ```json
 {
