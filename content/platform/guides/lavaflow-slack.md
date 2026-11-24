@@ -111,10 +111,8 @@ LavaFlow then answers in the thread with the project it picked and a link to
 its repository, and posts the outcome as a new reply. Each step of the report
 stays visible in the thread. The outcome includes the pull request's link or
 the reason LavaFlow opened none, as well as a link to the run in Volcano.
-See [Merge fixes](lavaflow.md#merge-fixes) for the settings and checks that
-govern automatic merge. The run link
-opens the report's project in the same environment as the Slack app and still
-requires access to that project. It never holds the diagnosis:
+The run link opens the report's project in the same environment as the Slack
+app and still requires access to that project. The Slack reply omits the diagnosis:
 everyone in the channel reads the answer, including people who can't see the
 project's runs. Read the diagnosis in Volcano, and follow the run like any
 other; see
@@ -123,6 +121,10 @@ project, titled `Problem reported in Slack`, and counts toward the project's
 open issues until its fix pull request merges, which resolves it. A project at
 its limit of open issues is refused in the thread, and so is one that has used
 its LavaFlow runs for the day; that reply says when to mention Volcano again.
+
+A fix reported in Slack can merge automatically when the project is in Merge
+mode and the fix passes the required checks. See
+[Merge fixes](lavaflow.md#merge-fixes) for the project settings and checks.
 
 While LavaFlow is paused, it keeps a report for up to 10 days after it arrives,
 and picks it up if LavaFlow resumes in that time. A reporter without an
@@ -239,7 +241,7 @@ Enterprise Grid org-wide installs are not supported.
 | What                       | Limit                                                                                                                                                                |
 | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | The original message       | 4,000 characters. A reply mentioning `@Volcano` under a longer one is refused in the thread; a longer original message that mentions `@Volcano` itself gets no reply |
-| The reply that mentions it | 4,000 characters. It doesn't read the rest of the thread, except replies mentioning it to answer a clarification question                                            |
+| A reply that mentions it    | 4,000 characters. This includes replies to clarification questions and follow-up mentions in the workstream.                                           |
 | Screenshots                | Up to 5 PNG, JPEG or GIF images on the original message. A GIF is read as its first frame                                                                            |
 | Text files                 | Up to 5 files, such as logs, JSON, CSV or YAML, 100 KB in total and 50 KB each. A longer file keeps its start and end                                                |
 
@@ -264,9 +266,10 @@ the report sooner. Deleting the project deletes its reports at once.
 
 Replies that answer a clarification question are part of the report: they
 reach LavaFlow's AI with it, from whoever wrote them, and Volcano deletes them
-with it. Volcano deletes a follow-up message 10 days after it finishes handling
-the message, or 10 days after the message arrived if it is still pending.
-Follow-ups leave the original report's retention date in place.
+with it. Follow-up messages that steer a run or edit its PR have their own
+retention window. Volcano deletes each one 10 days after it finishes handling
+the message, or 10 days after it arrived if it is still pending. Follow-ups
+leave the original report's retention date in place.
 
 The run itself is kept like any other LavaFlow run, and its diagnosis may quote
 the report. Volcano keeps a hash of the thread's identifiers after deleting the
