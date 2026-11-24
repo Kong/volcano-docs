@@ -98,20 +98,21 @@ and the original channel binding must remain valid. The report keeps up to the t
 clarification replies within its 8,200-character limit. Other people's replies
 are left out first; the original description is shortened only to make room
 for the reporter's own replies. Waiting for an answer does not
-start a run.
+start a run. If LavaFlow refused the report before starting, you can try again in the same thread.
 
 ## Follow up in the same thread
 
-Once LavaFlow starts working, mention `@Volcano` again in the same thread to add a detail, ask a question, or request an edit.
-Anyone whose connected Slack account is authorized for that project can follow up.
-The conversation stays with the selected project.
+Once LavaFlow starts working, mention `@Volcano` again to add a detail, ask about the run, or request an edit.
+Anyone whose connected Slack account is authorized for the selected project can follow up.
 
 - **While work is in progress**, give LavaFlow a clue such as `@Volcano check content/platform/authentication/anonymous-users.md`.
   LavaFlow uses it when it continues the run.
 - **With an open pull request**, ask for a specific edit and LavaFlow reviews it before updating the same pull request.
   LavaFlow pauses automatic merge while an accepted edit is pending.
 - **After the pull request closes or the run ends without one**, ask about the outcome in the same thread.
-  If you explicitly ask for a code change, LavaFlow starts a follow-up run for the same project.
+  To continue the same work, explicitly ask for a follow-up PR and describe the change you want.
+
+Start a new Slack thread and mention `@Volcano` there for a separate change.
 
 LavaFlow then answers in the thread with the project it picked and a link to
 its repository, and posts the outcome as a new reply. It never edits an
@@ -152,9 +153,9 @@ that person wrote can ask for one: the original message when they wrote it,
 the reply that mentions `@Volcano`, and their replies LavaFlow asked about. An
 original message someone else wrote is read only as a description of the
 problem, so mentioning `@Volcano` under another person's feature request
-doesn't ask for it; write the request in your own reply instead. Replies to a
-clarification question, the reporter's included, only describe the problem;
-to ask for a change after the run's result, mention `@Volcano` again.
+doesn't ask for it. Write the request in your own reply. Replies to a
+clarification question, including the reporter's, describe the problem. For
+a separate change after the run starts, mention `@Volcano` in a new thread.
 
 Before any run starts, LavaFlow reads what you wrote, and only that, to tell
 what you're asking for:
@@ -254,7 +255,8 @@ reach LavaFlow's AI with it, from whoever wrote them, and Volcano deletes them
 with it. Follow-up messages are subject to the same retention window.
 
 The run itself is kept like any other LavaFlow run, and its diagnosis may quote
-the report.
+the report. Volcano keeps a hash of the thread's identifiers with the run so
+another mention in that thread can't start a duplicate.
 
 ## API
 
