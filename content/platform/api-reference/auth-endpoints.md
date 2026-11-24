@@ -820,7 +820,7 @@ Sending `subject` alone (no body) is rejected.
 - `400` — invalid `to_email`, or `email_enabled=false` / `smtp_host` empty, or the saved `smtp_password` can't be read (set it again), or `subject` without a body
 - `403` — caller is not the project owner
 - `404` — project not found
-- `502` — template render failure or SMTP delivery failed (message includes the SMTP-level reason)
+- `502` — template render failure or SMTP delivery failed. When the SMTP server answered, the message includes its reply, such as an authentication rejection. When Volcano could not reach an SMTP server, including an `smtp_host` that isn't a public address, the message is fixed: `could not reach an SMTP server at smtp_host and smtp_port; check that the host is public and the port is the server's SMTP port`. In local mode it includes the network error instead. See [Email SMTP Configuration](/platform/authentication/configuration/email-smtp).
 
 ---
 
