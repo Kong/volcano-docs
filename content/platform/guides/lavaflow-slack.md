@@ -62,18 +62,15 @@ In a bound channel, reply to the message that describes the problem with
 project:
 
 - **One bound project:** it uses that project.
-- **Several, and your reply names one:** the reply after the mention must be
-  exactly one project's Volcano name, such as `@Volcano checkout-api`. Quotes,
-  backticks and trailing punctuation are ignored. Anything else gets a question
-  listing the channel's projects, each with a link to its repository.
-- **Several, and you only mention `@Volcano`:** it uses the project whose name
-  the original message contains. Otherwise LavaFlow's AI picks one of the
-  channel's projects, or asks.
+- **Several, and your reply names one:** Reply with the project name, full repository name, or a unique repository shorthand.
+  For the repository `Kong/volcano-docs`, you can reply with `@Volcano volcano-docs` or `@Volcano docs`.
+  Quotes, backticks, and trailing punctuation are ignored.
+- **Several, and you only mention `@Volcano`:** LavaFlow uses the project named in the original message, tries to identify it from the report, or asks you to choose.
 
-Only Volcano project names select a project, not repository names. When the
-original message names a bound project LavaFlow can't work on now, it asks
-instead of picking another. To answer a question, mention `@Volcano` again in
-the same thread with only the project's name. If you described the problem
+An exact project name takes priority.
+If your selection matches several projects or names a project LavaFlow can't work on, it asks you to choose again.
+Reply in the same thread with only the project or repository name.
+If you described the problem
 in replies rather than in the original message, the answer keeps them, up to
 your ten newest in the thread. If they don't all fit a report's limit of 8,200
 characters, it keeps the newest that fit, and the report LavaFlow works from
@@ -101,17 +98,26 @@ and the original channel binding must remain valid. The report keeps up to the t
 clarification replies within its 8,200-character limit. Other people's replies
 are left out first; the original description is shortened only to make room
 for the reporter's own replies. Waiting for an answer does not
-start a run. Once diagnosis starts, later replies no longer change that
-report. A later mention in the thread starts a new report, which reads the
-thread again: for example, a request for a change after the run's result, or a
-retry after LavaFlow refused the report at a limit.
+start a run.
+
+## Follow up in the same thread
+
+Once LavaFlow starts working, mention `@Volcano` again in the same thread to add a detail, ask a question, or request an edit.
+Anyone whose connected Slack account is authorized for that project can follow up.
+The conversation stays with the selected project.
+
+- **While work is in progress**, give LavaFlow a clue such as `@Volcano check content/platform/authentication/anonymous-users.md`.
+  LavaFlow uses it when it continues the run.
+- **With an open pull request**, ask for a specific edit and LavaFlow reviews it before updating the same pull request.
+  LavaFlow pauses automatic merge while an accepted edit is pending.
+- **After the pull request closes or the run ends without one**, ask about the outcome in the same thread.
+  If you explicitly ask for a code change, LavaFlow starts a follow-up run for the same project.
 
 LavaFlow then answers in the thread with the project it picked and a link to
 its repository, and posts the outcome as a new reply. It never edits an
-earlier reply, so the thread keeps each step of the report. A run from Slack goes as far as opening a fix
-pull request, even where the project lets LavaFlow merge, and so does a run
-someone starts again on the report's issue: merging a fix someone reported in
-Slack stays a person's step. The outcome is the pull request's link, or a
+earlier reply, so the thread keeps each step of the report. A reported fix can merge when the project allows it and the fix passes LavaFlow's merge checks.
+A pull request for a requested change waits for a person to merge it.
+The outcome includes the pull request's link, or a
 fixed reason it opened none, and a link to the run in Volcano. The run link
 opens the report's project in the same environment as the Slack app and still
 requires access to that project. It never holds the diagnosis:
@@ -245,7 +251,7 @@ the report sooner. Deleting the project deletes its reports at once.
 
 Replies that answer a clarification question are part of the report: they
 reach LavaFlow's AI with it, from whoever wrote them, and Volcano deletes them
-with it.
+with it. Follow-up messages are subject to the same retention window.
 
 The run itself is kept like any other LavaFlow run, and its diagnosis may quote
 the report.
