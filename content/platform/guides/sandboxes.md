@@ -125,6 +125,7 @@ no reason is known.
 | `sandbox_run_hook_timeout`              | The startup hook timed out.                                                                                                                      |
 | `sandbox_start_rejected`                | The runtime rejected the start.                                                                                                                  |
 | `sandbox_authority_or_expiry`           | Session authority ended or its lifetime expired.                                                                                                 |
+| `sandbox_idle_expired`                  | The idle deadline passed and Volcano terminated the VM.                                                                                          |
 | `sandbox_allowance_exhausted`           | The runtime allowance was exhausted.                                                                                                             |
 | `sandbox_allowance_retention_expired`   | Retention after allowance exhaustion expired.                                                                                                    |
 | `project_deleting`                      | The project is being deleted.                                                                                                                    |
@@ -280,6 +281,79 @@ trap 'curl -s -X DELETE "$VOLCANO_API_URL/sandbox-sessions/$SESSION_ID" -H "Auth
 The lifetime includes startup, accepts at least 30 seconds, and activity never
 extends it. Pick a value that covers your job's longest run; see
 [Choose lifetime and memory](#choose-lifetime-and-memory).
+
+### Choose an idle timeout for a session
+
+A session controller can let a VM sit idle between prompts instead of terminating
+it, so work that resumes before the deadline reuses the same workspace. When work
+finishes, report idle with `idle_timeout_seconds` set to how long Volcano should
+keep the VM. Use a whole number of seconds from 1 to `2147483647`; this example
+requests 5 minutes from the moment Volcano accepts the report. A scoped
+service key needs the `sandboxes.sessions.activity` permission, listed with the
+other Sandbox permissions under
+[Scope a service key](../authentication/security/service-keys.md#scope-a-service-key).
+
+The VM keeps running, and stays billed as running time, for the whole window;
+only suspending it stops that metering.
+
+```bash
+curl -s -X PATCH "$VOLCANO_API_URL/sandbox-sessions/$SESSION_ID" \
+  -H "Authorization: Bearer $SERVICE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"activity":{"sequence":1,"idle":true,"idle_timeout_seconds":300}}'
+```
+
+The body carries one complete `activity` report, and the request takes no
+`Idempotency-Key`: `sequence` orders the reports instead.
+
+| Field                  | Required  | Limits                                                                                                                   |
+| ---------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `sequence`             | Yes       | 1–`9223372036854775807`. Above the last accepted report, or equal only to repeat that report unchanged.                  |
+| `idle`                 | Yes       | `true` when work stops, `false` when it resumes.                                                                         |
+| `idle_timeout_seconds` | When idle | 1–`2147483647`. Send it when `idle` is `true` and omit it when `idle` is `false`; sending it with `false` returns `400`. |
+
+Volcano returns `204`. To use the same VM again, send
+`{"activity":{"sequence":2,"idle":false}}` before the deadline; accepting an
+active report clears the deadline. To change the timeout, send another idle
+report with a higher `sequence`. The counter belongs to the session and never
+resets, including across a suspend and resume.
+
+Only an activity report moves the deadline. Running commands, reading or writing
+files, connecting to a service, and polling `state` all leave it alone, so report
+active for the whole time a command runs. A command that outlasts the idle
+window loses the VM while it is still running.
+
+`GET /sandbox-sessions/{sessionId}` does not return the stored `sequence` or the
+current deadline, so keep the `sequence` you last sent outside the VM. If a
+controller restarts without it, a value above the stored one is still accepted, so
+a counter that only ever rises across restarts, such as the current time in
+microseconds, recovers on its own. A value below the stored one is refused with
+`409`, so keep deriving it the same way rather than switching to a smaller unit.
+
+If a response is lost, retry the same report before the deadline. Repeating the
+latest accepted `sequence`, `idle`, and timeout returns `204` and preserves the
+deadline. A lower `sequence`, or the same `sequence` with a different payload,
+returns `409` without a `code`.
+
+Missing or invalid credentials return `401`. A credential for the session's
+project without `sandboxes.sessions.activity` returns `403`. An unknown session,
+or one outside the caller's project, returns `404`. A malformed report returns
+`400`: a timeout below 1 or above `2147483647`, a fractional timeout, or a
+timeout sent with `idle` set to `false`. A new report on a session that is
+starting, suspending, or suspended returns `409` without a `code`; retrying the
+latest report still returns `204` while the VM is suspended.
+
+When the deadline passes, Volcano closes live access and schedules the VM for
+termination, which discards local files. An `exec` request then returns
+`409 sandbox_session_not_running`, the same refusal a stopped session returns.
+Activity reports and resume requests return `409 sandbox_session_expired`.
+Suspending the VM preserves the deadline without pausing it, so a session
+suspended past its deadline is terminated too. To keep the VM, request resume,
+wait for the session to reach `running`, and report active before the deadline.
+
+The session's lifetime still bounds the deadline. A deadline past `expires_at` is
+accepted, but the session ends at `expires_at` and records
+`sandbox_authority_or_expiry` rather than `sandbox_idle_expired`.
 
 ## Turn off outbound network
 

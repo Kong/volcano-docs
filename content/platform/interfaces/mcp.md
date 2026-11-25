@@ -330,20 +330,21 @@ also the Sandbox mutation tools below.
 Sandbox tools use the same API authorization and billing rules. A session ID
 must belong to the token's project, including on routes without a project ID.
 
-| Tool                                                                                | Scope       | Purpose                                            |
-| ----------------------------------------------------------------------------------- | ----------- | -------------------------------------------------- |
-| `list_sandbox_presets`                                                              | `read_only` | Discover verified presets and memory sizes         |
-| `list_sandboxes`, `get_sandbox`                                                     | `read_only` | Inspect project templates                          |
-| `list_sandbox_deployments`, `get_sandbox_deployment`, `get_sandbox_deployment_logs` | `read_only` | Inspect deployment history, status, and build logs |
-| `list_sandbox_sessions`, `get_sandbox_session`                                      | `read_only` | Inspect session state                              |
-| `read_sandbox_file`, `list_sandbox_files`                                           | `read_only` | Read and list session files                        |
-| `create_sandbox`, `update_sandbox`                                                  | `full`      | Create or rename a template                        |
-| `create_sandbox_session`                                                            | `full`      | Start a session from a preset or template          |
-| `execute_sandbox`                                                                   | `full`      | Execute once with automatic cleanup                |
-| `execute_sandbox_session`                                                           | `full`      | Execute in an existing session                     |
-| `write_sandbox_file`                                                                | `full`      | Write a session file                               |
-| `suspend_sandbox_session`, `resume_sandbox_session`                                 | `full`      | Pause and resume a session                         |
-| `terminate_sandbox_session`                                                         | `full`      | Permanently stop a session and release compute     |
+| Tool                                                                                | Scope       | Purpose                                             |
+| ----------------------------------------------------------------------------------- | ----------- | --------------------------------------------------- |
+| `list_sandbox_presets`                                                              | `read_only` | Discover verified presets and memory sizes          |
+| `list_sandboxes`, `get_sandbox`                                                     | `read_only` | Inspect project templates                           |
+| `list_sandbox_deployments`, `get_sandbox_deployment`, `get_sandbox_deployment_logs` | `read_only` | Inspect deployment history, status, and build logs  |
+| `list_sandbox_sessions`, `get_sandbox_session`                                      | `read_only` | Inspect session state                               |
+| `read_sandbox_file`, `list_sandbox_files`                                           | `read_only` | Read and list session files                         |
+| `create_sandbox`, `update_sandbox`                                                  | `full`      | Create or rename a template                         |
+| `create_sandbox_session`                                                            | `full`      | Start a session from a preset or template           |
+| `execute_sandbox`                                                                   | `full`      | Execute once with automatic cleanup                 |
+| `execute_sandbox_session`                                                           | `full`      | Execute in an existing session                      |
+| `update_sandbox_session_activity`                                                   | `full`      | Report work as active or idle with an idle deadline |
+| `write_sandbox_file`                                                                | `full`      | Write a session file                                |
+| `suspend_sandbox_session`, `resume_sandbox_session`                                 | `full`      | Pause and resume a session                          |
+| `terminate_sandbox_session`                                                         | `full`      | Permanently stop a session and release compute      |
 
 Check `list_capabilities` before starting work. Confirmed cloud running time
 consumes account allowance and paid overage credits. Suspended and uncertain
