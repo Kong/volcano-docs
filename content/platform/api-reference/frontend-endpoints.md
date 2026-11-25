@@ -661,7 +661,7 @@ is off, `413` when the upload exceeds the archive limit, and `409` when:
 
 - the name is taken (`candidate_name_taken`);
 - the account already holds the live frontend previews its plan allows across
-  all of its projects and frontends, 20 on HOBBY and 1000 on SUPERAGENT
+  all of its projects and frontends, 1000 on HOBBY and 10000 on SUPERAGENT
   (`candidate_limit_reached`);
 - the frontend already holds 100 live previews, whatever the plan
   (`candidate_limit_reached`);
