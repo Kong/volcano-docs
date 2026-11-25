@@ -104,9 +104,7 @@ realtime and log endpoints from those origins, without listing them:
 - `GET /projects/{id}/auth/config` lists the origins currently allowed this way
   in `frontend_preview_origins`.
 - Every live preview is allowed this way, including previews over your plan's
-  allowance after a downgrade. If a project ever has more than 10000 live
-  previews, only the 10000 most recently created are allowed, and older ones are
-  refused until some are deleted or expire.
+  allowance after a downgrade.
 - Previews sign in with tokens. Cookie sessions are not offered to preview
   origins.
 
