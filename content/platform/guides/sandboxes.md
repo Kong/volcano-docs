@@ -499,6 +499,49 @@ unused, so retrying the same key can run it once capacity frees. This differs
 from `sandbox_session_not_running`, which retains the refusal for that key.
 Do not use a new key unless you intend to run the command again.
 
+## Hand off a session controller
+
+Use an isolated controller when successive workers need the same Sandbox workspace. The template must supply a trusted executable at `/opt/volcano/bin/sandbox-controller-v1`, and the guest must support the `isolated_controller_v1` profile. The caller needs `sandboxes.exec` for the project that owns the session.
+
+Generate one UUID for this execution and keep it through retirement. Both operations take the key in the JSON body. To launch the template's controller, send:
+
+```bash
+EXECUTION_KEY=$(uuidgen)
+curl --json "$(jq -n \
+  --arg project "$PROJECT_ID" --arg session "$SESSION_ID" --arg key "$EXECUTION_KEY" \
+  '{project_id:$project, session_id:$session, idempotency_key:$key,
+    command:"/opt/volcano/bin/sandbox-controller-v1", environment:{}, timeout_seconds:60}')" \
+  -H "Authorization: Bearer $SERVICE_KEY" \
+  "$VOLCANO_API_URL/sandbox-controller-executions"
+```
+
+Set `command` to the exact path shown above. The guest starts the trusted executable with its own identity and passes the `environment` string-to-string map as a single JSON object on private standard input. It does not export those values as process environment variables. On HTTP 200, check the returned project, session, execution key, `profile`, `exit_code`, and `timed_out`. Command output is discarded. A successful launch returns:
+
+```json
+{
+  "project_id": "7ee35be9-b4b6-40d5-8c7c-bc23c02ea9ac",
+  "session_id": "d3b3e46b-9388-4476-b28b-cc296448da5e",
+  "idempotency_key": "47276226-cb40-4217-8cd5-e9f045367878",
+  "profile": "isolated_controller_v1",
+  "exit_code": 0,
+  "timed_out": false
+}
+```
+
+A `409 sandbox_controller_unsupported` means the guest rejected the profile before dispatch. If the connection drops or the outcome is unknown, retry the identical launch request with its original key. Starting a second execution could run both controllers.
+
+Before giving the next worker access, retire the previous execution with its original key:
+
+```bash
+curl --json "$(jq -n \
+  --arg project "$PROJECT_ID" --arg session "$SESSION_ID" --arg key "$EXECUTION_KEY" \
+  '{project_id:$project, session_id:$session, idempotency_key:$key}')" \
+  -H "Authorization: Bearer $SERVICE_KEY" \
+  "$VOLCANO_API_URL/sandbox-execution-retirements"
+```
+
+Wait for HTTP 200 with the matching `project_id`, `session_id`, `idempotency_key`, and `retired: true`. This receipt confirms the guest stopped the execution and its descendants and prevents a delayed launch with that key. Other executions in the session keep running. If the response is lost, repeat retirement with the same three identifiers. An unconfirmed retirement leaves the previous worker's access unresolved.
+
 ## Keep no command output
 
 By default Volcano stores each command's result, so a retry with the same
