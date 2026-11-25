@@ -284,13 +284,17 @@ extends it. Pick a value that covers your job's longest run; see
 
 ### Choose an idle timeout for a session
 
-A session controller can release an idle VM and still reuse its workspace. When
-work finishes, report idle with `idle_timeout_seconds` set to how long Volcano
-should keep the VM. Use a whole number of seconds from 1 to `2147483647`; this
-example requests 5 minutes from the moment Volcano accepts the report. A scoped
+A session controller can let a VM sit idle between prompts instead of terminating
+it, so work that resumes before the deadline reuses the same workspace. When work
+finishes, report idle with `idle_timeout_seconds` set to how long Volcano should
+keep the VM. Use a whole number of seconds from 1 to `2147483647`; this example
+requests 5 minutes from the moment Volcano accepts the report. A scoped
 service key needs the `sandboxes.sessions.activity` permission, listed with the
 other Sandbox permissions under
 [Scope a service key](../authentication/security/service-keys.md#scope-a-service-key).
+
+The VM keeps running, and stays billed as running time, for the whole window;
+only suspending it stops that metering.
 
 ```bash
 curl -s -X PATCH "$VOLCANO_API_URL/sandbox-sessions/$SESSION_ID" \
@@ -304,24 +308,27 @@ The body carries one complete `activity` report, and the request takes no
 
 | Field                  | Required  | Limits                                                                                                                   |
 | ---------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `sequence`             | Yes       | A whole number from 1 up, higher than every earlier report for this VM.                                                  |
+| `sequence`             | Yes       | 1 or up. Above the last accepted report, or equal only to repeat that report unchanged.                                  |
 | `idle`                 | Yes       | `true` when work stops, `false` when it resumes.                                                                         |
 | `idle_timeout_seconds` | When idle | 1–`2147483647`. Send it when `idle` is `true` and omit it when `idle` is `false`; sending it with `false` returns `400`. |
 
 Volcano returns `204`. To use the same VM again, send
 `{"activity":{"sequence":2,"idle":false}}` before the deadline; accepting an
 active report clears the deadline. To change the timeout, send another idle
-report with a higher `sequence`.
+report with a higher `sequence`. The counter belongs to the session and never
+resets, including across a suspend and resume.
 
 Only an activity report moves the deadline. Running commands, reading or writing
 files, connecting to a service, and polling `state` all leave it alone, so report
 active for the whole time a command runs. A command that outlasts the idle
 window loses the VM while it is still running.
 
-No documented response returns the stored `sequence` or deadline, so keep the
-`sequence` you last sent outside the VM. A report whose `sequence` is not higher
-than the stored one is refused with `409`, unless it repeats the latest report
-exactly, so a controller that restarts without the value cannot report again.
+`GET /sandbox-sessions/{sessionId}` does not return the stored `sequence` or the
+current deadline, so keep the `sequence` you last sent outside the VM. If a
+controller restarts without it, a value above the stored one is still accepted, so
+a counter that only ever rises across restarts, such as the current time in
+microseconds, recovers on its own. A value below the stored one is refused with
+`409`, so keep deriving it the same way rather than switching to a smaller unit.
 
 If a response is lost, retry the same report before the deadline. Repeating the
 latest accepted `sequence`, `idle`, and timeout returns `204` and preserves the
