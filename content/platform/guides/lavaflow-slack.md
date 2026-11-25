@@ -112,10 +112,7 @@ its repository, and posts the outcome as a new reply. Each step of the report
 stays visible in the thread. The outcome includes the pull request's link or
 the reason LavaFlow opened none, as well as a link to the run in Volcano.
 The run link opens the report's project in the same environment as the Slack
-app and still requires access to that project. The Slack reply omits the diagnosis:
-everyone in the channel reads the answer, including people who can't see the
-project's runs. Read the diagnosis in Volcano, and follow the run like any
-other; see
+app and still requires access to that project. For a bug report, LavaFlow works out how to check the expected behavior. The Slack reply can include that check and say whether LavaFlow reproduced the issue, found a fix in the current revision, or needs more evidence. When LavaFlow verifies which public pull request introduced the existing fix, it links that PR. Read source evidence, logs, and the full diagnosis in Volcano. See
 [Follow runs](lavaflow.md#follow-runs). Each report becomes an issue on the
 project, titled `Problem reported in Slack`, and counts toward the project's
 open issues until its fix pull request merges, which resolves it. A project at
@@ -157,7 +154,11 @@ for the selected project can follow up.
   outcome in the same thread. To continue the same work, explicitly ask for
   a follow-up PR and describe the change you want.
 
-Start a new Slack thread and mention `@Volcano` there for a separate change.
+Start a new Slack thread and mention `@Volcano` there for a separate change. LavaFlow mentions the person who asked and redirects the request to a new thread.
+
+### Approve a proposed plan
+
+When the report leaves a decision that would change the expected behavior, LavaFlow posts a proposed outcome and an acceptance check. Anyone authorized for the project can mention `@Volcano` with relevant suggestions. The person who opened the report can approve the current proposal by replying `@Volcano go ahead` in the same thread. LavaFlow then continues the run under the project's existing delivery settings.
 
 ## Request a change
 
