@@ -308,7 +308,7 @@ The body carries one complete `activity` report, and the request takes no
 
 | Field                  | Required  | Limits                                                                                                                   |
 | ---------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `sequence`             | Yes       | 1 or up. Above the last accepted report, or equal only to repeat that report unchanged.                                  |
+| `sequence`             | Yes       | 1–`9223372036854775807`. Above the last accepted report, or equal only to repeat that report unchanged.                  |
 | `idle`                 | Yes       | `true` when work stops, `false` when it resumes.                                                                         |
 | `idle_timeout_seconds` | When idle | 1–`2147483647`. Send it when `idle` is `true` and omit it when `idle` is `false`; sending it with `false` returns `400`. |
 
