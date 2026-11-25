@@ -207,6 +207,12 @@ Revoked and expired tokens do not count against it, so cycling short-lived token
 | Custom email templates                                                              | Unavailable | Available  | Per project; HOBBY projects send the default templates                                                                        |
 | Custom managed auth pages                                                           | Unavailable | Available  | Per project                                                                                                                   |
 
+## Builder prompts
+
+The daily Builder allowance is 20 prompts on HOBBY and 200 on SUPERAGENT. It resets at 00:00 UTC.
+On HOBBY, you can submit more prompts after the reset. On SUPERAGENT, each additional prompt costs 50 credits, including on older subscriptions.
+A prompt that already has a credit reservation settles at its original rate.
+
 ## LavaFlow
 
 LavaFlow is in preview. During the preview, it needs the SUPERAGENT plan.
