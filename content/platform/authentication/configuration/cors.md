@@ -103,9 +103,10 @@ realtime and log endpoints from those origins, without listing them:
   open realtime connection is not closed when its origin stops being allowed.
 - `GET /projects/{id}/auth/config` lists the origins currently allowed this way
   in `frontend_preview_origins`.
-- Every live preview within your plan's allowance is allowed this way. A
-  project can hold at most 1000, and past that the 1000 most recently created
-  are allowed, and older ones are refused until some are deleted or expire.
+- Every live preview is allowed this way, including previews over your plan's
+  allowance after a downgrade. If a project ever has more than 1000 live
+  previews, only the 1000 most recently created are allowed, and older ones are
+  refused until some are deleted or expire.
 - Previews sign in with tokens. Cookie sessions are not offered to preview
   origins.
 

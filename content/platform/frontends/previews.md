@@ -25,9 +25,9 @@ volcano cloud frontends preview create web --name redesign --path ./apps/web
 `--name` is required and unique within the frontend. Your account can hold at
 most 20 live frontend previews on HOBBY and 1000 on SUPERAGENT, across all of
 your projects and frontends, and at most 100 on one frontend; a preview counts
-until its deletion completes, and Function previews do not count. `--ttl` deletes the preview
-after that long, up to 720 hours; without it the preview lives until you delete
-it. The first deployment starts at once. Read the URL when it is ready:
+until its deletion completes, and Function previews do not count. `--ttl`
+deletes the preview after that long, up to 720 hours; without it the preview
+lives until you delete it. The first deployment starts at once. Read the URL when it is ready:
 
 ```bash
 volcano cloud frontends preview get web redesign

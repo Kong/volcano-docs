@@ -231,8 +231,9 @@ day and open pull requests, are listed here once a plan includes them.
 ## Enforcement
 
 How a limit is enforced depends on the limit — you may see an HTTP `403`
-(Forbidden), `413` (Payload Too Large), or `429` (Too Many Requests), a Realtime
-protocol error or disconnect, or a PostgreSQL error (SQLSTATE `53400`).
+(Forbidden), `409` (Conflict), `413` (Payload Too Large), or `429` (Too Many
+Requests), a Realtime protocol error or disconnect, or a PostgreSQL error
+(SQLSTATE `53400`).
 
 ## Moving from SUPERAGENT to HOBBY
 
