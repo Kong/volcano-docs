@@ -212,6 +212,19 @@ curl "$VOLCANO_API_URL/sandbox-sessions/$SESSION_ID/exec" \
   -d '{"command":"python -m http.server 8080 >/workspace/http.log 2>&1 &","timeout_seconds":10}'
 ```
 
+The `exec` request takes these fields:
+
+| Field             | Required | Limits and defaults                                                                                                                                                                                            |
+| ----------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `command`         | Yes      | Runs synchronously. `stdout` and `stderr` each return the first 1 MiB (1,048,576 bytes). In cloud, the public connection closes after 1000 seconds without a response; run longer work in the background.      |
+| `timeout_seconds` | No       | Starts when the process runs. Cloud defaults to 60 seconds and accepts 1–28800 seconds. Local defaults to 0 (unlimited). A finite session expiry always takes precedence.                                      |
+| `keep_output`     | No       | Defaults to the session's `executions.keep_output`, which is `true` unless the session was created with `false`. See [Keep no command output](#keep-no-command-output).                                         |
+| `environment`     | No       | A map of environment variables for the command.                                                                                                                                                                |
+
+There is no working-directory field; `cd` inside `command` instead. Every
+request also needs an `Idempotency-Key` header, and a cloud session runs at most
+64 commands at once, as described below.
+
 The HTTP service remains alive after the command returns. Its lifetime belongs
 to the session. The command can return before the service starts listening.
 Poll a read-only health endpoint with a timeout before sending application traffic;
@@ -420,6 +433,26 @@ A one-shot command timeout returns `504`; retrying its key returns `409`
 because no completed result was stored. A session command reaching its command
 timeout returns execution data with `timed_out: true`. If the VM lifetime expires
 first, the command returns `504` instead.
+
+### Short-lived sessions for CI
+
+In CI, set a short `max_duration_seconds` so that a session the job never
+terminates, for example because the script crashed, ends at `expires_at`
+instead of running for the default hour:
+
+```bash
+curl "$VOLCANO_API_URL/projects/$PROJECT_ID/sandbox-sessions" \
+  -H "Authorization: Bearer $SERVICE_KEY" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Content-Type: application/json" \
+  -d '{"preset":"python3.12","region":"us-east-1","max_duration_seconds":600}'
+```
+
+The lifetime includes startup and is never extended by activity, so choose one
+that covers startup plus every command the job runs, with each command's
+`timeout_seconds` below it. The minimum is 30 seconds. Still terminate the
+session with `DELETE /sandbox-sessions/{sessionId}` when the job finishes, also
+when it fails; the short lifetime only bounds what a missed cleanup costs.
 
 ## Cap CPU and disk
 
