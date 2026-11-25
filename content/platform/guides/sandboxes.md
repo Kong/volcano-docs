@@ -512,20 +512,22 @@ traversal on the controller's `/workspace` mount. Workloads keep their usual
 workspace view. The caller needs `sandboxes.exec` for the project that owns the session.
 
 Check `sandboxes.output_not_kept` in [`GET /capabilities`](../api-reference/overview.md#capabilities).
-Controller launches always discard command output, so a new launch returns
-`400 feature_unavailable` when this capability is unavailable.
+Controller launches require this capability because they always discard command output.
 
 Generate one UUID for this execution and keep it through retirement. Both requests
-take the key in the JSON body. Launch the template's controller with its exact path.
+take the key in the JSON body. Set `timeout_seconds` to the time allowed for the
+launcher to start the executable. After a successful launch, the controller can
+keep running beyond that timeout until it exits, you retire it, or the session ends.
 
 ```bash
 EXECUTION_KEY=$(uuidgen)
-curl --json "$(jq -n \
-  --arg project "$PROJECT_ID" --arg session "$SESSION_ID" --arg key "$EXECUTION_KEY" \
-  '{project_id:$project, session_id:$session, idempotency_key:$key,
-    command:"/opt/volcano/bin/sandbox-controller-v1", environment:{}, timeout_seconds:60}')" \
+curl "$VOLCANO_API_URL/sandbox-controller-executions" \
   -H "Authorization: Bearer $SERVICE_KEY" \
-  "$VOLCANO_API_URL/sandbox-controller-executions"
+  -H "Content-Type: application/json" \
+  -d "$(jq -n \
+    --arg project "$PROJECT_ID" --arg session "$SESSION_ID" --arg key "$EXECUTION_KEY" \
+    '{project_id:$project, session_id:$session, idempotency_key:$key,
+      command:"/opt/volcano/bin/sandbox-controller-v1", environment:{}, timeout_seconds:60}')"
 ```
 
 The guest starts the executable under a separate controller identity and passes
@@ -547,19 +549,37 @@ initialized, wait for its own readiness signal.
 }
 ```
 
-A `409 sandbox_controller_unsupported` means the guest rejected the profile before dispatch. If the connection drops or the outcome is unknown, retry the identical launch request with its original key. Starting a second execution could run both controllers.
+For a launch failure, use the response to decide what to retry.
+
+| Response | Next step |
+| --- | --- |
+| `400 feature_unavailable` for output discard | The launch was refused before dispatch. Retry with the same key when `sandboxes.output_not_kept` becomes available. |
+| `409 sandbox_controller_unsupported` | This request started no controller and left the key unused. Local Docker, an incompatible guest, or a session that ran an ordinary command first cannot launch this controller. Start a fresh hosted session from a compatible template and give that execution its own key. |
+| Connection lost, server error, or `409` reporting an unknown execution outcome | Retry the identical launch request with its original key to recover a stored receipt. If the outcome stays unknown, retire that key before handing off the session. A new key could start a second worker. |
+
+The hosted guest reports a launcher failure or timeout as a server error. If a
+`200` receipt has a nonzero `exit_code` or `timed_out: true`, also treat startup
+as unconfirmed and retire that execution before handoff.
 
 Before giving the next worker access, retire the previous execution with its original key:
 
 ```bash
-curl --json "$(jq -n \
-  --arg project "$PROJECT_ID" --arg session "$SESSION_ID" --arg key "$EXECUTION_KEY" \
-  '{project_id:$project, session_id:$session, idempotency_key:$key}')" \
+curl "$VOLCANO_API_URL/sandbox-execution-retirements" \
   -H "Authorization: Bearer $SERVICE_KEY" \
-  "$VOLCANO_API_URL/sandbox-execution-retirements"
+  -H "Content-Type: application/json" \
+  -d "$(jq -n \
+    --arg project "$PROJECT_ID" --arg session "$SESSION_ID" --arg key "$EXECUTION_KEY" \
+    '{project_id:$project, session_id:$session, idempotency_key:$key}')"
 ```
 
-Wait for HTTP 200 with the matching `project_id`, `session_id`, `idempotency_key`, and `retired: true`. This receipt confirms the guest stopped the execution and its descendants and prevents a delayed launch with that key. Other executions in the session keep running. If the response is lost, repeat retirement with the same three identifiers. An unconfirmed retirement leaves the previous worker's access unresolved.
+Wait for HTTP 200 with the matching `project_id`, `session_id`, `idempotency_key`,
+and `retired: true`. This receipt confirms the guest stopped any processes from
+that execution and will prevent a delayed launch, even if the launch outcome was
+unknown. Other executions in the session keep running. If the response is lost,
+repeat retirement with the same three identifiers. A local runtime or older
+guest without retirement support returns `409 sandbox_retirement_unsupported`.
+If retirement cannot be confirmed, keep the session out of reuse and confirm
+its termination before handing work to a replacement.
 
 ## Keep no command output
 
