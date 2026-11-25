@@ -218,6 +218,22 @@ Poll a read-only health endpoint with a timeout before sending application traff
 a request made before the port is listening can return `502`. Do not restart the
 command or retry a write request just to wait for readiness.
 
+An `exec` request takes these fields:
+
+| Field                    | Required | Limits                                                                                                                                                                                                           |
+| ------------------------ | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Idempotency-Key` header | Yes      | A UUID. Use a new one for each command you intend to run, and the same one with the same body to retry it. See [Retry without repeating a command](#retry-without-repeating-a-command).                          |
+| `command`                | Yes      | The shell command line to run as the session user.                                                                                                                                                               |
+| `timeout_seconds`        | No       | Cloud defaults to 60 seconds and accepts 1–28800 seconds. Local defaults to 0 (unlimited) and accepts any positive limit. The session's VM expiry takes precedence.                                              |
+| `environment`            | No       | A map of environment variable names to values for this command. Use it to pass a secret after the session starts instead of building it into a template; see [Deploy a custom template](#deploy-a-custom-template). |
+| `keep_output`            | No       | Boolean. Inherits the session's `executions.keep_output`. Setting it to `true` in a session created with `false` returns `sandbox_session_keeps_no_output`. See [Keep no command output](#keep-no-command-output). |
+
+Every `exec` also has these limits:
+
+- `stdout` and `stderr` each return at most 1 MiB (1,048,576 bytes); `stdout_truncated` or `stderr_truncated` is `true` when the command wrote more.
+- A cloud response is synchronous, and the public connection closes after 1000 seconds without a response. Run longer work in the background, as in [Choose lifetime and memory](#choose-lifetime-and-memory).
+- A cloud session runs at most 64 commands at once, as described below.
+
 A cloud session runs at most 64 commands at once and has no limit on how many it
 runs in total. A command holds its slot until it exits and every background
 process it started has exited too, so a service started with `&` keeps its slot
@@ -420,6 +436,25 @@ A one-shot command timeout returns `504`; retrying its key returns `409`
 because no completed result was stored. A session command reaching its command
 timeout returns execution data with `timed_out: true`. If the VM lifetime expires
 first, the command returns `504` instead.
+
+### Short-lived sessions for CI
+
+In a CI job, set a short `max_duration_seconds` so a session left behind by a crashed script ends on its own instead of running for the cloud default of 3600 seconds.
+The lifetime includes startup and activity never extends it, so choose one that covers startup and the job's longest run.
+Cloud sessions accept 30 seconds or more, up to the plan limit.
+
+```bash
+SESSION_ID=$(curl -s "$VOLCANO_API_URL/projects/$PROJECT_ID/sandbox-sessions" \
+  -H "Authorization: Bearer $SERVICE_KEY" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Content-Type: application/json" \
+  -d '{"preset":"python3.12","region":"us-east-1","max_duration_seconds":900}' | jq -r .id)
+
+# Terminate the session when the script exits, including on failure.
+trap 'curl -s -X DELETE "$VOLCANO_API_URL/sandbox-sessions/$SESSION_ID" -H "Authorization: Bearer $SERVICE_KEY"' EXIT
+```
+
+The trap terminates the session on a normal exit or a failed step. When the runner is killed before the trap runs, the session still expires at `expires_at`.
 
 ## Cap CPU and disk
 
