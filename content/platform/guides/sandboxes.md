@@ -589,9 +589,13 @@ and `retired: true`.
 
 This receipt confirms the guest stopped any processes from
 that execution and will prevent a delayed launch, even if the launch outcome was
-unknown. Other executions in the session keep running. If the response is lost,
-repeat retirement with the same three identifiers. A local runtime or older
-guest without retirement support returns `409 sandbox_retirement_unsupported`.
+unknown. Other executions in the session keep running. Once you receive this
+receipt, launch the next controller with `POST /sandbox-controller-executions`
+using the same project and session IDs and a new execution key.
+
+If the retirement response is lost, repeat retirement with the original key.
+A local runtime or older guest without retirement support returns
+`409 sandbox_retirement_unsupported`.
 If retirement cannot be confirmed, keep the session out of reuse and confirm
 its termination before handing work to a replacement.
 
