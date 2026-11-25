@@ -506,7 +506,10 @@ Start a fresh hosted session and launch the controller as its first command.
 If the guest admits an ordinary command first, that session can only run ordinary
 commands. Local Docker sessions do not support controller launch or retirement.
 
-The template must supply a trusted executable at `/opt/volcano/bin/sandbox-controller-v1`.
+When you [build a custom template](#deploy-a-custom-template), install your
+controller as a regular executable at `/opt/volcano/bin/sandbox-controller-v1`
+in the image. Use mode `0755` for the file. The executable and its parent
+directories must be owned by root and writable only by root.
 The guest must support the `isolated_controller_v2` profile, which blocks symlink
 traversal on the controller's `/workspace` mount. Workloads keep their usual
 workspace view. The caller needs `sandboxes.exec` for the project that owns the session.
@@ -573,7 +576,18 @@ curl "$VOLCANO_API_URL/sandbox-execution-retirements" \
 ```
 
 Wait for HTTP 200 with the matching `project_id`, `session_id`, `idempotency_key`,
-and `retired: true`. This receipt confirms the guest stopped any processes from
+and `retired: true`.
+
+```json
+{
+  "project_id": "7ee35be9-b4b6-40d5-8c7c-bc23c02ea9ac",
+  "session_id": "d3b3e46b-9388-4476-b28b-cc296448da5e",
+  "idempotency_key": "47276226-cb40-4217-8cd5-e9f045367878",
+  "retired": true
+}
+```
+
+This receipt confirms the guest stopped any processes from
 that execution and will prevent a delayed launch, even if the launch outcome was
 unknown. Other executions in the session keep running. If the response is lost,
 repeat retirement with the same three identifiers. A local runtime or older
