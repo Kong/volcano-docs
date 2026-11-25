@@ -284,22 +284,69 @@ extends it. Pick a value that covers your job's longest run; see
 
 ### Choose an idle timeout for a session
 
-When work finishes, set `idle_timeout_seconds` to the number of seconds Volcano should keep the idle VM. Use a positive whole number. This example requests 5 minutes. If you use a scoped service key, grant it the `sandboxes.sessions.activity` permission.
+A session controller can release an idle VM and still reuse its workspace. When
+work finishes, report idle with `idle_timeout_seconds` set to how long Volcano
+should keep the VM. Use a whole number of seconds from 1 to `2147483647`; this
+example requests 5 minutes from the moment Volcano accepts the report. A scoped
+service key needs the `sandboxes.sessions.activity` permission, listed with the
+other Sandbox permissions under
+[Scope a service key](../authentication/security/service-keys.md#scope-a-service-key).
 
 ```bash
-curl --fail-with-body -i -X PATCH "$VOLCANO_API_URL/sandbox-sessions/$SESSION_ID" \
+curl -s -X PATCH "$VOLCANO_API_URL/sandbox-sessions/$SESSION_ID" \
   -H "Authorization: Bearer $SERVICE_KEY" \
   -H "Content-Type: application/json" \
   -d '{"activity":{"sequence":1,"idle":true,"idle_timeout_seconds":300}}'
 ```
 
-Volcano returns HTTP 204. To use the same VM again, send `{"activity":{"sequence":2,"idle":false}}` before the deadline. Omit the timeout on active events. Send new events while the VM is running. Keep one sequence per VM across all attempts. To change the timeout, send a new idle event with a higher sequence.
+The body carries one complete `activity` report, and the request takes no
+`Idempotency-Key`: `sequence` orders the reports instead.
 
-If a response is lost, you can retry the latest accepted event before expiry. The same sequence, state, and timeout return 204 and preserve the deadline. An older sequence or a different payload for the same sequence returns 409.
+| Field                  | Required  | Limits                                                                                                                   |
+| ---------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `sequence`             | Yes       | A whole number from 1 up, higher than every earlier report for this VM.                                                  |
+| `idle`                 | Yes       | `true` when work stops, `false` when it resumes.                                                                         |
+| `idle_timeout_seconds` | When idle | 1–`2147483647`. Send it when `idle` is `true` and omit it when `idle` is `false`; sending it with `false` returns `400`. |
 
-Missing or invalid credentials return 401. A credential for the session's project without activity permission returns 403. An unknown session or a session outside the caller's project returns 404.
+Volcano returns `204`. To use the same VM again, send
+`{"activity":{"sequence":2,"idle":false}}` before the deadline; accepting an
+active report clears the deadline. To change the timeout, send another idle
+report with a higher `sequence`.
 
-When the idle deadline passes, Volcano closes live access and schedules the VM for termination. Termination discards local files. Suspending the VM preserves the idle deadline. To keep the VM, request resume, wait for the session to reach `running`, and report active before the idle deadline. After expiry, activity reports and resume requests return 409 with code `sandbox_session_expired`. Polling and file reads leave the timer alone. The session’s original lifetime still applies.
+Only an activity report moves the deadline. Running commands, reading or writing
+files, connecting to a service, and polling `state` all leave it alone, so report
+active for the whole time a command runs. A command that outlasts the idle
+window loses the VM while it is still running.
+
+No documented response returns the stored `sequence` or deadline, so keep the
+`sequence` you last sent outside the VM. A report whose `sequence` is not higher
+than the stored one is refused with `409`, unless it repeats the latest report
+exactly, so a controller that restarts without the value cannot report again.
+
+If a response is lost, retry the same report before the deadline. Repeating the
+latest accepted `sequence`, `idle`, and timeout returns `204` and preserves the
+deadline. A lower `sequence`, or the same `sequence` with a different payload,
+returns `409` without a `code`.
+
+Missing or invalid credentials return `401`. A credential for the session's
+project without `sandboxes.sessions.activity` returns `403`. An unknown session,
+or one outside the caller's project, returns `404`. A malformed report returns
+`400`: a timeout below 1 or above `2147483647`, a fractional timeout, or a
+timeout sent with `idle` set to `false`. A new report on a session that is
+starting, suspending, or suspended returns `409` without a `code`; retrying the
+latest report still returns `204` while the VM is suspended.
+
+When the deadline passes, Volcano closes live access and schedules the VM for
+termination, which discards local files. An `exec` request then returns
+`409 sandbox_session_not_running`, the same refusal a stopped session returns.
+Activity reports and resume requests return `409 sandbox_session_expired`.
+Suspending the VM preserves the deadline without pausing it, so a session
+suspended past its deadline is terminated too. To keep the VM, request resume,
+wait for the session to reach `running`, and report active before the deadline.
+
+The session's lifetime still bounds the deadline. A deadline past `expires_at` is
+accepted, but the session ends at `expires_at` and records
+`sandbox_authority_or_expiry` rather than `sandbox_idle_expired`.
 
 ## Turn off outbound network
 
