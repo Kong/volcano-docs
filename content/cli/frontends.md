@@ -277,7 +277,11 @@ volcano cloud frontends preview delete web redesign
 ```
 
 `--name` is required and unique within the frontend; `--ttl` deletes the preview
-after that long, at most 720 hours. A frontend can have 20 live previews.
+after that long, at most 720 hours. Your account can hold at most 1000 live
+frontend previews on HOBBY and 10000 on SUPERAGENT, across all of your projects
+and frontends, and at most 100 on one frontend; a preview counts until its
+deletion completes. The local development server applies only the 100 per
+frontend. See [Plans and limits](/platform/guides/plans-and-limits#frontends).
 Promotion routes the frontend's own host at the preview without rebuilding, and
 is refused when the preview was built with different variables than the
 frontend selects now. `promote` and `rollback` name the revision the CLI just
