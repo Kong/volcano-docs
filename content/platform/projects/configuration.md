@@ -539,9 +539,9 @@ env file sets. See the [CLI deploy reference](/cli/deploy).
   per-entry `action: error`; already-applied changes are not rolled back.
   Re-running the deploy is safe — unchanged entries are no-ops.
 - Applies are serialized per project. An apply that overlaps another apply, a
-  variable write or a deploy waits up to 20 seconds for it to finish, then runs
-  against the project as it stands. It returns `409` only if the project is
-  still busy after that wait.
+  variable write or a deploy waits up to about 20 seconds for it to finish, then
+  runs against the project as it stands. It returns `409` only if the project
+  is still busy after that wait.
 
 ## Function variables
 
