@@ -1,22 +1,24 @@
 ---
 title: 'Deployment source'
-description: 'Identify what initiated each deployment — a Git push, the CLI, the dashboard, the API, or the platform itself.'
+description: 'Identify deployments initiated by Volcano Builder, the CLI, CI, Git, the dashboard, the API, or the platform itself.'
 ---
 
-Every deployment records a **`deploy_source`**: what initiated it. Use it to tell an automated Git push apart from a manual CLI deploy, or to filter a project's deployment history by origin.
+Use **`deploy_source`** to see what initiated a deployment and group a project's deployment history by origin.
 
-`deploy_source` is returned on Function and Frontend deployments and on the project deployment feed.
+Function deployments, frontend deployments, and the project deployment feed return `deploy_source`. Project variables also report the source of their latest propagation sync after one has run.
 
 ## Values
 
-| Value     | Meaning                                                                                             |
-| --------- | --------------------------------------------------------------------------------------------------- |
-| `git`     | A Git push to the connected repository's production branch (auto-deploy).                           |
-| `cli`     | A deploy from the Volcano CLI.                                                                      |
-| `web`     | A deploy from the dashboard.                                                                        |
-| `api`     | A deploy from a direct API call with a platform token.                                              |
-| `system`  | Platform-initiated work with no user actor, such as region convergence or a project-delete cascade. |
-| `unknown` | Origin not recorded — historical deployments created before this field existed.                     |
+| Value     | Meaning                                                                                              |
+| --------- | ---------------------------------------------------------------------------------------------------- |
+| `git`     | A Git push to the connected repository's production branch (auto-deploy).                            |
+| `builder` | A deploy from Volcano Builder using a delegated project grant verified by Volcano.                   |
+| `ci`      | A deploy from a Volcano CLI version that detects and reports the CI environment.                     |
+| `cli`     | A deploy from the Volcano CLI outside CI, or from an older CLI version that predates CI attribution. |
+| `web`     | A deploy from the dashboard.                                                                         |
+| `api`     | A deploy from a direct API call with a platform token.                                               |
+| `system`  | Platform-initiated work with no user actor, such as region convergence or a project-delete cascade.  |
+| `unknown` | Origin unavailable, including deployments recorded before source tracking existed.                   |
 
 A deployment correlated to a Git deployment run is always `git`, regardless of how the request reached the API.
 
@@ -135,8 +137,8 @@ A frontend deployed from another frontend's build carries the commit of the depl
 
 ## Attribution
 
-Request-initiated deployments (`cli`, `web`, `api`) also record `initiated_by`, the platform user that triggered them. `git` and `system` deployments have no user actor, so `initiated_by` is absent.
+Request-initiated deployments (`builder`, `ci`, `cli`, `web`, `api`) also record `initiated_by`, the platform user that triggered them. `git` and `system` deployments have no user actor, so `initiated_by` is absent.
 
 ## Declaring the dashboard client
 
-Authentication is authoritative for the `cli` classification. A non-CLI client that is the dashboard should send the `X-Volcano-Client: web` request header so its deployments are recorded as `web` rather than `api`.
+Dashboard clients can send the `X-Volcano-Client: web` request header to record their deployments as `web`. Volcano classifies authenticated Volcano CLI requests as `cli` or `ci` based on the CLI's reported environment.
